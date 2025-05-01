@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,23 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				crm: {
+					primary: '#4F46E5',
+					secondary: '#A5B4FC',
+					accent: '#C7D2FE',
+					muted: '#E0E7FF',
+					background: '#F5F7FF',
+					card: '#FFFFFF',
+					border: '#E5E7EB',
+					tag: {
+						active: '#DCFCE7',
+						'active-text': '#166534',
+						partner: '#E0F2FE',
+						'partner-text': '#0369A1',
+						location: '#EDE9FE',
+						'location-text': '#5B21B6'
+					}
 				}
 			},
 			borderRadius: {
