@@ -26,7 +26,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const { name, avatar, date, tags, assignedTo } = contact;
+  const { name, avatar, date, tags, assignedTo, email, phone } = contact;
 
   return (
     <div className="contact-card bg-white p-3 rounded-md border border-gray-200 mb-3 hover:border-blue-300 transition-all">
@@ -100,15 +100,33 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             <span className="text-xs text-gray-600">{assignedTo.name}</span>
           </div>
           <div className="flex gap-1">
-            <button className="action-button p-1 hover:bg-gray-100 rounded-full">
-              <MessageSquare className="h-3.5 w-3.5" />
-            </button>
-            <button className="action-button p-1 hover:bg-gray-100 rounded-full">
-              <Mail className="h-3.5 w-3.5" />
-            </button>
-            <button className="action-button p-1 hover:bg-gray-100 rounded-full">
-              <Phone className="h-3.5 w-3.5" />
-            </button>
+            {phone && (
+              <a 
+                href={`sms:${phone}`} 
+                className="action-button p-1 hover:bg-gray-100 rounded-full" 
+                title="Send text message"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+              </a>
+            )}
+            {email && (
+              <a 
+                href={`mailto:${email}`} 
+                className="action-button p-1 hover:bg-gray-100 rounded-full"
+                title="Send email"
+              >
+                <Mail className="h-3.5 w-3.5" />
+              </a>
+            )}
+            {phone && (
+              <a 
+                href={`tel:${phone}`} 
+                className="action-button p-1 hover:bg-gray-100 rounded-full"
+                title="Call"
+              >
+                <Phone className="h-3.5 w-3.5" />
+              </a>
+            )}
           </div>
         </div>
       )}
