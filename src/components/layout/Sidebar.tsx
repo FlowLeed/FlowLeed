@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { 
   Users, 
   MessageSquare, 
-  ChekDown,
+  Check,
   Calendar, 
   Settings 
 } from "lucide-react";
