@@ -8,6 +8,7 @@ import { MainLayout } from "./components/layout/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import PipelinePage from "./pages/PipelinePage";
+import UserProfilePage from "./pages/UserProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route element={<MainLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/pipelines/:pipelineId" element={<PipelinePage />} />
+            <Route path="/contacts/:contactId" element={<UserProfilePage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

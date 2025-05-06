@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Link } from "react-router-dom";
 
 interface ContactCardProps {
   contact: Contact;
@@ -32,17 +33,21 @@ export const ContactCard: React.FC<ContactCardProps> = ({
     <div className="contact-card bg-white p-3 rounded-md border border-gray-200 mb-3 hover:border-blue-300 transition-all">
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-2 items-center">
-          <Avatar className="h-8 w-8">
-            {avatar ? (
-              <img src={avatar} alt={name} className="rounded-full" />
-            ) : (
-              <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
-                {name.charAt(0)}
-              </div>
-            )}
-          </Avatar>
+          <Link to={`/contacts/${contact.id}`}>
+            <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all">
+              {avatar ? (
+                <img src={avatar} alt={name} className="rounded-full" />
+              ) : (
+                <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
+                  {name.charAt(0)}
+                </div>
+              )}
+            </Avatar>
+          </Link>
           <div>
-            <h4 className="font-medium text-sm">{name}</h4>
+            <Link to={`/contacts/${contact.id}`} className="hover:text-blue-600 transition-colors">
+              <h4 className="font-medium text-sm">{name}</h4>
+            </Link>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <span>{date}</span>
             </div>
