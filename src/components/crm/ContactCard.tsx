@@ -29,7 +29,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
   const { name, avatar, date, tags, assignedTo } = contact;
 
   return (
-    <div className="contact-card mb-3">
+    <div className="contact-card bg-white p-3 rounded-md border border-gray-200 mb-3 hover:border-blue-300 transition-all">
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-2 items-center">
           <Avatar className="h-8 w-8">
@@ -71,16 +71,16 @@ export const ContactCard: React.FC<ContactCardProps> = ({
       {tags && tags.length > 0 && (
         <div className="flex gap-1.5 mb-3 flex-wrap">
           {tags.includes("active") && (
-            <span className="tag tag-active">Active</span>
+            <span className="tag bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">Active</span>
           )}
           {tags.includes("partner") && (
-            <span className="tag tag-partner">Partner</span>
+            <span className="tag bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">Partner</span>
           )}
           {tags.includes("florida") && (
-            <span className="tag tag-location">Florida</span>
+            <span className="tag bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full">Florida</span>
           )}
           {tags.includes("location") && (
-            <span className="tag tag-location">Location</span>
+            <span className="tag bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full">Location</span>
           )}
         </div>
       )}
@@ -100,13 +100,13 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             <span className="text-xs text-gray-600">{assignedTo.name}</span>
           </div>
           <div className="flex gap-1">
-            <button className="action-button">
+            <button className="action-button p-1 hover:bg-gray-100 rounded-full">
               <MessageSquare className="h-3.5 w-3.5" />
             </button>
-            <button className="action-button">
+            <button className="action-button p-1 hover:bg-gray-100 rounded-full">
               <Mail className="h-3.5 w-3.5" />
             </button>
-            <button className="action-button">
+            <button className="action-button p-1 hover:bg-gray-100 rounded-full">
               <Phone className="h-3.5 w-3.5" />
             </button>
           </div>
