@@ -37,9 +37,11 @@ const UserProfilePage = () => {
       
       return foundContact;
     },
-    onError: () => {
-      toast.error("Contact not found");
-      navigate(-1);
+    meta: {
+      onError: () => {
+        toast.error("Contact not found");
+        navigate(-1);
+      }
     }
   });
 
