@@ -8,8 +8,8 @@ import {
   Calendar, 
   Settings 
 } from "lucide-react";
-import { hostTeamPipeline, pastoralCarePipeline } from "@/data/mockData";
 import { calculatePipelineContactCount } from "@/lib/utils";
+import { usePipelineContext } from "@/contexts/PipelineContext";
 
 interface SidebarItem {
   title: string;
@@ -72,6 +72,8 @@ const Logo = () => (
 );
 
 export const Sidebar = () => {
+  const { pipelines } = usePipelineContext();
+  
   const pageItems: SidebarItem[] = [
     {
       title: "Dashboard",
@@ -90,13 +92,13 @@ export const Sidebar = () => {
       title: "Host Team Launch",
       icon: Users,
       path: "/pipelines/host-team",
-      badge: calculatePipelineContactCount(hostTeamPipeline),
+      badge: calculatePipelineContactCount(pipelines["host-team"]),
     },
     {
       title: "Pastoral Care",
       icon: MessageSquare,
       path: "/pipelines/pastoral-care",
-      badge: calculatePipelineContactCount(pastoralCarePipeline),
+      badge: calculatePipelineContactCount(pipelines["pastoral-care"]),
     },
     {
       title: "Operations",
