@@ -35,7 +35,7 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
     >
       <item.icon className="mr-3 h-5 w-5" />
       <span>{item.title}</span>
-      {item.badge && (
+      {item.badge && item.badge > 0 && (
         <span className="ml-auto bg-sidebar-primary text-sidebar-primary-foreground text-xs rounded-full px-2 py-0.5">
           {item.badge}
         </span>
