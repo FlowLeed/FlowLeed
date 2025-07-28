@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { Pipeline } from "@/types/crm";
-import { hostTeamPipeline, pastoralCarePipeline } from "@/data/mockData";
+import { hostTeamPipeline, pastoralCarePipeline, operationsPipeline, givingHubPipeline } from "@/data/mockData";
 
 interface PipelineContextType {
   pipelines: Record<string, Pipeline>;
@@ -25,6 +25,8 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
   const [pipelines, setPipelines] = useState<Record<string, Pipeline>>({
     "host-team": hostTeamPipeline,
     "pastoral-care": pastoralCarePipeline,
+    "operations": operationsPipeline,
+    "giving-hub": givingHubPipeline,
   });
 
   const updatePipeline = (pipelineId: string, pipeline: Pipeline) => {

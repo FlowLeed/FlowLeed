@@ -10,10 +10,7 @@ const PipelinePage = () => {
   const { pipelines, updatePipeline } = usePipelineContext();
 
   // Determine which pipeline to show based on URL parameter
-  const currentPipeline = 
-    pipelineId === "pastoral-care" ? pipelines["pastoral-care"] : 
-    pipelineId === "host-team" ? pipelines["host-team"] : 
-    pipelines["host-team"]; // Default to host-team if no match
+  const currentPipeline = pipelines[pipelineId || "host-team"];
 
   const handlePipelineChange = (updatedPipeline: Pipeline) => {
     updatePipeline(pipelineId as string, updatedPipeline);

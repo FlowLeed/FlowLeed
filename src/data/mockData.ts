@@ -117,4 +117,58 @@ export const pastoralCarePipeline: Pipeline = {
   ],
 };
 
-export const pipelines = [hostTeamPipeline, pastoralCarePipeline];
+export const operationsPipeline: Pipeline = {
+  id: "operations",
+  name: "Operations",
+  stages: [
+    {
+      id: "new-request",
+      name: "New Request",
+      contacts: [...createMoreContacts(2)],
+    },
+    {
+      id: "in-progress",
+      name: "In Progress",
+      contacts: [...createMoreContacts(3)],
+    },
+    {
+      id: "review",
+      name: "Review",
+      contacts: [...createMoreContacts(1)],
+    },
+    {
+      id: "completed",
+      name: "Completed",
+      contacts: [...createMoreContacts(2)],
+    },
+  ],
+};
+
+export const givingHubPipeline: Pipeline = {
+  id: "giving-hub",
+  name: "Giving Hub",
+  stages: [
+    {
+      id: "inquiry",
+      name: "Inquiry",
+      contacts: [...createMoreContacts(3)],
+    },
+    {
+      id: "meeting",
+      name: "Meeting",
+      contacts: [...createMoreContacts(2)],
+    },
+    {
+      id: "proposal",
+      name: "Proposal",
+      contacts: [...createMoreContacts(1)],
+    },
+    {
+      id: "commitment",
+      name: "Commitment",
+      contacts: [...createMoreContacts(2)],
+    },
+  ],
+};
+
+export const pipelines = [hostTeamPipeline, pastoralCarePipeline, operationsPipeline, givingHubPipeline];
