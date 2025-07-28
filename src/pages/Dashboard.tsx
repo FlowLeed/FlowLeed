@@ -5,6 +5,8 @@ import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, MessageSquare, Calendar } from "lucide-react";
+import { hostTeamPipeline, pastoralCarePipeline } from "@/data/mockData";
+import { calculatePipelineContactCount } from "@/lib/utils";
 
 const PipelineCard = ({ 
   title, 
@@ -49,28 +51,28 @@ const Dashboard = () => {
       title: "Host Team Launch",
       description: "Track and manage people interested in joining the host team",
       icon: Users,
-      contactCount: 10,
+      contactCount: calculatePipelineContactCount(hostTeamPipeline),
       path: "/pipelines/host-team",
     },
     {
       title: "Pastoral Care",
       description: "Follow-up system for pastoral care and counseling requests",
       icon: MessageSquare,
-      contactCount: 18,
+      contactCount: calculatePipelineContactCount(pastoralCarePipeline),
       path: "/pipelines/pastoral-care",
     },
     {
       title: "Operations",
       description: "Workflow for operational tasks and processes",
       icon: Calendar,
-      contactCount: 5,
+      contactCount: 0, // No data available yet
       path: "/pipelines/operations",
     },
     {
       title: "Giving Hub",
       description: "Manage donation follow-ups and financial communications",
       icon: Users,
-      contactCount: 8,
+      contactCount: 0, // No data available yet
       path: "/pipelines/giving-hub",
     },
   ];

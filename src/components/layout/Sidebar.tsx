@@ -8,6 +8,8 @@ import {
   Calendar, 
   Settings 
 } from "lucide-react";
+import { hostTeamPipeline, pastoralCarePipeline } from "@/data/mockData";
+import { calculatePipelineContactCount } from "@/lib/utils";
 
 interface SidebarItem {
   title: string;
@@ -88,22 +90,25 @@ export const Sidebar = () => {
       title: "Host Team Launch",
       icon: Users,
       path: "/pipelines/host-team",
+      badge: calculatePipelineContactCount(hostTeamPipeline),
     },
     {
       title: "Pastoral Care",
       icon: MessageSquare,
       path: "/pipelines/pastoral-care",
-      badge: 18,
+      badge: calculatePipelineContactCount(pastoralCarePipeline),
     },
     {
       title: "Operations",
       icon: Calendar,
       path: "/pipelines/operations",
+      badge: 0, // No data available yet
     },
     {
       title: "Giving Hub",
       icon: Users,
       path: "/pipelines/giving-hub",
+      badge: 0, // No data available yet
     },
   ];
 
