@@ -110,7 +110,7 @@ export const Sidebar = () => {
       title: "Giving Hub",
       icon: Users,
       path: "/pipelines/giving-hub",
-      badge: 0, // No data available yet
+      badge: calculatePipelineContactCount(pipelines["giving-hub"]),
     },
   ];
 
