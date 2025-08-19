@@ -94,17 +94,45 @@
     @apply bg-crm-background text-foreground;
   }
 }
+}
 
+/* Enhanced contact cards with better spacing and hover effects */
 .contact-card {
-  @apply relative bg-white p-4 rounded-md shadow-sm border border-crm-border;
+  @apply relative bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all duration-200;
 }
 
 .contact-card:hover {
-  @apply shadow-md;
+  @apply shadow-md border-gray-300 transform translate-y-[-1px];
 }
 
-.pipeline-column {
-  @apply bg-white/50 rounded-md p-4 w-[300px] flex-shrink-0;
+/* Pipeline stage styling with improved layout */
+.pipeline-stage {
+  @apply bg-white rounded-lg shadow-sm border border-gray-200 w-80 flex-shrink-0 overflow-hidden;
+}
+
+/* Stage header styling */
+.stage-header {
+  @apply p-4 text-white font-semibold text-lg flex justify-between items-center;
+}
+
+.stage-header-blue {
+  @apply bg-crm-stage-blue-header;
+}
+
+.stage-header-green {
+  @apply bg-crm-stage-green-header;
+}
+
+.stage-header-teal {
+  @apply bg-crm-stage-teal-header;
+}
+
+.stage-header-orange {
+  @apply bg-crm-stage-orange-header;
+}
+
+.stage-header-purple {
+  @apply bg-crm-stage-purple-header;
 }
 
 .tag {
