@@ -39,7 +39,7 @@ export const PipelineStage: React.FC<PipelineStageProps> = ({
         </button>
       </div>
       
-      <div className="p-4">{/*...content wrapper...*/}
+      <div className="p-4 bg-transparent">{/*...content wrapper...*/}
       
         <Droppable droppableId={stage.id}>
           {(provided, snapshot) => (
