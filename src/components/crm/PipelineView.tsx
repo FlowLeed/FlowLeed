@@ -160,18 +160,26 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <Header 
-        title={pipeline.name} 
-        onAddClick={() => {
-          setCurrentStageId(pipeline.stages[0].id);
-          setCurrentContact(null);
-          setIsFormOpen(true);
-        }}
-      />
+    <div className="flex flex-col h-full overflow-hidden bg-gray-50">
+      {/* Pipeline Header */}
+      <div className="bg-white px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold text-gray-900">{pipeline.name}</h1>
+            <div className="flex -space-x-2">
+              {/* Team avatars */}
+              <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face" alt="Team member" />
+              <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=32&h=32&fit=crop&crop=face" alt="Team member" />
+              <img className="w-8 h-8 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=32&h=32&fit=crop&crop=face" alt="Team member" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pipeline Stages */}
       <div className="flex-1 overflow-x-auto p-6">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex gap-4">
+          <div className="flex gap-6 min-h-full">
             {pipeline.stages.map((stage) => (
               <PipelineStage
                 key={stage.id}
