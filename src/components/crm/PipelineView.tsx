@@ -169,9 +169,9 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
           setIsFormOpen(true);
         }}
       />
-      <div className="flex-1 overflow-x-auto p-6 bg-gray-50">
+      <div className="flex-1 overflow-x-auto p-6">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex gap-6 pb-4">
+          <div className="flex gap-4">
             {pipeline.stages.map((stage) => (
               <PipelineStage
                 key={stage.id}

@@ -18,63 +18,51 @@ export const PipelineStage: React.FC<PipelineStageProps> = ({
   onEditContact,
   onDeleteContact,
 }) => {
-  // Determine stage color based on index or stage name
-  const getStageColor = (stageId: string) => {
-    const colors = ['blue', 'green', 'teal', 'orange', 'purple'];
-    const index = Math.abs(stageId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % colors.length;
-    return colors[index];
-  };
-
-  const stageColor = getStageColor(stage.id);
-
   return (
-    <div className="pipeline-stage">
-      <div className={`stage-header stage-header-${stageColor}`}>
-        <h3 className="font-semibold text-lg">{stage.name}</h3>
+    <div className="pipeline-column w-72 flex-shrink-0 bg-gray-50 p-3 rounded-md border border-gray-200 shadow-sm">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-medium text-gray-700">{stage.name}</h3>
         <button 
-          className="p-2 rounded-full hover:bg-white/20 transition-colors"
+          className="p-1 rounded-full hover:bg-gray-100"
           onClick={() => onAddContact?.(stage.id)}
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-4 w-4" />
         </button>
       </div>
       
-      <div className="p-4 bg-transparent">{/*...content wrapper...*/}
-      
-        <Droppable droppableId={stage.id}>
-          {(provided, snapshot) => (
-            <div
-              className={`space-y-4 min-h-[300px] transition-colors ${
-                snapshot.isDraggingOver ? `bg-crm-stage-${stageColor}-light` : ""
-              }`}
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-            >
-              {stage.contacts.map((contact, index) => (
-                <Draggable key={contact.id} draggableId={contact.id} index={index}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      className={`transition-all duration-200 ${
-                        snapshot.isDragging ? "shadow-xl rotate-2 scale-105" : ""
-                      }`}
-                    >
-                      <ContactCard
-                        contact={contact}
-                        onEdit={() => onEditContact?.(contact)}
-                        onDelete={() => onDeleteContact?.(contact.id, stage.id)}
-                      />
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </div>
+      <Droppable droppableId={stage.id}>
+        {(provided, snapshot) => (
+          <div
+            className={`space-y-3 min-h-[200px] transition-colors ${
+              snapshot.isDraggingOver ? "bg-blue-50" : ""
+            }`}
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+          >
+            {stage.contacts.map((contact, index) => (
+              <Draggable key={contact.id} draggableId={contact.id} index={index}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    className={`transition-shadow ${
+                      snapshot.isDragging ? "shadow-lg" : ""
+                    }`}
+                  >
+                    <ContactCard
+                      contact={contact}
+                      onEdit={() => onEditContact?.(contact)}
+                      onDelete={() => onDeleteContact?.(contact.id, stage.id)}
+                    />
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
     </div>
   );
 };
