@@ -95,43 +95,16 @@
   }
 }
 
-/* Enhanced contact cards with clean, mobile-friendly design */
 .contact-card {
-  @apply relative bg-white rounded-xl shadow-sm border border-gray-200 transition-all duration-200 hover:shadow-md hover:border-gray-300;
+  @apply relative bg-white p-4 rounded-md shadow-sm border border-crm-border;
 }
 
 .contact-card:hover {
-  @apply transform translate-y-[-1px];
+  @apply shadow-md;
 }
 
-/* Pipeline stage styling with improved layout */
-.pipeline-stage {
-  @apply bg-white rounded-lg shadow-sm border border-gray-200 w-80 flex-shrink-0 overflow-hidden;
-}
-
-/* Stage header styling */
-.stage-header {
-  @apply p-4 text-white font-semibold text-lg flex justify-between items-center;
-}
-
-.stage-header-blue {
-  @apply bg-crm-stage-blue-header;
-}
-
-.stage-header-green {
-  @apply bg-crm-stage-green-header;
-}
-
-.stage-header-teal {
-  @apply bg-crm-stage-teal-header;
-}
-
-.stage-header-orange {
-  @apply bg-crm-stage-orange-header;
-}
-
-.stage-header-purple {
-  @apply bg-crm-stage-purple-header;
+.pipeline-column {
+  @apply bg-white/50 rounded-md p-4 w-[300px] flex-shrink-0;
 }
 
 .tag {

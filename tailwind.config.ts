@@ -63,50 +63,23 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-			crm: {
-				primary: '#4F46E5',
-				secondary: '#A5B4FC',
-				accent: '#C7D2FE',
-				muted: '#E0E7FF',
-				background: '#F8FAFC',
-				card: '#FFFFFF',
-				border: '#E5E7EB',
-				stage: {
-					blue: {
-						header: '#3B82F6',
-						light: '#EFF6FF',
-						border: '#DBEAFE'
-					},
-					green: {
-						header: '#10B981',
-						light: '#ECFDF5',
-						border: '#D1FAE5'
-					},
-					teal: {
-						header: '#14B8A6',
-						light: '#F0FDFA',
-						border: '#CCFBF1'
-					},
-					orange: {
-						header: '#F97316',
-						light: '#FFF7ED',
-						border: '#FED7AA'
-					},
-					purple: {
-						header: '#8B5CF6',
-						light: '#F5F3FF',
-						border: '#E9D5FF'
+				crm: {
+					primary: '#4F46E5',
+					secondary: '#A5B4FC',
+					accent: '#C7D2FE',
+					muted: '#E0E7FF',
+					background: '#F5F7FF',
+					card: '#FFFFFF',
+					border: '#E5E7EB',
+					tag: {
+						active: '#DCFCE7',
+						'active-text': '#166534',
+						partner: '#E0F2FE',
+						'partner-text': '#0369A1',
+						location: '#EDE9FE',
+						'location-text': '#5B21B6'
 					}
-				},
-				tag: {
-					active: '#DCFCE7',
-					'active-text': '#166534',
-					partner: '#E0F2FE',
-					'partner-text': '#0369A1',
-					location: '#EDE9FE',
-					'location-text': '#5B21B6'
 				}
-			}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
