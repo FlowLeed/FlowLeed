@@ -95,13 +95,13 @@
   }
 }
 
-/* Enhanced contact cards with better spacing and hover effects */
+/* Enhanced contact cards with clean, mobile-friendly design */
 .contact-card {
-  @apply relative bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all duration-200;
+  @apply relative bg-white rounded-xl shadow-sm border border-gray-200 transition-all duration-200 hover:shadow-md hover:border-gray-300;
 }
 
 .contact-card:hover {
-  @apply shadow-md border-gray-300 transform translate-y-[-1px];
+  @apply transform translate-y-[-1px];
 }
 
 /* Pipeline stage styling with improved layout */
