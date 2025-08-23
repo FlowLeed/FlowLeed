@@ -112,32 +112,65 @@ export const useIntegrations = () => {
     }
   };
 
-  const connectPlanningCenter = async (appId: string, secret: string) => {
+  const connectPlanningCenter = async () => {
     if (!organization) return { error: 'No organization found' };
 
     try {
       setLoading(true);
       
-      console.log('Attempting to connect to Planning Center...');
+      console.log('Starting Planning Center OAuth flow...');
       console.log('Organization ID:', organization.id);
-      console.log('Has appId:', !!appId);
-      console.log('Has secret:', !!secret);
       
       const { data, error } = await supabase.functions.invoke('planning-center-integration', {
         body: {
-          action: 'connect',
-          appId,
-          secret,
+          action: 'authorize',
           organizationId: organization.id
         }
       });
 
-      console.log('Supabase function response:', { data, error });
+      console.log('OAuth authorize response:', { data, error });
 
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error('OAuth authorize error:', error);
         throw error;
       }
+
+      if (data?.authUrl) {
+        // Redirect to Planning Center OAuth
+        window.location.href = data.authUrl;
+        return { success: true };
+      } else {
+        throw new Error('No authorization URL received');
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to start OAuth flow';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return { error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOAuthCallback = async (code: string, state: string) => {
+    if (!organization) return { error: 'No organization found' };
+
+    try {
+      setLoading(true);
+      
+      const { data, error } = await supabase.functions.invoke('planning-center-integration', {
+        body: {
+          action: 'callback',
+          code,
+          state,
+          organizationId: organization.id
+        }
+      });
+
+      if (error) throw error;
 
       await fetchIntegrations();
       
@@ -148,7 +181,7 @@ export const useIntegrations = () => {
 
       return { success: true };
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to connect to Planning Center';
+      const errorMessage = error.message || 'Failed to complete OAuth flow';
       toast({
         title: "Error",
         description: errorMessage,
@@ -432,13 +465,14 @@ export const useIntegrations = () => {
     fetchIntegrations,
     fetchLogs,
     connectPlanningCenter,
+    handleOAuthCallback,
     testConnection,
     syncData,
-    syncLists,
+    disconnect,
     getLists,
     mapListToFlow,
     unmapList,
-    disconnect,
+    syncLists,
     getIntegration,
     isConnected,
   };

@@ -21,29 +21,28 @@ const IntegrationsPage = () => {
     integrations,
     loading,
     connectPlanningCenter,
+    handleOAuthCallback,
     testConnection,
     syncData,
     disconnect,
     isConnected
   } = useIntegrations();
   
-  const [planningCenterForm, setPlanningCenterForm] = useState({
-    appId: "",
-    secret: ""
-  });
+  // Handle OAuth callback
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    
+    if (code && state) {
+      handleOAuthCallback(code, state);
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    }
+  }, [handleOAuthCallback]);
 
   const handlePlanningCenterConnect = async () => {
-    if (!planningCenterForm.appId || !planningCenterForm.secret) {
-      toast({
-        title: "Error",
-        description: "Please enter both App ID and Secret",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    await connectPlanningCenter(planningCenterForm.appId, planningCenterForm.secret);
-    setPlanningCenterForm({ appId: "", secret: "" });
+    await connectPlanningCenter();
   };
 
   const handleTest = (serviceName: string) => {
@@ -125,29 +124,13 @@ const IntegrationsPage = () => {
               
               {!isConnected('planning_center') ? (
                 <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="pc-app-id">Application ID</Label>
-                    <Input
-                      id="pc-app-id"
-                      placeholder="Enter your Planning Center App ID"
-                      value={planningCenterForm.appId}
-                      onChange={(e) => setPlanningCenterForm(prev => ({ ...prev, appId: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pc-secret">Secret</Label>
-                    <Input
-                      id="pc-secret"
-                      type="password"
-                      placeholder="Enter your Planning Center Secret"
-                      value={planningCenterForm.secret}
-                      onChange={(e) => setPlanningCenterForm(prev => ({ ...prev, secret: e.target.value }))}
-                    />
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Click below to connect your Planning Center account using OAuth. Make sure you've added your OAuth credentials in the Secrets tab first.
+                  </p>
                   <div className="flex gap-2">
                     <Button 
                       onClick={handlePlanningCenterConnect}
-                      disabled={loading || !planningCenterForm.appId || !planningCenterForm.secret}
+                      disabled={loading}
                     >
                       {loading ? (
                         <>
@@ -155,13 +138,13 @@ const IntegrationsPage = () => {
                           Connecting...
                         </>
                       ) : (
-                        'Connect Planning Center'
+                        'Connect with Planning Center'
                       )}
                     </Button>
                     <Button variant="outline" asChild>
                       <a href="https://api.planningcenteronline.com/" target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4 mr-2" />
-                        Get API Keys
+                        Get OAuth Credentials
                       </a>
                     </Button>
                   </div>

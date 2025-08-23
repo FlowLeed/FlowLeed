@@ -58,6 +58,10 @@ serve(async (req) => {
     const { action, ...body } = requestBody;
 
     switch (action) {
+      case 'authorize':
+        return await handleAuthorize(supabase, user.id, body);
+      case 'callback':
+        return await handleCallback(supabase, user.id, body);
       case 'connect':
         return await handleConnect(supabase, user.id, body);
       case 'test':
@@ -93,6 +97,133 @@ serve(async (req) => {
     });
   }
 });
+
+async function handleAuthorize(supabase: any, userId: string, { organizationId }: any) {
+  console.log('handleAuthorize called with:', { userId, organizationId });
+  
+  try {
+    const clientId = Deno.env.get('PLANNING_CENTER_CLIENT_ID');
+    if (!clientId) {
+      throw new Error('Planning Center Client ID not configured');
+    }
+
+    const redirectUri = 'https://preview--flow-follow-up-friend.lovable.app/integrations';
+    const state = `${userId}:${organizationId}:${Date.now()}`;
+    
+    const authUrl = `https://api.planningcenteronline.com/oauth/authorize?` +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=people&` +
+      `state=${encodeURIComponent(state)}`;
+
+    console.log('Generated auth URL:', authUrl);
+
+    return new Response(JSON.stringify({ 
+      authUrl,
+      state
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Authorize error:', error);
+    throw error;
+  }
+}
+
+async function handleCallback(supabase: any, userId: string, { code, state, organizationId }: any) {
+  console.log('handleCallback called with:', { userId, organizationId, hasCode: !!code, hasState: !!state });
+  
+  try {
+    const clientId = Deno.env.get('PLANNING_CENTER_CLIENT_ID');
+    const clientSecret = Deno.env.get('PLANNING_CENTER_CLIENT_SECRET');
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('Planning Center OAuth credentials not configured');
+    }
+
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://api.planningcenteronline.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        redirect_uri: 'https://preview--flow-follow-up-friend.lovable.app/integrations'
+      })
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error('Token exchange failed:', errorText);
+      throw new Error('Failed to exchange code for access token');
+    }
+
+    const tokenData = await tokenResponse.json();
+    console.log('Token data received:', { hasAccessToken: !!tokenData.access_token, hasRefreshToken: !!tokenData.refresh_token });
+
+    // Test the connection
+    const testResponse = await fetch('https://api.planningcenteronline.com/people/v2/me', {
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!testResponse.ok) {
+      throw new Error('Failed to verify access token');
+    }
+
+    // Store the integration
+    const { data, error } = await supabase
+      .from('integrations')
+      .upsert({
+        user_id: userId,
+        organization_id: organizationId,
+        service_name: 'planning_center',
+        status: 'connected',
+        credentials: {
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          token_type: tokenData.token_type || 'Bearer',
+          expires_at: tokenData.expires_in ? Date.now() + (tokenData.expires_in * 1000) : null
+        },
+        settings: {},
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,organization_id,service_name'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Log the connection
+    await supabase
+      .from('integration_logs')
+      .insert({
+        integration_id: data.id,
+        action: 'oauth_connect',
+        status: 'success',
+        message: 'Planning Center OAuth connection completed successfully'
+      });
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: 'Planning Center connected successfully via OAuth',
+      integration: data 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    throw error;
+  }
+}
 
 async function handleConnect(supabase: any, userId: string, { appId, secret, organizationId }: any) {
   console.log('handleConnect called with:', { userId, organizationId, hasAppId: !!appId, hasSecret: !!secret });
@@ -162,8 +293,18 @@ async function handleTest(supabase: any, userId: string, { organizationId }: any
       throw new Error('Planning Center integration not found');
     }
 
+    // Use OAuth token if available, fallback to basic auth
+    const accessToken = integration.credentials.access_token;
     const { app_id, secret } = integration.credentials;
-    const isValid = await testPlanningCenterConnection(app_id, secret);
+    
+    let isValid = false;
+    if (accessToken) {
+      isValid = await testOAuthConnection(accessToken);
+    } else if (app_id && secret) {
+      isValid = await testPlanningCenterConnection(app_id, secret);
+    } else {
+      throw new Error('No valid credentials found');
+    }
 
     // Update status
     await supabase
@@ -593,6 +734,27 @@ async function handleDisconnect(supabase: any, userId: string, { organizationId 
   }
 }
 
+async function handleSaveSecret(secretName: string, secretValue: string): Promise<{ success: boolean; message: string }> {
+  console.log(`Saving secret: ${secretName}`);
+  
+  try {
+    // Store the secret using Supabase's secrets management
+    // In a real implementation, you would store this in a secure secrets manager
+    // For now, we'll just acknowledge that the secret was received
+    console.log(`Secret ${secretName} would be saved securely`);
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Secret ${secretName} saved successfully`
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error saving secret:', error);
+    throw new Error(`Failed to save secret: ${error.message}`);
+  }
+}
+
 async function testPlanningCenterConnection(appId: string, secret: string): Promise<boolean> {
   try {
     console.log('Testing Planning Center connection with API...');
@@ -686,23 +848,28 @@ async function fetchPlanningCenterPeople(appId: string, secret: string) {
   }
 }
 
-async function handleSaveSecret(secretName: string, secretValue: string): Promise<{ success: boolean; message: string }> {
-  console.log(`Saving secret: ${secretName}`);
-  
+async function testOAuthConnection(accessToken: string): Promise<boolean> {
   try {
-    // Store the secret using Supabase's secrets management
-    // In a real implementation, you would store this in a secure secrets manager
-    // For now, we'll just acknowledge that the secret was received
-    console.log(`Secret ${secretName} would be saved securely`);
+    console.log('Testing Planning Center OAuth connection...');
     
-    return new Response(JSON.stringify({
-      success: true,
-      message: `Secret ${secretName} saved successfully`
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const response = await fetch('https://api.planningcenteronline.com/people/v2/me', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
     });
+
+    console.log('Planning Center OAuth response status:', response.status);
+    console.log('Planning Center OAuth response ok:', response.ok);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('Planning Center OAuth error response:', errorText);
+    }
+
+    return response.ok;
   } catch (error) {
-    console.error('Error saving secret:', error);
-    throw new Error(`Failed to save secret: ${error.message}`);
+    console.error('OAuth connection test error:', error);
+    return false;
   }
 }
