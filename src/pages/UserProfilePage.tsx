@@ -70,7 +70,7 @@ const UserProfilePage = () => {
         .from("pipeline_contacts")
         .select(`
           *,
-          pipelines!inner(id, name, icon),
+          pipelines!inner(id, name, icon, description),
           pipeline_stages!inner(id, name, color, stage_order)
         `)
         .eq("contact_id", contactId);
