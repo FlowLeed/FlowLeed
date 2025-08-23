@@ -26,20 +26,25 @@ const STORAGE_KEY = "lovable-pipelines";
 const getInitialPipelines = (): Record<string, Pipeline> => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
+    console.log("Loading pipelines from localStorage:", stored);
     if (stored) {
-      return JSON.parse(stored);
+      const parsed = JSON.parse(stored);
+      console.log("Parsed pipelines:", parsed);
+      return parsed;
     }
   } catch (error) {
     console.error("Error loading pipelines from localStorage:", error);
   }
   
   // Return default pipelines if no stored data or error
-  return {
+  const defaultPipelines = {
     "host-team": hostTeamPipeline,
     "pastoral-care": pastoralCarePipeline,
     "operations": operationsPipeline,
     "giving-hub": givingHubPipeline,
   };
+  console.log("Using default pipelines:", defaultPipelines);
+  return defaultPipelines;
 };
 
 export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) => {
@@ -48,17 +53,24 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
   // Save to localStorage whenever pipelines change
   useEffect(() => {
     try {
+      console.log("Saving pipelines to localStorage:", pipelines);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(pipelines));
+      console.log("Successfully saved to localStorage");
     } catch (error) {
       console.error("Error saving pipelines to localStorage:", error);
     }
   }, [pipelines]);
 
   const updatePipeline = (pipelineId: string, pipeline: Pipeline) => {
-    setPipelines(prev => ({
-      ...prev,
-      [pipelineId]: pipeline
-    }));
+    console.log("Updating pipeline:", pipelineId, pipeline);
+    setPipelines(prev => {
+      const updated = {
+        ...prev,
+        [pipelineId]: pipeline
+      };
+      console.log("New pipelines state:", updated);
+      return updated;
+    });
   };
 
   return (
