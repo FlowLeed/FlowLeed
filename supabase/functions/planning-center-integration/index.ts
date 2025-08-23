@@ -284,6 +284,16 @@ async function handleTest(supabase: any, userId: string, { organizationId, clien
     if (clientId && clientSecret) {
       console.log('Testing provided credentials...');
       
+      // Check if they're using Personal Access Token instead of OAuth Client ID
+      if (clientId.startsWith('pco_pat_')) {
+        return new Response(JSON.stringify({ 
+          success: false,
+          message: 'You provided a Personal Access Token. For OAuth integration, you need to create an OAuth Application in Planning Center and use the OAuth Client ID, not a Personal Access Token.'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
       // Test OAuth credentials by attempting to get an auth URL
       const testAuthUrl = `https://api.planningcenteronline.com/oauth/authorize?` +
         `client_id=${encodeURIComponent(clientId)}&` +
@@ -304,7 +314,7 @@ async function handleTest(supabase: any, userId: string, { organizationId, clien
 
       return new Response(JSON.stringify({ 
         success: isValid,
-        message: isValid ? 'OAuth credentials appear valid' : 'OAuth credentials appear invalid'
+        message: isValid ? 'OAuth credentials appear valid' : 'OAuth credentials appear invalid. Make sure you created an OAuth Application in Planning Center and are using the OAuth Client ID (not a Personal Access Token).'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

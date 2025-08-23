@@ -407,11 +407,13 @@ const IntegrationsPage = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-medium text-blue-900 mb-2">OAuth Setup Instructions</h4>
                 <p className="text-sm text-blue-700 mb-3">
-                  To use OAuth with Planning Center, you need to register your application and get OAuth credentials.
+                  To use OAuth with Planning Center, you need to create an OAuth Application (not a Personal Access Token).
                 </p>
                 <div className="space-y-2 text-sm text-blue-700">
-                  <p><strong>Authorization callback URL:</strong> <code>https://preview--flow-follow-up-friend.lovable.app/integrations</code></p>
-                  <p><strong>Redirect URI:</strong> Use the same URL as above</p>
+                  <p><strong>1. Create OAuth Application:</strong> Go to Planning Center Developers → Create new application</p>
+                  <p><strong>2. Set Authorization callback URL:</strong> <code>https://preview--flow-follow-up-friend.lovable.app/integrations</code></p>
+                  <p><strong>3. Use OAuth Client ID/Secret:</strong> Not Personal Access Tokens (PAT)</p>
+                  <p><strong>Note:</strong> Personal Access Tokens start with "pco_pat_" and won't work for OAuth</p>
                 </div>
               </div>
 
