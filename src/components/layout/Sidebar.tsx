@@ -132,7 +132,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Create New Flow</DropdownMenuLabel>
+              <DropdownMenuLabel>Flows Settings</DropdownMenuLabel>
               <DropdownMenuSeparator />
               
               {isConnectedToPC ? (
