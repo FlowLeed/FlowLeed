@@ -11,7 +11,8 @@ import {
   Users,
   Puzzle,
   Plus,
-  Settings2
+  Settings2,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -22,6 +23,15 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { calculatePipelineContactCount } from "@/lib/utils";
@@ -64,7 +74,10 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const location = useLocation();
   const { toast } = useToast();
   const { updatePipeline } = usePipelineContext();
-  const [isConnectedToPC, setIsConnectedToPC] = useState(false); // Simulate Planning Center connection
+  const [isConnectedToPC, setIsConnectedToPC] = useState(false);
+  const [showCreateFlowDialog, setShowCreateFlowDialog] = useState(false);
+  const [newFlowName, setNewFlowName] = useState("");
+  const [newFlowSteps, setNewFlowSteps] = useState(["New", "In Progress", "Completed"]);
   
   // Mock Planning Center lists - in real app, this would come from the API
   const planningCenterLists = [
@@ -117,6 +130,59 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
       description: `New flow "${listName}" created from Planning Center`,
     });
   };
+
+  const handleCreateCustomFlow = () => {
+    if (!newFlowName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a flow name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newPipelineId = `custom-${Date.now()}`;
+    const colors = ["#3b82f6", "#f59e0b", "#10b981", "#6366f1", "#ef4444", "#8b5cf6"];
+    
+    const newPipeline = {
+      id: newPipelineId,
+      name: newFlowName,
+      stages: newFlowSteps.map((stepName, index) => ({
+        id: `${newPipelineId}-stage-${index + 1}`,
+        name: stepName,
+        contacts: [],
+        color: colors[index % colors.length]
+      }))
+    };
+
+    updatePipeline(newPipelineId, newPipeline);
+    
+    toast({
+      title: "Flow Created",
+      description: `New flow "${newFlowName}" created successfully`,
+    });
+
+    // Reset form
+    setNewFlowName("");
+    setNewFlowSteps(["New", "In Progress", "Completed"]);
+    setShowCreateFlowDialog(false);
+  };
+
+  const addStep = () => {
+    setNewFlowSteps([...newFlowSteps, ""]);
+  };
+
+  const removeStep = (index: number) => {
+    if (newFlowSteps.length > 1) {
+      setNewFlowSteps(newFlowSteps.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateStep = (index: number, value: string) => {
+    const updatedSteps = [...newFlowSteps];
+    updatedSteps[index] = value;
+    setNewFlowSteps(updatedSteps);
+  };
   
   return (
     <div className="space-y-1">
@@ -133,6 +199,13 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>Flows Settings</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+              <DropdownMenuItem onClick={() => setShowCreateFlowDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Flow
+              </DropdownMenuItem>
+              
               <DropdownMenuSeparator />
               
               {isConnectedToPC ? (
@@ -173,6 +246,71 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
           </DropdownMenu>
         )}
       </div>
+      
+      {/* Create Flow Dialog */}
+      <Dialog open={showCreateFlowDialog} onOpenChange={setShowCreateFlowDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Flow</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="flow-name">Flow Name</Label>
+              <Input
+                id="flow-name"
+                value={newFlowName}
+                onChange={(e) => setNewFlowName(e.target.value)}
+                placeholder="Enter flow name"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Pipeline Steps</Label>
+              <div className="space-y-2">
+                {newFlowSteps.map((step, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={step}
+                      onChange={(e) => updateStep(index, e.target.value)}
+                      placeholder={`Step ${index + 1}`}
+                    />
+                    {newFlowSteps.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeStep(index)}
+                        className="px-2"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addStep}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Step
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateFlowDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateCustomFlow}>
+              Create Flow
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <div className="space-y-1">
         {items.map((item) => (
           <NavItem
