@@ -132,12 +132,7 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
                   }
                   return <Workflow className="h-5 w-5 text-muted-foreground" />;
                 })()}
-                <div>
-                  <h4 className="font-medium">{flow.pipeline.name}</h4>
-                  {flow.pipeline.description && (
-                    <p className="text-sm text-muted-foreground">{flow.pipeline.description}</p>
-                  )}
-                </div>
+                <h4 className="font-medium">{flow.pipeline.name}</h4>
               </div>
               <Badge 
                 variant="secondary"
