@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { ArrowRight, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Target, Plus } from 'lucide-react';
+import { AddToFlowDialog } from './AddToFlowDialog';
 
 interface Pipeline {
   id: string;
@@ -26,16 +28,31 @@ interface ContactFlow {
 
 interface ContactFlowStatusProps {
   flows: ContactFlow[];
+  contactId: string;
 }
 
-export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows }) => {
+export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, contactId }) => {
+  const [showAddToFlowDialog, setShowAddToFlowDialog] = useState(false);
+  
+  const currentPipelineIds = flows.map(flow => flow.pipeline.id);
   if (flows.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-4 w-4" />
-            Current Flows
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Current Flows
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAddToFlowDialog(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add to Flow
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -48,9 +65,20 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows }) =
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-4 w-4" />
-          Current Flows
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Current Flows
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAddToFlowDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add to Flow
+          </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -91,6 +119,13 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows }) =
           </div>
         ))}
       </CardContent>
+      
+      <AddToFlowDialog
+        open={showAddToFlowDialog}
+        onOpenChange={setShowAddToFlowDialog}
+        contactId={contactId}
+        currentPipelineIds={currentPipelineIds}
+      />
     </Card>
   );
 };

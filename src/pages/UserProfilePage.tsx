@@ -293,7 +293,7 @@ const UserProfilePage = () => {
 
         {/* Main Content Area - Flow-Specific Information */}
         <div className="lg:col-span-2 space-y-6">
-          <ContactFlowStatus flows={flows} />
+          <ContactFlowStatus flows={flows} contactId={contactId!} />
           
           <InteractionTimeline
             interactions={interactions}
