@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Contact } from "@/types/crm";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
   MoreVertical, 
   MessageSquare, 
@@ -101,13 +101,10 @@ export const ContactCard: React.FC<ContactCardProps> = ({
         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
           <div className="flex gap-2 items-center">
             <Avatar className="h-6 w-6">
-              {assignedTo.avatar ? (
-                <img src={assignedTo.avatar} alt={assignedTo.name} className="rounded-full" />
-              ) : (
-                <div className="bg-gray-300 text-white rounded-full w-full h-full flex items-center justify-center text-xs">
-                  {assignedTo.name.charAt(0)}
-                </div>
-              )}
+              <AvatarImage src={assignedTo.avatar} alt={assignedTo.name} />
+              <AvatarFallback className="bg-gray-300 text-white text-xs">
+                {assignedTo.name.charAt(0)}
+              </AvatarFallback>
             </Avatar>
             <span className="text-xs text-gray-600">{assignedTo.name}</span>
           </div>
