@@ -123,7 +123,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         name: selectedMember.profiles?.full_name || selectedMember.profiles?.email || "Unknown User",
         avatar: undefined // We could fetch this from profiles if needed
       });
-    } else if (userId === "") {
+    } else if (userId === "unassigned") {
       handleChange("assignedTo", undefined);
     }
   };
@@ -215,8 +215,8 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                 formData.assignedTo
                   ? organizationMembers.find(member => 
                       (member.profiles?.full_name || member.profiles?.email) === formData.assignedTo?.name
-                    )?.user_id || ""
-                  : ""
+                    )?.user_id || "unassigned"
+                  : "unassigned"
               }
               onValueChange={handleAssignedToChange}
               disabled={loadingMembers}
@@ -225,7 +225,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                 <SelectValue placeholder={loadingMembers ? "Loading..." : "Select assignee"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Unassigned</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
                 {organizationMembers.map((member) => (
                   <SelectItem key={member.user_id} value={member.user_id}>
                     {member.profiles?.full_name || member.profiles?.email || "Unknown User"}
