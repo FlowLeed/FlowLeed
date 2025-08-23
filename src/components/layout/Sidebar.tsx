@@ -77,7 +77,11 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const [isConnectedToPC, setIsConnectedToPC] = useState(false);
   const [showCreateFlowDialog, setShowCreateFlowDialog] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
-  const [newFlowSteps, setNewFlowSteps] = useState(["New", "In Progress", "Completed"]);
+  const [newFlowSteps, setNewFlowSteps] = useState([
+    { name: "New", color: "#3b82f6" },
+    { name: "In Progress", color: "#f59e0b" },
+    { name: "Completed", color: "#10b981" }
+  ]);
   
   // Mock Planning Center lists - in real app, this would come from the API
   const planningCenterLists = [
@@ -147,11 +151,11 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     const newPipeline = {
       id: newPipelineId,
       name: newFlowName,
-      stages: newFlowSteps.map((stepName, index) => ({
+      stages: newFlowSteps.map((step, index) => ({
         id: `${newPipelineId}-stage-${index + 1}`,
-        name: stepName,
+        name: step.name,
         contacts: [],
-        color: colors[index % colors.length]
+        color: step.color
       }))
     };
 
@@ -164,12 +168,19 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
 
     // Reset form
     setNewFlowName("");
-    setNewFlowSteps(["New", "In Progress", "Completed"]);
+    setNewFlowSteps([
+      { name: "New", color: "#3b82f6" },
+      { name: "In Progress", color: "#f59e0b" },
+      { name: "Completed", color: "#10b981" }
+    ]);
     setShowCreateFlowDialog(false);
   };
 
   const addStep = () => {
-    setNewFlowSteps([...newFlowSteps, ""]);
+    const availableColors = ["#3b82f6", "#f59e0b", "#10b981", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
+    const usedColors = newFlowSteps.map(step => step.color);
+    const newColor = availableColors.find(color => !usedColors.includes(color)) || "#64748b";
+    setNewFlowSteps([...newFlowSteps, { name: "", color: newColor }]);
   };
 
   const removeStep = (index: number) => {
@@ -178,11 +189,16 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     }
   };
 
-  const updateStep = (index: number, value: string) => {
+  const updateStep = (index: number, field: 'name' | 'color', value: string) => {
     const updatedSteps = [...newFlowSteps];
-    updatedSteps[index] = value;
+    updatedSteps[index] = { ...updatedSteps[index], [field]: value };
     setNewFlowSteps(updatedSteps);
   };
+
+  const colorOptions = [
+    "#3b82f6", "#f59e0b", "#10b981", "#6366f1", 
+    "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"
+  ];
   
   return (
     <div className="space-y-1">
@@ -267,13 +283,29 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
             
             <div className="space-y-2">
               <Label>Pipeline Steps</Label>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {newFlowSteps.map((step, index) => (
-                  <div key={index} className="flex items-center gap-2">
+                  <div key={index} className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        {colorOptions.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => updateStep(index, 'color', color)}
+                            className={`w-6 h-6 rounded-full border-2 ${
+                              step.color === color ? 'border-gray-400' : 'border-gray-200'
+                            }`}
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </div>
+                    </div>
                     <Input
-                      value={step}
-                      onChange={(e) => updateStep(index, e.target.value)}
+                      value={step.name}
+                      onChange={(e) => updateStep(index, 'name', e.target.value)}
                       placeholder={`Step ${index + 1}`}
+                      className="flex-1"
                     />
                     {newFlowSteps.length > 1 && (
                       <Button
