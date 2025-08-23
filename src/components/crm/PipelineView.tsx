@@ -82,6 +82,20 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     }
 
     try {
+      // Find the assigned user's ID if assignedTo is set
+      let assignedUserId: string | null = null;
+      if (contact.assignedTo?.name) {
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .or(`full_name.eq.${contact.assignedTo.name},email.eq.${contact.assignedTo.name}`)
+          .limit(1);
+
+        if (!profileError && profiles && profiles.length > 0) {
+          assignedUserId = profiles[0].user_id;
+        }
+      }
+
       if (currentContact) {
         // Update existing contact in database
         const { error: contactError } = await supabase
@@ -91,7 +105,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
             email: contact.email || null,
             phone: contact.phone || null,
             status: contact.status,
-            notes: contact.notes || null
+            notes: contact.notes || null,
+            assigned_to_user_id: assignedUserId
           })
           .eq('id', contact.id);
 
@@ -127,7 +142,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
             phone: contact.phone || null,
             status: contact.status,
             notes: contact.notes || null,
-            organization_id: organization.id
+            organization_id: organization.id,
+            assigned_to_user_id: assignedUserId
           })
           .select()
           .single();

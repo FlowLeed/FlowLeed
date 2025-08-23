@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,16 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Contact, Tag } from "@/types/crm";
+import { useProfile } from "@/hooks/useProfile";
+import { supabase } from "@/integrations/supabase/client";
+
+interface OrganizationMember {
+  user_id: string;
+  profiles: {
+    full_name: string | null;
+    email: string;
+  } | null;
+}
 
 interface ContactFormDialogProps {
   open: boolean;
@@ -27,17 +36,66 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   contact,
   onSave,
 }) => {
+  const { profile, organization } = useProfile();
+  const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   const [formData, setFormData] = useState<Partial<Contact>>({
     name: "",
     date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
     tags: [],
     status: "active",
-    assignedTo: {
-      name: "Alex Yarmolati"
-    },
+    assignedTo: profile ? {
+      name: profile.full_name || profile.email,
+      avatar: profile.avatar_url || undefined
+    } : undefined,
     email: "",
     phone: "",
   });
+
+  // Fetch organization members when dialog opens
+  useEffect(() => {
+    if (open && organization) {
+      fetchOrganizationMembers();
+    }
+  }, [open, organization]);
+
+  const fetchOrganizationMembers = async () => {
+    if (!organization) return;
+
+    setLoadingMembers(true);
+    try {
+      // First get organization members
+      const { data: members, error: membersError } = await supabase
+        .from('organization_members')
+        .select('user_id')
+        .eq('organization_id', organization.id);
+
+      if (membersError) throw membersError;
+
+      if (members && members.length > 0) {
+        // Then get profiles for these users
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .in('user_id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        // Combine the data
+        const combinedData: OrganizationMember[] = members.map(member => ({
+          user_id: member.user_id,
+          profiles: profiles?.find(p => p.user_id === member.user_id) || null
+        }));
+
+        setOrganizationMembers(combinedData);
+      }
+    } catch (error) {
+      console.error('Error fetching organization members:', error);
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
 
   useEffect(() => {
     if (contact) {
@@ -48,14 +106,27 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
         tags: [],
         status: "active",
-        assignedTo: {
-          name: "Alex Yarmolati"
-        },
+        assignedTo: profile ? {
+          name: profile.full_name || profile.email,
+          avatar: profile.avatar_url || undefined
+        } : undefined,
         email: "",
         phone: "",
       });
     }
-  }, [contact]);
+  }, [contact, profile]);
+
+  const handleAssignedToChange = (userId: string) => {
+    const selectedMember = organizationMembers.find(member => member.user_id === userId);
+    if (selectedMember) {
+      handleChange("assignedTo", {
+        name: selectedMember.profiles?.full_name || selectedMember.profiles?.email || "Unknown User",
+        avatar: undefined // We could fetch this from profiles if needed
+      });
+    } else if (userId === "") {
+      handleChange("assignedTo", undefined);
+    }
+  };
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -133,6 +204,33 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Inactive</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Assigned To</Label>
+            <Select
+              value={
+                formData.assignedTo
+                  ? organizationMembers.find(member => 
+                      (member.profiles?.full_name || member.profiles?.email) === formData.assignedTo?.name
+                    )?.user_id || ""
+                  : ""
+              }
+              onValueChange={handleAssignedToChange}
+              disabled={loadingMembers}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={loadingMembers ? "Loading..." : "Select assignee"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Unassigned</SelectItem>
+                {organizationMembers.map((member) => (
+                  <SelectItem key={member.user_id} value={member.user_id}>
+                    {member.profiles?.full_name || member.profiles?.email || "Unknown User"}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
