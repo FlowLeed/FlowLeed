@@ -593,13 +593,23 @@ async function handleDisconnect(supabase: any, userId: string, { organizationId 
 
 async function testPlanningCenterConnection(appId: string, secret: string): Promise<boolean> {
   try {
+    console.log('Testing Planning Center connection with API...');
     const auth = btoa(`${appId}:${secret}`);
+    
     const response = await fetch('https://api.planningcenteronline.com/people/v2/me', {
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json'
       }
     });
+
+    console.log('Planning Center API response status:', response.status);
+    console.log('Planning Center API response ok:', response.ok);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('Planning Center API error response:', errorText);
+    }
 
     return response.ok;
   } catch (error) {
