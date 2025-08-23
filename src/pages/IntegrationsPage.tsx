@@ -16,6 +16,8 @@ import { useNavigate } from "react-router-dom";
 const IntegrationsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const {
     integrations,
     loading,
@@ -44,8 +46,18 @@ const IntegrationsPage = () => {
     await connectPlanningCenter();
   };
 
-  const handleTest = (serviceName: string) => {
-    testConnection(serviceName);
+  const handleTest = async () => {
+    if (!clientId.trim() || !clientSecret.trim()) {
+      toast({
+        title: "Missing Credentials",
+        description: "Please enter both Client ID and Client Secret to test the connection.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Call testConnection with credentials
+    await testConnection('planning_center', { clientId: clientId.trim(), clientSecret: clientSecret.trim() });
   };
 
   const handleSync = (serviceName: string) => {
@@ -136,6 +148,8 @@ const IntegrationsPage = () => {
                       type="password"
                       placeholder="Enter your Planning Center Client ID"
                       className="font-mono text-xs"
+                      value={clientId}
+                      onChange={(e) => setClientId(e.target.value)}
                     />
                   </div>
                   
@@ -149,6 +163,8 @@ const IntegrationsPage = () => {
                       type="password"
                       placeholder="Enter your Planning Center Client Secret"
                       className="font-mono text-xs"
+                      value={clientSecret}
+                      onChange={(e) => setClientSecret(e.target.value)}
                     />
                   </div>
                 </div>
@@ -156,7 +172,7 @@ const IntegrationsPage = () => {
                 <div className="flex gap-2">
                   <Button 
                     variant="outline" 
-                    onClick={() => handleTest('planning_center')}
+                    onClick={handleTest}
                     disabled={loading}
                     size="sm"
                   >

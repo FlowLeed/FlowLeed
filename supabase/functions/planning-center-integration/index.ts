@@ -276,8 +276,43 @@ async function handleConnect(supabase: any, userId: string, { appId, secret, org
   }
 }
 
-async function handleTest(supabase: any, userId: string, { organizationId }: any) {
+async function handleTest(supabase: any, userId: string, { organizationId, clientId, clientSecret }: any) {
   try {
+    console.log('handleTest called with:', { userId, organizationId, hasClientId: !!clientId, hasClientSecret: !!clientSecret });
+    
+    // If credentials are provided directly, test them
+    if (clientId && clientSecret) {
+      console.log('Testing provided credentials...');
+      
+      // Test OAuth credentials by attempting to get an auth URL
+      const testAuthUrl = `https://api.planningcenteronline.com/oauth/authorize?` +
+        `client_id=${encodeURIComponent(clientId)}&` +
+        `redirect_uri=${encodeURIComponent('https://preview--flow-follow-up-friend.lovable.app/integrations')}&` +
+        `response_type=code&` +
+        `scope=people&` +
+        `state=test`;
+
+      // Since we can't fully test OAuth without completing the flow,
+      // we'll validate the client ID format and check if it's accessible
+      const testResponse = await fetch(testAuthUrl, {
+        method: 'HEAD'
+      });
+
+      const isValid = testResponse.status !== 404 && testResponse.status !== 400;
+      
+      console.log('Credential test result:', { isValid, status: testResponse.status });
+
+      return new Response(JSON.stringify({ 
+        success: isValid,
+        message: isValid ? 'OAuth credentials appear valid' : 'OAuth credentials appear invalid'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Fallback to testing existing integration
+    console.log('Testing existing integration...');
+    
     // Get the stored integration
     const { data: integration, error } = await supabase
       .from('integrations')
@@ -288,7 +323,7 @@ async function handleTest(supabase: any, userId: string, { organizationId }: any
       .single();
 
     if (error || !integration) {
-      throw new Error('Planning Center integration not found');
+      throw new Error('Planning Center integration not found and no credentials provided');
     }
 
     // Use OAuth token if available, fallback to basic auth

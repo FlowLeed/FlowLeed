@@ -193,17 +193,25 @@ export const useIntegrations = () => {
     }
   };
 
-  const testConnection = async (serviceName: string) => {
+  const testConnection = async (serviceName: string, credentials?: { clientId?: string; clientSecret?: string }) => {
     if (!organization) return { error: 'No organization found' };
 
     try {
       setLoading(true);
 
+      const requestBody: any = {
+        action: 'test',
+        organizationId: organization.id
+      };
+
+      // Add credentials if provided
+      if (credentials?.clientId && credentials?.clientSecret) {
+        requestBody.clientId = credentials.clientId;
+        requestBody.clientSecret = credentials.clientSecret;
+      }
+
       const { data, error } = await supabase.functions.invoke('planning-center-integration', {
-        body: {
-          action: 'test',
-          organizationId: organization.id
-        }
+        body: requestBody
       });
 
       if (error) throw error;
