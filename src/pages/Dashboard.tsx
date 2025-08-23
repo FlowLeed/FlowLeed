@@ -48,36 +48,27 @@ const PipelineCard = ({
 const Dashboard = () => {
   const { pipelines: pipelineData, loading, error } = usePipelineContext();
   
-  const pipelines = [
-    {
-      title: "Host Team Launch",
-      description: "Track and manage people interested in joining the host team",
-      icon: Users,
-      contactCount: calculatePipelineContactCount(pipelineData["host-team"]),
-      path: "/pipelines/host-team",
-    },
-    {
-      title: "Pastoral Care",
-      description: "Follow-up system for pastoral care and counseling requests",
-      icon: MessageSquare,
-      contactCount: calculatePipelineContactCount(pipelineData["pastoral-care"]),
-      path: "/pipelines/pastoral-care",
-    },
-    {
-      title: "Operations",
-      description: "Workflow for operational tasks and processes",
-      icon: Calendar,
-      contactCount: calculatePipelineContactCount(pipelineData["operations"]),
-      path: "/pipelines/operations",
-    },
-    {
-      title: "Giving Hub",
-      description: "Manage donation follow-ups and financial communications",
-      icon: Users,
-      contactCount: calculatePipelineContactCount(pipelineData["giving-hub"]),
-      path: "/pipelines/giving-hub",
-    },
-  ];
+  // Create pipeline cards from actual database data
+  const pipelines = Object.entries(pipelineData).map(([key, pipeline]) => {
+    // Determine icon based on pipeline name
+    let icon = Users;
+    const name = pipeline.name.toLowerCase();
+    if (name.includes('pastoral') || name.includes('care')) {
+      icon = MessageSquare;
+    } else if (name.includes('operation') || name.includes('ops')) {
+      icon = Calendar;
+    } else if (name.includes('host') || name.includes('team')) {
+      icon = Users;
+    }
+
+    return {
+      title: pipeline.name,
+      description: `Manage and track contacts through the ${pipeline.name} process`,
+      icon,
+      contactCount: calculatePipelineContactCount(pipeline),
+      path: `/pipelines/${pipeline.id}`,
+    };
+  });
 
   if (loading) {
     return (
@@ -125,7 +116,7 @@ const Dashboard = () => {
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
-          <h2 className="text-lg font-medium text-gray-700 mb-4">Your Pipelines</h2>
+          <h2 className="text-lg font-medium text-gray-700 mb-4">Your Flows</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {pipelines.map((pipeline) => (
               <PipelineCard

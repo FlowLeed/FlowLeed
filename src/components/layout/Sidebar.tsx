@@ -553,29 +553,32 @@ export const Sidebar = () => {
     },
   ];
 
-  // Create flow items dynamically from all pipelines
+  // Create flow items dynamically from all pipelines (database data)
   const flowItems: SidebarItem[] = Object.entries(pipelines).map(([key, pipeline]) => {
-    // Use stored icon if available, otherwise determine icon based on pipeline name or key
+    // Use stored icon if available, otherwise determine icon based on pipeline name
     let icon = Users;
     
     // If pipeline has a stored icon, try to find the matching icon component
     if (pipeline.icon && iconMap[pipeline.icon]) {
       icon = iconMap[pipeline.icon];
     } else {
-      // Fallback to name-based icon selection
-      if (pipeline.name.toLowerCase().includes('pastoral') || key.includes('pastoral')) {
+      // Fallback to name-based icon selection for existing pipelines
+      const name = pipeline.name.toLowerCase();
+      if (name.includes('pastoral') || name.includes('care')) {
         icon = MessageSquare;
-      } else if (pipeline.name.toLowerCase().includes('operation') || key.includes('operation')) {
+      } else if (name.includes('operation') || name.includes('ops')) {
         icon = Calendar;
-      } else if (pipeline.name.toLowerCase().includes('host') || key.includes('host')) {
+      } else if (name.includes('host') || name.includes('team')) {
         icon = Users;
+      } else if (name.includes('giving') || name.includes('hub')) {
+        icon = Heart;
       }
     }
 
     return {
       title: pipeline.name,
       icon,
-      path: `/pipelines/${key}`,
+      path: `/pipelines/${pipeline.id}`, // Use pipeline.id instead of key for database pipelines
       badge: calculatePipelineContactCount(pipeline),
     };
   });
