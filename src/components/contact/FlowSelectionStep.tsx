@@ -49,7 +49,11 @@ export const FlowSelectionStep: React.FC<FlowSelectionStepProps> = ({
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Workflow className="h-5 w-5 text-muted-foreground" />
+              {pipeline.icon ? (
+                <span className="text-lg">{pipeline.icon}</span>
+              ) : (
+                <Workflow className="h-5 w-5 text-muted-foreground" />
+              )}
               <div className="flex-1">
                 <h3 className="font-medium">{pipeline.name}</h3>
                 {pipeline.description && (
