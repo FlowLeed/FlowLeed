@@ -126,18 +126,21 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
 
   const createDefaultPipelines = async (organizationId: string) => {
     const defaultPipelines = [
-      { id: "host-team", pipeline: hostTeamPipeline },
-      { id: "pastoral-care", pipeline: pastoralCarePipeline },
-      { id: "operations", pipeline: operationsPipeline },
-      { id: "giving-hub", pipeline: givingHubPipeline }
+      { pipeline: hostTeamPipeline },
+      { pipeline: pastoralCarePipeline },
+      { pipeline: operationsPipeline },
+      { pipeline: givingHubPipeline }
     ];
 
-    for (const { id, pipeline } of defaultPipelines) {
+    for (const { pipeline } of defaultPipelines) {
+      // Generate UUID for pipeline
+      const pipelineId = crypto.randomUUID();
+      
       // Create pipeline
       const { data: pipelineData, error: pipelineError } = await supabase
         .from('pipelines')
         .insert({
-          id,
+          id: pipelineId,
           name: pipeline.name,
           icon: pipeline.icon,
           organization_id: organizationId
@@ -153,7 +156,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
         const { data: stageData, error: stageError } = await supabase
           .from('pipeline_stages')
           .insert({
-            id: stage.id,
+            id: crypto.randomUUID(),
             pipeline_id: pipelineData.id,
             name: stage.name,
             color: stage.color,
@@ -170,7 +173,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
           const { data: contactData, error: contactError } = await supabase
             .from('contacts')
             .insert({
-              id: contact.id,
+              id: crypto.randomUUID(),
               name: contact.name,
               email: contact.email,
               phone: contact.phone,
@@ -332,7 +335,8 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
     }
 
     try {
-      const pipelineId = `custom-${Date.now()}`;
+      // Generate a proper UUID for the pipeline
+      const pipelineId = crypto.randomUUID();
       console.log("Generated pipeline ID:", pipelineId);
       
       // Create pipeline in database
@@ -356,9 +360,11 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
 
       // Create stages
       console.log("Creating stages...");
+      const createdStages: any[] = [];
+      
       for (let i = 0; i < pipeline.stages.length; i++) {
         const stage = pipeline.stages[i];
-        const stageId = `${pipelineId}-stage-${i + 1}`;
+        const stageId = crypto.randomUUID();
         console.log(`Creating stage ${i + 1}:`, { stageId, stage });
         
         const { data: stageData, error: stageError } = await supabase
@@ -378,15 +384,18 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
           console.error("Stage creation error:", stageError);
           throw stageError;
         }
+        
+        createdStages.push(stageData);
       }
 
-      // Create the pipeline object with generated IDs
+      // Create the pipeline object with actual database IDs
       const newPipeline: Pipeline = {
         ...pipeline,
         id: pipelineId,
-        stages: pipeline.stages.map((stage, i) => ({
-          ...stage,
-          id: `${pipelineId}-stage-${i + 1}`,
+        stages: createdStages.map(stage => ({
+          id: stage.id,
+          name: stage.name,
+          color: stage.color,
           contacts: []
         }))
       };
