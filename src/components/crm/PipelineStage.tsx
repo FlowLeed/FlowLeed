@@ -19,7 +19,7 @@ export const PipelineStage: React.FC<PipelineStageProps> = ({
   onDeleteContact,
 }) => {
   return (
-    <div className="pipeline-column w-72 flex-shrink-0 bg-transparent p-3 rounded-[25px] border border-gray-200 shadow-sm">
+    <div className="pipeline-column w-72 flex-shrink-0 bg-transparent p-3 rounded-[35px] border border-gray-200 shadow-sm">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-medium text-gray-700">{stage.name}</h3>
         <button 

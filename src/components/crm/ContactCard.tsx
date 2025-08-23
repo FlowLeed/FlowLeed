@@ -37,7 +37,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
   const { name, avatar, date, tags, assignedTo, email, phone } = contact;
 
   return (
-    <div className="contact-card bg-white p-3 rounded-[25px] border border-gray-200 mb-3 hover:border-blue-300 transition-all duration-200">
+    <div className="contact-card bg-white p-3 rounded-[35px] border border-gray-200 mb-3 hover:border-blue-300 transition-all duration-200">
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-2 items-center">
           <Link to={`/contacts/${contact.id}`}>
