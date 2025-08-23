@@ -15,6 +15,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
+import { differenceInDays, parse } from "date-fns";
+
+// Helper function to calculate days since a date
+const getDaysSince = (dateString: string): number => {
+  try {
+    // Parse date format like "25 Sep" to current year
+    const currentYear = new Date().getFullYear();
+    const parsedDate = parse(`${dateString} ${currentYear}`, "dd MMM yyyy", new Date());
+    const today = new Date();
+    return Math.max(0, differenceInDays(today, parsedDate));
+  } catch {
+    return 0;
+  }
+};
 
 interface ContactCardProps {
   contact: Contact;
@@ -49,7 +63,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
               <h4 className="font-medium text-sm">{name}</h4>
             </Link>
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span>{date}</span>
+              <span>Last: {getDaysSince(date)} days ago</span>
             </div>
           </div>
         </div>
