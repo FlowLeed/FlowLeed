@@ -12,7 +12,21 @@ import {
   Puzzle,
   Plus,
   Settings2,
-  X
+  X,
+  Heart,
+  Star,
+  Target,
+  Zap,
+  Shield,
+  Globe,
+  Briefcase,
+  BookOpen,
+  Music,
+  Coffee,
+  Camera,
+  Gift,
+  Flame,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -30,18 +44,30 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { calculatePipelineContactCount } from "@/lib/utils";
 import { usePipelineContext } from "@/contexts/PipelineContext";
+import type { LucideIcon } from "lucide-react";
 
 interface SidebarItem {
   title: string;
   icon: React.ElementType;
   path: string;
   badge?: number;
+}
+
+interface FlowStep {
+  name: string;
+  color: string;
+  icon: LucideIcon;
 }
 
 interface SidebarSectionProps {
@@ -77,10 +103,10 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const [isConnectedToPC, setIsConnectedToPC] = useState(false);
   const [showCreateFlowDialog, setShowCreateFlowDialog] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
-  const [newFlowSteps, setNewFlowSteps] = useState([
-    { name: "New", color: "#3b82f6" },
-    { name: "In Progress", color: "#f59e0b" },
-    { name: "Completed", color: "#10b981" }
+  const [newFlowSteps, setNewFlowSteps] = useState<FlowStep[]>([
+    { name: "New", color: "#3b82f6", icon: Users },
+    { name: "In Progress", color: "#f59e0b", icon: Target },
+    { name: "Completed", color: "#10b981", icon: Check }
   ]);
   
   // Mock Planning Center lists - in real app, this would come from the API
@@ -169,9 +195,9 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     // Reset form
     setNewFlowName("");
     setNewFlowSteps([
-      { name: "New", color: "#3b82f6" },
-      { name: "In Progress", color: "#f59e0b" },
-      { name: "Completed", color: "#10b981" }
+      { name: "New", color: "#3b82f6", icon: Users },
+      { name: "In Progress", color: "#f59e0b", icon: Target },
+      { name: "Completed", color: "#10b981", icon: Check }
     ]);
     setShowCreateFlowDialog(false);
   };
@@ -180,7 +206,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     const availableColors = ["#3b82f6", "#f59e0b", "#10b981", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
     const usedColors = newFlowSteps.map(step => step.color);
     const newColor = availableColors.find(color => !usedColors.includes(color)) || "#64748b";
-    setNewFlowSteps([...newFlowSteps, { name: "", color: newColor }]);
+    setNewFlowSteps([...newFlowSteps, { name: "", color: newColor, icon: Users }]);
   };
 
   const removeStep = (index: number) => {
@@ -195,9 +221,21 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     setNewFlowSteps(updatedSteps);
   };
 
+  const updateStepIcon = (index: number, icon: LucideIcon) => {
+    const updatedSteps = [...newFlowSteps];
+    updatedSteps[index] = { ...updatedSteps[index], icon };
+    setNewFlowSteps(updatedSteps);
+  };
+
   const colorOptions = [
     "#3b82f6", "#f59e0b", "#10b981", "#6366f1", 
     "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"
+  ];
+
+  const iconOptions = [
+    Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap,
+    Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift,
+    Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3
   ];
   
   return (
@@ -287,19 +325,56 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
                 {newFlowSteps.map((step, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        {colorOptions.map((color) => (
+                      {/* Color Selector */}
+                      <Popover>
+                        <PopoverTrigger asChild>
                           <button
-                            key={color}
                             type="button"
-                            onClick={() => updateStep(index, 'color', color)}
-                            className={`w-6 h-6 rounded-full border-2 ${
-                              step.color === color ? 'border-gray-400' : 'border-gray-200'
-                            }`}
-                            style={{ backgroundColor: color }}
+                            className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-gray-400 transition-colors"
+                            style={{ backgroundColor: step.color }}
                           />
-                        ))}
-                      </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-48 p-3">
+                          <div className="grid grid-cols-4 gap-2">
+                            {colorOptions.map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => updateStep(index, 'color', color)}
+                                className={`w-8 h-8 rounded-full border-2 hover:scale-105 transition-transform ${
+                                  step.color === color ? 'border-gray-400' : 'border-gray-200'
+                                }`}
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      
+                      {/* Icon Selector */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-8 h-8 p-0">
+                            <step.icon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3">
+                          <div className="grid grid-cols-6 gap-2">
+                            {iconOptions.map((IconComponent, iconIndex) => (
+                              <button
+                                key={iconIndex}
+                                type="button"
+                                onClick={() => updateStepIcon(index, IconComponent)}
+                                className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
+                                  step.icon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
+                                }`}
+                              >
+                                <IconComponent className="h-4 w-4" />
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <Input
                       value={step.name}
