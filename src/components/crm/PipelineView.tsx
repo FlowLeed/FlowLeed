@@ -51,6 +51,26 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     toast.success("Contact deleted");
   };
 
+  const handleUpdateStage = (stageId: string, name: string, color: string) => {
+    const updatedStages = pipeline.stages.map(stage => {
+      if (stage.id === stageId) {
+        return {
+          ...stage,
+          name: name
+        };
+      }
+      return stage;
+    });
+
+    const updatedPipeline = {
+      ...pipeline,
+      stages: updatedStages
+    };
+
+    onPipelineChange?.(updatedPipeline);
+    toast.success("Column updated");
+  };
+
   const handleSaveContact = (contact: Contact) => {
     let updatedStages = [...pipeline.stages];
 
@@ -179,6 +199,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
                 onAddContact={handleAddContact}
                 onEditContact={handleEditContact}
                 onDeleteContact={handleDeleteContact}
+                onUpdateStage={handleUpdateStage}
               />
             ))}
           </div>
