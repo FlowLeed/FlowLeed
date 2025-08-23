@@ -4,9 +4,10 @@ import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Users, MessageSquare, Calendar } from "lucide-react";
+import { ArrowRight, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3, Settings } from "lucide-react";
 import { calculatePipelineContactCount } from "@/lib/utils";
 import { usePipelineContext } from "@/contexts/PipelineContext";
+import type { LucideIcon } from "lucide-react";
 
 const PipelineCard = ({ 
   title, 
@@ -50,15 +51,50 @@ const Dashboard = () => {
   
   // Create pipeline cards from actual database data
   const pipelines = Object.entries(pipelineData).map(([key, pipeline]) => {
-    // Determine icon based on pipeline name
-    let icon = Users;
-    const name = pipeline.name.toLowerCase();
-    if (name.includes('pastoral') || name.includes('care')) {
-      icon = MessageSquare;
-    } else if (name.includes('operation') || name.includes('ops')) {
-      icon = Calendar;
-    } else if (name.includes('host') || name.includes('team')) {
-      icon = Users;
+    // Icon mapping object
+    const iconMap: { [key: string]: LucideIcon } = {
+      'Users': Users,
+      'MessageSquare': MessageSquare,
+      'Calendar': Calendar,
+      'Settings': Settings,
+      'Heart': Heart,
+      'Star': Star,
+      'Target': Target,
+      'Zap': Zap,
+      'Shield': Shield,
+      'Globe': Globe,
+      'Briefcase': Briefcase,
+      'BookOpen': BookOpen,
+      'Music': Music,
+      'Coffee': Coffee,
+      'Camera': Camera,
+      'Gift': Gift,
+      'Flame': Flame,
+      'Sparkles': Sparkles,
+      'Check': Check,
+      'Plus': Plus,
+      'Puzzle': Puzzle,
+      'LayoutDashboard': LayoutDashboard,
+      'BarChart3': BarChart3
+    };
+
+    // Use the stored icon if available, otherwise determine icon based on pipeline name  
+    let icon = Users; // Default fallback
+    
+    if (pipeline.icon && iconMap[pipeline.icon]) {
+      icon = iconMap[pipeline.icon];
+    } else {
+      // Fallback to name-based icon selection for existing pipelines without stored icons
+      const name = pipeline.name.toLowerCase();
+      if (name.includes('pastoral') || name.includes('care')) {
+        icon = MessageSquare;
+      } else if (name.includes('operation') || name.includes('ops')) {
+        icon = Calendar;
+      } else if (name.includes('host') || name.includes('team')) {
+        icon = Users;
+      } else if (name.includes('giving') || name.includes('hub')) {
+        icon = Heart;
+      }
     }
 
     return {
