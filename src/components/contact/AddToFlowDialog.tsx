@@ -91,7 +91,16 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
       if (error) throw error;
     },
     onSuccess: () => {
+      // Invalidate contact query to update contact profile
       queryClient.invalidateQueries({ queryKey: ['contact', contactId] });
+      
+      // Invalidate pipeline queries to update pipeline views
+      queryClient.invalidateQueries({ queryKey: ['available-pipelines'] });
+      queryClient.invalidateQueries({ queryKey: ['pipeline-stages'] });
+      
+      // Invalidate any pipeline data in the PipelineContext
+      queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+      
       toast({
         title: "Success",
         description: `Contact added to ${selectedPipeline?.name} flow`
