@@ -3,10 +3,11 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   Users, 
-  MessageSquare, 
+  BarChart3, 
   Check,
   Calendar, 
-  Settings 
+  Settings,
+  MessageSquare
 } from "lucide-react";
 import { calculatePipelineContactCount } from "@/lib/utils";
 import { usePipelineContext } from "@/contexts/PipelineContext";
@@ -82,7 +83,7 @@ export const Sidebar = () => {
     },
     {
       title: "Analytics",
-      icon: MessageSquare,
+      icon: BarChart3,
       path: "/analytics",
     },
   ];
