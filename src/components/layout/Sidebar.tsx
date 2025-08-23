@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
@@ -9,8 +9,21 @@ import {
   Settings,
   MessageSquare,
   Users,
-  Puzzle
+  Puzzle,
+  Plus,
+  Settings2
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import { calculatePipelineContactCount } from "@/lib/utils";
 import { usePipelineContext } from "@/contexts/PipelineContext";
 
@@ -49,11 +62,83 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
 
 const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const location = useLocation();
+  const { toast } = useToast();
+  const [isConnectedToPC, setIsConnectedToPC] = useState(false); // Simulate Planning Center connection
+  
+  // Mock Planning Center lists - in real app, this would come from the API
+  const planningCenterLists = [
+    { id: '1', name: 'New Members', count: 24 },
+    { id: '2', name: 'Volunteers', count: 156 },
+    { id: '3', name: 'Small Group Leaders', count: 45 },
+    { id: '4', name: 'Youth Ministry', count: 78 },
+    { id: '5', name: 'Worship Team', count: 32 }
+  ];
+
+  const handleCreateFlow = (listName: string) => {
+    toast({
+      title: "Flow Created",
+      description: `New flow created from "${listName}" list`,
+    });
+  };
   
   return (
     <div className="space-y-1">
-      <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
-        {title}
+      <div className="px-4 py-2 flex items-center justify-between">
+        <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+          {title}
+        </div>
+        {title === "Flows" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent">
+                <Settings2 className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Create New Flow</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+              {isConnectedToPC ? (
+                <>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                    Planning Center Lists
+                  </DropdownMenuLabel>
+                  {planningCenterLists.map((list) => (
+                    <DropdownMenuItem 
+                      key={list.id}
+                      onClick={() => handleCreateFlow(list.name)}
+                      className="flex items-center justify-between"
+                    >
+                      <span>{list.name}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {list.count}
+                        </Badge>
+                        <Plus className="h-3 w-3" />
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsConnectedToPC(false)}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage Connection
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuItem disabled className="text-muted-foreground">
+                    No Planning Center connection
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setIsConnectedToPC(true)}>
+                    <Puzzle className="h-4 w-4 mr-2" />
+                    Connect Planning Center
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
       <div className="space-y-1">
         {items.map((item) => (
