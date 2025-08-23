@@ -157,12 +157,25 @@ export const Header: React.FC<HeaderProps> = ({
         ...currentPipeline,
         name: editFlowName,
         icon: Object.keys(iconMap).find(key => iconMap[key] === editFlowIcon) || 'Users',
-        stages: editFlowSteps.map((step, index) => ({
-          id: step.id,
-          name: step.name,
-          color: step.color,
-          contacts: currentPipeline.stages.find(s => s.id === step.id)?.contacts || []
-        }))
+        stages: editFlowSteps.map((step, index) => {
+          // For existing steps, keep the original structure
+          if (step.id && step.id !== "") {
+            return {
+              id: step.id,
+              name: step.name,
+              color: step.color,
+              contacts: currentPipeline.stages.find(s => s.id === step.id)?.contacts || []
+            };
+          } else {
+            // For new steps, don't include ID - let the database generate it
+            return {
+              id: "", // This will trigger creation of a new stage
+              name: step.name,
+              color: step.color,
+              contacts: []
+            };
+          }
+        })
       };
 
       await updatePipeline(currentPipeline.id, updatedPipeline);

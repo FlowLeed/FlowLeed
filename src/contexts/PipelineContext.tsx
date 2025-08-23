@@ -273,32 +273,51 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
 
       if (pipelineError) throw pipelineError;
 
-      // Update stages and contacts
+      // Update/Create stages and contacts
       for (let i = 0; i < pipeline.stages.length; i++) {
         const stage = pipeline.stages[i];
         
-        // Update stage
-        const { error: stageError } = await supabase
-          .from('pipeline_stages')
-          .update({
-            name: stage.name,
-            color: stage.color,
-            stage_order: i
-          })
-          .eq('id', stage.id)
-          .eq('pipeline_id', pipelineId);
+        let stageId = stage.id;
+        
+        if (!stage.id || stage.id === "") {
+          // This is a new stage - insert it
+          const { data: newStage, error: insertError } = await supabase
+            .from('pipeline_stages')
+            .insert({
+              pipeline_id: pipelineId,
+              name: stage.name,
+              color: stage.color,
+              stage_order: i
+            })
+            .select()
+            .single();
+            
+          if (insertError) throw insertError;
+          stageId = newStage.id;
+        } else {
+          // This is an existing stage - update it
+          const { error: stageError } = await supabase
+            .from('pipeline_stages')
+            .update({
+              name: stage.name,
+              color: stage.color,
+              stage_order: i
+            })
+            .eq('id', stage.id)
+            .eq('pipeline_id', pipelineId);
 
-        if (stageError) throw stageError;
+          if (stageError) throw stageError;
+        }
 
         // Update pipeline_contacts for this stage
         for (let j = 0; j < stage.contacts.length; j++) {
           const contact = stage.contacts[j];
           
-          // Update the pipeline_contacts entry
+          // Update the pipeline_contacts entry using the correct stage ID
           const { error: pcError } = await supabase
             .from('pipeline_contacts')
             .update({
-              stage_id: stage.id,
+              stage_id: stageId, // Use the correct stage ID (either existing or newly created)
               stage_order: j
             })
             .eq('contact_id', contact.id)
