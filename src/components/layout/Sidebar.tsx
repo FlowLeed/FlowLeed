@@ -12,7 +12,19 @@ import {
   Puzzle,
   Plus,
   Settings2,
-  X
+  X,
+  ChevronDown,
+  Circle,
+  Square,
+  Triangle,
+  Star,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  Target,
+  Flag,
+  Bookmark
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -32,6 +44,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { calculatePipelineContactCount } from "@/lib/utils";
@@ -78,9 +95,9 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const [showCreateFlowDialog, setShowCreateFlowDialog] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
   const [newFlowSteps, setNewFlowSteps] = useState([
-    { name: "New", color: "#3b82f6" },
-    { name: "In Progress", color: "#f59e0b" },
-    { name: "Completed", color: "#10b981" }
+    { name: "New", color: "#3b82f6", icon: "Circle" },
+    { name: "In Progress", color: "#f59e0b", icon: "Clock" },
+    { name: "Completed", color: "#10b981", icon: "CheckCircle" }
   ]);
   
   // Mock Planning Center lists - in real app, this would come from the API
@@ -169,18 +186,21 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     // Reset form
     setNewFlowName("");
     setNewFlowSteps([
-      { name: "New", color: "#3b82f6" },
-      { name: "In Progress", color: "#f59e0b" },
-      { name: "Completed", color: "#10b981" }
+      { name: "New", color: "#3b82f6", icon: "Circle" },
+      { name: "In Progress", color: "#f59e0b", icon: "Clock" },
+      { name: "Completed", color: "#10b981", icon: "CheckCircle" }
     ]);
     setShowCreateFlowDialog(false);
   };
 
   const addStep = () => {
     const availableColors = ["#3b82f6", "#f59e0b", "#10b981", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
+    const availableIcons = ["Circle", "Square", "Triangle", "Star", "Diamond", "Hexagon", "Octagon", "Heart"];
     const usedColors = newFlowSteps.map(step => step.color);
+    const usedIcons = newFlowSteps.map(step => step.icon);
     const newColor = availableColors.find(color => !usedColors.includes(color)) || "#64748b";
-    setNewFlowSteps([...newFlowSteps, { name: "", color: newColor }]);
+    const newIcon = availableIcons.find(icon => !usedIcons.includes(icon)) || "Circle";
+    setNewFlowSteps([...newFlowSteps, { name: "", color: newColor, icon: newIcon }]);
   };
 
   const removeStep = (index: number) => {
@@ -189,7 +209,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     }
   };
 
-  const updateStep = (index: number, field: 'name' | 'color', value: string) => {
+  const updateStep = (index: number, field: 'name' | 'color' | 'icon', value: string) => {
     const updatedSteps = [...newFlowSteps];
     updatedSteps[index] = { ...updatedSteps[index], [field]: value };
     setNewFlowSteps(updatedSteps);
@@ -198,6 +218,12 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const colorOptions = [
     "#3b82f6", "#f59e0b", "#10b981", "#6366f1", 
     "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"
+  ];
+
+  const iconOptions = [
+    "Circle", "Square", "Triangle", "Star", "Diamond", 
+    "Hexagon", "Octagon", "Heart", "Clock", "CheckCircle",
+    "AlertCircle", "Info", "Target", "Flag", "Bookmark"
   ];
   
   return (
@@ -286,21 +312,87 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
               <div className="space-y-3">
                 {newFlowSteps.map((step, index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        {colorOptions.map((color) => (
-                          <button
-                            key={color}
-                            type="button"
-                            onClick={() => updateStep(index, 'color', color)}
-                            className={`w-6 h-6 rounded-full border-2 ${
-                              step.color === color ? 'border-gray-400' : 'border-gray-200'
-                            }`}
-                            style={{ backgroundColor: color }}
+                    {/* Color Selector */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-10 h-10 p-0"
+                        >
+                          <div
+                            className="w-6 h-6 rounded-full border"
+                            style={{ backgroundColor: step.color }}
                           />
-                        ))}
-                      </div>
-                    </div>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-2">
+                        <div className="grid grid-cols-4 gap-2">
+                          {colorOptions.map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              onClick={() => updateStep(index, 'color', color)}
+                              className={`w-8 h-8 rounded-full border-2 ${
+                                step.color === color ? 'border-gray-400' : 'border-gray-200'
+                              }`}
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Icon Selector */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-10 h-10 p-0"
+                        >
+                          {step.icon === "Circle" && <Circle className="w-4 h-4" />}
+                          {step.icon === "Square" && <Square className="w-4 h-4" />}
+                          {step.icon === "Triangle" && <Triangle className="w-4 h-4" />}
+                          {step.icon === "Star" && <Star className="w-4 h-4" />}
+                          {step.icon === "Clock" && <Clock className="w-4 h-4" />}
+                          {step.icon === "CheckCircle" && <CheckCircle className="w-4 h-4" />}
+                          {step.icon === "AlertCircle" && <AlertCircle className="w-4 h-4" />}
+                          {step.icon === "Info" && <Info className="w-4 h-4" />}
+                          {step.icon === "Target" && <Target className="w-4 h-4" />}
+                          {step.icon === "Flag" && <Flag className="w-4 h-4" />}
+                          {step.icon === "Bookmark" && <Bookmark className="w-4 h-4" />}
+                          {!["Circle", "Square", "Triangle", "Star", "Clock", "CheckCircle", "AlertCircle", "Info", "Target", "Flag", "Bookmark"].includes(step.icon) && <Circle className="w-4 h-4" />}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-2">
+                        <div className="grid grid-cols-5 gap-1">
+                          {iconOptions.map((iconName) => (
+                            <button
+                              key={iconName}
+                              type="button"
+                              onClick={() => updateStep(index, 'icon', iconName)}
+                              className={`p-2 rounded hover:bg-gray-100 ${
+                                step.icon === iconName ? 'bg-gray-200' : ''
+                              }`}
+                            >
+                              {iconName === "Circle" && <Circle className="w-4 h-4" />}
+                              {iconName === "Square" && <Square className="w-4 h-4" />}
+                              {iconName === "Triangle" && <Triangle className="w-4 h-4" />}
+                              {iconName === "Star" && <Star className="w-4 h-4" />}
+                              {iconName === "Clock" && <Clock className="w-4 h-4" />}
+                              {iconName === "CheckCircle" && <CheckCircle className="w-4 h-4" />}
+                              {iconName === "AlertCircle" && <AlertCircle className="w-4 h-4" />}
+                              {iconName === "Info" && <Info className="w-4 h-4" />}
+                              {iconName === "Target" && <Target className="w-4 h-4" />}
+                              {iconName === "Flag" && <Flag className="w-4 h-4" />}
+                              {iconName === "Bookmark" && <Bookmark className="w-4 h-4" />}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
                     <Input
                       value={step.name}
                       onChange={(e) => updateStep(index, 'name', e.target.value)}
