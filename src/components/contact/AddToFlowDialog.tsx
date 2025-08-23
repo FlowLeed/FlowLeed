@@ -44,16 +44,22 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
   const { data: availablePipelines, isLoading: loadingPipelines } = useQuery({
     queryKey: ['available-pipelines', currentPipelineIds],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('pipelines')
         .select('id, name, description, icon')
-        .not('id', 'in', `(${currentPipelineIds.join(',')})`)
         .order('name');
+
+      // Only filter out current pipelines if there are any
+      if (currentPipelineIds.length > 0) {
+        query = query.not('id', 'in', `(${currentPipelineIds.join(',')})`);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Pipeline[];
     },
-    enabled: open && currentPipelineIds.length > 0
+    enabled: open
   });
 
   // Fetch stages for selected pipeline
@@ -98,8 +104,11 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
       queryClient.invalidateQueries({ queryKey: ['available-pipelines'] });
       queryClient.invalidateQueries({ queryKey: ['pipeline-stages'] });
       
-      // Invalidate any pipeline data in the PipelineContext
+      // Force reload of pipeline context data by invalidating all pipeline-related queries
       queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+      
+      // Refresh the current page to reload pipeline data
+      window.location.reload();
       
       toast({
         title: "Success",
