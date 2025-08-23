@@ -8,98 +8,64 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Settings2, CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Users, Zap } from "lucide-react";
+import { useIntegrations } from "@/hooks/useIntegrations";
+import { ArrowLeft, Settings2, CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Users, Zap, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const IntegrationsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const {
+    integrations,
+    loading,
+    connectPlanningCenter,
+    testConnection,
+    syncData,
+    disconnect,
+    isConnected
+  } = useIntegrations();
   
-  const [connections, setConnections] = useState({
-    planningCenter: {
-      connected: false,
-      apiKey: "",
-      secret: "",
-      appId: "",
-      status: "disconnected"
-    },
-    mailchimp: {
-      connected: false,
-      apiKey: "",
-      status: "disconnected"
-    },
-    zapier: {
-      connected: false,
-      webhookUrl: "",
-      status: "disconnected"
-    },
-    googleCalendar: {
-      connected: false,
-      status: "disconnected"
-    }
+  const [planningCenterForm, setPlanningCenterForm] = useState({
+    appId: "",
+    secret: ""
   });
 
-  const handleConnect = async (service: string) => {
-    // Simulate connection process
-    setConnections(prev => ({
-      ...prev,
-      [service]: {
-        ...prev[service as keyof typeof prev],
-        status: "connecting"
-      }
-    }));
+  const handlePlanningCenterConnect = async () => {
+    if (!planningCenterForm.appId || !planningCenterForm.secret) {
+      toast({
+        title: "Error",
+        description: "Please enter both App ID and Secret",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    setConnections(prev => ({
-      ...prev,
-      [service]: {
-        ...prev[service as keyof typeof prev],
-        connected: true,
-        status: "connected"
-      }
-    }));
-
-    toast({
-      title: "Integration Connected",
-      description: `Successfully connected to ${service}`,
-    });
+    await connectPlanningCenter(planningCenterForm.appId, planningCenterForm.secret);
+    setPlanningCenterForm({ appId: "", secret: "" });
   };
 
-  const handleDisconnect = (service: string) => {
-    setConnections(prev => ({
-      ...prev,
-      [service]: {
-        ...prev[service as keyof typeof prev],
-        connected: false,
-        status: "disconnected"
-      }
-    }));
-
-    toast({
-      title: "Integration Disconnected",
-      description: `Disconnected from ${service}`,
-      variant: "destructive",
-    });
+  const handleTest = (serviceName: string) => {
+    testConnection(serviceName);
   };
 
-  const handleInputChange = (service: string, field: string, value: string) => {
-    setConnections(prev => ({
-      ...prev,
-      [service]: {
-        ...prev[service as keyof typeof prev],
-        [field]: value
-      }
-    }));
+  const handleSync = (serviceName: string) => {
+    syncData(serviceName);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const handleDisconnect = (serviceName: string) => {
+    disconnect(serviceName);
+  };
+
+  const getStatusBadge = (serviceName: string) => {
+    const integration = integrations.find(i => i.service_name === serviceName);
+    
+    if (loading) {
+      return <Badge variant="secondary"><Loader2 className="h-3 w-3 mr-1 animate-spin" />Processing...</Badge>;
+    }
+    
+    switch (integration?.status) {
       case "connected":
         return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Connected</Badge>;
-      case "connecting":
-        return <Badge variant="secondary">Connecting...</Badge>;
       case "error":
         return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Error</Badge>;
       default:
@@ -145,7 +111,7 @@ const IntegrationsPage = () => {
                     <CardDescription>Sync church management data and member information</CardDescription>
                   </div>
                 </div>
-                {getStatusBadge(connections.planningCenter.status)}
+                {getStatusBadge('planning_center')}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -153,15 +119,15 @@ const IntegrationsPage = () => {
                 Connect your Planning Center account to automatically sync member data, groups, and event information.
               </p>
               
-              {!connections.planningCenter.connected ? (
+              {!isConnected('planning_center') ? (
                 <div className="space-y-3">
                   <div className="space-y-2">
                     <Label htmlFor="pc-app-id">Application ID</Label>
                     <Input
                       id="pc-app-id"
                       placeholder="Enter your Planning Center App ID"
-                      value={connections.planningCenter.appId}
-                      onChange={(e) => handleInputChange('planningCenter', 'appId', e.target.value)}
+                      value={planningCenterForm.appId}
+                      onChange={(e) => setPlanningCenterForm(prev => ({ ...prev, appId: e.target.value }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -170,16 +136,23 @@ const IntegrationsPage = () => {
                       id="pc-secret"
                       type="password"
                       placeholder="Enter your Planning Center Secret"
-                      value={connections.planningCenter.secret}
-                      onChange={(e) => handleInputChange('planningCenter', 'secret', e.target.value)}
+                      value={planningCenterForm.secret}
+                      onChange={(e) => setPlanningCenterForm(prev => ({ ...prev, secret: e.target.value }))}
                     />
                   </div>
                   <div className="flex gap-2">
                     <Button 
-                      onClick={() => handleConnect('planningCenter')}
-                      disabled={!connections.planningCenter.appId || !connections.planningCenter.secret}
+                      onClick={handlePlanningCenterConnect}
+                      disabled={loading || !planningCenterForm.appId || !planningCenterForm.secret}
                     >
-                      Connect Planning Center
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        'Connect Planning Center'
+                      )}
                     </Button>
                     <Button variant="outline" asChild>
                       <a href="https://api.planningcenteronline.com/" target="_blank" rel="noopener noreferrer">
@@ -191,10 +164,28 @@ const IntegrationsPage = () => {
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <Button variant="destructive" onClick={() => handleDisconnect('planningCenter')}>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleDisconnect('planning_center')}
+                    disabled={loading}
+                  >
                     Disconnect
                   </Button>
-                  <Button variant="outline">Test Connection</Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleTest('planning_center')}
+                    disabled={loading}
+                  >
+                    Test Connection
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleSync('planning_center')}
+                    disabled={loading}
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Sync Now
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -213,7 +204,7 @@ const IntegrationsPage = () => {
                     <CardDescription>Sync email marketing lists and campaigns</CardDescription>
                   </div>
                 </div>
-                {getStatusBadge(connections.mailchimp.status)}
+                <Badge variant="outline">Coming Soon</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -221,41 +212,14 @@ const IntegrationsPage = () => {
                 Connect Mailchimp to automatically sync your contact lists and manage email campaigns.
               </p>
               
-              {!connections.mailchimp.connected ? (
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="mc-api-key">API Key</Label>
-                    <Input
-                      id="mc-api-key"
-                      type="password"
-                      placeholder="Enter your Mailchimp API Key"
-                      value={connections.mailchimp.apiKey}
-                      onChange={(e) => handleInputChange('mailchimp', 'apiKey', e.target.value)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={() => handleConnect('mailchimp')}
-                      disabled={!connections.mailchimp.apiKey}
-                    >
-                      Connect Mailchimp
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <a href="https://mailchimp.com/developer/marketing/guides/quick-start/#generate-your-api-key" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Get API Key
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="destructive" onClick={() => handleDisconnect('mailchimp')}>
-                    Disconnect
-                  </Button>
-                  <Button variant="outline">Test Connection</Button>
-                </div>
-              )}
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Mailchimp integration is coming soon. Stay tuned for email marketing automation features.
+                </p>
+                <Button disabled variant="outline">
+                  Coming Soon
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -272,7 +236,7 @@ const IntegrationsPage = () => {
                     <CardDescription>Automate workflows with 6000+ apps</CardDescription>
                   </div>
                 </div>
-                {getStatusBadge(connections.zapier.status)}
+                <Badge variant="outline">Coming Soon</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -280,40 +244,14 @@ const IntegrationsPage = () => {
                 Connect Zapier to trigger automated workflows when contacts move through your pipelines.
               </p>
               
-              {!connections.zapier.connected ? (
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="zapier-webhook">Webhook URL</Label>
-                    <Input
-                      id="zapier-webhook"
-                      placeholder="Enter your Zapier webhook URL"
-                      value={connections.zapier.webhookUrl}
-                      onChange={(e) => handleInputChange('zapier', 'webhookUrl', e.target.value)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={() => handleConnect('zapier')}
-                      disabled={!connections.zapier.webhookUrl}
-                    >
-                      Connect Zapier
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <a href="https://zapier.com/apps/webhook/integrations" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Create Webhook
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="destructive" onClick={() => handleDisconnect('zapier')}>
-                    Disconnect
-                  </Button>
-                  <Button variant="outline">Test Webhook</Button>
-                </div>
-              )}
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Zapier integration is coming soon. Automate your workflows with thousands of apps.
+                </p>
+                <Button disabled variant="outline">
+                  Coming Soon
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -330,7 +268,7 @@ const IntegrationsPage = () => {
                     <CardDescription>Sync events and schedule follow-ups</CardDescription>
                   </div>
                 </div>
-                {getStatusBadge(connections.googleCalendar.status)}
+                <Badge variant="outline">Coming Soon</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -338,28 +276,24 @@ const IntegrationsPage = () => {
                 Connect Google Calendar to automatically create follow-up events and sync meeting schedules.
               </p>
               
-              {!connections.googleCalendar.connected ? (
-                <Button onClick={() => handleConnect('googleCalendar')}>
-                  Connect with Google
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Google Calendar integration is coming soon. Schedule follow-ups and sync events automatically.
+                </p>
+                <Button disabled variant="outline">
+                  Coming Soon
                 </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="destructive" onClick={() => handleDisconnect('googleCalendar')}>
-                    Disconnect
-                  </Button>
-                  <Button variant="outline">Sync Now</Button>
-                </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="connected" className="space-y-6">
           <div className="grid gap-4">
-            {Object.entries(connections)
-              .filter(([, connection]) => connection.connected)
-              .map(([service, connection]) => (
-                <Card key={service}>
+            {integrations
+              .filter(integration => integration.status === 'connected')
+              .map((integration) => (
+                <Card key={integration.id}>
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -367,13 +301,29 @@ const IntegrationsPage = () => {
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         </div>
                         <div>
-                          <CardTitle className="capitalize">{service.replace(/([A-Z])/g, ' $1').trim()}</CardTitle>
-                          <CardDescription>Connected and syncing</CardDescription>
+                          <CardTitle className="capitalize">
+                            {integration.service_name.replace(/_/g, ' ')}
+                          </CardTitle>
+                          <CardDescription>
+                            Connected{integration.last_sync_at && ` • Last sync: ${new Date(integration.last_sync_at).toLocaleDateString()}`}
+                          </CardDescription>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Settings</Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleDisconnect(service)}>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleSync(integration.service_name)}
+                          disabled={loading}
+                        >
+                          Sync Now
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => handleDisconnect(integration.service_name)}
+                          disabled={loading}
+                        >
                           Disconnect
                         </Button>
                       </div>
@@ -382,7 +332,7 @@ const IntegrationsPage = () => {
                 </Card>
               ))}
             
-            {Object.values(connections).every(conn => !conn.connected) && (
+            {integrations.filter(i => i.status === 'connected').length === 0 && (
               <Card>
                 <CardContent className="text-center py-8">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -390,7 +340,7 @@ const IntegrationsPage = () => {
                   <p className="text-muted-foreground mb-4">
                     Connect your favorite tools to streamline your workflow
                   </p>
-                  <Button onClick={() => navigate('/integrations')}>
+                  <Button onClick={() => window.location.hash = '#available'}>
                     Browse Integrations
                   </Button>
                 </CardContent>
