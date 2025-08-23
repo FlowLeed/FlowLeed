@@ -22,6 +22,7 @@ export interface PipelineStage {
   id: string;
   name: string;
   contacts: Contact[];
+  color?: string;
 }
 
 export interface Pipeline {

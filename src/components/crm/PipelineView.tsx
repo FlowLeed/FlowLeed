@@ -56,7 +56,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
       if (stage.id === stageId) {
         return {
           ...stage,
-          name: name
+          name: name,
+          color: color
         };
       }
       return stage;

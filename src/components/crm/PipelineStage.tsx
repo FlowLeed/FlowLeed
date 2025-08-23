@@ -35,7 +35,7 @@ export const PipelineStage: React.FC<PipelineStageProps> = ({
   onUpdateStage,
 }) => {
   const [showSettings, setShowSettings] = useState(false);
-  const stageColor = getStageColor(stage.name);
+  const stageColor = stage.color || getStageColor(stage.name);
 
   const handleSaveSettings = (name: string, color: string) => {
     onUpdateStage?.(stage.id, name, color);
