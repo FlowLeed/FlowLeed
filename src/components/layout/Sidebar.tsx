@@ -357,119 +357,121 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
       
       {/* Create Flow Dialog */}
       <Dialog open={showCreateFlowDialog} onOpenChange={setShowCreateFlowDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Create New Flow</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="flow-name">Flow Name</Label>
-              <div className="flex items-center space-x-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="shrink-0">
-                      {React.createElement(newFlowIcon, { className: "h-4 w-4" })}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-3">
-                    <div className="grid grid-cols-6 gap-2">
-                      {iconOptions.map((IconComponent, iconIndex) => (
-                        <button
-                          key={iconIndex}
-                          type="button"
-                          onClick={() => setNewFlowIcon(IconComponent)}
-                          className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
-                            newFlowIcon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
-                          }`}
-                        >
-                          <IconComponent className="h-4 w-4" />
-                        </button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <Input
-                  id="flow-name"
-                  value={newFlowName}
-                  onChange={(e) => setNewFlowName(e.target.value)}
-                  placeholder="Enter flow name"
-                  className="flex-1"
+          <div className="flex-1 overflow-hidden">
+            <div className="max-h-[50vh] overflow-y-auto pr-2 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="flow-name">Flow Name</Label>
+                <div className="flex items-center space-x-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="icon" className="shrink-0">
+                        {React.createElement(newFlowIcon, { className: "h-4 w-4" })}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3">
+                      <div className="grid grid-cols-6 gap-2">
+                        {iconOptions.map((IconComponent, iconIndex) => (
+                          <button
+                            key={iconIndex}
+                            type="button"
+                            onClick={() => setNewFlowIcon(IconComponent)}
+                            className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
+                              newFlowIcon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
+                            }`}
+                          >
+                            <IconComponent className="h-4 w-4" />
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    id="flow-name"
+                    value={newFlowName}
+                    onChange={(e) => setNewFlowName(e.target.value)}
+                    placeholder="Enter flow name"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="flow-description">Description</Label>
+                <Textarea
+                  id="flow-description"
+                  value={newFlowDescription}
+                  onChange={(e) => setNewFlowDescription(e.target.value)}
+                  placeholder="Enter flow description (optional)"
+                  className="min-h-[80px]"
                 />
               </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="flow-description">Description</Label>
-              <Textarea
-                id="flow-description"
-                value={newFlowDescription}
-                onChange={(e) => setNewFlowDescription(e.target.value)}
-                placeholder="Enter flow description (optional)"
-                className="min-h-[80px]"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Pipeline Steps</Label>
-              <div className="space-y-3">
-                {newFlowSteps.map((step, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      {/* Color Selector */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-gray-400 transition-colors"
-                            style={{ backgroundColor: step.color }}
-                          />
-                        </PopoverTrigger>
-                        <PopoverContent className="w-48 p-3">
-                          <div className="grid grid-cols-4 gap-2">
-                            {colorOptions.map((color) => (
-                              <button
-                                key={color}
-                                type="button"
-                                onClick={() => updateStep(index, 'color', color)}
-                                className={`w-8 h-8 rounded-full border-2 hover:scale-105 transition-transform ${
-                                  step.color === color ? 'border-gray-400' : 'border-gray-200'
-                                }`}
-                                style={{ backgroundColor: color }}
-                              />
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      
+              
+              <div className="space-y-2">
+                <Label>Pipeline Steps</Label>
+                <div className="space-y-3">
+                  {newFlowSteps.map((step, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        {/* Color Selector */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-gray-400 transition-colors"
+                              style={{ backgroundColor: step.color }}
+                            />
+                          </PopoverTrigger>
+                          <PopoverContent className="w-48 p-3">
+                            <div className="grid grid-cols-4 gap-2">
+                              {colorOptions.map((color) => (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  onClick={() => updateStep(index, 'color', color)}
+                                  className={`w-8 h-8 rounded-full border-2 hover:scale-105 transition-transform ${
+                                    step.color === color ? 'border-gray-400' : 'border-gray-200'
+                                  }`}
+                                  style={{ backgroundColor: color }}
+                                />
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        
+                      </div>
+                      <Input
+                        value={step.name}
+                        onChange={(e) => updateStep(index, 'name', e.target.value)}
+                        placeholder={`Step ${index + 1}`}
+                        className="flex-1"
+                      />
+                      {newFlowSteps.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeStep(index)}
+                          className="px-2"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                    <Input
-                      value={step.name}
-                      onChange={(e) => updateStep(index, 'name', e.target.value)}
-                      placeholder={`Step ${index + 1}`}
-                      className="flex-1"
-                    />
-                    {newFlowSteps.length > 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeStep(index)}
-                        className="px-2"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addStep}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Step
-                </Button>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={addStep}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Step
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
