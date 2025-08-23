@@ -67,6 +67,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
   const { user } = useAuth();
   const { organization, loading: profileLoading } = useProfile();
   console.log("PipelineProvider - user:", user);
+  console.log("PipelineProvider - user ID:", user?.id);
   console.log("PipelineProvider - organization:", organization);
   console.log("PipelineProvider - profileLoading:", profileLoading);
   const [pipelines, setPipelines] = useState<Record<string, Pipeline>>({});
