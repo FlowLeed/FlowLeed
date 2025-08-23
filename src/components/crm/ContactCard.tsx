@@ -33,17 +33,13 @@ export const ContactCard: React.FC<ContactCardProps> = ({
   return <div className="contact-card bg-white p-3 border border-gray-200 mb-3 hover:border-blue-300 transition-all duration-200 rounded-xl">
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-2 items-center">
-          <Link to={`/contacts/${contact.id}`}>
-            <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all">
-              {avatar ? <img src={avatar} alt={name} className="rounded-full" /> : <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
-                  {name.charAt(0)}
-                </div>}
-            </Avatar>
-          </Link>
+          <Avatar className="h-8 w-8">
+            {avatar ? <img src={avatar} alt={name} className="rounded-full" /> : <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
+                {name.charAt(0)}
+              </div>}
+          </Avatar>
           <div>
-            <Link to={`/contacts/${contact.id}`} className="hover:text-blue-600 transition-colors">
-              <h4 className="font-medium text-sm">{name}</h4>
-            </Link>
+            <h4 className="font-medium text-sm">{name}</h4>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <span>Last: {getDaysSince(date)} days ago</span>
             </div>
