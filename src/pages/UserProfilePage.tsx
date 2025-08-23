@@ -7,36 +7,71 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mail, Phone, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Contact } from "@/types/crm";
-import { hostTeamPipeline, pastoralCarePipeline } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const UserProfilePage = () => {
   const { contactId } = useParams<{ contactId: string }>();
   const navigate = useNavigate();
 
-  // Find the contact in any pipeline
+  // Fetch contact from database
   const { data: contact, isLoading } = useQuery({
     queryKey: ["contact", contactId],
-    queryFn: () => {
-      // Search through all pipelines to find the contact
-      const allContacts: Contact[] = [];
-      
-      // Add all contacts from all pipelines
-      hostTeamPipeline.stages.forEach(stage => {
-        allContacts.push(...stage.contacts);
-      });
-      pastoralCarePipeline.stages.forEach(stage => {
-        allContacts.push(...stage.contacts);
-      });
-      
-      const foundContact = allContacts.find(contact => contact.id === contactId);
-      
-      if (!foundContact) {
+    queryFn: async () => {
+      if (!contactId) {
+        throw new Error("Contact ID is required");
+      }
+
+      // Fetch contact data from database
+      const { data: contactData, error: contactError } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('id', contactId)
+        .single();
+
+      if (contactError) {
+        throw contactError;
+      }
+
+      if (!contactData) {
         throw new Error("Contact not found");
       }
-      
-      return foundContact;
+
+      // Fetch contact tags
+      const { data: tagsData, error: tagsError } = await supabase
+        .from('contact_tags')
+        .select('tag')
+        .eq('contact_id', contactId);
+
+      if (tagsError) {
+        console.error("Error fetching tags:", tagsError);
+      }
+
+      // Convert database contact to frontend format
+      const contact: Contact = {
+        id: contactData.id,
+        name: contactData.name,
+        email: contactData.email,
+        phone: contactData.phone,
+        status: contactData.status as "active" | "inactive" | "pending",
+        notes: contactData.notes,
+        avatar: contactData.avatar,
+        date: new Date(contactData.created_at).toLocaleDateString('en-US', { 
+          day: 'numeric', 
+          month: 'short' 
+        }),
+        tags: (tagsData?.map(t => t.tag).filter(tag => 
+          ['active', 'partner', 'location', 'florida'].includes(tag)
+        ) || []) as ("active" | "partner" | "location" | "florida")[],
+        assignedTo: contactData.assigned_to_user_id ? {
+          name: "Assigned User", // We'd need to join with profiles table for actual name
+          avatar: undefined
+        } : undefined
+      };
+
+      return contact;
     },
+    enabled: !!contactId,
     meta: {
       onError: () => {
         toast.error("Contact not found");
