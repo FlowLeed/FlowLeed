@@ -104,7 +104,7 @@
 }
 
 .pipeline-column {
-  @apply bg-white/50 rounded-md p-4 w-[300px] flex-shrink-0;
+  @apply bg-transparent rounded-md p-4 w-[300px] flex-shrink-0;
 }
 
 .tag {
