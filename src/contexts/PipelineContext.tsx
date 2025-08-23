@@ -8,6 +8,7 @@ import { hostTeamPipeline, pastoralCarePipeline, operationsPipeline, givingHubPi
 interface PipelineContextType {
   pipelines: Record<string, Pipeline>;
   updatePipeline: (pipelineId: string, pipeline: Pipeline) => void;
+  createPipeline: (pipeline: Omit<Pipeline, 'id'>) => Promise<string>;
   loading: boolean;
   error: string | null;
 }
@@ -316,8 +317,74 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
     }
   };
 
+  const createPipeline = async (pipeline: Omit<Pipeline, 'id'>): Promise<string> => {
+    if (!organization) throw new Error("No organization available");
+
+    try {
+      const pipelineId = `custom-${Date.now()}`;
+      
+      // Create pipeline in database
+      const { data: pipelineData, error: pipelineError } = await supabase
+        .from('pipelines')
+        .insert({
+          id: pipelineId,
+          name: pipeline.name,
+          icon: pipeline.icon,
+          organization_id: organization.id
+        })
+        .select()
+        .single();
+
+      if (pipelineError) throw pipelineError;
+
+      // Create stages
+      for (let i = 0; i < pipeline.stages.length; i++) {
+        const stage = pipeline.stages[i];
+        const stageId = `${pipelineId}-stage-${i + 1}`;
+        
+        const { data: stageData, error: stageError } = await supabase
+          .from('pipeline_stages')
+          .insert({
+            id: stageId,
+            pipeline_id: pipelineData.id,
+            name: stage.name,
+            color: stage.color,
+            stage_order: i
+          })
+          .select()
+          .single();
+
+        if (stageError) throw stageError;
+      }
+
+      // Create the pipeline object with generated IDs
+      const newPipeline: Pipeline = {
+        ...pipeline,
+        id: pipelineId,
+        stages: pipeline.stages.map((stage, i) => ({
+          ...stage,
+          id: `${pipelineId}-stage-${i + 1}`,
+          contacts: []
+        }))
+      };
+
+      // Update local state
+      setPipelines(prev => ({
+        ...prev,
+        [pipelineId]: newPipeline
+      }));
+
+      return pipelineId;
+
+    } catch (err) {
+      console.error("Error creating pipeline:", err);
+      setError(err instanceof Error ? err.message : "Failed to create pipeline");
+      throw err;
+    }
+  };
+
   return (
-    <PipelineContext.Provider value={{ pipelines, updatePipeline, loading, error }}>
+    <PipelineContext.Provider value={{ pipelines, updatePipeline, createPipeline, loading, error }}>
       {children}
     </PipelineContext.Provider>
   );
