@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Target, Plus } from 'lucide-react';
+import { ArrowRight, Target, Plus, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3 } from 'lucide-react';
 import { AddToFlowDialog } from './AddToFlowDialog';
+import type { LucideIcon } from 'lucide-react';
 
 interface Pipeline {
   id: string;
@@ -35,6 +36,33 @@ interface ContactFlowStatusProps {
 export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, contactId }) => {
   const [showAddToFlowDialog, setShowAddToFlowDialog] = useState(false);
   const navigate = useNavigate();
+  
+  // Icon mapping object
+  const iconMap: { [key: string]: LucideIcon } = {
+    'Users': Users,
+    'MessageSquare': MessageSquare,
+    'Calendar': Calendar,
+    'Settings': Settings,
+    'Heart': Heart,
+    'Star': Star,
+    'Target': Target,
+    'Zap': Zap,
+    'Shield': Shield,
+    'Globe': Globe,
+    'Briefcase': Briefcase,
+    'BookOpen': BookOpen,
+    'Music': Music,
+    'Coffee': Coffee,
+    'Camera': Camera,
+    'Gift': Gift,
+    'Flame': Flame,
+    'Sparkles': Sparkles,
+    'Check': Check,
+    'Plus': Plus,
+    'Puzzle': Puzzle,
+    'LayoutDashboard': LayoutDashboard,
+    'BarChart3': BarChart3
+  };
   
   const currentPipelineIds = flows.map(flow => flow.pipeline.id);
   
@@ -96,9 +124,13 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {flow.pipeline.icon && (
-                  <span className="text-lg">{flow.pipeline.icon}</span>
-                )}
+                {(() => {
+                  if (flow.pipeline.icon && iconMap[flow.pipeline.icon]) {
+                    const IconComponent = iconMap[flow.pipeline.icon];
+                    return <IconComponent className="h-5 w-5 text-muted-foreground" />;
+                  }
+                  return <Workflow className="h-5 w-5 text-muted-foreground" />;
+                })()}
                 <h4 className="font-medium">{flow.pipeline.name}</h4>
               </div>
               <Badge 
