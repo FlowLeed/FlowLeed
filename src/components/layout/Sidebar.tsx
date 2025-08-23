@@ -99,7 +99,7 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
 const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const location = useLocation();
   const { toast } = useToast();
-  const { createPipeline } = usePipelineContext();
+  const { createPipeline, loading: pipelineLoading } = usePipelineContext();
   const [isConnectedToPC, setIsConnectedToPC] = useState(false);
   const [showCreateFlowDialog, setShowCreateFlowDialog] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
@@ -303,9 +303,12 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
               <DropdownMenuLabel>Flows Settings</DropdownMenuLabel>
               <DropdownMenuSeparator />
               
-              <DropdownMenuItem onClick={() => setShowCreateFlowDialog(true)}>
+               <DropdownMenuItem 
+                onClick={() => setShowCreateFlowDialog(true)}
+                disabled={pipelineLoading}
+              >
                 <Plus className="h-4 w-4 mr-2" />
-                Create New Flow
+                {pipelineLoading ? "Loading..." : "Create New Flow"}
               </DropdownMenuItem>
               
               <DropdownMenuSeparator />

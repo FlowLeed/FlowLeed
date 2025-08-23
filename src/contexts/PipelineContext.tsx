@@ -65,7 +65,10 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
 
 export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const { organization } = useProfile();
+  const { organization, loading: profileLoading } = useProfile();
+  console.log("PipelineProvider - user:", user);
+  console.log("PipelineProvider - organization:", organization);
+  console.log("PipelineProvider - profileLoading:", profileLoading);
   const [pipelines, setPipelines] = useState<Record<string, Pipeline>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -320,10 +323,15 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
   const createPipeline = async (pipeline: Omit<Pipeline, 'id'>): Promise<string> => {
     console.log("createPipeline called with:", pipeline);
     console.log("Organization:", organization);
+    console.log("Profile loading:", profileLoading);
+    
+    if (profileLoading) {
+      throw new Error("Profile is still loading, please wait and try again");
+    }
     
     if (!organization) {
       console.error("No organization available");
-      throw new Error("No organization available");
+      throw new Error("No organization available - please ensure you're properly authenticated and associated with an organization");
     }
 
     try {
