@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Popover,
   PopoverContent,
@@ -30,8 +40,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { usePipelineContext } from "@/contexts/PipelineContext";
-import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import type { LucideIcon } from "lucide-react";
 
 interface HeaderProps {
@@ -56,6 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
   
   // Edit flow dialog state
   const [showEditFlowDialog, setShowEditFlowDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editFlowName, setEditFlowName] = useState("");
   const [editFlowDescription, setEditFlowDescription] = useState("");
   const [editFlowIcon, setEditFlowIcon] = useState<LucideIcon>(Users);
@@ -191,6 +202,36 @@ export const Header: React.FC<HeaderProps> = ({
       toast({
         title: "Error",
         description: `Failed to update flow: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteFlow = async () => {
+    if (!currentPipeline) return;
+
+    try {
+      // Delete from database using supabase
+      const { error } = await supabase
+        .from('pipelines')
+        .delete()
+        .eq('id', currentPipeline.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Flow Deleted",
+        description: `Flow "${currentPipeline.name}" deleted successfully`,
+      });
+
+      // Close dialogs and navigate to dashboard
+      setShowDeleteConfirm(false);
+      setShowEditFlowDialog(false);
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to delete flow: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }
@@ -408,16 +449,48 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditFlowDialog(false)}>
-              Cancel
+          <DialogFooter className="flex justify-between">
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="mr-auto"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Flow
             </Button>
-            <Button onClick={handleSaveFlow}>
-              Save Changes
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowEditFlowDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveFlow}>
+                Save Changes
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Flow</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{currentPipeline?.name}"? This action cannot be undone and will permanently remove all data associated with this flow, including contacts and pipeline stages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteFlow}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Flow
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
