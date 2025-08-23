@@ -121,32 +121,76 @@ const IntegrationsPage = () => {
                 Connect your Planning Center account to automatically sync member data, groups, and event information.
               </p>
               
+              {/* Configuration Section */}
+              <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                <h4 className="text-sm font-medium">OAuth Configuration</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="client-id" className="text-sm font-medium">
+                      Client ID
+                      <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input
+                      id="client-id"
+                      type="password"
+                      placeholder="Enter your Planning Center Client ID"
+                      className="font-mono text-xs"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="client-secret" className="text-sm font-medium">
+                      Client Secret
+                      <span className="text-red-500 ml-1">*</span>
+                    </Label>
+                    <Input
+                      id="client-secret"
+                      type="password"
+                      placeholder="Enter your Planning Center Client Secret"
+                      className="font-mono text-xs"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleTest('planning_center')}
+                    disabled={loading}
+                    size="sm"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Test Connection
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="https://api.planningcenteronline.com/" target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Get OAuth Credentials
+                    </a>
+                  </Button>
+                </div>
+              </div>
+              
               {!isConnected('planning_center') ? (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Click below to connect your Planning Center account using OAuth. Make sure you've added your OAuth credentials in the Secrets tab first.
+                    Configure your OAuth credentials above, then click below to connect your Planning Center account.
                   </p>
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={handlePlanningCenterConnect}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Connecting...
-                        </>
-                      ) : (
-                        'Connect with Planning Center'
-                      )}
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <a href="https://api.planningcenteronline.com/" target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Get OAuth Credentials
-                      </a>
-                    </Button>
-                  </div>
+                  <Button 
+                    onClick={handlePlanningCenterConnect}
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Connecting...
+                      </>
+                    ) : (
+                      'Connect with Planning Center'
+                    )}
+                  </Button>
                 </div>
               ) : (
                 <div className="flex gap-2">
@@ -156,13 +200,6 @@ const IntegrationsPage = () => {
                     disabled={loading}
                   >
                     Disconnect
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleTest('planning_center')}
-                    disabled={loading}
-                  >
-                    Test Connection
                   </Button>
                   <Button 
                     variant="outline" 
