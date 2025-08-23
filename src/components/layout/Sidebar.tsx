@@ -169,7 +169,13 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   };
 
   const handleCreateCustomFlow = async () => {
+    console.log("handleCreateCustomFlow called");
+    console.log("newFlowName:", newFlowName);
+    console.log("newFlowIcon:", newFlowIcon);
+    console.log("newFlowSteps:", newFlowSteps);
+    
     if (!newFlowName.trim()) {
+      console.log("Flow name is empty");
       toast({
         title: "Error",
         description: "Please enter a flow name",
@@ -208,9 +214,10 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
       ]);
       setShowCreateFlowDialog(false);
     } catch (error) {
+      console.error("Error creating custom flow:", error);
       toast({
         title: "Error",
-        description: "Failed to create custom flow",
+        description: `Failed to create custom flow: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }

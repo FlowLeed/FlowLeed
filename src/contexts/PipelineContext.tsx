@@ -318,12 +318,20 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
   };
 
   const createPipeline = async (pipeline: Omit<Pipeline, 'id'>): Promise<string> => {
-    if (!organization) throw new Error("No organization available");
+    console.log("createPipeline called with:", pipeline);
+    console.log("Organization:", organization);
+    
+    if (!organization) {
+      console.error("No organization available");
+      throw new Error("No organization available");
+    }
 
     try {
       const pipelineId = `custom-${Date.now()}`;
+      console.log("Generated pipeline ID:", pipelineId);
       
       // Create pipeline in database
+      console.log("Creating pipeline in database...");
       const { data: pipelineData, error: pipelineError } = await supabase
         .from('pipelines')
         .insert({
@@ -335,12 +343,18 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
         .select()
         .single();
 
-      if (pipelineError) throw pipelineError;
+      console.log("Pipeline creation result:", { pipelineData, pipelineError });
+      if (pipelineError) {
+        console.error("Pipeline creation error:", pipelineError);
+        throw pipelineError;
+      }
 
       // Create stages
+      console.log("Creating stages...");
       for (let i = 0; i < pipeline.stages.length; i++) {
         const stage = pipeline.stages[i];
         const stageId = `${pipelineId}-stage-${i + 1}`;
+        console.log(`Creating stage ${i + 1}:`, { stageId, stage });
         
         const { data: stageData, error: stageError } = await supabase
           .from('pipeline_stages')
@@ -354,7 +368,11 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
           .select()
           .single();
 
-        if (stageError) throw stageError;
+        console.log("Stage creation result:", { stageData, stageError });
+        if (stageError) {
+          console.error("Stage creation error:", stageError);
+          throw stageError;
+        }
       }
 
       // Create the pipeline object with generated IDs
@@ -368,12 +386,15 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
         }))
       };
 
+      console.log("Created pipeline object:", newPipeline);
+
       // Update local state
       setPipelines(prev => ({
         ...prev,
         [pipelineId]: newPipeline
       }));
 
+      console.log("Pipeline created successfully, returning ID:", pipelineId);
       return pipelineId;
 
     } catch (err) {
