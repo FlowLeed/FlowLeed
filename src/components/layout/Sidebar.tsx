@@ -59,7 +59,7 @@ import type { LucideIcon } from "lucide-react";
 
 interface SidebarItem {
   title: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   path: string;
   badge?: number;
 }
@@ -178,7 +178,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     const newPipeline = {
       id: newPipelineId,
       name: newFlowName,
-      icon: newFlowIcon.name || 'Users', // Store icon name for persistence
+      icon: Object.keys(iconMap).find(key => iconMap[key] === newFlowIcon) || 'Users', // Store icon key
       stages: newFlowSteps.map((step, index) => ({
         id: `${newPipelineId}-stage-${index + 1}`,
         name: step.name,
@@ -240,6 +240,33 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift,
     Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3
   ];
+
+  // Create an icon mapping object for easier lookup
+  const iconMap: { [key: string]: LucideIcon } = {
+    'Users': Users,
+    'MessageSquare': MessageSquare,
+    'Calendar': Calendar,
+    'Settings': Settings,
+    'Heart': Heart,
+    'Star': Star,
+    'Target': Target,
+    'Zap': Zap,
+    'Shield': Shield,
+    'Globe': Globe,
+    'Briefcase': Briefcase,
+    'BookOpen': BookOpen,
+    'Music': Music,
+    'Coffee': Coffee,
+    'Camera': Camera,
+    'Gift': Gift,
+    'Flame': Flame,
+    'Sparkles': Sparkles,
+    'Check': Check,
+    'Plus': Plus,
+    'Puzzle': Puzzle,
+    'LayoutDashboard': LayoutDashboard,
+    'BarChart3': BarChart3
+  };
   
   return (
     <div className="space-y-1">
@@ -476,6 +503,33 @@ export const Sidebar = () => {
     Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift,
     Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3
   ];
+
+  // Create an icon mapping object for easier lookup
+  const iconMap: { [key: string]: LucideIcon } = {
+    'Users': Users,
+    'MessageSquare': MessageSquare,
+    'Calendar': Calendar,
+    'Settings': Settings,
+    'Heart': Heart,
+    'Star': Star,
+    'Target': Target,
+    'Zap': Zap,
+    'Shield': Shield,
+    'Globe': Globe,
+    'Briefcase': Briefcase,
+    'BookOpen': BookOpen,
+    'Music': Music,
+    'Coffee': Coffee,
+    'Camera': Camera,
+    'Gift': Gift,
+    'Flame': Flame,
+    'Sparkles': Sparkles,
+    'Check': Check,
+    'Plus': Plus,
+    'Puzzle': Puzzle,
+    'LayoutDashboard': LayoutDashboard,
+    'BarChart3': BarChart3
+  };
   
   const pageItems: SidebarItem[] = [
     {
@@ -496,11 +550,8 @@ export const Sidebar = () => {
     let icon = Users;
     
     // If pipeline has a stored icon, try to find the matching icon component
-    if (pipeline.icon) {
-      const matchedIcon = iconOptions.find(iconComp => iconComp.name === pipeline.icon);
-      if (matchedIcon) {
-        icon = matchedIcon;
-      }
+    if (pipeline.icon && iconMap[pipeline.icon]) {
+      icon = iconMap[pipeline.icon];
     } else {
       // Fallback to name-based icon selection
       if (pipeline.name.toLowerCase().includes('pastoral') || key.includes('pastoral')) {
