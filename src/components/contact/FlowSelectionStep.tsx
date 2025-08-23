@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Workflow } from 'lucide-react';
+import { Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface Pipeline {
   id: string;
@@ -21,6 +22,32 @@ export const FlowSelectionStep: React.FC<FlowSelectionStepProps> = ({
   loading,
   onSelect
 }) => {
+  // Icon mapping object
+  const iconMap: { [key: string]: LucideIcon } = {
+    'Users': Users,
+    'MessageSquare': MessageSquare,
+    'Calendar': Calendar,
+    'Settings': Settings,
+    'Heart': Heart,
+    'Star': Star,
+    'Target': Target,
+    'Zap': Zap,
+    'Shield': Shield,
+    'Globe': Globe,
+    'Briefcase': Briefcase,
+    'BookOpen': BookOpen,
+    'Music': Music,
+    'Coffee': Coffee,
+    'Camera': Camera,
+    'Gift': Gift,
+    'Flame': Flame,
+    'Sparkles': Sparkles,
+    'Check': Check,
+    'Plus': Plus,
+    'Puzzle': Puzzle,
+    'LayoutDashboard': LayoutDashboard,
+    'BarChart3': BarChart3
+  };
   if (loading) {
     return (
       <div className="space-y-3">
@@ -49,11 +76,13 @@ export const FlowSelectionStep: React.FC<FlowSelectionStepProps> = ({
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              {pipeline.icon ? (
-                <span className="text-lg">{pipeline.icon}</span>
-              ) : (
-                <Workflow className="h-5 w-5 text-muted-foreground" />
-              )}
+              {(() => {
+                if (pipeline.icon && iconMap[pipeline.icon]) {
+                  const IconComponent = iconMap[pipeline.icon];
+                  return <IconComponent className="h-5 w-5 text-muted-foreground" />;
+                }
+                return <Workflow className="h-5 w-5 text-muted-foreground" />;
+              })()}
               <div className="flex-1">
                 <h3 className="font-medium">{pipeline.name}</h3>
                 {pipeline.description && (
