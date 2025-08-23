@@ -29,7 +29,7 @@ interface PipelineProviderProps {
 }
 
 // Convert database contact format to frontend format
-const convertDbContactToFrontend = (dbContact: any, tags: any[]): any => ({
+const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile?: any): any => ({
   id: dbContact.id,
   name: dbContact.name,
   email: dbContact.email,
@@ -39,14 +39,14 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[]): any => ({
   status: dbContact.status,
   date: dbContact.created_at,
   tags: tags.map(t => t.tag),
-  assignedTo: dbContact.assigned_to_user_id ? {
-    name: "Assigned User", // Would need to fetch actual user info
-    avatar: undefined
+  assignedTo: assignedProfile ? {
+    name: assignedProfile.full_name || assignedProfile.email || "Unknown User",
+    avatar: assignedProfile.avatar_url
   } : undefined
 });
 
 // Convert database pipeline format to frontend format  
-const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[]): Pipeline => ({
+const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[]): Pipeline => ({
   id: dbPipeline.id,
   name: dbPipeline.name,
   description: dbPipeline.description,
@@ -60,7 +60,10 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
       .map(pc => {
         const contact = pc.contacts;
         const tags = contactTags.filter(ct => ct.contact_id === contact.id);
-        return convertDbContactToFrontend(contact, tags);
+        const assignedProfile = contact.assigned_to_user_id 
+          ? profiles.find(p => p.user_id === contact.assigned_to_user_id)
+          : undefined;
+        return convertDbContactToFrontend(contact, tags, assignedProfile);
       })
   }))
 });
@@ -246,11 +249,26 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
 
       if (tagsError) throw tagsError;
 
+      // Load profiles for assigned users
+      const assignedUserIds = pipelineContacts
+        ?.map(pc => pc.contacts?.assigned_to_user_id)
+        .filter(id => id) || [];
+      
+      const { data: profiles, error: profilesError } = assignedUserIds.length > 0 
+        ? await supabase
+            .from('profiles')
+            .select('*')
+            .in('user_id', assignedUserIds)
+        : { data: [], error: null };
+
+      if (profilesError) throw profilesError;
+
       const convertedPipeline = convertDbPipelineToFrontend(
         pipeline,
         stages || [],
         pipelineContacts || [],
-        contactTags || []
+        contactTags || [],
+        profiles || []
       );
 
       pipelinesData[pipeline.id] = convertedPipeline;
