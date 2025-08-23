@@ -108,7 +108,6 @@ const UserProfilePage = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        <h1 className="text-2xl font-semibold">Contact Profile</h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
