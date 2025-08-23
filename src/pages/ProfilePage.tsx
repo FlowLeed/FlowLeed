@@ -68,11 +68,35 @@ const ProfilePage = () => {
     timezone: "America/New_York"
   });
 
-  const handleSave = () => {
-    toast({
-      title: "Settings saved",
-      description: "Your profile settings have been updated successfully.",
-    });
+  const handleSave = async () => {
+    if (!user) return;
+
+    try {
+      // Combine first and last name for full_name
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+
+      // Update profile in database
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          full_name: fullName || null,
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast({
+        title: "Save failed",
+        description: "Failed to save your profile. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -348,6 +372,13 @@ const ProfilePage = () => {
                   className="min-h-[100px]"
                 />
               </div>
+              
+              {/* Save Button for Profile Tab */}
+              <div className="flex justify-end pt-4">
+                <Button onClick={handleSave} className="w-32">
+                  Save Profile
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -529,10 +560,10 @@ const ProfilePage = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Save Button */}
+      {/* Global Save Button */}
       <div className="flex justify-end">
         <Button onClick={handleSave} className="w-32">
-          Save Changes
+          Save All Changes
         </Button>
       </div>
     </div>
