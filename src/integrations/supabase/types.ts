@@ -14,6 +14,231 @@ export type Database = {
   }
   public: {
     Tables: {
+      contact_addresses: {
+        Row: {
+          address_type: string
+          city: string | null
+          contact_id: string
+          country: string | null
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          state: string | null
+          street_address: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address_type?: string
+          city?: string | null
+          contact_id: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          state?: string | null
+          street_address?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address_type?: string
+          city?: string | null
+          contact_id?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          state?: string | null
+          street_address?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      contact_demographics: {
+        Row: {
+          birthday: string | null
+          contact_id: string
+          created_at: string
+          id: string
+          marital_status: string | null
+          occupation: string | null
+          updated_at: string
+        }
+        Insert: {
+          birthday?: string | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          marital_status?: string | null
+          occupation?: string | null
+          updated_at?: string
+        }
+        Update: {
+          birthday?: string | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          marital_status?: string | null
+          occupation?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contact_family_members: {
+        Row: {
+          birthday: string | null
+          contact_id: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          relationship: string
+          updated_at: string
+        }
+        Insert: {
+          birthday?: string | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          relationship: string
+          updated_at?: string
+        }
+        Update: {
+          birthday?: string | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          relationship?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contact_interactions: {
+        Row: {
+          completed_at: string | null
+          contact_id: string
+          created_at: string
+          created_by_user_id: string
+          details: string | null
+          id: string
+          interaction_type: string
+          outcome: string | null
+          pipeline_id: string | null
+          scheduled_at: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          contact_id: string
+          created_at?: string
+          created_by_user_id: string
+          details?: string | null
+          id?: string
+          interaction_type: string
+          outcome?: string | null
+          pipeline_id?: string | null
+          scheduled_at?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          contact_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          details?: string | null
+          id?: string
+          interaction_type?: string
+          outcome?: string | null
+          pipeline_id?: string | null
+          scheduled_at?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contact_notes: {
+        Row: {
+          contact_id: string
+          content: string
+          created_at: string
+          created_by_user_id: string
+          id: string
+          is_private: boolean | null
+          note_type: string | null
+          pipeline_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          content: string
+          created_at?: string
+          created_by_user_id: string
+          id?: string
+          is_private?: boolean | null
+          note_type?: string | null
+          pipeline_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          content?: string
+          created_at?: string
+          created_by_user_id?: string
+          id?: string
+          is_private?: boolean | null
+          note_type?: string | null
+          pipeline_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contact_prayer_requests: {
+        Row: {
+          answer_description: string | null
+          answered_at: string | null
+          contact_id: string
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          id: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          answer_description?: string | null
+          answered_at?: string | null
+          contact_id: string
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          id?: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          answer_description?: string | null
+          answered_at?: string | null
+          contact_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          id?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contact_tags: {
         Row: {
           contact_id: string
