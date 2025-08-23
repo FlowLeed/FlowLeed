@@ -6,6 +6,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function calculatePipelineContactCount(pipeline: Pipeline): number {
-  return pipeline.stages.reduce((total, stage) => total + stage.contacts.length, 0)
+export function calculatePipelineContactCount(pipeline: Pipeline | undefined): number {
+  if (!pipeline || !pipeline.stages) return 0;
+  return pipeline.stages.reduce((total, stage) => total + stage.contacts.length, 0);
 }

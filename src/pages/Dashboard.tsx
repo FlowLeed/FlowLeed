@@ -46,7 +46,7 @@ const PipelineCard = ({
 };
 
 const Dashboard = () => {
-  const { pipelines: pipelineData } = usePipelineContext();
+  const { pipelines: pipelineData, loading, error } = usePipelineContext();
   
   const pipelines = [
     {
@@ -67,17 +67,57 @@ const Dashboard = () => {
       title: "Operations",
       description: "Workflow for operational tasks and processes",
       icon: Calendar,
-      contactCount: 0, // No data available yet
+      contactCount: calculatePipelineContactCount(pipelineData["operations"]),
       path: "/pipelines/operations",
     },
     {
       title: "Giving Hub",
       description: "Manage donation follow-ups and financial communications",
       icon: Users,
-      contactCount: 0, // No data available yet
+      contactCount: calculatePipelineContactCount(pipelineData["giving-hub"]),
       path: "/pipelines/giving-hub",
     },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        <Header title="Dashboard" showAddButton={false} />
+        <div className="flex-1 overflow-auto p-6">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-crm-primary mx-auto mb-4"></div>
+                <p className="text-gray-500">Loading pipelines...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        <Header title="Dashboard" showAddButton={false} />
+        <div className="flex-1 overflow-auto p-6">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <p className="text-red-500 mb-4">Error loading pipelines: {error}</p>
+                <Button onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
