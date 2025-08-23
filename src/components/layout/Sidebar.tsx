@@ -63,6 +63,7 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
 const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const location = useLocation();
   const { toast } = useToast();
+  const { updatePipeline } = usePipelineContext();
   const [isConnectedToPC, setIsConnectedToPC] = useState(false); // Simulate Planning Center connection
   
   // Mock Planning Center lists - in real app, this would come from the API
@@ -74,10 +75,46 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     { id: '5', name: 'Worship Team', count: 32 }
   ];
 
-  const handleCreateFlow = (listName: string) => {
+  const handleCreateFlow = (listName: string, listId: string) => {
+    // Create a new pipeline/flow
+    const newPipelineId = `pc-${listId}-${Date.now()}`;
+    const newPipeline = {
+      id: newPipelineId,
+      name: listName,
+      stages: [
+        {
+          id: `${newPipelineId}-stage-1`,
+          name: "New",
+          contacts: [],
+          color: "#3b82f6"
+        },
+        {
+          id: `${newPipelineId}-stage-2`, 
+          name: "Contacted",
+          contacts: [],
+          color: "#f59e0b"
+        },
+        {
+          id: `${newPipelineId}-stage-3`,
+          name: "Follow Up",
+          contacts: [],
+          color: "#10b981"
+        },
+        {
+          id: `${newPipelineId}-stage-4`,
+          name: "Completed",
+          contacts: [],
+          color: "#6366f1"
+        }
+      ]
+    };
+
+    // Add the new pipeline to context
+    updatePipeline(newPipelineId, newPipeline);
+    
     toast({
       title: "Flow Created",
-      description: `New flow created from "${listName}" list`,
+      description: `New flow "${listName}" created from Planning Center`,
     });
   };
   
@@ -106,7 +143,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
                   {planningCenterLists.map((list) => (
                     <DropdownMenuItem 
                       key={list.id}
-                      onClick={() => handleCreateFlow(list.name)}
+                      onClick={() => handleCreateFlow(list.name, list.id)}
                       className="flex items-center justify-between"
                     >
                       <span>{list.name}</span>
@@ -175,32 +212,25 @@ export const Sidebar = () => {
     },
   ];
 
-  const flowItems: SidebarItem[] = [
-    {
-      title: "Host Team Launch",
-      icon: Users,
-      path: "/pipelines/host-team",
-      badge: calculatePipelineContactCount(pipelines["host-team"]),
-    },
-    {
-      title: "Pastoral Care",
-      icon: MessageSquare,
-      path: "/pipelines/pastoral-care",
-      badge: calculatePipelineContactCount(pipelines["pastoral-care"]),
-    },
-    {
-      title: "Operations",
-      icon: Calendar,
-      path: "/pipelines/operations",
-      badge: calculatePipelineContactCount(pipelines["operations"]),
-    },
-    {
-      title: "Giving Hub",
-      icon: Users,
-      path: "/pipelines/giving-hub",
-      badge: calculatePipelineContactCount(pipelines["giving-hub"]),
-    },
-  ];
+  // Create flow items dynamically from all pipelines
+  const flowItems: SidebarItem[] = Object.entries(pipelines).map(([key, pipeline]) => {
+    // Determine icon based on pipeline name or key
+    let icon = Users;
+    if (pipeline.name.toLowerCase().includes('pastoral') || key.includes('pastoral')) {
+      icon = MessageSquare;
+    } else if (pipeline.name.toLowerCase().includes('operation') || key.includes('operation')) {
+      icon = Calendar;
+    } else if (pipeline.name.toLowerCase().includes('host') || key.includes('host')) {
+      icon = Users;
+    }
+
+    return {
+      title: pipeline.name,
+      icon,
+      path: `/pipelines/${key}`,
+      badge: calculatePipelineContactCount(pipeline),
+    };
+  });
 
   const settingsItems: SidebarItem[] = [
     {
