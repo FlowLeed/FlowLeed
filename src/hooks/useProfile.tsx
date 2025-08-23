@@ -37,7 +37,7 @@ export const useProfile = () => {
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (profileError) {
           console.error('Error fetching profile:', profileError);
@@ -56,11 +56,11 @@ export const useProfile = () => {
             )
           `)
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (orgError) {
           console.error('Error fetching organization:', orgError);
-        } else {
+        } else if (orgData) {
           setOrganization(orgData.organizations as Organization);
         }
       } catch (error) {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, User, Bell, Shield, Palette, Globe, Mail, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,21 +12,44 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { profile, organization, loading } = useProfile();
   
   const [formData, setFormData] = useState({
-    firstName: "John",
-    lastName: "Doe", 
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    location: "New York, NY",
-    bio: "Passionate about building meaningful connections and growing communities.",
-    jobTitle: "Community Manager",
-    department: "Operations"
+    firstName: "",
+    lastName: "", 
+    email: "",
+    phone: "",
+    location: "",
+    bio: "",
+    jobTitle: "",
+    department: ""
   });
+
+  // Update form data when profile loads
+  useEffect(() => {
+    if (profile && user) {
+      const fullName = profile.full_name || '';
+      const [firstName = '', lastName = ''] = fullName.split(' ');
+      
+      setFormData({
+        firstName,
+        lastName,
+        email: user.email || '',
+        phone: '',
+        location: '',
+        bio: '',
+        jobTitle: '',
+        department: ''
+      });
+    }
+  }, [profile, user]);
 
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
@@ -61,6 +84,16 @@ const ProfilePage = () => {
     setPreferences(prev => ({ ...prev, [field]: value }));
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -75,7 +108,9 @@ const ProfilePage = () => {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">My Profile</h1>
-          <p className="text-muted-foreground">Manage your account settings and preferences</p>
+          <p className="text-muted-foreground">
+            {organization ? `${organization.name} • ` : ''}Manage your account settings and preferences
+          </p>
         </div>
       </div>
 
@@ -109,9 +144,11 @@ const ProfilePage = () => {
               {/* Avatar Section */}
               <div className="flex items-center gap-6">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src="/placeholder.svg" alt="Profile picture" />
+                  <AvatarImage src={profile?.avatar_url || ""} alt="Profile picture" />
                   <AvatarFallback className="text-lg">
-                    {formData.firstName[0]}{formData.lastName[0]}
+                    {formData.firstName ? formData.firstName[0] : ''}
+                    {formData.lastName ? formData.lastName[0] : ''}
+                    {!formData.firstName && !formData.lastName && user?.email ? user.email[0].toUpperCase() : 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
