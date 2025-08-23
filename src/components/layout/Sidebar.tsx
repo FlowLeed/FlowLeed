@@ -428,30 +428,6 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
                         </PopoverContent>
                       </Popover>
                       
-                      {/* Icon Selector */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className="w-8 h-8 p-0">
-                            <step.icon className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-3">
-                          <div className="grid grid-cols-6 gap-2">
-                            {iconOptions.map((IconComponent, iconIndex) => (
-                              <button
-                                key={iconIndex}
-                                type="button"
-                                onClick={() => updateStepIcon(index, IconComponent)}
-                                className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
-                                  step.icon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
-                                }`}
-                              >
-                                <IconComponent className="h-4 w-4" />
-                              </button>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
                     </div>
                     <Input
                       value={step.name}
