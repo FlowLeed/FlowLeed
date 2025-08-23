@@ -118,6 +118,11 @@ export const useIntegrations = () => {
     try {
       setLoading(true);
       
+      console.log('Attempting to connect to Planning Center...');
+      console.log('Organization ID:', organization.id);
+      console.log('Has appId:', !!appId);
+      console.log('Has secret:', !!secret);
+      
       const { data, error } = await supabase.functions.invoke('planning-center-integration', {
         body: {
           action: 'connect',
@@ -127,7 +132,12 @@ export const useIntegrations = () => {
         }
       });
 
-      if (error) throw error;
+      console.log('Supabase function response:', { data, error });
+
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
       await fetchIntegrations();
       

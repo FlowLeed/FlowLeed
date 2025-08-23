@@ -1,1 +1,4 @@
 project_id = "lghamvpolwebtjwaxned"
+
+[functions.planning-center-integration]
+verify_jwt = true
