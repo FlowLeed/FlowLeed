@@ -9,11 +9,13 @@ const PipelinePage = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
   const { pipelines, updatePipeline } = usePipelineContext();
 
-  // Determine which pipeline to show based on URL parameter
-  const currentPipeline = pipelines[pipelineId || "host-team"];
+  // Find the pipeline by its actual ID
+  const currentPipeline = pipelineId ? Object.values(pipelines).find(p => p.id === pipelineId) : null;
 
   const handlePipelineChange = (updatedPipeline: Pipeline) => {
-    updatePipeline(pipelineId as string, updatedPipeline);
+    if (pipelineId) {
+      updatePipeline(pipelineId, updatedPipeline);
+    }
   };
 
   if (!currentPipeline) {

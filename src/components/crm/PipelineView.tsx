@@ -6,6 +6,8 @@ import { ContactFormDialog } from "./ContactFormDialog";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
+import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
 
 interface PipelineViewProps {
   pipeline: Pipeline;
@@ -19,6 +21,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
+  const { organization } = useProfile();
 
   const handleAddContact = (stageId: string) => {
     setCurrentContact(null);
@@ -72,41 +75,107 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     toast.success("Column updated");
   };
 
-  const handleSaveContact = (contact: Contact) => {
-    let updatedStages = [...pipeline.stages];
-
-    if (currentContact) {
-      // Edit existing contact
-      updatedStages = updatedStages.map(stage => {
-        return {
-          ...stage,
-          contacts: stage.contacts.map(c => 
-            c.id === contact.id ? contact : c
-          )
-        };
-      });
-      toast.success("Contact updated");
-    } else if (currentStageId) {
-      // Add new contact
-      updatedStages = updatedStages.map(stage => {
-        if (stage.id === currentStageId) {
-          return {
-            ...stage,
-            contacts: [...stage.contacts, contact]
-          };
-        }
-        return stage;
-      });
-      toast.success("Contact added");
+  const handleSaveContact = async (contact: Contact) => {
+    if (!organization) {
+      toast.error("Organization not found");
+      return;
     }
 
-    const updatedPipeline = {
-      ...pipeline,
-      stages: updatedStages
-    };
+    try {
+      if (currentContact) {
+        // Update existing contact in database
+        const { error: contactError } = await supabase
+          .from('contacts')
+          .update({
+            name: contact.name,
+            email: contact.email || null,
+            phone: contact.phone || null,
+            status: contact.status,
+            notes: contact.notes || null
+          })
+          .eq('id', contact.id);
 
-    onPipelineChange?.(updatedPipeline);
-    setIsFormOpen(false);
+        if (contactError) throw contactError;
+
+        // Update contact tags
+        await supabase
+          .from('contact_tags')
+          .delete()
+          .eq('contact_id', contact.id);
+
+        if (contact.tags && contact.tags.length > 0) {
+          const tagInserts = contact.tags.map(tag => ({
+            contact_id: contact.id,
+            tag: tag
+          }));
+
+          const { error: tagError } = await supabase
+            .from('contact_tags')
+            .insert(tagInserts);
+
+          if (tagError) throw tagError;
+        }
+
+        toast.success("Contact updated");
+      } else if (currentStageId) {
+        // Create new contact in database
+        const { data: newContact, error: contactError } = await supabase
+          .from('contacts')
+          .insert({
+            name: contact.name,
+            email: contact.email || null,
+            phone: contact.phone || null,
+            status: contact.status,
+            notes: contact.notes || null,
+            organization_id: organization.id
+          })
+          .select()
+          .single();
+
+        if (contactError) throw contactError;
+
+        // Add contact tags
+        if (contact.tags && contact.tags.length > 0) {
+          const tagInserts = contact.tags.map(tag => ({
+            contact_id: newContact.id,
+            tag: tag
+          }));
+
+          const { error: tagError } = await supabase
+            .from('contact_tags')
+            .insert(tagInserts);
+
+          if (tagError) throw tagError;
+        }
+
+        // Link contact to pipeline stage
+        const { error: pipelineContactError } = await supabase
+          .from('pipeline_contacts')
+          .insert({
+            pipeline_id: pipeline.id,
+            stage_id: currentStageId,
+            contact_id: newContact.id,
+            stage_order: 0 // Add at the beginning
+          });
+
+        if (pipelineContactError) throw pipelineContactError;
+
+        toast.success("Contact added to flow");
+      }
+
+      // Trigger a data refresh by calling updatePipeline
+      // This will cause the PipelineContext to reload the pipeline data from the database
+      if (onPipelineChange) {
+        // Force a reload by passing the pipeline - this will trigger updatePipeline 
+        // which reloads data from database due to our recent changes
+        window.location.reload();
+      }
+      
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error saving contact:", error);
+      toast.error(`Failed to save contact: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   const handleDragEnd = (result: DropResult) => {
