@@ -293,7 +293,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_organization_role: {
+        Args: { _organization_id: string; _user_id: string }
+        Returns: string
+      }
+      is_user_in_organization: {
+        Args: { _organization_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
