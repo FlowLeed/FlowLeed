@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      contact_tags: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          tag: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          tag: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_contact_tags_contact_id"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          assigned_to_user_id: string | null
+          avatar: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          organization_id: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          avatar?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          organization_id: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          avatar?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          organization_id?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -66,6 +137,123 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pipeline_contacts: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          pipeline_id: string
+          stage_id: string
+          stage_order: number
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          pipeline_id: string
+          stage_id: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          pipeline_id?: string
+          stage_id?: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pipeline_contacts_contact_id"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pipeline_contacts_pipeline_id"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pipeline_contacts_stage_id"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pipeline_stages: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          pipeline_id: string
+          stage_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          pipeline_id: string
+          stage_order: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          pipeline_id?: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pipeline_stages_pipeline_id"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pipelines: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
           updated_at?: string
         }
         Relationships: []
