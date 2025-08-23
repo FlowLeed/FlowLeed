@@ -225,12 +225,12 @@ const UserProfilePage = () => {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <Button variant="ghost" onClick={() => navigate(-1)} size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12">
               <AvatarImage src={contact.avatar} alt={contact.name} />
               <AvatarFallback>
