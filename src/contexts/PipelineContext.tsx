@@ -66,10 +66,6 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
 export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { organization, loading: profileLoading } = useProfile();
-  console.log("PipelineProvider - user:", user);
-  console.log("PipelineProvider - user ID:", user?.id);
-  console.log("PipelineProvider - organization:", organization);
-  console.log("PipelineProvider - profileLoading:", profileLoading);
   const [pipelines, setPipelines] = useState<Record<string, Pipeline>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
