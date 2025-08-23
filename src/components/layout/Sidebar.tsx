@@ -362,40 +362,38 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="flow-name">Flow Name</Label>
-              <Input
-                id="flow-name"
-                value={newFlowName}
-                onChange={(e) => setNewFlowName(e.target.value)}
-                placeholder="Enter flow name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Flow Icon</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    {React.createElement(newFlowIcon, { className: "h-4 w-4 mr-2" })}
-                    Select Icon
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-3">
-                  <div className="grid grid-cols-6 gap-2">
-                    {iconOptions.map((IconComponent, iconIndex) => (
-                      <button
-                        key={iconIndex}
-                        type="button"
-                        onClick={() => setNewFlowIcon(IconComponent)}
-                        className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
-                          newFlowIcon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
-                        }`}
-                      >
-                        <IconComponent className="h-4 w-4" />
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+              <div className="flex items-center space-x-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" className="shrink-0">
+                      {React.createElement(newFlowIcon, { className: "h-4 w-4" })}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3">
+                    <div className="grid grid-cols-6 gap-2">
+                      {iconOptions.map((IconComponent, iconIndex) => (
+                        <button
+                          key={iconIndex}
+                          type="button"
+                          onClick={() => setNewFlowIcon(IconComponent)}
+                          className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
+                            newFlowIcon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
+                          }`}
+                        >
+                          <IconComponent className="h-4 w-4" />
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  id="flow-name"
+                  value={newFlowName}
+                  onChange={(e) => setNewFlowName(e.target.value)}
+                  placeholder="Enter flow name"
+                  className="flex-1"
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
