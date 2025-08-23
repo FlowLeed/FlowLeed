@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Workflow } from 'lucide-react';
 
 interface Pipeline {
   id: string;
@@ -48,9 +49,7 @@ export const FlowSelectionStep: React.FC<FlowSelectionStepProps> = ({
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              {pipeline.icon && (
-                <span className="text-2xl">{pipeline.icon}</span>
-              )}
+              <Workflow className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1">
                 <h3 className="font-medium">{pipeline.name}</h3>
                 {pipeline.description && (
