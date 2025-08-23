@@ -59,7 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
-  const { pipelines, updatePipeline } = usePipelineContext();
+  const { pipelines, updatePipeline, deletePipeline } = usePipelineContext();
   const { pipelineId } = useParams<{ pipelineId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -211,13 +211,8 @@ export const Header: React.FC<HeaderProps> = ({
     if (!currentPipeline) return;
 
     try {
-      // Delete from database using supabase
-      const { error } = await supabase
-        .from('pipelines')
-        .delete()
-        .eq('id', currentPipeline.id);
-
-      if (error) throw error;
+      // Use the context function to delete the pipeline
+      await deletePipeline(currentPipeline.id);
 
       toast({
         title: "Flow Deleted",

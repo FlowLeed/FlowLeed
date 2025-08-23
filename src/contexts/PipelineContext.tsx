@@ -9,6 +9,7 @@ interface PipelineContextType {
   pipelines: Record<string, Pipeline>;
   updatePipeline: (pipelineId: string, pipeline: Pipeline) => void;
   createPipeline: (pipeline: Omit<Pipeline, 'id'>) => Promise<string>;
+  deletePipeline: (pipelineId: string) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -439,8 +440,37 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
     }
   };
 
+  const deletePipeline = async (pipelineId: string): Promise<void> => {
+    if (!organization) {
+      throw new Error("No organization available");
+    }
+
+    try {
+      // Delete from database using supabase
+      const { error } = await supabase
+        .from('pipelines')
+        .delete()
+        .eq('id', pipelineId)
+        .eq('organization_id', organization.id);
+
+      if (error) throw error;
+
+      // Update local state by removing the deleted pipeline
+      setPipelines(prev => {
+        const updated = { ...prev };
+        delete updated[pipelineId];
+        return updated;
+      });
+
+    } catch (err) {
+      console.error("Error deleting pipeline:", err);
+      setError(err instanceof Error ? err.message : "Failed to delete pipeline");
+      throw err;
+    }
+  };
+
   return (
-    <PipelineContext.Provider value={{ pipelines, updatePipeline, createPipeline, loading, error }}>
+    <PipelineContext.Provider value={{ pipelines, updatePipeline, createPipeline, deletePipeline, loading, error }}>
       {children}
     </PipelineContext.Provider>
   );
