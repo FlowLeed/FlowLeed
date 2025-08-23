@@ -50,6 +50,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -103,6 +104,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const [isConnectedToPC, setIsConnectedToPC] = useState(false);
   const [showCreateFlowDialog, setShowCreateFlowDialog] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
+  const [newFlowDescription, setNewFlowDescription] = useState("");
   const [newFlowIcon, setNewFlowIcon] = useState<LucideIcon>(Users);
   const [newFlowSteps, setNewFlowSteps] = useState<FlowStep[]>([
     { name: "New", color: "#3b82f6", icon: Users },
@@ -206,6 +208,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
 
       // Reset form
       setNewFlowName("");
+      setNewFlowDescription("");
       setNewFlowIcon(Users);
       setNewFlowSteps([
         { name: "New", color: "#3b82f6", icon: Users },
@@ -394,6 +397,17 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
                   className="flex-1"
                 />
               </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="flow-description">Description</Label>
+              <Textarea
+                id="flow-description"
+                value={newFlowDescription}
+                onChange={(e) => setNewFlowDescription(e.target.value)}
+                placeholder="Enter flow description (optional)"
+                className="min-h-[80px]"
+              />
             </div>
             
             <div className="space-y-2">
