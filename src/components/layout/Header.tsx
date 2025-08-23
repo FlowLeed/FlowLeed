@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
 
 interface HeaderProps {
@@ -29,12 +30,18 @@ export const Header: React.FC<HeaderProps> = ({
   addButtonLabel = "New Person"
 }) => {
   const { user, signOut } = useAuth();
+  const { profile, organization } = useProfile();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
   };
+
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
+  const initials = profile?.full_name 
+    ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
+    : user?.email?.charAt(0).toUpperCase() || 'U';
   return (
     <div className="flex items-center justify-between h-16 px-6 border-b border-crm-border">
       <div className="text-xl font-semibold">{title}</div>
@@ -58,14 +65,27 @@ export const Header: React.FC<HeaderProps> = ({
               <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-2">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback>
-                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                    {initials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-medium">{user?.email}</span>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">{displayName}</span>
+                  {organization && (
+                    <span className="text-xs text-muted-foreground">{organization.name}</span>
+                  )}
+                </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                <div>
+                  <div className="font-medium">{displayName}</div>
+                  <div className="text-sm font-normal text-muted-foreground">{user?.email}</div>
+                  {organization && (
+                    <div className="text-xs font-normal text-muted-foreground">{organization.name}</div>
+                  )}
+                </div>
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="mr-2 h-4 w-4" />
