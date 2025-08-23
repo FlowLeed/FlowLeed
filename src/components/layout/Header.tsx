@@ -122,7 +122,7 @@ export const Header: React.FC<HeaderProps> = ({
   const openEditDialog = () => {
     if (currentPipeline) {
       setEditFlowName(currentPipeline.name);
-      setEditFlowDescription(""); // Add description field to pipeline type if needed
+      setEditFlowDescription(currentPipeline.description || "");
       
       // Set icon
       if (currentPipeline.icon && iconMap[currentPipeline.icon]) {
@@ -156,6 +156,7 @@ export const Header: React.FC<HeaderProps> = ({
       const updatedPipeline = {
         ...currentPipeline,
         name: editFlowName,
+        description: editFlowDescription,
         icon: Object.keys(iconMap).find(key => iconMap[key] === editFlowIcon) || 'Users',
         stages: editFlowSteps.map((step, index) => {
           // For existing steps, keep the original structure

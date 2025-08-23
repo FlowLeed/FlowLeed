@@ -63,7 +63,7 @@ const Dashboard = () => {
 
     return {
       title: pipeline.name,
-      description: `Manage and track contacts through the ${pipeline.name} process`,
+      description: pipeline.description || `Manage and track contacts through the ${pipeline.name} process`,
       icon,
       contactCount: calculatePipelineContactCount(pipeline),
       path: `/pipelines/${pipeline.id}`,

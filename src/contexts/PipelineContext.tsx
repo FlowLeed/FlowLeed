@@ -48,6 +48,7 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[]): any => ({
 const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[]): Pipeline => ({
   id: dbPipeline.id,
   name: dbPipeline.name,
+  description: dbPipeline.description,
   icon: dbPipeline.icon,
   stages: stages.map(stage => ({
     id: stage.id,
@@ -266,6 +267,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
         .from('pipelines')
         .update({
           name: pipeline.name,
+          description: pipeline.description,
           icon: pipeline.icon
         })
         .eq('id', pipelineId)
