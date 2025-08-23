@@ -40,6 +40,14 @@ serve(async (req) => {
         return await handleTest(supabase, user.id, body);
       case 'sync':
         return await handleSync(supabase, user.id, body);
+      case 'sync_lists':
+        return await handleSyncLists(supabase, user.id, body);
+      case 'get_lists':
+        return await handleGetLists(supabase, user.id, body);
+      case 'map_list':
+        return await handleMapList(supabase, user.id, body);
+      case 'unmap_list':
+        return await handleUnmapList(supabase, user.id, body);
       case 'disconnect':
         return await handleDisconnect(supabase, user.id, body);
       default:
@@ -150,6 +158,287 @@ async function handleTest(supabase: any, userId: string, { organizationId }: any
     throw error;
   }
 }
+
+async function handleGetLists(supabase: any, userId: string, { organizationId }: any) {
+  try {
+    // Get the stored integration
+    const { data: integration, error } = await supabase
+      .from('integrations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .eq('service_name', 'planning_center')
+      .single();
+
+    if (error || !integration) {
+      throw new Error('Planning Center integration not found');
+    }
+
+    const { app_id, secret } = integration.credentials;
+    
+    // Fetch lists from Planning Center
+    const lists = await fetchPlanningCenterLists(app_id, secret);
+    
+    // Get existing mappings
+    const { data: mappings } = await supabase
+      .from('integration_list_mappings')
+      .select(`
+        *,
+        pipelines(id, name),
+        pipeline_stages(id, name)
+      `)
+      .eq('integration_id', integration.id);
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      lists,
+      mappings: mappings || []
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Get lists error:', error);
+    throw error;
+  }
+}
+
+async function handleMapList(supabase: any, userId: string, { organizationId, listId, listName, pipelineId, stageId }: any) {
+  try {
+    // Get the stored integration
+    const { data: integration, error } = await supabase
+      .from('integrations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .eq('service_name', 'planning_center')
+      .single();
+
+    if (error || !integration) {
+      throw new Error('Planning Center integration not found');
+    }
+
+    // Create or update mapping
+    const { data, error: mappingError } = await supabase
+      .from('integration_list_mappings')
+      .upsert({
+        integration_id: integration.id,
+        external_list_id: listId,
+        external_list_name: listName,
+        pipeline_id: pipelineId,
+        stage_id: stageId
+      }, {
+        onConflict: 'integration_id,external_list_id'
+      })
+      .select()
+      .single();
+
+    if (mappingError) throw mappingError;
+
+    // Log the mapping
+    await supabase
+      .from('integration_logs')
+      .insert({
+        integration_id: integration.id,
+        action: 'map_list',
+        status: 'success',
+        message: `Mapped list "${listName}" to pipeline`,
+        details: { listId, listName, pipelineId, stageId }
+      });
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: `List "${listName}" mapped to pipeline successfully`,
+      mapping: data
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Map list error:', error);
+    throw error;
+  }
+}
+
+async function handleUnmapList(supabase: any, userId: string, { organizationId, listId }: any) {
+  try {
+    // Get the stored integration
+    const { data: integration, error } = await supabase
+      .from('integrations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .eq('service_name', 'planning_center')
+      .single();
+
+    if (error || !integration) {
+      throw new Error('Planning Center integration not found');
+    }
+
+    // Delete mapping
+    const { error: deleteError } = await supabase
+      .from('integration_list_mappings')
+      .delete()
+      .eq('integration_id', integration.id)
+      .eq('external_list_id', listId);
+
+    if (deleteError) throw deleteError;
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: 'List mapping removed successfully'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Unmap list error:', error);
+    throw error;
+  }
+}
+
+async function handleSyncLists(supabase: any, userId: string, { organizationId }: any) {
+  try {
+    // Get the stored integration
+    const { data: integration, error } = await supabase
+      .from('integrations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .eq('service_name', 'planning_center')
+      .single();
+
+    if (error || !integration) {
+      throw new Error('Planning Center integration not found');
+    }
+
+    const { app_id, secret } = integration.credentials;
+    
+    // Get list mappings
+    const { data: mappings } = await supabase
+      .from('integration_list_mappings')
+      .select('*')
+      .eq('integration_id', integration.id)
+      .eq('auto_sync', true);
+
+    if (!mappings || mappings.length === 0) {
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: 'No list mappings configured for auto-sync'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    let totalImported = 0;
+    let totalUpdated = 0;
+
+    // Process each mapped list
+    for (const mapping of mappings) {
+      try {
+        // Fetch people from this specific list
+        const people = await fetchPlanningCenterListPeople(app_id, secret, mapping.external_list_id);
+        
+        for (const person of people) {
+          const contactData = {
+            name: `${person.attributes.first_name || ''} ${person.attributes.last_name || ''}`.trim(),
+            email: person.attributes.primary_email,
+            phone: person.attributes.primary_phone,
+            organization_id: organizationId,
+            assigned_to_user_id: userId,
+            notes: `Imported from Planning Center list "${mapping.external_list_name}" (Person ID: ${person.id})`
+          };
+
+          // Try to find existing contact by email
+          const { data: existingContact } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('email', contactData.email)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+
+          let contactId;
+          if (existingContact) {
+            // Update existing contact
+            await supabase
+              .from('contacts')
+              .update(contactData)
+              .eq('id', existingContact.id);
+            contactId = existingContact.id;
+            totalUpdated++;
+          } else {
+            // Create new contact
+            const { data: newContact } = await supabase
+              .from('contacts')
+              .insert(contactData)
+              .select('id')
+              .single();
+            contactId = newContact.id;
+            totalImported++;
+          }
+
+          // Add to pipeline/stage if not already there
+          const { data: existingPipelineContact } = await supabase
+            .from('pipeline_contacts')
+            .select('id')
+            .eq('contact_id', contactId)
+            .eq('pipeline_id', mapping.pipeline_id)
+            .maybeSingle();
+
+          if (!existingPipelineContact) {
+            await supabase
+              .from('pipeline_contacts')
+              .insert({
+                contact_id: contactId,
+                pipeline_id: mapping.pipeline_id,
+                stage_id: mapping.stage_id,
+                stage_order: 0
+              });
+          }
+        }
+
+        // Update mapping last sync time
+        await supabase
+          .from('integration_list_mappings')
+          .update({ 
+            last_sync_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', mapping.id);
+
+      } catch (listError) {
+        console.error(`Error syncing list ${mapping.external_list_name}:`, listError);
+        // Continue with other lists
+      }
+    }
+
+    // Update integration last sync time
+    await supabase
+      .from('integrations')
+      .update({ 
+        last_sync_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', integration.id);
+
+    // Log the sync
+    await supabase
+      .from('integration_logs')
+      .insert({
+        integration_id: integration.id,
+        action: 'sync_lists',
+        status: 'success',
+        message: `List sync completed: ${totalImported} imported, ${totalUpdated} updated`,
+        details: { imported: totalImported, updated: totalUpdated, mappings: mappings.length }
+      });
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: `List sync completed: ${totalImported} imported, ${totalUpdated} updated`,
+      stats: { imported: totalImported, updated: totalUpdated, lists: mappings.length }
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Sync lists error:', error);
+    throw error;
 
 async function handleSync(supabase: any, userId: string, { organizationId }: any) {
   try {
@@ -282,10 +571,10 @@ async function testPlanningCenterConnection(appId: string, secret: string): Prom
   }
 }
 
-async function fetchPlanningCenterPeople(appId: string, secret: string) {
+async function fetchPlanningCenterLists(appId: string, secret: string) {
   try {
     const auth = btoa(`${appId}:${secret}`);
-    const response = await fetch('https://api.planningcenteronline.com/people/v2/people?per_page=100', {
+    const response = await fetch('https://api.planningcenteronline.com/people/v2/lists?per_page=100', {
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json'
@@ -299,7 +588,29 @@ async function fetchPlanningCenterPeople(appId: string, secret: string) {
     const data = await response.json();
     return data.data || [];
   } catch (error) {
-    console.error('Error fetching Planning Center people:', error);
+    console.error('Error fetching Planning Center lists:', error);
+    throw error;
+  }
+}
+
+async function fetchPlanningCenterListPeople(appId: string, secret: string, listId: string) {
+  try {
+    const auth = btoa(`${appId}:${secret}`);
+    const response = await fetch(`https://api.planningcenteronline.com/people/v2/lists/${listId}/people?per_page=100`, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Planning Center API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Error fetching Planning Center list people:', error);
     throw error;
   }
 }

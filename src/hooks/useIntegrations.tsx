@@ -24,12 +24,35 @@ interface IntegrationLog {
   created_at: string;
 }
 
+interface ListMapping {
+  id: string;
+  external_list_id: string;
+  external_list_name: string;
+  pipeline_id: string;
+  stage_id: string;
+  auto_sync: boolean;
+  last_sync_at: string | null;
+  pipelines: { id: string; name: string };
+  pipeline_stages: { id: string; name: string };
+}
+
+interface PlanningCenterList {
+  id: string;
+  attributes: {
+    name: string;
+    description?: string;
+    total_people: number;
+  };
+}
+
 export const useIntegrations = () => {
   const { user } = useAuth();
   const { organization } = useProfile();
   const { toast } = useToast();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [logs, setLogs] = useState<IntegrationLog[]>([]);
+  const [lists, setLists] = useState<PlanningCenterList[]>([]);
+  const [mappings, setMappings] = useState<ListMapping[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -236,6 +259,151 @@ export const useIntegrations = () => {
     }
   };
 
+  const getLists = async () => {
+    if (!organization) return { error: 'No organization found' };
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.functions.invoke('planning-center-integration', {
+        body: {
+          action: 'get_lists',
+          organizationId: organization.id
+        }
+      });
+
+      if (error) throw error;
+
+      setLists(data.lists || []);
+      setMappings(data.mappings || []);
+
+      return data;
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to fetch lists';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return { error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mapListToFlow = async (listId: string, listName: string, pipelineId: string, stageId: string) => {
+    if (!organization) return { error: 'No organization found' };
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.functions.invoke('planning-center-integration', {
+        body: {
+          action: 'map_list',
+          organizationId: organization.id,
+          listId,
+          listName,
+          pipelineId,
+          stageId
+        }
+      });
+
+      if (error) throw error;
+
+      await getLists(); // Refresh mappings
+
+      toast({
+        title: "Success",
+        description: data.message,
+      });
+
+      return data;
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to map list';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return { error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const unmapList = async (listId: string) => {
+    if (!organization) return { error: 'No organization found' };
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.functions.invoke('planning-center-integration', {
+        body: {
+          action: 'unmap_list',
+          organizationId: organization.id,
+          listId
+        }
+      });
+
+      if (error) throw error;
+
+      await getLists(); // Refresh mappings
+
+      toast({
+        title: "Success",
+        description: data.message,
+      });
+
+      return data;
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to unmap list';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return { error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const syncLists = async () => {
+    if (!organization) return { error: 'No organization found' };
+
+    try {
+      setLoading(true);
+
+      const { data, error } = await supabase.functions.invoke('planning-center-integration', {
+        body: {
+          action: 'sync_lists',
+          organizationId: organization.id
+        }
+      });
+
+      if (error) throw error;
+
+      await fetchIntegrations();
+
+      toast({
+        title: "Success",
+        description: data.message,
+      });
+
+      return data;
+    } catch (error: any) {
+      const errorMessage = error.message || 'List sync failed';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return { error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getIntegration = (serviceName: string) => {
     return integrations.find(i => i.service_name === serviceName);
   };
@@ -248,12 +416,18 @@ export const useIntegrations = () => {
   return {
     integrations,
     logs,
+    lists,
+    mappings,
     loading,
     fetchIntegrations,
     fetchLogs,
     connectPlanningCenter,
     testConnection,
     syncData,
+    syncLists,
+    getLists,
+    mapListToFlow,
+    unmapList,
     disconnect,
     getIntegration,
     isConnected,

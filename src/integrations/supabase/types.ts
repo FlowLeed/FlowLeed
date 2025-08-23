@@ -310,6 +310,67 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_list_mappings: {
+        Row: {
+          auto_sync: boolean
+          created_at: string
+          external_list_id: string
+          external_list_name: string
+          id: string
+          integration_id: string
+          last_sync_at: string | null
+          pipeline_id: string
+          stage_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_sync?: boolean
+          created_at?: string
+          external_list_id: string
+          external_list_name: string
+          id?: string
+          integration_id: string
+          last_sync_at?: string | null
+          pipeline_id: string
+          stage_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_sync?: boolean
+          created_at?: string
+          external_list_id?: string
+          external_list_name?: string
+          id?: string
+          integration_id?: string
+          last_sync_at?: string | null
+          pipeline_id?: string
+          stage_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_list_mappings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_list_mappings_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_list_mappings_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_logs: {
         Row: {
           action: string

@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useIntegrations } from "@/hooks/useIntegrations";
+import PlanningCenterListsTab from "@/components/integrations/PlanningCenterListsTab";
 import { ArrowLeft, Settings2, CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Users, Zap, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -92,8 +93,9 @@ const IntegrationsPage = () => {
       </div>
 
       <Tabs defaultValue="available" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="available">Available Integrations</TabsTrigger>
+          <TabsTrigger value="lists">Planning Center Lists</TabsTrigger>
           <TabsTrigger value="connected">Connected Services</TabsTrigger>
         </TabsList>
 
@@ -347,6 +349,10 @@ const IntegrationsPage = () => {
               </Card>
             )}
           </div>
+        </TabsContent>
+
+        <TabsContent value="lists">
+          <PlanningCenterListsTab />
         </TabsContent>
       </Tabs>
     </div>
