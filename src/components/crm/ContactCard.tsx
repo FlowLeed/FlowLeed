@@ -81,7 +81,14 @@ export const ContactCard: React.FC<ContactCardProps> = ({
                 {assignedTo.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-gray-600">{assignedTo.name}</span>
+            <span className="text-xs text-gray-600">
+              {(() => {
+                const nameParts = assignedTo.name.split(' ');
+                const firstName = nameParts[0] || '';
+                const lastNameInitial = nameParts[1]?.charAt(0) || '';
+                return `${firstName}${lastNameInitial ? ` ${lastNameInitial}.` : ''}`;
+              })()}
+            </span>
           </div>
           <div className="flex gap-1">
             {phone && <a href={`sms:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send text message">
