@@ -103,6 +103,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const [isConnectedToPC, setIsConnectedToPC] = useState(false);
   const [showCreateFlowDialog, setShowCreateFlowDialog] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
+  const [newFlowIcon, setNewFlowIcon] = useState<LucideIcon>(Users);
   const [newFlowSteps, setNewFlowSteps] = useState<FlowStep[]>([
     { name: "New", color: "#3b82f6", icon: Users },
     { name: "In Progress", color: "#f59e0b", icon: Target },
@@ -177,6 +178,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
     const newPipeline = {
       id: newPipelineId,
       name: newFlowName,
+      icon: newFlowIcon.name || 'Users', // Store icon name for persistence
       stages: newFlowSteps.map((step, index) => ({
         id: `${newPipelineId}-stage-${index + 1}`,
         name: step.name,
@@ -194,6 +196,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
 
     // Reset form
     setNewFlowName("");
+    setNewFlowIcon(Users);
     setNewFlowSteps([
       { name: "New", color: "#3b82f6", icon: Users },
       { name: "In Progress", color: "#f59e0b", icon: Target },
@@ -318,6 +321,34 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
                 placeholder="Enter flow name"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label>Flow Icon</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start">
+                    {React.createElement(newFlowIcon, { className: "h-4 w-4 mr-2" })}
+                    Select Icon
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3">
+                  <div className="grid grid-cols-6 gap-2">
+                    {iconOptions.map((IconComponent, iconIndex) => (
+                      <button
+                        key={iconIndex}
+                        type="button"
+                        onClick={() => setNewFlowIcon(IconComponent)}
+                        className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
+                          newFlowIcon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
+                        }`}
+                      >
+                        <IconComponent className="h-4 w-4" />
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
             
             <div className="space-y-2">
               <Label>Pipeline Steps</Label>
@@ -439,6 +470,12 @@ const Logo = () => (
 
 export const Sidebar = () => {
   const { pipelines } = usePipelineContext();
+
+  const iconOptions = [
+    Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap,
+    Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift,
+    Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3
+  ];
   
   const pageItems: SidebarItem[] = [
     {
@@ -455,14 +492,24 @@ export const Sidebar = () => {
 
   // Create flow items dynamically from all pipelines
   const flowItems: SidebarItem[] = Object.entries(pipelines).map(([key, pipeline]) => {
-    // Determine icon based on pipeline name or key
+    // Use stored icon if available, otherwise determine icon based on pipeline name or key
     let icon = Users;
-    if (pipeline.name.toLowerCase().includes('pastoral') || key.includes('pastoral')) {
-      icon = MessageSquare;
-    } else if (pipeline.name.toLowerCase().includes('operation') || key.includes('operation')) {
-      icon = Calendar;
-    } else if (pipeline.name.toLowerCase().includes('host') || key.includes('host')) {
-      icon = Users;
+    
+    // If pipeline has a stored icon, try to find the matching icon component
+    if (pipeline.icon) {
+      const matchedIcon = iconOptions.find(iconComp => iconComp.name === pipeline.icon);
+      if (matchedIcon) {
+        icon = matchedIcon;
+      }
+    } else {
+      // Fallback to name-based icon selection
+      if (pipeline.name.toLowerCase().includes('pastoral') || key.includes('pastoral')) {
+        icon = MessageSquare;
+      } else if (pipeline.name.toLowerCase().includes('operation') || key.includes('operation')) {
+        icon = Calendar;
+      } else if (pipeline.name.toLowerCase().includes('host') || key.includes('host')) {
+        icon = Users;
+      }
     }
 
     return {

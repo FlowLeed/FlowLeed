@@ -29,4 +29,5 @@ export interface Pipeline {
   id: string;
   name: string;
   stages: PipelineStage[];
+  icon?: string;
 }
