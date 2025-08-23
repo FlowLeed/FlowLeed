@@ -2,12 +2,13 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
-  Users, 
+  LayoutDashboard, 
   BarChart3, 
   Check,
   Calendar, 
   Settings,
-  MessageSquare
+  MessageSquare,
+  Users
 } from "lucide-react";
 import { calculatePipelineContactCount } from "@/lib/utils";
 import { usePipelineContext } from "@/contexts/PipelineContext";
@@ -78,7 +79,7 @@ export const Sidebar = () => {
   const pageItems: SidebarItem[] = [
     {
       title: "Dashboard",
-      icon: Users,
+      icon: LayoutDashboard,
       path: "/",
     },
     {
