@@ -78,8 +78,6 @@ serve(async (req) => {
         return await handleUnmapList(supabase, user.id, body);
       case 'disconnect':
         return await handleDisconnect(supabase, user.id, body);
-      case 'save_secret':
-        return await handleSaveSecret(body.secretName, body.secretValue);
       default:
         console.log('Invalid action:', action);
         throw new Error('Invalid action: ' + action);

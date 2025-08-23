@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useIntegrations } from "@/hooks/useIntegrations";
 import PlanningCenterListsTab from "@/components/integrations/PlanningCenterListsTab";
-import SecretsManagement from "@/components/integrations/SecretsManagement";
 import { ArrowLeft, Settings2, CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Users, Zap, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -337,7 +336,61 @@ const IntegrationsPage = () => {
         </TabsContent>
 
         <TabsContent value="secrets" className="space-y-6">
-          <SecretsManagement />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Key className="h-4 w-4 text-purple-600" />
+                </div>
+                <div>
+                  <CardTitle>Planning Center OAuth Setup</CardTitle>
+                  <CardDescription>
+                    Add your Planning Center OAuth credentials to enable integration
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 mb-2">OAuth Setup Instructions</h4>
+                <p className="text-sm text-blue-700 mb-3">
+                  To use OAuth with Planning Center, you need to register your application and get OAuth credentials.
+                </p>
+                <div className="space-y-2 text-sm text-blue-700">
+                  <p><strong>Authorization callback URL:</strong> <code>https://preview--flow-follow-up-friend.lovable.app/integrations</code></p>
+                  <p><strong>Redirect URI:</strong> Use the same URL as above</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Planning Center Client ID
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Your Planning Center OAuth Client ID
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Planning Center Client Secret
+                    <span className="text-red-500 ml-1">*</span>
+                  </Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Your Planning Center OAuth Client Secret
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <strong>Note:</strong> Secrets are encrypted and stored securely. They will be available for use in your integrations once saved.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="lists">
