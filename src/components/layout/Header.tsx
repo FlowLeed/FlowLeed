@@ -1,7 +1,7 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2 } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -14,7 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { usePipelineContext } from "@/contexts/PipelineContext";
 import { useNavigate } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
 
 interface HeaderProps {
   title: string;
@@ -31,7 +33,56 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
+  const { pipelines } = usePipelineContext();
+  const { pipelineId } = useParams<{ pipelineId: string }>();
   const navigate = useNavigate();
+
+  // Icon mapping object
+  const iconMap: { [key: string]: LucideIcon } = {
+    'Users': Users,
+    'MessageSquare': MessageSquare,
+    'Calendar': Calendar,
+    'Settings': Settings,
+    'Heart': Heart,
+    'Star': Star,
+    'Target': Target,
+    'Zap': Zap,
+    'Shield': Shield,
+    'Globe': Globe,
+    'Briefcase': Briefcase,
+    'BookOpen': BookOpen,
+    'Music': Music,
+    'Coffee': Coffee,
+    'Camera': Camera,
+    'Gift': Gift,
+    'Flame': Flame,
+    'Sparkles': Sparkles,
+    'Check': Check,
+    'Plus': Plus,
+    'Puzzle': Puzzle,
+    'LayoutDashboard': LayoutDashboard,
+    'BarChart3': BarChart3
+  };
+
+  // Get the current pipeline and its icon
+  const currentPipeline = pipelineId ? Object.values(pipelines).find(p => p.id === pipelineId) : null;
+  let FlowIcon = Workflow; // Default fallback
+
+  if (currentPipeline?.icon && iconMap[currentPipeline.icon]) {
+    FlowIcon = iconMap[currentPipeline.icon];
+  } else if (currentPipeline) {
+    // Fallback to name-based icon selection
+    const name = currentPipeline.name.toLowerCase();
+    if (name.includes('pastoral') || name.includes('care')) {
+      FlowIcon = MessageSquare;
+    } else if (name.includes('operation') || name.includes('ops')) {
+      FlowIcon = Calendar;
+    } else if (name.includes('host') || name.includes('team')) {
+      FlowIcon = Users;
+    } else if (name.includes('giving') || name.includes('hub')) {
+      FlowIcon = Heart;
+    }
+  }
 
   const handleSignOut = async () => {
     await signOut();
@@ -45,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <div className="flex items-center justify-between h-16 px-6 border-b border-crm-border">
       <div className="flex items-center gap-3">
-        <Workflow className="h-6 w-6 text-primary" />
+        <FlowIcon className="h-6 w-6 text-primary" />
         <div className="text-xl font-semibold">{title}</div>
         <Button variant="ghost" size="sm" className="ml-2">
           <Settings2 className="h-4 w-4" />
