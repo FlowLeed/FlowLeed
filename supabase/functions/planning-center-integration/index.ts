@@ -7,18 +7,37 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Planning Center Integration function called');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    console.log('Processing request...');
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.log('Environment check:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseServiceKey
+    });
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing required environment variables');
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get user from JWT
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    
     if (!authHeader) {
       throw new Error('Missing authorization header');
     }
@@ -27,11 +46,16 @@ serve(async (req) => {
       authHeader.replace('Bearer ', '')
     );
 
+    console.log('User auth result:', { hasUser: !!user, authError });
+
     if (authError || !user) {
-      throw new Error('Invalid authentication');
+      throw new Error('Invalid authentication: ' + (authError?.message || 'No user found'));
     }
 
-    const { action, ...body } = await req.json();
+    const requestBody = await req.json();
+    console.log('Request body:', requestBody);
+    
+    const { action, ...body } = requestBody;
 
     switch (action) {
       case 'connect':
@@ -51,11 +75,17 @@ serve(async (req) => {
       case 'disconnect':
         return await handleDisconnect(supabase, user.id, body);
       default:
-        throw new Error('Invalid action');
+        console.log('Invalid action:', action);
+        throw new Error('Invalid action: ' + action);
     }
   } catch (error) {
     console.error('Error in planning-center-integration function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error stack:', error.stack);
+    
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: error.stack 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -63,9 +93,14 @@ serve(async (req) => {
 });
 
 async function handleConnect(supabase: any, userId: string, { appId, secret, organizationId }: any) {
+  console.log('handleConnect called with:', { userId, organizationId, hasAppId: !!appId, hasSecret: !!secret });
+  
   try {
     // Test the connection first
+    console.log('Testing Planning Center connection...');
     const isValid = await testPlanningCenterConnection(appId, secret);
+    console.log('Connection test result:', isValid);
+    
     if (!isValid) {
       throw new Error('Invalid Planning Center credentials');
     }
@@ -439,6 +474,8 @@ async function handleSyncLists(supabase: any, userId: string, { organizationId }
   } catch (error) {
     console.error('Sync lists error:', error);
     throw error;
+  }
+}
 
 async function handleSync(supabase: any, userId: string, { organizationId }: any) {
   try {
@@ -611,6 +648,28 @@ async function fetchPlanningCenterListPeople(appId: string, secret: string, list
     return data.data || [];
   } catch (error) {
     console.error('Error fetching Planning Center list people:', error);
+    throw error;
+  }
+}
+
+async function fetchPlanningCenterPeople(appId: string, secret: string) {
+  try {
+    const auth = btoa(`${appId}:${secret}`);
+    const response = await fetch('https://api.planningcenteronline.com/people/v2/people?per_page=100', {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Planning Center API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Error fetching Planning Center people:', error);
     throw error;
   }
 }
