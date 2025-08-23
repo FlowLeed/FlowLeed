@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PipelineViewProps {
   pipeline: Pipeline;
@@ -22,6 +23,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const { organization } = useProfile();
+  const queryClient = useQueryClient();
 
   const handleAddContact = (stageId: string) => {
     setCurrentContact(null);
@@ -34,24 +36,46 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     setIsFormOpen(true);
   };
 
-  const handleDeleteContact = (contactId: string, stageId: string) => {
-    const updatedStages = pipeline.stages.map(stage => {
-      if (stage.id === stageId) {
-        return {
-          ...stage,
-          contacts: stage.contacts.filter(contact => contact.id !== contactId)
-        };
-      }
-      return stage;
-    });
+  const handleDeleteContact = async (contactId: string, stageId: string) => {
+    try {
+      // Delete from database
+      const { error } = await supabase
+        .from('pipeline_contacts')
+        .delete()
+        .eq('contact_id', contactId)
+        .eq('stage_id', stageId);
 
-    const updatedPipeline = {
-      ...pipeline,
-      stages: updatedStages
-    };
+      if (error) throw error;
 
-    onPipelineChange?.(updatedPipeline);
-    toast.success("Contact deleted");
+      // Update local state
+      const updatedStages = pipeline.stages.map(stage => {
+        if (stage.id === stageId) {
+          return {
+            ...stage,
+            contacts: stage.contacts.filter(contact => contact.id !== contactId)
+          };
+        }
+        return stage;
+      });
+
+      const updatedPipeline = {
+        ...pipeline,
+        stages: updatedStages
+      };
+
+      onPipelineChange?.(updatedPipeline);
+      
+      // Invalidate contact query to update contact profile
+      queryClient.invalidateQueries({ queryKey: ['contact', contactId] });
+      
+      // Invalidate pipeline queries to update pipeline views
+      queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+      
+      toast.success("Contact removed from flow");
+    } catch (error) {
+      console.error("Error removing contact from flow:", error);
+      toast.error("Failed to remove contact from flow");
+    }
   };
 
   const handleUpdateStage = (stageId: string, name: string, color: string) => {
