@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -33,8 +34,13 @@ interface ContactFlowStatusProps {
 
 export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, contactId }) => {
   const [showAddToFlowDialog, setShowAddToFlowDialog] = useState(false);
+  const navigate = useNavigate();
   
   const currentPipelineIds = flows.map(flow => flow.pipeline.id);
+  
+  const handleFlowClick = (pipelineId: string) => {
+    navigate(`/pipelines/${pipelineId}`);
+  };
   if (flows.length === 0) {
     return (
       <Card>
@@ -83,7 +89,11 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
       </CardHeader>
       <CardContent className="space-y-4">
         {flows.map((flow) => (
-          <div key={flow.pipeline.id} className="border rounded-lg p-4 space-y-3">
+          <div 
+            key={flow.pipeline.id} 
+            className="border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => handleFlowClick(flow.pipeline.id)}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {flow.pipeline.icon && (
