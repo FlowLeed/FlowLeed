@@ -21,7 +21,10 @@ export const PipelineStage: React.FC<PipelineStageProps> = ({
   return (
     <div className="pipeline-column w-72 flex-shrink-0 bg-transparent p-3 rounded-[35px] border border-gray-200 shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-medium text-gray-700">{stage.name}</h3>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+          <h3 className="font-medium text-gray-700">{stage.name}</h3>
+        </div>
         <button 
           className="p-1 rounded-full hover:bg-gray-100"
           onClick={() => onAddContact?.(stage.id)}
