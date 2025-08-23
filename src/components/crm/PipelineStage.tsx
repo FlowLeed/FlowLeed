@@ -43,7 +43,10 @@ export const PipelineStage: React.FC<PipelineStageProps> = ({
 
   return (
     <>
-      <div className="pipeline-column w-72 flex-shrink-0 bg-transparent p-3 rounded-[35px] border border-gray-200 shadow-sm">
+      <div 
+        className="pipeline-column w-72 flex-shrink-0 bg-transparent p-3 rounded-[35px] border-2 shadow-sm"
+        style={{ borderColor: stageColor }}
+      >
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
             <button
