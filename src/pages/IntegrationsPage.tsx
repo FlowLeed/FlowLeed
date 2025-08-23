@@ -363,24 +363,60 @@ const IntegrationsPage = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Planning Center Client ID
-                    <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Your Planning Center OAuth Client ID
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Planning Center Client ID
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Your Planning Center OAuth Client ID
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        // This will be handled by the secrets management tool
+                        const event = new CustomEvent('add-secret', { 
+                          detail: { secretName: 'PLANNING_CENTER_CLIENT_ID' } 
+                        });
+                        window.dispatchEvent(event);
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Key className="h-4 w-4 mr-2" />
+                      Add Client ID
+                    </Button>
+                  </div>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Planning Center Client Secret
-                    <span className="text-red-500 ml-1">*</span>
-                  </Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Your Planning Center OAuth Client Secret
-                  </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Planning Center Client Secret
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Your Planning Center OAuth Client Secret
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        // This will be handled by the secrets management tool
+                        const event = new CustomEvent('add-secret', { 
+                          detail: { secretName: 'PLANNING_CENTER_CLIENT_SECRET' } 
+                        });
+                        window.dispatchEvent(event);
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Key className="h-4 w-4 mr-2" />
+                      Add Client Secret
+                    </Button>
+                  </div>
                 </div>
               </div>
 
