@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import PipelinePage from "./pages/PipelinePage";
 import UserProfilePage from "./pages/UserProfilePage";
 import ProfilePage from "./pages/ProfilePage";
+import IntegrationsPage from "./pages/IntegrationsPage";
 import AuthPage from "./pages/AuthPage";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
                 <Route path="/pipelines/:pipelineId" element={<PipelinePage />} />
                 <Route path="/contacts/:contactId" element={<UserProfilePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/integrations" element={<IntegrationsPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

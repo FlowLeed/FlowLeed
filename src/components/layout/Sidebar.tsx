@@ -8,7 +8,8 @@ import {
   Calendar, 
   Settings,
   MessageSquare,
-  Users
+  Users,
+  Puzzle
 } from "lucide-react";
 import { calculatePipelineContactCount } from "@/lib/utils";
 import { usePipelineContext } from "@/contexts/PipelineContext";
@@ -121,6 +122,11 @@ export const Sidebar = () => {
       title: "My Profile",
       icon: Settings,
       path: "/profile",
+    },
+    {
+      title: "Integrations",
+      icon: Puzzle,
+      path: "/integrations",
     },
   ];
 
