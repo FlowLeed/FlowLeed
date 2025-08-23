@@ -17,17 +17,10 @@ import {
 import { Link } from "react-router-dom";
 import { differenceInDays, parse } from "date-fns";
 
-// Helper function to calculate days since a date
+// Helper function to generate random days since activity
 const getDaysSince = (dateString: string): number => {
-  try {
-    // Parse date format like "25 Sep" to current year
-    const currentYear = new Date().getFullYear();
-    const parsedDate = parse(`${dateString} ${currentYear}`, "dd MMM yyyy", new Date());
-    const today = new Date();
-    return Math.max(0, differenceInDays(today, parsedDate));
-  } catch {
-    return 0;
-  }
+  // Generate random number between 1 and 30 days
+  return Math.floor(Math.random() * 30) + 1;
 };
 
 interface ContactCardProps {
