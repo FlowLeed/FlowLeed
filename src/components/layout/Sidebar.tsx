@@ -163,10 +163,6 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem disabled className="text-muted-foreground">
-                    No Planning Center connection
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => setIsConnectedToPC(true)}>
                     <Puzzle className="h-4 w-4 mr-2" />
                     Connect Planning Center
