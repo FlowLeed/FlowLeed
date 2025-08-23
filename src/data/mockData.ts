@@ -66,21 +66,25 @@ export const hostTeamPipeline: Pipeline = {
       id: "interest",
       name: "Interest",
       contacts: [...createMoreContacts(3)],
+      color: "#3B82F6", // blue
     },
     {
       id: "interview",
       name: "Interview",
       contacts: [...createMoreContacts(3)],
+      color: "#F59E0B", // yellow
     },
     {
       id: "orientation",
       name: "Orientation",
       contacts: [...createMoreContacts(4)],
+      color: "#10B981", // green
     },
     {
       id: "first-month",
       name: "1st Month Serving",
       contacts: [...createMoreContacts(3)],
+      color: "#8B5CF6", // purple
     },
   ],
 };
@@ -93,26 +97,31 @@ export const pastoralCarePipeline: Pipeline = {
       id: "new",
       name: "New",
       contacts: [...createMoreContacts(3)],
+      color: "#EF4444", // red
     },
     {
       id: "connect",
       name: "Connect",
       contacts: [...createMoreContacts(3)],
+      color: "#F59E0B", // yellow
     },
     {
       id: "response-plan",
       name: "Response Plan",
       contacts: [...createMoreContacts(4)],
+      color: "#3B82F6", // blue
     },
     {
       id: "follow-up",
       name: "Follow-Up/Check-In",
       contacts: [...createMoreContacts(2)],
+      color: "#10B981", // green
     },
     {
       id: "integration",
       name: "Integration",
       contacts: [...createMoreContacts(2)],
+      color: "#8B5CF6", // purple
     },
   ],
 };
@@ -125,21 +134,25 @@ export const operationsPipeline: Pipeline = {
       id: "new-request",
       name: "New Request",
       contacts: [...createMoreContacts(2)],
+      color: "#06B6D4", // cyan
     },
     {
       id: "in-progress",
       name: "In Progress",
       contacts: [...createMoreContacts(3)],
+      color: "#F59E0B", // yellow
     },
     {
       id: "review",
       name: "Review",
       contacts: [...createMoreContacts(1)],
+      color: "#8B5CF6", // purple
     },
     {
       id: "completed",
       name: "Completed",
       contacts: [...createMoreContacts(2)],
+      color: "#10B981", // green
     },
   ],
 };
@@ -152,21 +165,25 @@ export const givingHubPipeline: Pipeline = {
       id: "inquiry",
       name: "Inquiry",
       contacts: [...createMoreContacts(3)],
+      color: "#EC4899", // pink
     },
     {
       id: "meeting",
       name: "Meeting",
       contacts: [...createMoreContacts(2)],
+      color: "#F59E0B", // yellow
     },
     {
       id: "proposal",
       name: "Proposal",
       contacts: [...createMoreContacts(1)],
+      color: "#8B5CF6", // purple
     },
     {
       id: "commitment",
       name: "Commitment",
       contacts: [...createMoreContacts(2)],
+      color: "#10B981", // green
     },
   ],
 };
