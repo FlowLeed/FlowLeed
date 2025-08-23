@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings } from "lucide-react";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -44,7 +44,13 @@ export const Header: React.FC<HeaderProps> = ({
     : user?.email?.charAt(0).toUpperCase() || 'U';
   return (
     <div className="flex items-center justify-between h-16 px-6 border-b border-crm-border">
-      <div className="text-xl font-semibold">{title}</div>
+      <div className="flex items-center gap-3">
+        <Workflow className="h-6 w-6 text-primary" />
+        <div className="text-xl font-semibold">{title}</div>
+        <Button variant="ghost" size="sm" className="ml-2">
+          <Settings2 className="h-4 w-4" />
+        </Button>
+      </div>
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <button className="p-2 rounded-full hover:bg-slate-100">
