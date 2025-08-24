@@ -38,6 +38,9 @@ serve(async (req) => {
       return await fetchPlanningCenterLists(integrationId, userData.user.id);
     } else if (action === 'syncLists') {
       return await syncPlanningCenterLists(listMappings, userData.user.id);
+    } else if (action === 'autoSync') {
+      // Auto sync all active mappings - no user required for cron jobs
+      return await autoSyncAllMappings();
     }
 
     return new Response('Invalid action', { status: 400, headers: corsHeaders });
@@ -458,3 +461,93 @@ async function syncSingleList(mapping: any, userId: string) {
     totalPeople: people.length,
   };
 }
+
+async function autoSyncAllMappings() {
+  console.log('Starting auto sync for all active mappings...');
+  
+  try {
+    // Get all active mappings with auto_sync enabled
+    const { data: mappings, error: mappingsError } = await supabase
+      .from('integration_list_mappings')
+      .select(`
+        *,
+        integrations!inner(credentials, organization_id)
+      `)
+      .eq('auto_sync', true);
+
+    if (mappingsError) {
+      console.error('Error fetching mappings:', mappingsError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Failed to fetch mappings' 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!mappings || mappings.length === 0) {
+      console.log('No active mappings found for auto sync');
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'No active mappings to sync',
+        synced: 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`Found ${mappings.length} mappings to sync`);
+    const results = [];
+
+    for (const mapping of mappings) {
+      try {
+        console.log(`Auto syncing mapping: ${mapping.external_list_name} (${mapping.id})`);
+        
+        const result = await syncSingleList(mapping, 'auto-sync'); // Use placeholder user ID for auto sync
+        results.push({
+          mappingId: mapping.id,
+          listName: mapping.external_list_name,
+          ...result
+        });
+
+        // Update last_sync_at timestamp
+        await supabase
+          .from('integration_list_mappings')
+          .update({ last_sync_at: new Date().toISOString() })
+          .eq('id', mapping.id);
+
+        console.log(`Successfully synced: ${mapping.external_list_name}`);
+      } catch (error) {
+        console.error(`Error syncing mapping ${mapping.id}:`, error);
+        results.push({
+          mappingId: mapping.id,
+          listName: mapping.external_list_name,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+
+    const successfulSyncs = results.filter(r => r.success).length;
+    console.log(`Auto sync completed. ${successfulSyncs}/${mappings.length} mappings synced successfully`);
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: `Auto sync completed. ${successfulSyncs}/${mappings.length} mappings synced successfully`,
+      synced: successfulSyncs,
+      total: mappings.length,
+      results
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error in auto sync:', error);
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: `Auto sync failed: ${error.message}` 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
