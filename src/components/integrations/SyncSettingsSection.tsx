@@ -118,36 +118,24 @@ export function SyncSettingsSection({
           className="shrink-0"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-          {isSyncing ? 'Syncing...' : 'Sync All Mappings'}
+          {isSyncing ? 'Syncing...' : 'Sync Now'}
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Sync Frequency</label>
-          <Select value={selectedFrequency} onValueChange={handleFrequencyChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select frequency" />
-            </SelectTrigger>
-            <SelectContent>
-              {FREQUENCY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Sync Status</label>
-          <div className="text-sm text-muted-foreground space-y-1 pt-2">
-            {lastSyncAt && (
-              <div>Last sync: {formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true })}</div>
-            )}
-            <div>Next sync: {getNextSyncTime(lastSyncAt, currentFrequency)}</div>
-          </div>
-        </div>
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Sync Frequency</label>
+        <Select value={selectedFrequency} onValueChange={handleFrequencyChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select frequency" />
+          </SelectTrigger>
+          <SelectContent>
+            {FREQUENCY_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
