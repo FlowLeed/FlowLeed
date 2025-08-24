@@ -381,7 +381,7 @@ const IntegrationsPage = () => {
             </div>
             <h3 className="text-lg font-medium mb-2">More Integrations Coming Soon</h3>
             <p className="text-muted-foreground">
-              Mailchimp, Zapier, Google Calendar, and more integrations will be available soon.
+              We believe ministry should be seamless. That's why Flowleed will soon connect with tools like Rock RMS, Overflow, Tithe.ly, Pushpay, and more — building spiritual momentum that starts with your people.
             </p>
           </CardContent>
         </Card>
