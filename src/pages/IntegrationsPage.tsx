@@ -15,10 +15,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { ListToStageMappingDialog } from "@/components/integrations/ListToStageMappingDialog";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
-
 const IntegrationsPage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const queryClient = useQueryClient();
   const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string>('');
@@ -27,158 +28,174 @@ const IntegrationsPage = () => {
     appId: '',
     secret: ''
   });
-  
+
   // Fetch existing integrations
-  const { data: integrations, isLoading: integrationsLoading } = useQuery({
+  const {
+    data: integrations,
+    isLoading: integrationsLoading
+  } = useQuery({
     queryKey: ['integrations'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('integrations')
-        .select('*')
-        .eq('service_name', 'planning_center');
-      
+      const {
+        data,
+        error
+      } = await supabase.from('integrations').select('*').eq('service_name', 'planning_center');
       if (error) throw error;
       return data;
     }
   });
-
   const planningCenterIntegration = integrations?.[0];
-  
   const createIntegrationMutation = useMutation({
-    mutationFn: async ({ appId, secret }: { appId: string; secret: string }) => {
+    mutationFn: async ({
+      appId,
+      secret
+    }: {
+      appId: string;
+      secret: string;
+    }) => {
       // Get user's organization
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
-      
-      const { data: orgMember } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      const { data, error } = await supabase
-        .from('integrations')
-        .insert({
-          service_name: 'planning_center',
-          status: 'active',
-          credentials: { application_id: appId, secret },
-          settings: {},
-          organization_id: orgMember?.organization_id || '',
-          user_id: user.id
-        })
-        .select()
-        .single();
-      
+      const {
+        data: orgMember
+      } = await supabase.from('organization_members').select('organization_id').eq('user_id', user.id).single();
+      const {
+        data,
+        error
+      } = await supabase.from('integrations').insert({
+        service_name: 'planning_center',
+        status: 'active',
+        credentials: {
+          application_id: appId,
+          secret
+        },
+        settings: {},
+        organization_id: orgMember?.organization_id || '',
+        user_id: user.id
+      }).select().single();
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['integrations'] });
-      setPlanningCenterForm({ appId: '', secret: '' });
+      queryClient.invalidateQueries({
+        queryKey: ['integrations']
+      });
+      setPlanningCenterForm({
+        appId: '',
+        secret: ''
+      });
       toast({
         title: 'Integration Connected',
-        description: 'Successfully connected to Planning Center',
+        description: 'Successfully connected to Planning Center'
       });
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: 'Connection Failed',
         description: 'Failed to connect to Planning Center. Please check your credentials.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   });
-
   const deleteIntegrationMutation = useMutation({
     mutationFn: async (integrationId: string) => {
-      const { error } = await supabase
-        .from('integrations')
-        .delete()
-        .eq('id', integrationId);
-      
+      const {
+        error
+      } = await supabase.from('integrations').delete().eq('id', integrationId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      queryClient.invalidateQueries({
+        queryKey: ['integrations']
+      });
       toast({
         title: 'Integration Disconnected',
         description: 'Successfully disconnected from Planning Center',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   });
-
   const testConnectionMutation = useMutation({
     mutationFn: async (integrationId: string) => {
-      const { data, error } = await supabase.functions.invoke('planning-center-lists', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('planning-center-lists', {
         body: {
           action: 'testConnection',
-          integrationId,
-        },
+          integrationId
+        }
       });
-
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ['integrations'] });
+        queryClient.invalidateQueries({
+          queryKey: ['integrations']
+        });
         toast({
           title: 'Connection Successful',
-          description: `Connected as ${data.user?.first_name} ${data.user?.last_name}`,
+          description: `Connected as ${data.user?.first_name} ${data.user?.last_name}`
         });
       } else {
         throw new Error(data.error);
       }
     },
     onError: (error: any) => {
-      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      queryClient.invalidateQueries({
+        queryKey: ['integrations']
+      });
       toast({
         title: 'Connection Failed',
         description: error.message || 'Failed to connect to Planning Center. Please check your credentials.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   });
-
   const handlePlanningCenterConnect = () => {
     createIntegrationMutation.mutate({
       appId: planningCenterForm.appId,
       secret: planningCenterForm.secret
     });
   };
-
   const handlePlanningCenterDisconnect = () => {
     if (planningCenterIntegration) {
       deleteIntegrationMutation.mutate(planningCenterIntegration.id);
     }
   };
-
   const handleTestConnection = () => {
     if (planningCenterIntegration) {
       testConnectionMutation.mutate(planningCenterIntegration.id);
     }
   };
-
   const handleSyncNow = async () => {
     if (!planningCenterIntegration) return;
-    
     setIsSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('planning-center-lists', {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('planning-center-lists', {
         body: {
-          action: 'autoSync',
-        },
+          action: 'autoSync'
+        }
       });
-
       if (error) throw error;
-      
       if (data.success) {
-        queryClient.invalidateQueries({ queryKey: ['integrations'] });
-        queryClient.invalidateQueries({ queryKey: ['list-mappings'] });
+        queryClient.invalidateQueries({
+          queryKey: ['integrations']
+        });
+        queryClient.invalidateQueries({
+          queryKey: ['list-mappings']
+        });
         toast({
           title: 'Sync completed',
-          description: data.message || 'Successfully synced all active mappings',
+          description: data.message || 'Successfully synced all active mappings'
         });
       } else {
         throw new Error(data.error);
@@ -187,13 +204,12 @@ const IntegrationsPage = () => {
       toast({
         title: 'Sync failed',
         description: error.message || 'Failed to sync data',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     } finally {
       setIsSyncing(false);
     }
   };
-
   const getStatusBadge = (integration: any, isLoading: boolean = false) => {
     if (isLoading) {
       return <Badge variant="secondary">Loading...</Badge>;
@@ -209,17 +225,10 @@ const IntegrationsPage = () => {
     }
     return <Badge variant="outline">Not Connected</Badge>;
   };
-
-  return (
-    <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 pb-12">
+  return <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="h-8 w-8"
-        >
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -252,36 +261,25 @@ const IntegrationsPage = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Connect your Planning Center account to automatically sync member data, groups, and event information.
-              </p>
+              <p className="text-sm text-muted-foreground">Automatically sync your Planning Center people into the right Flows — mapping lists to spiritual steps that drive real connection, discipleship, and next steps.</p>
               
-              {!planningCenterIntegration ? (
-                <div className="space-y-3">
+              {!planningCenterIntegration ? <div className="space-y-3">
                   <div className="space-y-2">
                     <Label htmlFor="pc-app-id">Application ID</Label>
-                    <Input
-                      id="pc-app-id"
-                      placeholder="Enter your Planning Center App ID"
-                      value={planningCenterForm.appId}
-                      onChange={(e) => setPlanningCenterForm(prev => ({ ...prev, appId: e.target.value }))}
-                    />
+                    <Input id="pc-app-id" placeholder="Enter your Planning Center App ID" value={planningCenterForm.appId} onChange={e => setPlanningCenterForm(prev => ({
+                  ...prev,
+                  appId: e.target.value
+                }))} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="pc-secret">Secret</Label>
-                    <Input
-                      id="pc-secret"
-                      type="password"
-                      placeholder="Enter your Planning Center Secret"
-                      value={planningCenterForm.secret}
-                      onChange={(e) => setPlanningCenterForm(prev => ({ ...prev, secret: e.target.value }))}
-                    />
+                    <Input id="pc-secret" type="password" placeholder="Enter your Planning Center Secret" value={planningCenterForm.secret} onChange={e => setPlanningCenterForm(prev => ({
+                  ...prev,
+                  secret: e.target.value
+                }))} />
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      onClick={handlePlanningCenterConnect}
-                      disabled={!planningCenterForm.appId || !planningCenterForm.secret || createIntegrationMutation.isPending}
-                    >
+                    <Button onClick={handlePlanningCenterConnect} disabled={!planningCenterForm.appId || !planningCenterForm.secret || createIntegrationMutation.isPending}>
                       {createIntegrationMutation.isPending ? 'Connecting...' : 'Connect Planning Center'}
                     </Button>
                     <Button variant="outline" asChild>
@@ -291,22 +289,12 @@ const IntegrationsPage = () => {
                       </a>
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
+                </div> : <div className="space-y-4">
                   <div className="flex gap-2">
-                    <Button 
-                      variant="destructive" 
-                      onClick={handlePlanningCenterDisconnect}
-                      disabled={deleteIntegrationMutation.isPending}
-                    >
+                    <Button variant="destructive" onClick={handlePlanningCenterDisconnect} disabled={deleteIntegrationMutation.isPending}>
                       {deleteIntegrationMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleTestConnection}
-                      disabled={testConnectionMutation.isPending}
-                    >
+                    <Button variant="outline" onClick={handleTestConnection} disabled={testConnectionMutation.isPending}>
                       {testConnectionMutation.isPending ? 'Testing...' : 'Test Connection'}
                     </Button>
                   </div>
@@ -318,46 +306,27 @@ const IntegrationsPage = () => {
                     <p className="text-sm text-muted-foreground">
                       Map Planning Center lists to specific CRM pipeline stages to automatically sync contacts.
                     </p>
-                    {planningCenterIntegration?.status === 'active' ? (
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          setSelectedIntegrationId(planningCenterIntegration.id);
-                          setMappingDialogOpen(true);
-                        }}
-                      >
+                    {planningCenterIntegration?.status === 'active' ? <Button variant="outline" onClick={() => {
+                  setSelectedIntegrationId(planningCenterIntegration.id);
+                  setMappingDialogOpen(true);
+                }}>
                         Manage List Mappings
-                      </Button>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Test connection first to enable list mapping.</p>
-                    )}
+                      </Button> : <p className="text-sm text-muted-foreground">Test connection first to enable list mapping.</p>}
                   </div>
                   
-                   {planningCenterIntegration?.status === 'active' && (
-                    <>
+                   {planningCenterIntegration?.status === 'active' && <>
                       <Separator />
                       
                       <div className="space-y-6">
-                        <SyncSettingsSection
-                          integrationId={planningCenterIntegration.id}
-                          currentFrequency={planningCenterIntegration.sync_frequency || 'every_15_minutes'}
-                          lastSyncAt={planningCenterIntegration.last_sync_at}
-                          onSyncNow={handleSyncNow}
-                          isSyncing={isSyncing}
-                        />
+                        <SyncSettingsSection integrationId={planningCenterIntegration.id} currentFrequency={planningCenterIntegration.sync_frequency || 'every_15_minutes'} lastSyncAt={planningCenterIntegration.last_sync_at} onSyncNow={handleSyncNow} isSyncing={isSyncing} />
                         
-                        <ListMappingManager 
-                          integrationId={planningCenterIntegration.id}
-                          onCreateMapping={() => {
-                            setSelectedIntegrationId(planningCenterIntegration.id);
-                            setMappingDialogOpen(true);
-                          }}
-                        />
+                        <ListMappingManager integrationId={planningCenterIntegration.id} onCreateMapping={() => {
+                    setSelectedIntegrationId(planningCenterIntegration.id);
+                    setMappingDialogOpen(true);
+                  }} />
                       </div>
-                    </>
-                  )}
-                </div>
-              )}
+                    </>}
+                </div>}
             </CardContent>
           </Card>
 
@@ -379,8 +348,7 @@ const IntegrationsPage = () => {
 
         <TabsContent value="connected" className="space-y-6">
           <div className="grid gap-4">
-            {planningCenterIntegration ? (
-              <Card>
+            {planningCenterIntegration ? <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -394,20 +362,13 @@ const IntegrationsPage = () => {
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm">Settings</Button>
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={handlePlanningCenterDisconnect}
-                        disabled={deleteIntegrationMutation.isPending}
-                      >
+                      <Button variant="destructive" size="sm" onClick={handlePlanningCenterDisconnect} disabled={deleteIntegrationMutation.isPending}>
                         Disconnect
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-              </Card>
-            ) : (
-              <Card>
+              </Card> : <Card>
                 <CardContent className="text-center py-8">
                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-medium mb-2">No Connected Services</h3>
@@ -418,19 +379,12 @@ const IntegrationsPage = () => {
                     Browse Integrations
                   </Button>
                 </CardContent>
-              </Card>
-            )}
+              </Card>}
           </div>
         </TabsContent>
       </Tabs>
 
-      <ListToStageMappingDialog
-        isOpen={mappingDialogOpen}
-        onOpenChange={setMappingDialogOpen}
-        integrationId={selectedIntegrationId}
-      />
-    </div>
-  );
+      <ListToStageMappingDialog isOpen={mappingDialogOpen} onOpenChange={setMappingDialogOpen} integrationId={selectedIntegrationId} />
+    </div>;
 };
-
 export default IntegrationsPage;
