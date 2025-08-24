@@ -366,6 +366,7 @@ async function syncSingleList(mapping: any, userId: string) {
     const attrs = person.attributes;
     
     console.log('Processing person:', personId, attrs.first_name, attrs.last_name);
+    console.log('Person attributes:', JSON.stringify(attrs, null, 2));
 
     // Check if contact already exists using maybeSingle to avoid errors
     const { data: existingContact } = await supabase
@@ -377,13 +378,15 @@ async function syncSingleList(mapping: any, userId: string) {
 
     const contactData = {
       name: `${attrs.first_name || ''} ${attrs.last_name || ''}`.trim() || 'Unknown',
-      email: attrs.primary_email,
-      phone: attrs.primary_phone_number,
+      email: attrs.primary_email || attrs.email || null,
+      phone: attrs.primary_phone_number || attrs.phone_number || attrs.phone || null,
       pc_person_id: personId,
       source_type: 'planning_center',
       last_synced_at: new Date().toISOString(),
       organization_id: integration.organization_id,
     };
+
+    console.log('Contact data to save:', JSON.stringify(contactData, null, 2));
 
     let contactId;
 
