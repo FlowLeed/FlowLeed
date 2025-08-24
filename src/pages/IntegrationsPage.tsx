@@ -342,19 +342,6 @@ const IntegrationsPage = () => {
                 
                 <Separator />
                 
-                <div className="space-y-3">
-                  <h4 className="font-medium">Quick List Mapping</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Map Planning Center lists to pipeline stages in one step. Auto-sync is enabled by default with smart settings.
-                  </p>
-                   {planningCenterIntegration?.status === 'active' ? <Button variant="outline" onClick={() => {
-                setSelectedIntegrationId(planningCenterIntegration.id);
-                setMappingDialogOpen(true);
-              }}>
-                      Create List Mapping
-                    </Button> : <p className="text-sm text-muted-foreground">Connection in progress...</p>}
-                </div>
-                
                  {planningCenterIntegration?.status === 'active' && <>
                     <Separator />
                     
