@@ -1,7 +1,8 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2 } from "lucide-react";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -176,6 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
               id: step.id,
               name: step.name,
               color: step.color,
+              stage_order: index, // Update the order based on current position
               contacts: currentPipeline.stages.find(s => s.id === step.id)?.contacts || []
             };
           } else {
@@ -184,6 +186,7 @@ export const Header: React.FC<HeaderProps> = ({
               id: "", // This will trigger creation of a new stage
               name: step.name,
               color: step.color,
+              stage_order: index, // Set order for new steps
               contacts: []
             };
           }
@@ -252,6 +255,16 @@ export const Header: React.FC<HeaderProps> = ({
     const updatedSteps = [...editFlowSteps];
     updatedSteps[index] = { ...updatedSteps[index], [field]: value };
     setEditFlowSteps(updatedSteps);
+  };
+
+  const handleStepDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(editFlowSteps);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setEditFlowSteps(items);
   };
 
   const handleSignOut = async () => {
@@ -384,64 +397,91 @@ export const Header: React.FC<HeaderProps> = ({
               
               <div className="space-y-2">
                 <Label>Pipeline Steps</Label>
-                <div className="space-y-3">
-                  {editFlowSteps.map((step, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        {/* Color Selector */}
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-gray-400 transition-colors"
-                              style={{ backgroundColor: step.color }}
-                            />
-                          </PopoverTrigger>
-                          <PopoverContent className="w-48 p-3">
-                            <div className="grid grid-cols-4 gap-2">
-                              {colorOptions.map((color) => (
-                                <button
-                                  key={color}
-                                  type="button"
-                                  onClick={() => updateStep(index, 'color', color)}
-                                  className={`w-8 h-8 rounded-full border-2 hover:scale-105 transition-transform ${
-                                    step.color === color ? 'border-gray-400' : 'border-gray-200'
-                                  }`}
-                                  style={{ backgroundColor: color }}
+                <DragDropContext onDragEnd={handleStepDragEnd}>
+                  <Droppable droppableId="steps">
+                    {(provided) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="space-y-3"
+                      >
+                        {editFlowSteps.map((step, index) => (
+                          <Draggable key={`step-${index}`} draggableId={`step-${index}`} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`flex items-center gap-3 p-2 rounded-md border transition-colors ${
+                                  snapshot.isDragging ? 'bg-muted shadow-md border-primary' : 'bg-background border-border hover:bg-muted/50'
+                                }`}
+                              >
+                                <div 
+                                  {...provided.dragHandleProps}
+                                  className="flex items-center justify-center w-6 h-6 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+                                >
+                                  <GripVertical className="h-4 w-4" />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {/* Color Selector */}
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <button
+                                        type="button"
+                                        className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-gray-400 transition-colors"
+                                        style={{ backgroundColor: step.color }}
+                                      />
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-48 p-3">
+                                      <div className="grid grid-cols-4 gap-2">
+                                        {colorOptions.map((color) => (
+                                          <button
+                                            key={color}
+                                            type="button"
+                                            onClick={() => updateStep(index, 'color', color)}
+                                            className={`w-8 h-8 rounded-full border-2 hover:scale-105 transition-transform ${
+                                              step.color === color ? 'border-gray-400' : 'border-gray-200'
+                                            }`}
+                                            style={{ backgroundColor: color }}
+                                          />
+                                        ))}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                                <Input
+                                  value={step.name}
+                                  onChange={(e) => updateStep(index, 'name', e.target.value)}
+                                  placeholder={`Step ${index + 1}`}
+                                  className="flex-1"
                                 />
-                              ))}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
+                                {editFlowSteps.length > 1 && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeStep(index)}
+                                    className="px-2"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                      <Input
-                        value={step.name}
-                        onChange={(e) => updateStep(index, 'name', e.target.value)}
-                        placeholder={`Step ${index + 1}`}
-                        className="flex-1"
-                      />
-                      {editFlowSteps.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeStep(index)}
-                          className="px-2"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={addStep}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Step
-                  </Button>
-                </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addStep}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Step
+                </Button>
               </div>
             </div>
           </div>
