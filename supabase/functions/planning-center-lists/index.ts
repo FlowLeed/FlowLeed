@@ -463,91 +463,83 @@ async function syncSingleList(mapping: any, userId: string) {
 }
 
 async function autoSyncAllMappings() {
-  console.log('Starting auto sync for all active mappings...');
-  
   try {
-    // Get all active mappings with auto_sync enabled
-    const { data: mappings, error: mappingsError } = await supabase
+    console.log('Starting automatic sync of all active list mappings...');
+    
+    const { data: allMappings, error: mappingsError } = await supabase
       .from('integration_list_mappings')
       .select(`
         *,
-        integrations!inner(credentials, organization_id)
+        pipelines!inner(name, icon),
+        pipeline_stages!inner(name, color)
       `)
       .eq('auto_sync', true);
-
+    
     if (mappingsError) {
-      console.error('Error fetching mappings:', mappingsError);
+      console.error('Error fetching mappings for auto-sync:', mappingsError);
       return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Failed to fetch mappings' 
+        error: 'Failed to fetch mappings for auto-sync' 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    if (!mappings || mappings.length === 0) {
-      console.log('No active mappings found for auto sync');
+    
+    if (!allMappings || allMappings.length === 0) {
+      console.log('No active auto-sync mappings found');
       return new Response(JSON.stringify({ 
-        success: true, 
-        message: 'No active mappings to sync',
-        synced: 0
+        message: 'No active auto-sync mappings found',
+        results: []
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    console.log(`Found ${mappings.length} mappings to sync`);
+    
+    console.log(`Found ${allMappings.length} active mappings for auto-sync`);
+    
     const results = [];
-
-    for (const mapping of mappings) {
+    for (const mapping of allMappings) {
       try {
-        console.log(`Auto syncing mapping: ${mapping.external_list_name} (${mapping.id})`);
+        console.log(`Auto-syncing mapping: ${mapping.external_list_name}`);
+        const result = await syncSingleList(mapping, 'system');
+        results.push(result);
         
-        const result = await syncSingleList(mapping, 'auto-sync'); // Use placeholder user ID for auto sync
-        results.push({
-          mappingId: mapping.id,
-          listName: mapping.external_list_name,
-          ...result
-        });
-
         // Update last_sync_at timestamp
         await supabase
           .from('integration_list_mappings')
           .update({ last_sync_at: new Date().toISOString() })
           .eq('id', mapping.id);
-
-        console.log(`Successfully synced: ${mapping.external_list_name}`);
+          
       } catch (error) {
-        console.error(`Error syncing mapping ${mapping.id}:`, error);
+        console.error(`Error auto-syncing mapping ${mapping.id}:`, error);
         results.push({
-          mappingId: mapping.id,
-          listName: mapping.external_list_name,
+          listId: mapping.external_list_id,
           success: false,
-          error: error.message
+          error: error.message,
         });
       }
     }
-
+    
     const successfulSyncs = results.filter(r => r.success).length;
-    console.log(`Auto sync completed. ${successfulSyncs}/${mappings.length} mappings synced successfully`);
-
+    console.log(`Auto-sync completed: ${successfulSyncs}/${allMappings.length} mappings synced successfully`);
+    
     return new Response(JSON.stringify({ 
-      success: true, 
-      message: `Auto sync completed. ${successfulSyncs}/${mappings.length} mappings synced successfully`,
+      message: `Auto-sync completed: ${successfulSyncs}/${allMappings.length} mappings synced successfully`,
       synced: successfulSyncs,
-      total: mappings.length,
+      total: allMappings.length,
       results
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+    
   } catch (error) {
-    console.error('Error in auto sync:', error);
+    console.error('Error in auto-sync:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: `Auto sync failed: ${error.message}` 
+      error: 'Auto-sync failed',
+      details: error.message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+}
