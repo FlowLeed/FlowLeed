@@ -256,6 +256,8 @@ async function syncPlanningCenterLists(listMappings: any[], userId: string) {
 }
 
 async function syncSingleList(mapping: any, userId: string) {
+  console.log('Syncing single list:', mapping);
+  
   // Get integration credentials
   const { data: integration } = await supabase
     .from('integrations')
@@ -277,6 +279,8 @@ async function syncSingleList(mapping: any, userId: string) {
   }
   
   const auth = btoa(`${application_id}:${secret}`);
+  
+  console.log('Fetching PC list members for list:', mapping.external_list_id);
 
   // Fetch list members from Planning Center
   const response = await fetch(
@@ -290,11 +294,15 @@ async function syncSingleList(mapping: any, userId: string) {
   );
 
   if (!response.ok) {
+    console.error('PC API error:', response.status, response.statusText);
     throw new Error(`PC API error: ${response.status}`);
   }
 
   const data = await response.json();
+  console.log('PC API response:', data);
+  
   const people = data.included?.filter((item: any) => item.type === 'Person') || [];
+  console.log('Found people count:', people.length);
 
   let contactsAdded = 0;
   let contactsUpdated = 0;
@@ -302,14 +310,16 @@ async function syncSingleList(mapping: any, userId: string) {
   for (const person of people) {
     const personId = person.id;
     const attrs = person.attributes;
+    
+    console.log('Processing person:', personId, attrs.first_name, attrs.last_name);
 
-    // Check if contact already exists
+    // Check if contact already exists using maybeSingle to avoid errors
     const { data: existingContact } = await supabase
       .from('contacts')
       .select('id')
       .eq('pc_person_id', personId)
       .eq('organization_id', integration.organization_id)
-      .single();
+      .maybeSingle();
 
     const contactData = {
       name: `${attrs.first_name || ''} ${attrs.last_name || ''}`.trim() || 'Unknown',
@@ -325,6 +335,7 @@ async function syncSingleList(mapping: any, userId: string) {
 
     if (existingContact) {
       // Update existing contact
+      console.log('Updating existing contact:', existingContact.id);
       const { data: updatedContact } = await supabase
         .from('contacts')
         .update(contactData)
@@ -336,28 +347,36 @@ async function syncSingleList(mapping: any, userId: string) {
       contactsUpdated++;
     } else {
       // Create new contact
-      const { data: newContact } = await supabase
+      console.log('Creating new contact for person:', personId);
+      const { data: newContact, error: contactError } = await supabase
         .from('contacts')
         .insert(contactData)
         .select('id')
         .single();
+      
+      if (contactError) {
+        console.error('Error creating contact:', contactError);
+        continue; // Skip this person and continue with others
+      }
       
       contactId = newContact?.id;
       contactsAdded++;
     }
 
     if (contactId) {
-      // Add to pipeline stage if not already there
+      console.log('Adding contact to pipeline:', contactId, 'pipeline:', mapping.pipeline_id, 'stage:', mapping.stage_id);
+      
+      // Add to pipeline stage if not already there using maybeSingle
       const { data: existingPipelineContact } = await supabase
         .from('pipeline_contacts')
         .select('id')
         .eq('contact_id', contactId)
         .eq('pipeline_id', mapping.pipeline_id)
         .eq('stage_id', mapping.stage_id)
-        .single();
+        .maybeSingle();
 
       if (!existingPipelineContact) {
-        await supabase
+        const { error: pipelineError } = await supabase
           .from('pipeline_contacts')
           .insert({
             contact_id: contactId,
@@ -366,14 +385,25 @@ async function syncSingleList(mapping: any, userId: string) {
             source_type: 'planning_center',
             source_id: mapping.external_list_id,
           });
+          
+        if (pipelineError) {
+          console.error('Error adding to pipeline:', pipelineError);
+        } else {
+          console.log('Successfully added contact to pipeline');
+        }
+      } else {
+        console.log('Contact already in pipeline stage');
       }
     }
   }
+
+  console.log('Sync completed:', { contactsAdded, contactsUpdated, totalPeople: people.length });
 
   return {
     listId: mapping.external_list_id,
     success: true,
     contactsAdded,
     contactsUpdated,
+    totalPeople: people.length,
   };
 }

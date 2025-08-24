@@ -103,12 +103,55 @@ export function ListToStageMappingDialog({
 
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['integration-list-mappings'] });
       toast({
         title: 'Mapping created',
-        description: `Successfully mapped "${selectedList?.attributes.name}" to the selected pipeline stage.`,
+        description: `Successfully mapped "${selectedList?.attributes.name}" to the selected pipeline stage. Starting sync...`,
       });
+      
+      // Automatically trigger sync for the new mapping
+      try {
+        const newMapping = {
+          id: 'temp', // This will be ignored in sync
+          integration_id: integrationId,
+          pipeline_id: selectedPipeline?.id,
+          stage_id: variables.stageId,
+          external_list_id: selectedList?.id,
+          external_list_name: selectedList?.attributes.name,
+        };
+        
+        const { data: syncData, error: syncError } = await supabase.functions.invoke('planning-center-lists', {
+          body: {
+            action: 'syncLists',
+            listMappings: [newMapping],
+          },
+        });
+
+        if (syncError) throw syncError;
+
+        const result = syncData.results[0];
+        if (result.success) {
+          toast({
+            title: 'Sync completed',
+            description: `Added ${result.contactsAdded} new contacts, updated ${result.contactsUpdated} existing contacts.`,
+          });
+        } else {
+          toast({
+            title: 'Sync failed',
+            description: result.error || 'Unknown sync error',
+            variant: 'destructive',
+          });
+        }
+      } catch (syncError) {
+        console.error('Auto-sync error:', syncError);
+        toast({
+          title: 'Mapping created, sync failed',
+          description: 'The mapping was created but automatic sync failed. Try manual sync.',
+          variant: 'destructive',
+        });
+      }
+      
       handleClose();
     },
     onError: (error) => {
