@@ -329,7 +329,7 @@ async function syncSingleList(mapping: any, userId: string) {
         
         try {
           const personResponse = await fetch(
-            `https://api.planningcenteronline.com/people/v2/people/${personId}`,
+            `https://api.planningcenteronline.com/people/v2/people/${personId}?include=emails,phone_numbers`,
             {
               headers: {
                 'Authorization': `Basic ${auth}`,
@@ -340,9 +340,22 @@ async function syncSingleList(mapping: any, userId: string) {
           
           if (personResponse.ok) {
             const personData = await personResponse.json();
-            console.log('Person data received:', JSON.stringify(personData.data, null, 2));
+            console.log('Person data received:', JSON.stringify(personData, null, 2));
             if (personData.data) {
-              people.push(personData.data);
+              // Merge person data with email and phone data from included
+              const person = personData.data;
+              const emails = personData.included?.filter((item: any) => item.type === 'Email') || [];
+              const phoneNumbers = personData.included?.filter((item: any) => item.type === 'PhoneNumber') || [];
+              
+              // Add email and phone data to person attributes
+              const primaryEmail = emails.find((email: any) => email.attributes.primary)?.attributes.address;
+              const primaryPhone = phoneNumbers.find((phone: any) => phone.attributes.primary)?.attributes.number;
+              
+              person.attributes.primary_email = primaryEmail || person.attributes.primary_email;
+              person.attributes.primary_phone_number = primaryPhone || person.attributes.primary_phone_number;
+              
+              console.log('Enhanced person with contact info:', JSON.stringify(person.attributes, null, 2));
+              people.push(person);
             }
           } else {
             console.error(`Failed to fetch person ${personId}:`, personResponse.status);
