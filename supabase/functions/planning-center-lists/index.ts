@@ -126,6 +126,7 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+}
 
 async function fetchPlanningCenterLists(integrationId: string, userId: string) {
   // Get integration credentials
