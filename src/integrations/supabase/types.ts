@@ -275,10 +275,13 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          last_synced_at: string | null
           name: string
           notes: string | null
           organization_id: string
+          pc_person_id: string | null
           phone: string | null
+          source_type: string | null
           status: string
           updated_at: string
         }
@@ -288,10 +291,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_synced_at?: string | null
           name: string
           notes?: string | null
           organization_id: string
+          pc_person_id?: string | null
           phone?: string | null
+          source_type?: string | null
           status?: string
           updated_at?: string
         }
@@ -301,12 +307,195 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_synced_at?: string | null
           name?: string
           notes?: string | null
           organization_id?: string
+          pc_person_id?: string | null
           phone?: string | null
+          source_type?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      integration_list_mappings: {
+        Row: {
+          auto_sync: boolean
+          created_at: string
+          external_list_id: string
+          external_list_name: string
+          id: string
+          integration_id: string
+          last_sync_at: string | null
+          pipeline_id: string
+          stage_id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_sync?: boolean
+          created_at?: string
+          external_list_id: string
+          external_list_name: string
+          id?: string
+          integration_id: string
+          last_sync_at?: string | null
+          pipeline_id: string
+          stage_id: string
+          updated_at?: string
+        }
+        Update: {
+          auto_sync?: boolean
+          created_at?: string
+          external_list_id?: string
+          external_list_name?: string
+          id?: string
+          integration_id?: string
+          last_sync_at?: string | null
+          pipeline_id?: string
+          stage_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_list_mappings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_list_mappings_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_list_mappings_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_list_metadata: {
+        Row: {
+          cached_at: string
+          created_at: string
+          description: string | null
+          external_list_id: string
+          id: string
+          integration_id: string
+          last_updated_at: string | null
+          list_type: string | null
+          member_count: number | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          cached_at?: string
+          created_at?: string
+          description?: string | null
+          external_list_id: string
+          id?: string
+          integration_id: string
+          last_updated_at?: string | null
+          list_type?: string | null
+          member_count?: number | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          cached_at?: string
+          created_at?: string
+          description?: string | null
+          external_list_id?: string
+          id?: string
+          integration_id?: string
+          last_updated_at?: string | null
+          list_type?: string | null
+          member_count?: number | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      integration_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          integration_id: string
+          message: string | null
+          status: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          integration_id: string
+          message?: string | null
+          status: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          integration_id?: string
+          message?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          created_at: string
+          credentials: Json
+          id: string
+          last_sync_at: string | null
+          organization_id: string
+          service_name: string
+          settings: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credentials?: Json
+          id?: string
+          last_sync_at?: string | null
+          organization_id: string
+          service_name: string
+          settings?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credentials?: Json
+          id?: string
+          last_sync_at?: string | null
+          organization_id?: string
+          service_name?: string
+          settings?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -372,6 +561,8 @@ export type Database = {
           created_at: string
           id: string
           pipeline_id: string
+          source_id: string | null
+          source_type: string | null
           stage_id: string
           stage_order: number
           updated_at: string
@@ -381,6 +572,8 @@ export type Database = {
           created_at?: string
           id?: string
           pipeline_id: string
+          source_id?: string | null
+          source_type?: string | null
           stage_id: string
           stage_order?: number
           updated_at?: string
@@ -390,6 +583,8 @@ export type Database = {
           created_at?: string
           id?: string
           pipeline_id?: string
+          source_id?: string | null
+          source_type?: string | null
           stage_id?: string
           stage_order?: number
           updated_at?: string

@@ -10,10 +10,14 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Settings2, CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ListMappingManager } from "@/components/integrations/ListMappingManager";
+import { ListToStageMappingDialog } from "@/components/integrations/ListToStageMappingDialog";
 
 const IntegrationsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
+  const [selectedIntegrationId, setSelectedIntegrationId] = useState<string>('');
   
   const [connections, setConnections] = useState({
     planningCenter: {
@@ -190,11 +194,31 @@ const IntegrationsPage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <Button variant="destructive" onClick={() => handleDisconnect('planningCenter')}>
-                    Disconnect
-                  </Button>
-                  <Button variant="outline">Test Connection</Button>
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Button variant="destructive" onClick={() => handleDisconnect('planningCenter')}>
+                      Disconnect
+                    </Button>
+                    <Button variant="outline">Test Connection</Button>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="space-y-3">
+                    <h4 className="font-medium">List Mappings</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Map Planning Center lists to specific CRM pipeline stages to automatically sync contacts.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSelectedIntegrationId('planning-center-integration');
+                        setMappingDialogOpen(true);
+                      }}
+                    >
+                      Manage List Mappings
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -399,6 +423,12 @@ const IntegrationsPage = () => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <ListToStageMappingDialog
+        isOpen={mappingDialogOpen}
+        onOpenChange={setMappingDialogOpen}
+        integrationId={selectedIntegrationId}
+      />
     </div>
   );
 };
