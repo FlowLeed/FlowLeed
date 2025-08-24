@@ -73,7 +73,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({
           {tags.includes("location") && <span className="tag bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full">Location</span>}
         </div>}
 
-      {assignedTo && <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+        {assignedTo ? (
           <div className="flex gap-2 items-center">
             <Avatar className="h-6 w-6">
               <AvatarImage src={assignedTo.avatar} alt={assignedTo.name} />
@@ -90,17 +91,27 @@ export const ContactCard: React.FC<ContactCardProps> = ({
               })()}
             </span>
           </div>
-          <div className="flex gap-1">
-            {phone && <a href={`sms:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send text message">
-                <MessageSquare className="h-3.5 w-3.5" />
-              </a>}
-            {email && <a href={`mailto:${email}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send email">
-                <Mail className="h-3.5 w-3.5" />
-              </a>}
-            {phone && <a href={`tel:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Call">
-                <Phone className="h-3.5 w-3.5" />
-              </a>}
+        ) : (
+          <div className="flex gap-2 items-center">
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="bg-gray-400 text-white text-xs">
+                ?
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-gray-500">Unassigned</span>
           </div>
-        </div>}
+        )}
+        <div className="flex gap-1">
+          {phone && <a href={`sms:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send text message">
+              <MessageSquare className="h-3.5 w-3.5" />
+            </a>}
+          {email && <a href={`mailto:${email}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send email">
+              <Mail className="h-3.5 w-3.5" />
+            </a>}
+          {phone && <a href={`tel:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Call">
+              <Phone className="h-3.5 w-3.5" />
+            </a>}
+        </div>
+      </div>
     </div>;
 };
