@@ -55,8 +55,6 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
     id: stage.id,
     name: stage.name,
     color: stage.color,
-    is_start_step: stage.is_start_step,
-    is_end_step: stage.is_end_step,
     contacts: contacts
       .filter(pc => pc.stage_id === stage.id)
       .map(pc => {
@@ -225,7 +223,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
       // Load stages
       const { data: stages, error: stagesError } = await supabase
         .from('pipeline_stages')
-        .select('*, is_start_step, is_end_step')
+        .select('*')
         .eq('pipeline_id', pipeline.id)
         .order('stage_order');
 
