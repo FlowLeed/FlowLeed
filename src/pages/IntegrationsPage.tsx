@@ -337,7 +337,7 @@ const IntegrationsPage = () => {
                     <>
                       <Separator />
                       
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-6">
                         <SyncSettingsSection
                           integrationId={planningCenterIntegration.id}
                           currentFrequency={planningCenterIntegration.sync_frequency || 'every_15_minutes'}
@@ -345,15 +345,14 @@ const IntegrationsPage = () => {
                           onSyncNow={handleSyncNow}
                           isSyncing={isSyncing}
                         />
-                        <div>
-                          <ListMappingManager 
-                            integrationId={planningCenterIntegration.id}
-                            onCreateMapping={() => {
-                              setSelectedIntegrationId(planningCenterIntegration.id);
-                              setMappingDialogOpen(true);
-                            }}
-                          />
-                        </div>
+                        
+                        <ListMappingManager 
+                          integrationId={planningCenterIntegration.id}
+                          onCreateMapping={() => {
+                            setSelectedIntegrationId(planningCenterIntegration.id);
+                            setMappingDialogOpen(true);
+                          }}
+                        />
                       </div>
                     </>
                   )}

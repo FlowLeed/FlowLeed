@@ -104,14 +104,25 @@ export function SyncSettingsSection({
   )?.label || 'Every 15 minutes';
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <Clock className="h-4 w-4" />
-          Sync Settings
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+          <h3 className="font-medium">Sync Settings</h3>
+        </div>
+        <Button 
+          onClick={onSyncNow} 
+          disabled={isSyncing}
+          size="sm"
+          variant="outline"
+          className="shrink-0"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+          {isSyncing ? 'Syncing...' : 'Sync All Mappings'}
+        </Button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <label className="text-sm font-medium">Sync Frequency</label>
           <Select value={selectedFrequency} onValueChange={handleFrequencyChange}>
@@ -128,24 +139,16 @@ export function SyncSettingsSection({
           </Select>
         </div>
 
-        <div className="text-sm text-muted-foreground space-y-1">
-          <div>Current: {currentFrequencyLabel}</div>
-          {lastSyncAt && (
-            <div>Last sync: {formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true })}</div>
-          )}
-          <div>Next sync: {getNextSyncTime(lastSyncAt, currentFrequency)}</div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Sync Status</label>
+          <div className="text-sm text-muted-foreground space-y-1 pt-2">
+            {lastSyncAt && (
+              <div>Last sync: {formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true })}</div>
+            )}
+            <div>Next sync: {getNextSyncTime(lastSyncAt, currentFrequency)}</div>
+          </div>
         </div>
-
-        <Button 
-          onClick={onSyncNow} 
-          disabled={isSyncing}
-          className="w-full"
-          variant="outline"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-          {isSyncing ? 'Syncing...' : 'Sync Now'}
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
