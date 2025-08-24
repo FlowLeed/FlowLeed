@@ -283,7 +283,7 @@ const IntegrationsPage = () => {
                 </div>
                 <div>
                   <CardTitle>Planning Center</CardTitle>
-                  <CardDescription>Connect your people from Planning Center into Flowleed — so they feel seen, supported, and spiritually guided.</CardDescription>
+                  <CardDescription>Sync church management data and member information</CardDescription>
                 </div>
               </div>
               {getStatusBadge(planningCenterIntegration, integrationsLoading)}
