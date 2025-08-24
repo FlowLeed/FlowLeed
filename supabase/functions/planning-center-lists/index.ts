@@ -51,26 +51,57 @@ serve(async (req) => {
 });
 
 async function testPlanningCenterConnection(integrationId: string, userId: string) {
-  // Get integration credentials
-  const { data: integration, error: integrationError } = await supabase
-    .from('integrations')
-    .select('credentials, settings')
-    .eq('id', integrationId)
-    .eq('user_id', userId)
-    .single();
-
-  if (integrationError || !integration) {
-    return new Response('Integration not found', { status: 404, headers: corsHeaders });
-  }
-
-  const { application_id, secret } = integration.credentials;
-  if (!application_id || !secret) {
-    return new Response('Missing Planning Center credentials', { status: 400, headers: corsHeaders });
-  }
-
   try {
+    console.log('Testing PC connection for integration:', integrationId, 'user:', userId);
+    
+    // Get integration credentials
+    const { data: integration, error: integrationError } = await supabase
+      .from('integrations')
+      .select('credentials, settings')
+      .eq('id', integrationId)
+      .eq('user_id', userId)
+      .single();
+
+    if (integrationError) {
+      console.error('Integration query error:', integrationError);
+      return new Response(JSON.stringify({ success: false, error: 'Integration not found' }), { 
+        status: 404, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    if (!integration) {
+      console.error('No integration found');
+      return new Response(JSON.stringify({ success: false, error: 'Integration not found' }), { 
+        status: 404, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    console.log('Integration found:', integration);
+    
+    // Access credentials properly from JSON field
+    const credentials = integration.credentials as any;
+    const application_id = credentials?.application_id;
+    const secret = credentials?.secret;
+    
+    console.log('Credentials check - has app_id:', !!application_id, 'has secret:', !!secret);
+
+    if (!application_id || !secret) {
+      console.error('Missing credentials:', { has_app_id: !!application_id, has_secret: !!secret });
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Missing Planning Center credentials' 
+      }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
     // Test API connection with a simple endpoint
     const auth = btoa(`${application_id}:${secret}`);
+    console.log('Making API call to Planning Center...');
+    
     const response = await fetch('https://api.planningcenteronline.com/people/v2/me', {
       headers: {
         'Authorization': `Basic ${auth}`,
@@ -78,7 +109,11 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
       },
     });
 
+    console.log('PC API response status:', response.status);
+
     if (!response.ok) {
+      console.error('PC API error:', response.status, response.statusText);
+      
       // Update integration status to failed
       await supabase
         .from('integrations')
@@ -95,6 +130,7 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
     }
 
     const data = await response.json();
+    console.log('PC API success:', data);
     
     // Update integration status to active
     await supabase
@@ -120,7 +156,7 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
 
     return new Response(JSON.stringify({ 
       success: false, 
-      error: 'Failed to connect to Planning Center API' 
+      error: `Connection error: ${error.message}` 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -129,19 +165,26 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
 }
 
 async function fetchPlanningCenterLists(integrationId: string, userId: string) {
-  // Get integration credentials
-  const { data: integration, error: integrationError } = await supabase
-    .from('integrations')
-    .select('credentials, settings')
-    .eq('id', integrationId)
-    .eq('user_id', userId)
-    .single();
+  try {
+    console.log('Fetching PC lists for integration:', integrationId);
+    
+    // Get integration credentials
+    const { data: integration, error: integrationError } = await supabase
+      .from('integrations')
+      .select('credentials, settings')
+      .eq('id', integrationId)
+      .eq('user_id', userId)
+      .single();
 
-  if (integrationError || !integration) {
-    return new Response('Integration not found', { status: 404, headers: corsHeaders });
-  }
+    if (integrationError || !integration) {
+      console.error('Integration not found:', integrationError);
+      return new Response('Integration not found', { status: 404, headers: corsHeaders });
+    }
 
-  const { application_id, secret } = integration.credentials;
+    // Access credentials properly from JSON field
+    const credentials = integration.credentials as any;
+    const application_id = credentials?.application_id;
+    const secret = credentials?.secret;
   if (!application_id || !secret) {
     return new Response('Missing Planning Center credentials', { status: 400, headers: corsHeaders });
   }
@@ -224,7 +267,15 @@ async function syncSingleList(mapping: any, userId: string) {
     throw new Error('Integration not found');
   }
 
-  const { application_id, secret } = integration.credentials;
+  // Access credentials properly from JSON field
+  const credentials = integration.credentials as any;
+  const application_id = credentials?.application_id;
+  const secret = credentials?.secret;
+  
+  if (!application_id || !secret) {
+    throw new Error('Missing Planning Center credentials');
+  }
+  
   const auth = btoa(`${application_id}:${secret}`);
 
   // Fetch list members from Planning Center
