@@ -299,7 +299,14 @@ async function syncSingleList(mapping: any, userId: string) {
   }
 
   const data = await response.json();
-  console.log('PC API response:', JSON.stringify(data, null, 2));
+  console.log('PC API response structure:', {
+    hasData: !!data.data,
+    dataLength: data.data?.length || 0,
+    hasIncluded: !!data.included,
+    includedLength: data.included?.length || 0,
+    sampleData: data.data?.[0],
+    sampleIncluded: data.included?.[0]
+  });
   
   // Get people from included data if available, otherwise fetch them individually
   let people = data.included?.filter((item: any) => item.type === 'Person') || [];
@@ -308,29 +315,40 @@ async function syncSingleList(mapping: any, userId: string) {
   // If no people found in included, fetch them individually from list results
   if (people.length === 0 && data.data?.length > 0) {
     console.log('No people found in included, fetching individual people...');
-    const listResults = data.data;
+    console.log('List results sample:', JSON.stringify(data.data[0], null, 2));
     
-    for (const result of listResults) {
+    for (const [index, result] of data.data.entries()) {
+      console.log(`Processing list result ${index + 1}:`, JSON.stringify(result, null, 2));
+      
       if (result.relationships?.person?.data?.id) {
         const personId = result.relationships.person.data.id;
         console.log('Fetching person details for:', personId);
         
-        const personResponse = await fetch(
-          `https://api.planningcenteronline.com/people/v2/people/${personId}`,
-          {
-            headers: {
-              'Authorization': `Basic ${auth}`,
-              'Content-Type': 'application/json',
-            },
+        try {
+          const personResponse = await fetch(
+            `https://api.planningcenteronline.com/people/v2/people/${personId}`,
+            {
+              headers: {
+                'Authorization': `Basic ${auth}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          if (personResponse.ok) {
+            const personData = await personResponse.json();
+            console.log('Person data received:', JSON.stringify(personData.data, null, 2));
+            if (personData.data) {
+              people.push(personData.data);
+            }
+          } else {
+            console.error(`Failed to fetch person ${personId}:`, personResponse.status);
           }
-        );
-        
-        if (personResponse.ok) {
-          const personData = await personResponse.json();
-          if (personData.data) {
-            people.push(personData.data);
-          }
+        } catch (error) {
+          console.error(`Error fetching person ${personId}:`, error);
         }
+      } else {
+        console.log('No person ID found in result:', JSON.stringify(result, null, 2));
       }
     }
   }
