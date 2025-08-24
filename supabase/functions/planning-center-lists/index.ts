@@ -393,6 +393,7 @@ async function syncSingleList(mapping: any, userId: string) {
       name: `${attrs.first_name || ''} ${attrs.last_name || ''}`.trim() || 'Unknown',
       email: attrs.primary_email || attrs.email || null,
       phone: attrs.primary_phone_number || attrs.phone_number || attrs.phone || null,
+      avatar: attrs.avatar || attrs.demographic_avatar_url || null,
       pc_person_id: personId,
       source_type: 'planning_center',
       last_synced_at: new Date().toISOString(),
