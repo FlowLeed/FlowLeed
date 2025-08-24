@@ -299,10 +299,43 @@ async function syncSingleList(mapping: any, userId: string) {
   }
 
   const data = await response.json();
-  console.log('PC API response:', data);
+  console.log('PC API response:', JSON.stringify(data, null, 2));
   
-  const people = data.included?.filter((item: any) => item.type === 'Person') || [];
-  console.log('Found people count:', people.length);
+  // Get people from included data if available, otherwise fetch them individually
+  let people = data.included?.filter((item: any) => item.type === 'Person') || [];
+  console.log('Found people in included:', people.length);
+  
+  // If no people found in included, fetch them individually from list results
+  if (people.length === 0 && data.data?.length > 0) {
+    console.log('No people found in included, fetching individual people...');
+    const listResults = data.data;
+    
+    for (const result of listResults) {
+      if (result.relationships?.person?.data?.id) {
+        const personId = result.relationships.person.data.id;
+        console.log('Fetching person details for:', personId);
+        
+        const personResponse = await fetch(
+          `https://api.planningcenteronline.com/people/v2/people/${personId}`,
+          {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        
+        if (personResponse.ok) {
+          const personData = await personResponse.json();
+          if (personData.data) {
+            people.push(personData.data);
+          }
+        }
+      }
+    }
+  }
+  
+  console.log('Total people found:', people.length);
 
   let contactsAdded = 0;
   let contactsUpdated = 0;
