@@ -26,8 +26,8 @@ const FREQUENCY_OPTIONS = [
   { value: 'manual', label: 'Manual only' },
 ];
 
-const getNextSyncTime = (lastSync: string | undefined, frequency: string): string => {
-  if (!lastSync || frequency === 'manual') return 'Manual only';
+const getNextSyncTime = (lastSync: string | undefined, frequency: string): string | null => {
+  if (!lastSync || frequency === 'manual') return null;
   
   const lastSyncDate = new Date(lastSync);
   let nextSync: Date;
@@ -52,7 +52,7 @@ const getNextSyncTime = (lastSync: string | undefined, frequency: string): strin
       nextSync = new Date(lastSyncDate.getTime() + 7 * 24 * 60 * 60 * 1000);
       break;
     default:
-      return 'Unknown';
+      return null;
   }
   
   return `in ${formatDistanceToNow(nextSync)}`;
@@ -145,7 +145,9 @@ export function SyncSettingsSection({
             {lastSyncAt && (
               <div>Last sync: {formatDistanceToNow(new Date(lastSyncAt), { addSuffix: true })}</div>
             )}
-            <div>Next sync: {getNextSyncTime(lastSyncAt, currentFrequency)}</div>
+            {getNextSyncTime(lastSyncAt, currentFrequency) && (
+              <div>Next sync: {getNextSyncTime(lastSyncAt, currentFrequency)}</div>
+            )}
           </div>
         </div>
       </div>
