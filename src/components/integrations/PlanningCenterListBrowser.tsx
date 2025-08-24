@@ -32,7 +32,35 @@ export function PlanningCenterListBrowser({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
-  const { data: lists, isLoading, refetch } = useQuery({
+  // First try to get cached lists from database
+  const { data: cachedLists, isLoading: cachedLoading } = useQuery({
+    queryKey: ['cached-lists', integrationId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('integration_list_metadata')
+        .select('external_list_id, name, description, member_count, list_type, last_updated_at')
+        .eq('integration_id', integrationId)
+        .order('name');
+      
+      if (error) throw error;
+      
+      // Transform to match expected format
+      return data.map(item => ({
+        id: item.external_list_id,
+        attributes: {
+          name: item.name,
+          description: item.description,
+          total_people: item.member_count,
+          list_type: item.list_type,
+          updated_at: item.last_updated_at,
+        }
+      })) as PlanningCenterList[];
+    },
+    enabled: !!integrationId,
+  });
+
+  // Fallback to fetching from API if no cached data
+  const { data: freshLists, isLoading: freshLoading, refetch } = useQuery({
     queryKey: ['planning-center-lists', integrationId],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('planning-center-lists', {
@@ -45,8 +73,11 @@ export function PlanningCenterListBrowser({
       if (error) throw error;
       return data.lists as PlanningCenterList[];
     },
-    enabled: !!integrationId,
+    enabled: !!integrationId && (!cachedLists || cachedLists.length === 0),
   });
+
+  const lists = cachedLists && cachedLists.length > 0 ? cachedLists : freshLists;
+  const isLoading = cachedLoading || freshLoading;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

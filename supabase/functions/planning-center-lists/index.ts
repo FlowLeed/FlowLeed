@@ -135,10 +135,13 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
     const data = await response.json();
     console.log('PC API success:', data);
     
-    // Update integration status to active
+    // Update integration status to active and set last sync
     await supabase
       .from('integrations')
-      .update({ status: 'active' })
+      .update({ 
+        status: 'active',
+        last_sync_at: new Date().toISOString()
+      })
       .eq('id', integrationId);
 
     return new Response(JSON.stringify({ 

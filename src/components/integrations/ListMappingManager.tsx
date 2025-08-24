@@ -172,8 +172,8 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">List Mappings</h3>
-        <Button onClick={onCreateMapping}>
-          Add Mapping
+        <Button onClick={onCreateMapping} variant="outline">
+          Quick Map Another List
         </Button>
       </div>
 

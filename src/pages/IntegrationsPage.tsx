@@ -5,15 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Settings2, CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Users, Zap } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
-import { ListToStageMappingDialog } from "@/components/integrations/ListToStageMappingDialog";
+import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
 const IntegrationsPage = () => {
   const navigate = useNavigate();
@@ -63,24 +63,56 @@ const IntegrationsPage = () => {
       const {
         data: orgMember
       } = await supabase.from('organization_members').select('organization_id').eq('user_id', user.id).single();
+      
+      // Create integration with smart defaults
       const {
         data,
         error
       } = await supabase.from('integrations').insert({
         service_name: 'planning_center',
-        status: 'active',
+        status: 'connecting', // Temporary status while we test
         credentials: {
           application_id: appId,
           secret
         },
         settings: {},
+        sync_frequency: 'every_15_minutes', // Smart default
         organization_id: orgMember?.organization_id || '',
         user_id: user.id
       }).select().single();
+      
       if (error) throw error;
-      return data;
+      
+      // Immediately test the connection
+      const testResult = await supabase.functions.invoke('planning-center-lists', {
+        body: {
+          action: 'testConnection',
+          integrationId: data.id
+        }
+      });
+      
+      if (testResult.error || !testResult.data?.success) {
+        // Delete the integration if test failed
+        await supabase.from('integrations').delete().eq('id', data.id);
+        throw new Error(testResult.data?.error || 'Connection test failed');
+      }
+      
+      // Auto-fetch lists after successful connection
+      try {
+        await supabase.functions.invoke('planning-center-lists', {
+          body: {
+            action: 'fetchLists',
+            integrationId: data.id
+          }
+        });
+      } catch (listError) {
+        console.warn('Failed to pre-fetch lists:', listError);
+        // Don't fail the integration creation for this
+      }
+      
+      return { ...data, connectionTest: testResult.data };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({
         queryKey: ['integrations']
       });
@@ -90,13 +122,13 @@ const IntegrationsPage = () => {
       });
       toast({
         title: 'Integration Connected',
-        description: 'Successfully connected to Planning Center'
+        description: `Successfully connected to Planning Center as ${data.connectionTest?.user?.first_name} ${data.connectionTest?.user?.last_name}. Lists have been pre-loaded for quick mapping.`
       });
     },
     onError: error => {
       toast({
         title: 'Connection Failed',
-        description: 'Failed to connect to Planning Center. Please check your credentials.',
+        description: `Failed to connect to Planning Center: ${error.message}`,
         variant: 'destructive'
       });
     }
@@ -215,7 +247,10 @@ const IntegrationsPage = () => {
       return <Badge variant="secondary">Loading...</Badge>;
     }
     if (integration?.status === 'active') {
-      return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Connected</Badge>;
+      return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Connected & Syncing</Badge>;
+    }
+    if (integration?.status === 'connecting') {
+      return <Badge variant="secondary">Testing Connection...</Badge>;
     }
     if (integration?.status === 'failed') {
       return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Connection Failed</Badge>;
@@ -257,6 +292,21 @@ const IntegrationsPage = () => {
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">Automatically sync your Planning Center people into the right Flows — mapping lists to spiritual steps that drive real connection, discipleship, and next steps.</p>
             
+            {!planningCenterIntegration && (
+              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  <Key className="h-4 w-4" />
+                  Quick Setup Guide
+                </h4>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Get your API credentials from Planning Center</li>
+                  <li>Enter them below and we'll automatically test the connection</li>
+                  <li>Your lists will be pre-loaded for instant mapping</li>
+                  <li>Auto-sync is enabled by default every 15 minutes</li>
+                </ol>
+              </div>
+            )}
+            
             {!planningCenterIntegration ? <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="pc-app-id">Application ID</Label>
@@ -284,28 +334,25 @@ const IntegrationsPage = () => {
                   </Button>
                 </div>
               </div> : <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Button variant="destructive" onClick={handlePlanningCenterDisconnect} disabled={deleteIntegrationMutation.isPending}>
-                    {deleteIntegrationMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
-                  </Button>
-                  <Button variant="outline" onClick={handleTestConnection} disabled={testConnectionMutation.isPending}>
-                    {testConnectionMutation.isPending ? 'Testing...' : 'Test Connection'}
-                  </Button>
-                </div>
+                 <div className="flex gap-2">
+                   <Button variant="destructive" onClick={handlePlanningCenterDisconnect} disabled={deleteIntegrationMutation.isPending}>
+                     {deleteIntegrationMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
+                   </Button>
+                 </div>
                 
                 <Separator />
                 
                 <div className="space-y-3">
-                  <h4 className="font-medium">List Mappings</h4>
+                  <h4 className="font-medium">Quick List Mapping</h4>
                   <p className="text-sm text-muted-foreground">
-                    Map Planning Center lists to specific CRM pipeline stages to automatically sync contacts.
+                    Map Planning Center lists to pipeline stages in one step. Auto-sync is enabled by default with smart settings.
                   </p>
-                  {planningCenterIntegration?.status === 'active' ? <Button variant="outline" onClick={() => {
+                   {planningCenterIntegration?.status === 'active' ? <Button variant="outline" onClick={() => {
                 setSelectedIntegrationId(planningCenterIntegration.id);
                 setMappingDialogOpen(true);
               }}>
-                      Manage List Mappings
-                    </Button> : <p className="text-sm text-muted-foreground">Test connection first to enable list mapping.</p>}
+                      Create List Mapping
+                    </Button> : <p className="text-sm text-muted-foreground">Connection in progress...</p>}
                 </div>
                 
                  {planningCenterIntegration?.status === 'active' && <>
@@ -340,7 +387,7 @@ const IntegrationsPage = () => {
         </Card>
       </div>
 
-      <ListToStageMappingDialog isOpen={mappingDialogOpen} onOpenChange={setMappingDialogOpen} integrationId={selectedIntegrationId} />
+      <QuickMappingDialog isOpen={mappingDialogOpen} onOpenChange={setMappingDialogOpen} integrationId={selectedIntegrationId} />
     </div>;
 };
 export default IntegrationsPage;
