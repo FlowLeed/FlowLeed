@@ -470,6 +470,7 @@ export type Database = {
           service_name: string
           settings: Json
           status: string
+          sync_frequency: string | null
           updated_at: string
           user_id: string
         }
@@ -482,6 +483,7 @@ export type Database = {
           service_name: string
           settings?: Json
           status?: string
+          sync_frequency?: string | null
           updated_at?: string
           user_id: string
         }
@@ -494,6 +496,7 @@ export type Database = {
           service_name?: string
           settings?: Json
           status?: string
+          sync_frequency?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { ListToStageMappingDialog } from "@/components/integrations/ListToStageMappingDialog";
+import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
 
 const IntegrationsPage = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const IntegrationsPage = () => {
   const queryClient = useQueryClient();
   const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string>('');
+  const [isSyncing, setIsSyncing] = useState(false);
   const [planningCenterForm, setPlanningCenterForm] = useState({
     appId: '',
     secret: ''
@@ -155,6 +157,40 @@ const IntegrationsPage = () => {
   const handleTestConnection = () => {
     if (planningCenterIntegration) {
       testConnectionMutation.mutate(planningCenterIntegration.id);
+    }
+  };
+
+  const handleSyncNow = async () => {
+    if (!planningCenterIntegration) return;
+    
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('planning-center-lists', {
+        body: {
+          action: 'autoSync',
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['integrations'] });
+        queryClient.invalidateQueries({ queryKey: ['list-mappings'] });
+        toast({
+          title: 'Sync completed',
+          description: data.message || 'Successfully synced all active mappings',
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Sync failed',
+        description: error.message || 'Failed to sync data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -297,17 +333,28 @@ const IntegrationsPage = () => {
                     )}
                   </div>
                   
-                  {planningCenterIntegration?.status === 'active' && (
+                   {planningCenterIntegration?.status === 'active' && (
                     <>
                       <Separator />
                       
-                      <ListMappingManager 
-                        integrationId={planningCenterIntegration.id}
-                        onCreateMapping={() => {
-                          setSelectedIntegrationId(planningCenterIntegration.id);
-                          setMappingDialogOpen(true);
-                        }}
-                      />
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <SyncSettingsSection
+                          integrationId={planningCenterIntegration.id}
+                          currentFrequency={planningCenterIntegration.sync_frequency || 'every_15_minutes'}
+                          lastSyncAt={planningCenterIntegration.last_sync_at}
+                          onSyncNow={handleSyncNow}
+                          isSyncing={isSyncing}
+                        />
+                        <div>
+                          <ListMappingManager 
+                            integrationId={planningCenterIntegration.id}
+                            onCreateMapping={() => {
+                              setSelectedIntegrationId(planningCenterIntegration.id);
+                              setMappingDialogOpen(true);
+                            }}
+                          />
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>

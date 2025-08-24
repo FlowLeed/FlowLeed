@@ -462,6 +462,34 @@ async function syncSingleList(mapping: any, userId: string) {
   };
 }
 
+// Helper function to check if enough time has passed for sync
+function shouldSyncNow(lastSyncAt: string | null, frequency: string): boolean {
+  if (!lastSyncAt) return true;
+  
+  const lastSync = new Date(lastSyncAt);
+  const now = new Date();
+  const diffMs = now.getTime() - lastSync.getTime();
+  
+  switch (frequency) {
+    case 'every_5_minutes':
+      return diffMs >= 5 * 60 * 1000;
+    case 'every_15_minutes':
+      return diffMs >= 15 * 60 * 1000;
+    case 'every_30_minutes':
+      return diffMs >= 30 * 60 * 1000;
+    case 'hourly':
+      return diffMs >= 60 * 60 * 1000;
+    case 'daily':
+      return diffMs >= 24 * 60 * 60 * 1000;
+    case 'weekly':
+      return diffMs >= 7 * 24 * 60 * 60 * 1000;
+    case 'manual':
+      return false; // Never auto-sync for manual
+    default:
+      return diffMs >= 15 * 60 * 1000; // Default to 15 minutes
+  }
+}
+
 async function autoSyncAllMappings() {
   try {
     console.log('Starting automatic sync of all active list mappings...');
@@ -471,13 +499,15 @@ async function autoSyncAllMappings() {
       .select(`
         *,
         pipelines!inner(name, icon),
-        pipeline_stages!inner(name, color)
+        pipeline_stages!inner(name, color),
+        integrations!inner(sync_frequency, user_id)
       `)
       .eq('auto_sync', true);
     
     if (mappingsError) {
       console.error('Error fetching mappings for auto-sync:', mappingsError);
       return new Response(JSON.stringify({ 
+        success: false,
         error: 'Failed to fetch mappings for auto-sync' 
       }), {
         status: 500,
@@ -488,6 +518,7 @@ async function autoSyncAllMappings() {
     if (!allMappings || allMappings.length === 0) {
       console.log('No active auto-sync mappings found');
       return new Response(JSON.stringify({ 
+        success: true,
         message: 'No active auto-sync mappings found',
         results: []
       }), {
@@ -500,8 +531,17 @@ async function autoSyncAllMappings() {
     const results = [];
     for (const mapping of allMappings) {
       try {
-        console.log(`Auto-syncing mapping: ${mapping.external_list_name}`);
-        const result = await syncSingleList(mapping, 'system');
+        const integration = mapping.integrations;
+        const syncFrequency = integration.sync_frequency || 'every_15_minutes';
+        
+        // Check if enough time has passed based on frequency setting
+        if (!shouldSyncNow(mapping.last_sync_at, syncFrequency)) {
+          console.log(`Skipping sync for mapping ${mapping.id} - frequency not reached (${syncFrequency})`);
+          continue;
+        }
+        
+        console.log(`Auto-syncing mapping: ${mapping.external_list_name} (frequency: ${syncFrequency})`);
+        const result = await syncSingleList(mapping, integration.user_id);
         results.push(result);
         
         // Update last_sync_at timestamp
@@ -524,6 +564,7 @@ async function autoSyncAllMappings() {
     console.log(`Auto-sync completed: ${successfulSyncs}/${allMappings.length} mappings synced successfully`);
     
     return new Response(JSON.stringify({ 
+      success: true,
       message: `Auto-sync completed: ${successfulSyncs}/${allMappings.length} mappings synced successfully`,
       synced: successfulSyncs,
       total: allMappings.length,
