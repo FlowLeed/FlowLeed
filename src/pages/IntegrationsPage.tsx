@@ -283,7 +283,7 @@ const IntegrationsPage = () => {
                 </div>
                 <div>
                   <CardTitle>Planning Center</CardTitle>
-                  <CardDescription>Sync church management data and member information</CardDescription>
+                  <CardDescription>Assign people to the right Flow</CardDescription>
                 </div>
               </div>
               {getStatusBadge(planningCenterIntegration, integrationsLoading)}
