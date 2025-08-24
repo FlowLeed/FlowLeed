@@ -106,6 +106,39 @@ const IntegrationsPage = () => {
     }
   });
 
+  const testConnectionMutation = useMutation({
+    mutationFn: async (integrationId: string) => {
+      const { data, error } = await supabase.functions.invoke('planning-center-lists', {
+        body: {
+          action: 'testConnection',
+          integrationId,
+        },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['integrations'] });
+        toast({
+          title: 'Connection Successful',
+          description: `Connected as ${data.user?.first_name} ${data.user?.last_name}`,
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    },
+    onError: (error: any) => {
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      toast({
+        title: 'Connection Failed',
+        description: error.message || 'Failed to connect to Planning Center. Please check your credentials.',
+        variant: 'destructive',
+      });
+    }
+  });
+
   const handlePlanningCenterConnect = () => {
     createIntegrationMutation.mutate({
       appId: planningCenterForm.appId,
@@ -119,12 +152,24 @@ const IntegrationsPage = () => {
     }
   };
 
-  const getStatusBadge = (connected: boolean, isLoading: boolean = false) => {
+  const handleTestConnection = () => {
+    if (planningCenterIntegration) {
+      testConnectionMutation.mutate(planningCenterIntegration.id);
+    }
+  };
+
+  const getStatusBadge = (integration: any, isLoading: boolean = false) => {
     if (isLoading) {
       return <Badge variant="secondary">Loading...</Badge>;
     }
-    if (connected) {
+    if (integration?.status === 'active') {
       return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Connected</Badge>;
+    }
+    if (integration?.status === 'failed') {
+      return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Connection Failed</Badge>;
+    }
+    if (integration) {
+      return <Badge variant="secondary">Not Tested</Badge>;
     }
     return <Badge variant="outline">Not Connected</Badge>;
   };
@@ -167,7 +212,7 @@ const IntegrationsPage = () => {
                     <CardDescription>Sync church management data and member information</CardDescription>
                   </div>
                 </div>
-                {getStatusBadge(!!planningCenterIntegration, integrationsLoading)}
+                {getStatusBadge(planningCenterIntegration, integrationsLoading)}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -221,7 +266,13 @@ const IntegrationsPage = () => {
                     >
                       {deleteIntegrationMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
                     </Button>
-                    <Button variant="outline">Test Connection</Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleTestConnection}
+                      disabled={testConnectionMutation.isPending}
+                    >
+                      {testConnectionMutation.isPending ? 'Testing...' : 'Test Connection'}
+                    </Button>
                   </div>
                   
                   <Separator />
@@ -231,26 +282,34 @@ const IntegrationsPage = () => {
                     <p className="text-sm text-muted-foreground">
                       Map Planning Center lists to specific CRM pipeline stages to automatically sync contacts.
                     </p>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setSelectedIntegrationId(planningCenterIntegration.id);
-                        setMappingDialogOpen(true);
-                      }}
-                    >
-                      Manage List Mappings
-                    </Button>
+                    {planningCenterIntegration?.status === 'active' ? (
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setSelectedIntegrationId(planningCenterIntegration.id);
+                          setMappingDialogOpen(true);
+                        }}
+                      >
+                        Manage List Mappings
+                      </Button>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Test connection first to enable list mapping.</p>
+                    )}
                   </div>
                   
-                  <Separator />
-                  
-                  <ListMappingManager 
-                    integrationId={planningCenterIntegration.id}
-                    onCreateMapping={() => {
-                      setSelectedIntegrationId(planningCenterIntegration.id);
-                      setMappingDialogOpen(true);
-                    }}
-                  />
+                  {planningCenterIntegration?.status === 'active' && (
+                    <>
+                      <Separator />
+                      
+                      <ListMappingManager 
+                        integrationId={planningCenterIntegration.id}
+                        onCreateMapping={() => {
+                          setSelectedIntegrationId(planningCenterIntegration.id);
+                          setMappingDialogOpen(true);
+                        }}
+                      />
+                    </>
+                  )}
                 </div>
               )}
             </CardContent>

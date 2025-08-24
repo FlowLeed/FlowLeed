@@ -32,7 +32,9 @@ serve(async (req) => {
 
     const { action, integrationId, listMappings } = await req.json();
 
-    if (action === 'fetchLists') {
+    if (action === 'testConnection') {
+      return await testPlanningCenterConnection(integrationId, userData.user.id);
+    } else if (action === 'fetchLists') {
       return await fetchPlanningCenterLists(integrationId, userData.user.id);
     } else if (action === 'syncLists') {
       return await syncPlanningCenterLists(listMappings, userData.user.id);
@@ -47,6 +49,83 @@ serve(async (req) => {
     });
   }
 });
+
+async function testPlanningCenterConnection(integrationId: string, userId: string) {
+  // Get integration credentials
+  const { data: integration, error: integrationError } = await supabase
+    .from('integrations')
+    .select('credentials, settings')
+    .eq('id', integrationId)
+    .eq('user_id', userId)
+    .single();
+
+  if (integrationError || !integration) {
+    return new Response('Integration not found', { status: 404, headers: corsHeaders });
+  }
+
+  const { application_id, secret } = integration.credentials;
+  if (!application_id || !secret) {
+    return new Response('Missing Planning Center credentials', { status: 400, headers: corsHeaders });
+  }
+
+  try {
+    // Test API connection with a simple endpoint
+    const auth = btoa(`${application_id}:${secret}`);
+    const response = await fetch('https://api.planningcenteronline.com/people/v2/me', {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      // Update integration status to failed
+      await supabase
+        .from('integrations')
+        .update({ status: 'failed' })
+        .eq('id', integrationId);
+
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `PC API error: ${response.status} - ${response.statusText}` 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const data = await response.json();
+    
+    // Update integration status to active
+    await supabase
+      .from('integrations')
+      .update({ status: 'active' })
+      .eq('id', integrationId);
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      user: data.data.attributes,
+      message: 'Successfully connected to Planning Center' 
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Error testing PC connection:', error);
+    
+    // Update integration status to failed
+    await supabase
+      .from('integrations')
+      .update({ status: 'failed' })
+      .eq('id', integrationId);
+
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Failed to connect to Planning Center API' 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
 async function fetchPlanningCenterLists(integrationId: string, userId: string) {
   // Get integration credentials
