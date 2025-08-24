@@ -185,11 +185,11 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
     const credentials = integration.credentials as any;
     const application_id = credentials?.application_id;
     const secret = credentials?.secret;
-  if (!application_id || !secret) {
-    return new Response('Missing Planning Center credentials', { status: 400, headers: corsHeaders });
-  }
+    
+    if (!application_id || !secret) {
+      return new Response('Missing Planning Center credentials', { status: 400, headers: corsHeaders });
+    }
 
-  try {
     // Fetch lists from Planning Center API
     const auth = btoa(`${application_id}:${secret}`);
     const response = await fetch('https://api.planningcenteronline.com/people/v2/lists', {
