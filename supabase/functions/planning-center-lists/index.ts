@@ -551,7 +551,9 @@ async function autoSyncAllMappings() {
         const syncFrequency = integration.sync_frequency || 'every_15_minutes';
         
         // Check if enough time has passed based on frequency setting
-        if (!shouldSyncNow(mapping.last_sync_at, syncFrequency)) {
+        // Temporarily bypass frequency check for testing
+        const shouldSync = true; // shouldSyncNow(mapping.last_sync_at, syncFrequency);
+        if (!shouldSync) {
           console.log(`Skipping sync for mapping ${mapping.id} - frequency not reached (${syncFrequency})`);
           continue;
         }
