@@ -64,7 +64,17 @@ export function QuickMappingDialog({
         .order('name');
       
       if (error) throw error;
-      return data as CachedList[];
+      
+      // Deduplicate by external_list_id to prevent duplicate entries
+      const uniqueLists = data?.reduce((acc: CachedList[], current) => {
+        const exists = acc.find(item => item.external_list_id === current.external_list_id);
+        if (!exists) {
+          acc.push(current);
+        }
+        return acc;
+      }, []) || [];
+      
+      return uniqueLists as CachedList[];
     },
     enabled: isOpen && !!integrationId,
   });
