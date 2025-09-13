@@ -5,11 +5,11 @@ import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3, Settings } from "lucide-react";
-import { calculatePipelineContactCount } from "@/lib/utils";
-import { usePipelineContext } from "@/contexts/PipelineContext";
+import { calculateFlowContactCount } from "@/lib/utils";
+import { useFlowContext } from "@/contexts/FlowContext";
 import type { LucideIcon } from "lucide-react";
 
-const PipelineCard = ({ 
+const FlowCard = ({ 
   title, 
   description, 
   icon: Icon, 
@@ -37,7 +37,7 @@ const PipelineCard = ({
       <CardContent>
         <Link to={path}>
           <Button variant="outline" className="w-full justify-between">
-            View Pipeline
+            View Flow
             <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
@@ -47,10 +47,10 @@ const PipelineCard = ({
 };
 
 const Dashboard = () => {
-  const { pipelines: pipelineData, loading, error } = usePipelineContext();
+  const { flows: flowData, loading, error } = useFlowContext();
   
-  // Create pipeline cards from actual database data
-  const pipelines = Object.entries(pipelineData).map(([key, pipeline]) => {
+  // Create flow cards from actual database data
+  const flows = Object.entries(flowData).map(([key, flow]) => {
     // Icon mapping object
     const iconMap: { [key: string]: LucideIcon } = {
       'Users': Users,
@@ -78,14 +78,14 @@ const Dashboard = () => {
       'BarChart3': BarChart3
     };
 
-    // Use the stored icon if available, otherwise determine icon based on pipeline name  
+    // Use the stored icon if available, otherwise determine icon based on flow name  
     let icon = Users; // Default fallback
     
-    if (pipeline.icon && iconMap[pipeline.icon]) {
-      icon = iconMap[pipeline.icon];
+    if (flow.icon && iconMap[flow.icon]) {
+      icon = iconMap[flow.icon];
     } else {
-      // Fallback to name-based icon selection for existing pipelines without stored icons
-      const name = pipeline.name.toLowerCase();
+      // Fallback to name-based icon selection for existing flows without stored icons
+      const name = flow.name.toLowerCase();
       if (name.includes('pastoral') || name.includes('care')) {
         icon = MessageSquare;
       } else if (name.includes('operation') || name.includes('ops')) {
@@ -98,11 +98,11 @@ const Dashboard = () => {
     }
 
     return {
-      title: pipeline.name,
-      description: pipeline.description || `Manage and track contacts through the ${pipeline.name} process`,
+      title: flow.name,
+      description: flow.description || `Manage and track contacts through the ${flow.name} process`,
       icon,
-      contactCount: calculatePipelineContactCount(pipeline),
-      path: `/pipelines/${pipeline.id}`,
+      contactCount: calculateFlowContactCount(flow),
+      path: `/flows/${flow.id}`,
     };
   });
 
@@ -116,7 +116,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-crm-primary mx-auto mb-4"></div>
-                <p className="text-gray-500">Loading pipelines...</p>
+                <p className="text-gray-500">Loading flows...</p>
               </div>
             </div>
           </div>
@@ -134,7 +134,7 @@ const Dashboard = () => {
             <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
-                <p className="text-red-500 mb-4">Error loading pipelines: {error}</p>
+                <p className="text-red-500 mb-4">Error loading flows: {error}</p>
                 <Button onClick={() => window.location.reload()}>
                   Retry
                 </Button>
@@ -154,14 +154,14 @@ const Dashboard = () => {
           <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
           <h2 className="text-lg font-medium text-gray-700 mb-4">Your Flows</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {pipelines.map((pipeline) => (
-              <PipelineCard
-                key={pipeline.title}
-                title={pipeline.title}
-                description={pipeline.description}
-                icon={pipeline.icon}
-                contactCount={pipeline.contactCount}
-                path={pipeline.path}
+            {flows.map((flow) => (
+              <FlowCard
+                key={flow.title}
+                title={flow.title}
+                description={flow.description}
+                icon={flow.icon}
+                contactCount={flow.contactCount}
+                path={flow.path}
               />
             ))}
           </div>

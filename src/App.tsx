@@ -5,12 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "./components/layout/MainLayout";
-import { PipelineProvider } from "./contexts/PipelineContext";
+import { FlowProvider } from "./contexts/FlowContext";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
-import PipelinePage from "./pages/PipelinePage";
+import FlowPage from "./pages/FlowPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import ProfilePage from "./pages/ProfilePage";
 import IntegrationsPage from "./pages/IntegrationsPage";
@@ -25,19 +25,19 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <PipelineProvider>
+          <FlowProvider>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
-                <Route path="/pipelines/:pipelineId" element={<PipelinePage />} />
+                <Route path="/flows/:flowId" element={<FlowPage />} />
                 <Route path="/contacts/:contactId" element={<UserProfilePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/integrations" element={<IntegrationsPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </PipelineProvider>
+          </FlowProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -1,5 +1,5 @@
 
-import { Contact, Pipeline } from "../types/crm";
+import { Contact, Flow } from "../types/crm";
 
 // Generate a random ID
 const generateId = () => Math.random().toString(36).substring(2, 10);
@@ -57,8 +57,8 @@ const createMoreContacts = (count: number): Contact[] => {
   return result;
 };
 
-// Create pipelines with contacts distributed across stages
-export const hostTeamPipeline: Pipeline = {
+// Create flows with contacts distributed across stages
+export const hostTeamPipeline: Flow = {
   id: "host-team",
   name: "Host Team Launch",
   stages: [
@@ -89,7 +89,7 @@ export const hostTeamPipeline: Pipeline = {
   ],
 };
 
-export const pastoralCarePipeline: Pipeline = {
+export const pastoralCarePipeline: Flow = {
   id: "pastoral-care",
   name: "Pastoral Care",
   stages: [
@@ -126,7 +126,7 @@ export const pastoralCarePipeline: Pipeline = {
   ],
 };
 
-export const operationsPipeline: Pipeline = {
+export const operationsPipeline: Flow = {
   id: "operations",
   name: "Operations",
   stages: [
@@ -157,7 +157,7 @@ export const operationsPipeline: Pipeline = {
   ],
 };
 
-export const givingHubPipeline: Pipeline = {
+export const givingHubPipeline: Flow = {
   id: "giving-hub",
   name: "Giving Hub",
   stages: [
@@ -188,4 +188,4 @@ export const givingHubPipeline: Pipeline = {
   ],
 };
 
-export const pipelines = [hostTeamPipeline, pastoralCarePipeline, operationsPipeline, givingHubPipeline];
+export const flows = [hostTeamPipeline, pastoralCarePipeline, operationsPipeline, givingHubPipeline];

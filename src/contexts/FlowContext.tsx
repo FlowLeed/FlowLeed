@@ -1,30 +1,30 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Pipeline } from "@/types/crm";
+import { Flow } from "@/types/crm";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { hostTeamPipeline, pastoralCarePipeline, operationsPipeline, givingHubPipeline } from "@/data/mockData";
 
-interface PipelineContextType {
-  pipelines: Record<string, Pipeline>;
-  updatePipeline: (pipelineId: string, pipeline: Pipeline) => void;
-  createPipeline: (pipeline: Omit<Pipeline, 'id'>) => Promise<string>;
-  deletePipeline: (pipelineId: string) => Promise<void>;
+interface FlowContextType {
+  flows: Record<string, Flow>;
+  updateFlow: (flowId: string, flow: Flow) => void;
+  createFlow: (flow: Omit<Flow, 'id'>) => Promise<string>;
+  deleteFlow: (flowId: string) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
 
-const PipelineContext = createContext<PipelineContextType | undefined>(undefined);
+const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
-export const usePipelineContext = () => {
-  const context = useContext(PipelineContext);
+export const useFlowContext = () => {
+  const context = useContext(FlowContext);
   if (!context) {
-    throw new Error("usePipelineContext must be used within a PipelineProvider");
+    throw new Error("useFlowContext must be used within a FlowProvider");
   }
   return context;
 };
 
-interface PipelineProviderProps {
+interface FlowProviderProps {
   children: ReactNode;
 }
 
@@ -45,8 +45,8 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile
   } : undefined
 });
 
-// Convert database pipeline format to frontend format  
-const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[]): Pipeline => ({
+// Convert database pipeline format to frontend format (keeping database names for data compatibility)
+const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[]): Flow => ({
   id: dbPipeline.id,
   name: dbPipeline.name,
   description: dbPipeline.description,
@@ -68,26 +68,26 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
   }))
 });
 
-export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) => {
+export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
   const { user } = useAuth();
   const { organization, loading: profileLoading } = useProfile();
-  const [pipelines, setPipelines] = useState<Record<string, Pipeline>>({});
+  const [flows, setFlows] = useState<Record<string, Flow>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load pipelines from database when user/organization is available
+  // Load flows from database when user/organization is available
   useEffect(() => {
     if (!user || !organization) {
       setLoading(false);
       return;
     }
 
-    const loadPipelines = async () => {
+    const loadFlows = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Check if organization has any pipelines
+        // Check if organization has any pipelines (database table name stays the same)
         const { data: existingPipelines, error: pipelinesError } = await supabase
           .from('pipelines')
           .select('*')
@@ -95,9 +95,9 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
 
         if (pipelinesError) throw pipelinesError;
 
-        // If no pipelines exist, create default ones
+        // If no flows exist, create default ones
         if (!existingPipelines || existingPipelines.length === 0) {
-          await createDefaultPipelines(organization.id);
+          await createDefaultFlows(organization.id);
           // Reload after creating defaults
           const { data: newPipelines, error: newError } = await supabase
             .from('pipelines')
@@ -105,17 +105,17 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
             .eq('organization_id', organization.id);
           
           if (newError) throw newError;
-          const pipelinesData = await loadPipelineData(newPipelines || []);
-          setPipelines(pipelinesData);
+          const flowsData = await loadFlowData(newPipelines || []);
+          setFlows(flowsData);
         } else {
-          const pipelinesData = await loadPipelineData(existingPipelines);
-          setPipelines(pipelinesData);
+          const flowsData = await loadFlowData(existingPipelines);
+          setFlows(flowsData);
         }
       } catch (err) {
-        console.error("Error loading pipelines:", err);
-        setError(err instanceof Error ? err.message : "Failed to load pipelines");
-        // Fallback to default pipelines on error
-        setPipelines({
+        console.error("Error loading flows:", err);
+        setError(err instanceof Error ? err.message : "Failed to load flows");
+        // Fallback to default flows on error
+        setFlows({
           "host-team": hostTeamPipeline,
           "pastoral-care": pastoralCarePipeline,
           "operations": operationsPipeline,
@@ -126,43 +126,43 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
       }
     };
 
-    loadPipelines();
+    loadFlows();
   }, [user, organization]);
 
-  const createDefaultPipelines = async (organizationId: string) => {
-    const defaultPipelines = [
-      { pipeline: hostTeamPipeline },
-      { pipeline: pastoralCarePipeline },
-      { pipeline: operationsPipeline },
-      { pipeline: givingHubPipeline }
+  const createDefaultFlows = async (organizationId: string) => {
+    const defaultFlows = [
+      { flow: hostTeamPipeline },
+      { flow: pastoralCarePipeline },
+      { flow: operationsPipeline },
+      { flow: givingHubPipeline }
     ];
 
-    for (const { pipeline } of defaultPipelines) {
-      // Generate UUID for pipeline
-      const pipelineId = crypto.randomUUID();
+    for (const { flow } of defaultFlows) {
+      // Generate UUID for flow (stored as pipeline in database)
+      const flowId = crypto.randomUUID();
       
-      // Create pipeline
-      const { data: pipelineData, error: pipelineError } = await supabase
+      // Create flow (stored as pipeline in database)
+      const { data: flowData, error: flowError } = await supabase
         .from('pipelines')
         .insert({
-          id: pipelineId,
-          name: pipeline.name,
-          icon: pipeline.icon,
+          id: flowId,
+          name: flow.name,
+          icon: flow.icon,
           organization_id: organizationId
         })
         .select()
         .single();
 
-      if (pipelineError) throw pipelineError;
+      if (flowError) throw flowError;
 
       // Create stages
-      for (let i = 0; i < pipeline.stages.length; i++) {
-        const stage = pipeline.stages[i];
+      for (let i = 0; i < flow.stages.length; i++) {
+        const stage = flow.stages[i];
         const { data: stageData, error: stageError } = await supabase
           .from('pipeline_stages')
           .insert({
             id: crypto.randomUUID(),
-            pipeline_id: pipelineData.id,
+            pipeline_id: flowData.id,
             name: stage.name,
             color: stage.color,
             stage_order: i
@@ -202,11 +202,11 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
               });
           }
 
-          // Link contact to pipeline stage
+          // Link contact to flow stage (stored as pipeline_contacts in database)
           await supabase
             .from('pipeline_contacts')
             .insert({
-              pipeline_id: pipelineData.id,
+              pipeline_id: flowData.id,
               stage_id: stageData.id,
               contact_id: contactData.id,
               stage_order: j
@@ -216,8 +216,8 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
     }
   };
 
-  const loadPipelineData = async (pipelinesList: any[]): Promise<Record<string, Pipeline>> => {
-    const pipelinesData: Record<string, Pipeline> = {};
+  const loadFlowData = async (pipelinesList: any[]): Promise<Record<string, Flow>> => {
+    const flowsData: Record<string, Flow> = {};
 
     for (const pipeline of pipelinesList) {
       // Load stages
@@ -229,8 +229,8 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
 
       if (stagesError) throw stagesError;
 
-      // Load pipeline contacts with contact details
-      const { data: pipelineContacts, error: contactsError } = await supabase
+      // Load flow contacts with contact details (stored as pipeline_contacts in database)
+      const { data: flowContacts, error: contactsError } = await supabase
         .from('pipeline_contacts')
         .select(`
           *,
@@ -240,8 +240,8 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
 
       if (contactsError) throw contactsError;
 
-      // Load all contact tags for this pipeline
-      const contactIds = pipelineContacts?.map(pc => pc.contact_id) || [];
+      // Load all contact tags for this flow
+      const contactIds = flowContacts?.map(pc => pc.contact_id) || [];
       const { data: contactTags, error: tagsError } = await supabase
         .from('contact_tags')
         .select('*')
@@ -250,7 +250,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
       if (tagsError) throw tagsError;
 
       // Load profiles for assigned users
-      const assignedUserIds = pipelineContacts
+      const assignedUserIds = flowContacts
         ?.map(pc => pc.contacts?.assigned_to_user_id)
         .filter(id => id) || [];
       
@@ -263,40 +263,40 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
 
       if (profilesError) throw profilesError;
 
-      const convertedPipeline = convertDbPipelineToFrontend(
+      const convertedFlow = convertDbPipelineToFrontend(
         pipeline,
         stages || [],
-        pipelineContacts || [],
+        flowContacts || [],
         contactTags || [],
         profiles || []
       );
 
-      pipelinesData[pipeline.id] = convertedPipeline;
+      flowsData[pipeline.id] = convertedFlow;
     }
 
-    return pipelinesData;
+    return flowsData;
   };
 
-  const updatePipeline = async (pipelineId: string, pipeline: Pipeline) => {
+  const updateFlow = async (flowId: string, flow: Flow) => {
     if (!organization) return;
 
     try {
-      // Update pipeline in database
-      const { error: pipelineError } = await supabase
+      // Update flow in database (stored as pipeline)
+      const { error: flowError } = await supabase
         .from('pipelines')
         .update({
-          name: pipeline.name,
-          description: pipeline.description,
-          icon: pipeline.icon
+          name: flow.name,
+          description: flow.description,
+          icon: flow.icon
         })
-        .eq('id', pipelineId)
+        .eq('id', flowId)
         .eq('organization_id', organization.id);
 
-      if (pipelineError) throw pipelineError;
+      if (flowError) throw flowError;
 
       // Update/Create stages and contacts
-      for (let i = 0; i < pipeline.stages.length; i++) {
-        const stage = pipeline.stages[i];
+      for (let i = 0; i < flow.stages.length; i++) {
+        const stage = flow.stages[i];
         
         let stageId = stage.id;
         
@@ -305,7 +305,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
           const { data: newStage, error: insertError } = await supabase
             .from('pipeline_stages')
             .insert({
-              pipeline_id: pipelineId,
+              pipeline_id: flowId,
               name: stage.name,
               color: stage.color,
               stage_order: i
@@ -325,7 +325,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
               stage_order: i
             })
             .eq('id', stage.id)
-            .eq('pipeline_id', pipelineId);
+            .eq('pipeline_id', flowId);
 
           if (stageError) throw stageError;
         }
@@ -342,26 +342,26 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
               stage_order: j
             })
             .eq('contact_id', contact.id)
-            .eq('pipeline_id', pipelineId);
+            .eq('pipeline_id', flowId);
 
           if (pcError) throw pcError;
         }
       }
 
       // Update local state
-      setPipelines(prev => ({
+      setFlows(prev => ({
         ...prev,
-        [pipelineId]: pipeline
+        [flowId]: flow
       }));
 
     } catch (err) {
-      console.error("Error updating pipeline:", err);
-      setError(err instanceof Error ? err.message : "Failed to update pipeline");
+      console.error("Error updating flow:", err);
+      setError(err instanceof Error ? err.message : "Failed to update flow");
     }
   };
 
-  const createPipeline = async (pipeline: Omit<Pipeline, 'id'>): Promise<string> => {
-    console.log("createPipeline called with:", pipeline);
+  const createFlow = async (flow: Omit<Flow, 'id'>): Promise<string> => {
+    console.log("createFlow called with:", flow);
     console.log("Organization:", organization);
     console.log("Profile loading:", profileLoading);
     
@@ -375,35 +375,35 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
     }
 
     try {
-      // Generate a proper UUID for the pipeline
-      const pipelineId = crypto.randomUUID();
-      console.log("Generated pipeline ID:", pipelineId);
+      // Generate a proper UUID for the flow
+      const flowId = crypto.randomUUID();
+      console.log("Generated flow ID:", flowId);
       
-      // Create pipeline in database
-      console.log("Creating pipeline in database...");
-      const { data: pipelineData, error: pipelineError } = await supabase
+      // Create flow in database (stored as pipeline)
+      console.log("Creating flow in database...");
+      const { data: flowData, error: flowError } = await supabase
         .from('pipelines')
         .insert({
-          id: pipelineId,
-          name: pipeline.name,
-          icon: pipeline.icon,
+          id: flowId,
+          name: flow.name,
+          icon: flow.icon,
           organization_id: organization.id
         })
         .select()
         .single();
 
-      console.log("Pipeline creation result:", { pipelineData, pipelineError });
-      if (pipelineError) {
-        console.error("Pipeline creation error:", pipelineError);
-        throw pipelineError;
+      console.log("Flow creation result:", { flowData, flowError });
+      if (flowError) {
+        console.error("Flow creation error:", flowError);
+        throw flowError;
       }
 
       // Create stages
       console.log("Creating stages...");
       const createdStages: any[] = [];
       
-      for (let i = 0; i < pipeline.stages.length; i++) {
-        const stage = pipeline.stages[i];
+      for (let i = 0; i < flow.stages.length; i++) {
+        const stage = flow.stages[i];
         const stageId = crypto.randomUUID();
         console.log(`Creating stage ${i + 1}:`, { stageId, stage });
         
@@ -411,7 +411,7 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
           .from('pipeline_stages')
           .insert({
             id: stageId,
-            pipeline_id: pipelineData.id,
+            pipeline_id: flowData.id,
             name: stage.name,
             color: stage.color,
             stage_order: i
@@ -428,10 +428,10 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
         createdStages.push(stageData);
       }
 
-      // Create the pipeline object with actual database IDs
-      const newPipeline: Pipeline = {
-        ...pipeline,
-        id: pipelineId,
+      // Create the flow object with actual database IDs
+      const newFlow: Flow = {
+        ...flow,
+        id: flowId,
         stages: createdStages.map(stage => ({
           id: stage.id,
           name: stage.name,
@@ -440,56 +440,56 @@ export const PipelineProvider: React.FC<PipelineProviderProps> = ({ children }) 
         }))
       };
 
-      console.log("Created pipeline object:", newPipeline);
+      console.log("Created flow object:", newFlow);
 
       // Update local state
-      setPipelines(prev => ({
+      setFlows(prev => ({
         ...prev,
-        [pipelineId]: newPipeline
+        [flowId]: newFlow
       }));
 
-      console.log("Pipeline created successfully, returning ID:", pipelineId);
-      return pipelineId;
+      console.log("Flow created successfully, returning ID:", flowId);
+      return flowId;
 
     } catch (err) {
-      console.error("Error creating pipeline:", err);
-      setError(err instanceof Error ? err.message : "Failed to create pipeline");
+      console.error("Error creating flow:", err);
+      setError(err instanceof Error ? err.message : "Failed to create flow");
       throw err;
     }
   };
 
-  const deletePipeline = async (pipelineId: string): Promise<void> => {
+  const deleteFlow = async (flowId: string): Promise<void> => {
     if (!organization) {
       throw new Error("No organization available");
     }
 
     try {
-      // Delete from database using supabase
+      // Delete from database using supabase (stored as pipeline)
       const { error } = await supabase
         .from('pipelines')
         .delete()
-        .eq('id', pipelineId)
+        .eq('id', flowId)
         .eq('organization_id', organization.id);
 
       if (error) throw error;
 
-      // Update local state by removing the deleted pipeline
-      setPipelines(prev => {
+      // Update local state by removing the deleted flow
+      setFlows(prev => {
         const updated = { ...prev };
-        delete updated[pipelineId];
+        delete updated[flowId];
         return updated;
       });
 
     } catch (err) {
-      console.error("Error deleting pipeline:", err);
-      setError(err instanceof Error ? err.message : "Failed to delete pipeline");
+      console.error("Error deleting flow:", err);
+      setError(err instanceof Error ? err.message : "Failed to delete flow");
       throw err;
     }
   };
 
   return (
-    <PipelineContext.Provider value={{ pipelines, updatePipeline, createPipeline, deletePipeline, loading, error }}>
+    <FlowContext.Provider value={{ flows, updateFlow, createFlow, deleteFlow, loading, error }}>
       {children}
-    </PipelineContext.Provider>
+    </FlowContext.Provider>
   );
 };

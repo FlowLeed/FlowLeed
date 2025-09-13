@@ -54,8 +54,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { calculatePipelineContactCount } from "@/lib/utils";
-import { usePipelineContext } from "@/contexts/PipelineContext";
+import { calculateFlowContactCount } from "@/lib/utils";
+import { useFlowContext } from "@/contexts/FlowContext";
 import type { LucideIcon } from "lucide-react";
 
 interface SidebarItem {
@@ -100,7 +100,7 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
 const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const location = useLocation();
   const { toast } = useToast();
-  const { createPipeline, loading: pipelineLoading } = usePipelineContext();
+  const { createFlow, loading: flowLoading } = useFlowContext();
   const [isConnectedToPC, setIsConnectedToPC] = useState(false);
   const [showCreateFlowDialog, setShowCreateFlowDialog] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
@@ -154,8 +154,8 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
         ]
       };
 
-      // Create the pipeline in database
-      await createPipeline(newPipeline);
+      // Create the flow in database
+      await createFlow(newPipeline);
       
       toast({
         title: "Flow Created",
@@ -198,8 +198,8 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
         }))
       };
 
-      // Create the pipeline in database
-      await createPipeline(newPipeline);
+      // Create the flow in database
+      await createFlow(newPipeline);
       
       toast({
         title: "Flow Created",
@@ -308,10 +308,10 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
               
                <DropdownMenuItem 
                 onClick={() => setShowCreateFlowDialog(true)}
-                disabled={pipelineLoading}
+                disabled={flowLoading}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                {pipelineLoading ? "Loading..." : "Create New Flow"}
+                {flowLoading ? "Loading..." : "Create New Flow"}
               </DropdownMenuItem>
               
               <DropdownMenuSeparator />
@@ -507,7 +507,7 @@ const Logo = () => (
 );
 
 export const Sidebar = () => {
-  const { pipelines } = usePipelineContext();
+  const { flows } = useFlowContext();
 
   const iconOptions = [
     Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap,
@@ -555,17 +555,17 @@ export const Sidebar = () => {
     },
   ];
 
-  // Create flow items dynamically from all pipelines (database data)
-  const flowItems: SidebarItem[] = Object.entries(pipelines).map(([key, pipeline]) => {
-    // Use stored icon if available, otherwise determine icon based on pipeline name
+  // Create flow items dynamically from all flows (database data)
+  const flowItems: SidebarItem[] = Object.entries(flows).map(([key, flow]) => {
+    // Use stored icon if available, otherwise determine icon based on flow name
     let icon = Users;
     
-    // If pipeline has a stored icon, try to find the matching icon component
-    if (pipeline.icon && iconMap[pipeline.icon]) {
-      icon = iconMap[pipeline.icon];
+    // If flow has a stored icon, try to find the matching icon component
+    if (flow.icon && iconMap[flow.icon]) {
+      icon = iconMap[flow.icon];
     } else {
-      // Fallback to name-based icon selection for existing pipelines
-      const name = pipeline.name.toLowerCase();
+      // Fallback to name-based icon selection for existing flows
+      const name = flow.name.toLowerCase();
       if (name.includes('pastoral') || name.includes('care')) {
         icon = MessageSquare;
       } else if (name.includes('operation') || name.includes('ops')) {
@@ -578,10 +578,10 @@ export const Sidebar = () => {
     }
 
     return {
-      title: pipeline.name,
+      title: flow.name,
       icon,
-      path: `/pipelines/${pipeline.id}`, // Use pipeline.id instead of key for database pipelines
-      badge: calculatePipelineContactCount(pipeline),
+      path: `/flows/${flow.id}`, // Use flow.id instead of key for database flows
+      badge: calculateFlowContactCount(flow),
     };
   });
 

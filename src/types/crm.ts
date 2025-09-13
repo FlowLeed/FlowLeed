@@ -18,17 +18,17 @@ export interface Contact {
   phone?: string;
 }
 
-export interface PipelineStage {
+export interface FlowStage {
   id: string;
   name: string;
   contacts: Contact[];
   color?: string;
 }
 
-export interface Pipeline {
+export interface Flow {
   id: string;
   name: string;
   description?: string;
-  stages: PipelineStage[];
+  stages: FlowStage[];
   icon?: string;
 }

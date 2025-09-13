@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { usePipelineContext } from "@/contexts/PipelineContext";
+import { useFlowContext } from "@/contexts/FlowContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { LucideIcon } from "lucide-react";
@@ -60,8 +60,8 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
-  const { pipelines, updatePipeline, deletePipeline } = usePipelineContext();
-  const { pipelineId } = useParams<{ pipelineId: string }>();
+  const { flows, updateFlow, deleteFlow } = useFlowContext();
+  const { flowId } = useParams<{ flowId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -100,15 +100,15 @@ export const Header: React.FC<HeaderProps> = ({
     'BarChart3': BarChart3
   };
 
-  // Get the current pipeline and its icon
-  const currentPipeline = pipelineId ? Object.values(pipelines).find(p => p.id === pipelineId) : null;
+  // Get the current flow and its icon
+  const currentFlow = flowId ? Object.values(flows).find(f => f.id === flowId) : null;
   let FlowIcon = Workflow; // Default fallback
 
-  if (currentPipeline?.icon && iconMap[currentPipeline.icon]) {
-    FlowIcon = iconMap[currentPipeline.icon];
-  } else if (currentPipeline) {
+  if (currentFlow?.icon && iconMap[currentFlow.icon]) {
+    FlowIcon = iconMap[currentFlow.icon];
+  } else if (currentFlow) {
     // Fallback to name-based icon selection
-    const name = currentPipeline.name.toLowerCase();
+    const name = currentFlow.name.toLowerCase();
     if (name.includes('pastoral') || name.includes('care')) {
       FlowIcon = MessageSquare;
     } else if (name.includes('operation') || name.includes('ops')) {
@@ -132,19 +132,19 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   const openEditDialog = () => {
-    if (currentPipeline) {
-      setEditFlowName(currentPipeline.name);
-      setEditFlowDescription(currentPipeline.description || "");
+    if (currentFlow) {
+      setEditFlowName(currentFlow.name);
+      setEditFlowDescription(currentFlow.description || "");
       
       // Set icon
-      if (currentPipeline.icon && iconMap[currentPipeline.icon]) {
-        setEditFlowIcon(iconMap[currentPipeline.icon]);
+      if (currentFlow.icon && iconMap[currentFlow.icon]) {
+        setEditFlowIcon(iconMap[currentFlow.icon]);
       } else {
         setEditFlowIcon(FlowIcon);
       }
       
-      // Set steps from current pipeline stages
-      setEditFlowSteps(currentPipeline.stages.map(stage => ({
+      // Set steps from current flow stages
+      setEditFlowSteps(currentFlow.stages.map(stage => ({
         id: stage.id,
         name: stage.name,
         color: stage.color || "#3b82f6"
@@ -155,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const handleSaveFlow = async () => {
-    if (!currentPipeline || !editFlowName.trim()) {
+    if (!currentFlow || !editFlowName.trim()) {
       toast({
         title: "Error",
         description: "Please enter a flow name",
@@ -165,8 +165,8 @@ export const Header: React.FC<HeaderProps> = ({
     }
 
     try {
-      const updatedPipeline = {
-        ...currentPipeline,
+      const updatedFlow = {
+        ...currentFlow,
         name: editFlowName,
         description: editFlowDescription,
         icon: Object.keys(iconMap).find(key => iconMap[key] === editFlowIcon) || 'Users',
@@ -178,7 +178,7 @@ export const Header: React.FC<HeaderProps> = ({
               name: step.name,
               color: step.color,
               stage_order: index, // Update the order based on current position
-              contacts: currentPipeline.stages.find(s => s.id === step.id)?.contacts || []
+              contacts: currentFlow.stages.find(s => s.id === step.id)?.contacts || []
             };
           } else {
             // For new steps, don't include ID - let the database generate it
@@ -193,7 +193,7 @@ export const Header: React.FC<HeaderProps> = ({
         })
       };
 
-      await updatePipeline(currentPipeline.id, updatedPipeline);
+      await updateFlow(currentFlow.id, updatedFlow);
       
       toast({
         title: "Flow Updated",
@@ -211,15 +211,15 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const handleDeleteFlow = async () => {
-    if (!currentPipeline) return;
+    if (!currentFlow) return;
 
     try {
-      // Use the context function to delete the pipeline
-      await deletePipeline(currentPipeline.id);
+      // Use the context function to delete the flow
+      await deleteFlow(currentFlow.id);
 
       toast({
         title: "Flow Deleted",
-        description: `Flow "${currentPipeline.name}" deleted successfully`,
+        description: `Flow "${currentFlow.name}" deleted successfully`,
       });
 
       // Close dialogs and navigate to dashboard
@@ -514,7 +514,7 @@ export const Header: React.FC<HeaderProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Flow</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{currentPipeline?.name}"? This action cannot be undone and will permanently remove all data associated with this flow, including contacts and pipeline stages.
+              Are you sure you want to delete "{currentFlow?.name}"? This action cannot be undone and will permanently remove all data associated with this flow, including contacts and flow stages.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

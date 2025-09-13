@@ -1,7 +1,6 @@
-
 import React, { useState } from "react";
-import { Pipeline, Contact } from "@/types/crm";
-import { PipelineStage } from "./PipelineStage";
+import { Flow, Contact } from "@/types/crm";
+import { FlowStage } from "./FlowStage";
 import { ContactFormDialog } from "./ContactFormDialog";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
@@ -10,14 +9,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useQueryClient } from "@tanstack/react-query";
 
-interface PipelineViewProps {
-  pipeline: Pipeline;
-  onPipelineChange?: (pipeline: Pipeline) => void;
+interface FlowViewProps {
+  flow: Flow;
+  onFlowChange?: (flow: Flow) => void;
 }
 
-export const PipelineView: React.FC<PipelineViewProps> = ({ 
-  pipeline, 
-  onPipelineChange 
+export const FlowView: React.FC<FlowViewProps> = ({ 
+  flow, 
+  onFlowChange 
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
@@ -48,7 +47,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
       if (error) throw error;
 
       // Update local state
-      const updatedStages = pipeline.stages.map(stage => {
+      const updatedStages = flow.stages.map(stage => {
         if (stage.id === stageId) {
           return {
             ...stage,
@@ -58,18 +57,18 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
         return stage;
       });
 
-      const updatedPipeline = {
-        ...pipeline,
+      const updatedFlow = {
+        ...flow,
         stages: updatedStages
       };
 
-      onPipelineChange?.(updatedPipeline);
+      onFlowChange?.(updatedFlow);
       
       // Invalidate contact query to update contact profile
       queryClient.invalidateQueries({ queryKey: ['contact', contactId] });
       
-      // Invalidate pipeline queries to update pipeline views
-      queryClient.invalidateQueries({ queryKey: ['pipelines'] });
+      // Invalidate flow queries to update flow views
+      queryClient.invalidateQueries({ queryKey: ['flows'] });
       
       toast.success("Contact removed from flow");
     } catch (error) {
@@ -79,7 +78,7 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
   };
 
   const handleUpdateStage = (stageId: string, name: string, color: string) => {
-    const updatedStages = pipeline.stages.map(stage => {
+    const updatedStages = flow.stages.map(stage => {
       if (stage.id === stageId) {
         return {
           ...stage,
@@ -90,12 +89,12 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
       return stage;
     });
 
-    const updatedPipeline = {
-      ...pipeline,
+    const updatedFlow = {
+      ...flow,
       stages: updatedStages
     };
 
-    onPipelineChange?.(updatedPipeline);
+    onFlowChange?.(updatedFlow);
     toast.success("Column updated");
   };
 
@@ -188,25 +187,25 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
           if (tagError) throw tagError;
         }
 
-        // Link contact to pipeline stage
-        const { error: pipelineContactError } = await supabase
+        // Link contact to flow stage (stored as pipeline_contacts in database)
+        const { error: flowContactError } = await supabase
           .from('pipeline_contacts')
           .insert({
-            pipeline_id: pipeline.id,
+            pipeline_id: flow.id,
             stage_id: currentStageId,
             contact_id: newContact.id,
             stage_order: 0 // Add at the beginning
           });
 
-        if (pipelineContactError) throw pipelineContactError;
+        if (flowContactError) throw flowContactError;
 
         toast.success("Contact added to flow");
       }
 
-      // Trigger a data refresh by calling updatePipeline
-      // This will cause the PipelineContext to reload the pipeline data from the database
-      if (onPipelineChange) {
-        // Force a reload by passing the pipeline - this will trigger updatePipeline 
+      // Trigger a data refresh by calling updateFlow
+      // This will cause the FlowContext to reload the flow data from the database
+      if (onFlowChange) {
+        // Force a reload by passing the flow - this will trigger updateFlow 
         // which reloads data from database due to our recent changes
         window.location.reload();
       }
@@ -233,13 +232,13 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
     }
     
     // Find the source and destination stages
-    const sourceStage = pipeline.stages.find(stage => stage.id === source.droppableId);
-    const destStage = pipeline.stages.find(stage => stage.id === destination.droppableId);
+    const sourceStage = flow.stages.find(stage => stage.id === source.droppableId);
+    const destStage = flow.stages.find(stage => stage.id === destination.droppableId);
     
     if (!sourceStage || !destStage) return;
     
     // Create a new contact list
-    const updatedStages = pipeline.stages.map(stage => ({ ...stage }));
+    const updatedStages = flow.stages.map(stage => ({ ...stage }));
     
     // Find the moved contact
     const [movedContact] = sourceStage.contacts.splice(source.index, 1);
@@ -271,30 +270,30 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
       );
     }
     
-    // Update the pipeline
-    const updatedPipeline = {
-      ...pipeline,
+    // Update the flow
+    const updatedFlow = {
+      ...flow,
       stages: updatedStages
     };
     
-    onPipelineChange?.(updatedPipeline);
+    onFlowChange?.(updatedFlow);
   };
   
   // Helper function to determine status based on stage
   const determineStatus = (stageId: string): "active" | "inactive" | "pending" => {
     // You can customize this logic based on your stages
-    const stageIndex = pipeline.stages.findIndex(stage => stage.id === stageId);
+    const stageIndex = flow.stages.findIndex(stage => stage.id === stageId);
     if (stageIndex === 0) return "pending";
-    if (stageIndex === pipeline.stages.length - 1) return "inactive";
+    if (stageIndex === flow.stages.length - 1) return "inactive";
     return "active";
   };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Header 
-        title={pipeline.name} 
+        title={flow.name} 
         onAddClick={() => {
-          setCurrentStageId(pipeline.stages[0].id);
+          setCurrentStageId(flow.stages[0].id);
           setCurrentContact(null);
           setIsFormOpen(true);
         }}
@@ -302,8 +301,8 @@ export const PipelineView: React.FC<PipelineViewProps> = ({
       <div className="flex-1 overflow-x-auto p-6">
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="flex gap-4">
-            {pipeline.stages.map((stage) => (
-              <PipelineStage
+            {flow.stages.map((stage) => (
+              <FlowStage
                 key={stage.id}
                 stage={stage}
                 onAddContact={handleAddContact}
