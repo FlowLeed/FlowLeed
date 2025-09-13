@@ -29,7 +29,7 @@ interface CachedList {
   list_type?: string;
 }
 
-interface Pipeline {
+interface Flow {
   id: string;
   name: string;
   icon?: string;
@@ -48,7 +48,7 @@ export function QuickMappingDialog({
   integrationId,
 }: QuickMappingDialogProps) {
   const [selectedListId, setSelectedListId] = useState<string>('');
-  const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
+  const [selectedFlowId, setSelectedFlowId] = useState<string>('');
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -79,9 +79,9 @@ export function QuickMappingDialog({
     enabled: isOpen && !!integrationId,
   });
 
-  // Fetch pipelines
-  const { data: pipelines, isLoading: pipelinesLoading } = useQuery({
-    queryKey: ['pipelines'],
+  // Fetch flows
+  const { data: flows, isLoading: flowsLoading } = useQuery({
+    queryKey: ['flows'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('pipelines')
@@ -89,33 +89,33 @@ export function QuickMappingDialog({
         .order('name');
       
       if (error) throw error;
-      return data as Pipeline[];
+      return data as Flow[];
     },
     enabled: isOpen,
   });
 
-  // Fetch stages for selected pipeline
+  // Fetch stages for selected flow
   const { data: stages, isLoading: stagesLoading } = useQuery({
-    queryKey: ['pipeline-stages', selectedPipelineId],
+    queryKey: ['flow-stages', selectedFlowId],
     queryFn: async () => {
-      if (!selectedPipelineId) return [];
+      if (!selectedFlowId) return [];
       
       const { data, error } = await supabase
         .from('pipeline_stages')
         .select('id, name, color, stage_order')
-        .eq('pipeline_id', selectedPipelineId)
+        .eq('pipeline_id', selectedFlowId)
         .order('stage_order');
       
       if (error) throw error;
       return data as Stage[];
     },
-    enabled: !!selectedPipelineId,
+    enabled: !!selectedFlowId,
   });
 
   const createMappingMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedListId || !selectedPipelineId || !selectedStageId) {
-        throw new Error('Please select a list, pipeline, and stage');
+      if (!selectedListId || !selectedFlowId || !selectedStageId) {
+        throw new Error('Please select a list, flow, and stage');
       }
 
       const selectedList = cachedLists?.find(l => l.external_list_id === selectedListId);
@@ -127,7 +127,7 @@ export function QuickMappingDialog({
         .from('integration_list_mappings')
         .insert({
           integration_id: integrationId,
-          pipeline_id: selectedPipelineId,
+          pipeline_id: selectedFlowId,
           stage_id: selectedStageId,
           external_list_id: selectedListId,
           external_list_name: selectedList.name,
@@ -150,7 +150,7 @@ export function QuickMappingDialog({
       try {
         const newMapping = {
           integration_id: integrationId,
-          pipeline_id: selectedPipelineId,
+          pipeline_id: selectedFlowId,
           stage_id: selectedStageId,
           external_list_id: selectedListId,
           external_list_name: selectedList.name,
@@ -216,17 +216,17 @@ export function QuickMappingDialog({
 
   const handleClose = () => {
     setSelectedListId('');
-    setSelectedPipelineId('');
+    setSelectedFlowId('');
     setSelectedStageId('');
     onOpenChange(false);
   };
 
-  const handlePipelineChange = (pipelineId: string) => {
-    setSelectedPipelineId(pipelineId);
-    setSelectedStageId(''); // Reset stage when pipeline changes
+  const handleFlowChange = (flowId: string) => {
+    setSelectedFlowId(flowId);
+    setSelectedStageId(''); // Reset stage when flow changes
   };
 
-  const isValid = selectedListId && selectedPipelineId && selectedStageId;
+  const isValid = selectedListId && selectedFlowId && selectedStageId;
 
   return (
     <TooltipProvider>
@@ -238,7 +238,7 @@ export function QuickMappingDialog({
               Quick List Mapping
             </DialogTitle>
             <DialogDescription>
-              Map a Planning Center list to a pipeline stage in one step. Auto-sync is enabled by default.
+              Map a Planning Center list to a flow stage in one step. Auto-sync is enabled by default.
             </DialogDescription>
           </DialogHeader>
 
@@ -256,7 +256,7 @@ export function QuickMappingDialog({
                       <HelpCircle className="h-4 w-4 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="max-w-xs">Choose which Planning Center list you want to sync. People from this list will be automatically added to your selected pipeline stage.</p>
+                      <p className="max-w-xs">Choose which Planning Center list you want to sync. People from this list will be automatically added to your selected flow stage.</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -310,35 +310,35 @@ export function QuickMappingDialog({
               )}
             </div>
 
-            {/* Pipeline Selection */}
+            {/* Flow Selection */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
-                  Target Pipeline
+                  Target Flow
                 </Label>
                 <Tooltip>
                   <TooltipTrigger>
                     <HelpCircle className="h-4 w-4 text-muted-foreground" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p className="max-w-xs">Select which pipeline flow you want to add people to. This helps organize your contacts by their spiritual journey stage.</p>
+                    <p className="max-w-xs">Select which flow you want to add people to. This helps organize your contacts by their spiritual journey stage.</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
               
-              <Select value={selectedPipelineId} onValueChange={handlePipelineChange} disabled={pipelinesLoading}>
+              <Select value={selectedFlowId} onValueChange={handleFlowChange} disabled={flowsLoading}>
                 <SelectTrigger>
                   <SelectValue 
-                    placeholder={pipelinesLoading ? "Loading pipelines..." : "Select target pipeline"} 
+                    placeholder={flowsLoading ? "Loading flows..." : "Select target flow"} 
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {pipelines?.map((pipeline) => (
-                    <SelectItem key={pipeline.id} value={pipeline.id}>
+                  {flows?.map((flow) => (
+                    <SelectItem key={flow.id} value={flow.id}>
                       <div className="flex items-center gap-2">
-                        {pipeline.icon && <span>{pipeline.icon}</span>}
-                        <span>{pipeline.name}</span>
+                        {flow.icon && <span>{flow.icon}</span>}
+                        <span>{flow.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -349,7 +349,7 @@ export function QuickMappingDialog({
             {/* Stage Selection */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Label>Stage in Pipeline</Label>
+                <Label>Stage in Flow</Label>
                 <Tooltip>
                   <TooltipTrigger>
                     <HelpCircle className="h-4 w-4 text-muted-foreground" />
@@ -363,13 +363,13 @@ export function QuickMappingDialog({
               <Select 
                 value={selectedStageId} 
                 onValueChange={setSelectedStageId} 
-                disabled={!selectedPipelineId || stagesLoading}
+                disabled={!selectedFlowId || stagesLoading}
               >
                 <SelectTrigger>
                   <SelectValue 
                     placeholder={
-                      !selectedPipelineId 
-                        ? "Select a pipeline first" 
+                      !selectedFlowId 
+                        ? "Select a flow first" 
                         : stagesLoading 
                         ? "Loading stages..." 
                         : "Select target stage"
