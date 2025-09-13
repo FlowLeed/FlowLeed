@@ -77,8 +77,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
   // Load flows from database when user/organization is available
   useEffect(() => {
-    if (!user || !organization) {
-      setLoading(false);
+    // Don't load if still loading profile or if no user
+    if (profileLoading || !user) {
       return;
     }
 
@@ -87,16 +87,40 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         setLoading(true);
         setError(null);
 
+        // Wait a bit longer for organization to be available (with timeout)
+        let attempts = 0;
+        const maxAttempts = 10; // 5 seconds total
+        
+        while (!organization && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          attempts++;
+        }
+
+        if (!organization) {
+          console.error("No organization available after waiting");
+          setError("Organization not found. Please ensure you're associated with an organization.");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Loading flows for organization:", organization.id);
+
         // Check if organization has any pipelines (database table name stays the same)
         const { data: existingPipelines, error: pipelinesError } = await supabase
           .from('pipelines')
           .select('*')
           .eq('organization_id', organization.id);
 
-        if (pipelinesError) throw pipelinesError;
+        if (pipelinesError) {
+          console.error("Error fetching pipelines:", pipelinesError);
+          throw pipelinesError;
+        }
+
+        console.log("Found existing pipelines:", existingPipelines?.length || 0);
 
         // If no flows exist, create default ones
         if (!existingPipelines || existingPipelines.length === 0) {
+          console.log("Creating default flows...");
           await createDefaultFlows(organization.id);
           // Reload after creating defaults
           const { data: newPipelines, error: newError } = await supabase
@@ -107,9 +131,12 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
           if (newError) throw newError;
           const flowsData = await loadFlowData(newPipelines || []);
           setFlows(flowsData);
+          console.log("Default flows created and loaded");
         } else {
+          console.log("Loading existing flows...");
           const flowsData = await loadFlowData(existingPipelines);
           setFlows(flowsData);
+          console.log("Existing flows loaded");
         }
       } catch (err) {
         console.error("Error loading flows:", err);
@@ -127,7 +154,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     };
 
     loadFlows();
-  }, [user, organization]);
+  }, [user, organization, profileLoading]);
 
   const createDefaultFlows = async (organizationId: string) => {
     const defaultFlows = [

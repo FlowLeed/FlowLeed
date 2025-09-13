@@ -45,23 +45,41 @@ export const useProfile = () => {
           setProfile(profileData);
         }
 
-        // Fetch user's organization
-        const { data: orgData, error: orgError } = await supabase
-          .from('organization_members')
-          .select(`
-            organizations (
-              id,
-              name,
-              slug
-            )
-          `)
-          .eq('user_id', user.id)
-          .maybeSingle();
+        // Fetch user's organization with retry logic
+        let orgData = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (!orgData && attempts < maxAttempts) {
+          const { data: fetchedOrgData, error: orgError } = await supabase
+            .from('organization_members')
+            .select(`
+              organizations (
+                id,
+                name,
+                slug
+              )
+            `)
+            .eq('user_id', user.id)
+            .maybeSingle();
 
-        if (orgError) {
-          console.error('Error fetching organization:', orgError);
-        } else if (orgData) {
+          if (orgError) {
+            console.error(`Error fetching organization (attempt ${attempts + 1}):`, orgError);
+            attempts++;
+            if (attempts < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+            }
+          } else {
+            orgData = fetchedOrgData;
+            break;
+          }
+        }
+
+        if (orgData) {
+          console.log('Organization loaded:', orgData.organizations);
           setOrganization(orgData.organizations as Organization);
+        } else {
+          console.error('Failed to load organization after retries');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
