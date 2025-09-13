@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Bell, Shield, Palette, Globe, Mail, Phone, MapPin, Upload } from "lucide-react";
+import { ArrowLeft, User, Bell, Shield, Palette, Globe, Mail, Phone, MapPin, Upload, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -198,7 +197,7 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="min-h-screen p-6 max-w-6xl mx-auto">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -207,7 +206,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button
@@ -226,170 +225,164 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="preferences" className="flex items-center gap-2">
-            <Palette className="h-4 w-4" />
-            Preferences
-          </TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Security
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your personal details and profile information</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Avatar Section */}
-              <div className="flex items-center gap-6">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={profile?.avatar_url || ""} alt="Profile picture" />
-                  <AvatarFallback className="text-lg">
-                    {formData.firstName ? formData.firstName[0] : ''}
-                    {formData.lastName ? formData.lastName[0] : ''}
-                    {!formData.firstName && !formData.lastName && user?.email ? user.email[0].toUpperCase() : 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                  <Button 
-                    variant="outline" 
-                    className="mb-2" 
-                    onClick={handleChangeAvatarClick}
-                    disabled={uploading}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {uploading ? "Uploading..." : "Change Avatar"}
-                  </Button>
-                  <p className="text-sm text-muted-foreground">
-                    Recommended: Square image, at least 400x400px (Max 5MB)
-                  </p>
-                </div>
+      <div className="space-y-6">
+        {/* Personal Information Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                <User className="h-5 w-5 text-blue-600" />
               </div>
-
-              <Separator />
-
-              {/* Personal Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange("firstName", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange("lastName", e.target.value)}
-                  />
-                </div>
+              <div>
+                <CardTitle>Personal Information</CardTitle>
+                <CardDescription>Update your personal details and profile information</CardDescription>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Avatar Section */}
+            <div className="flex items-center gap-6">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={profile?.avatar_url || ""} alt="Profile picture" />
+                <AvatarFallback className="text-lg">
+                  {formData.firstName ? formData.firstName[0] : ''}
+                  {formData.lastName ? formData.lastName[0] : ''}
+                  {!formData.firstName && !formData.lastName && user?.email ? user.email[0].toUpperCase() : 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => handleInputChange("location", e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="jobTitle">Job Title</Label>
-                  <Input
-                    id="jobTitle"
-                    value={formData.jobTitle}
-                    onChange={(e) => handleInputChange("jobTitle", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <Select value={formData.department} onValueChange={(value) => handleInputChange("department", value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="operations">Operations</SelectItem>
-                      <SelectItem value="pastoral-care">Pastoral Care</SelectItem>
-                      <SelectItem value="host-team">Host Team</SelectItem>
-                      <SelectItem value="giving-hub">Giving Hub</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={formData.bio}
-                  onChange={(e) => handleInputChange("bio", e.target.value)}
-                  placeholder="Tell us about yourself..."
-                  className="min-h-[100px]"
-                />
-              </div>
-              
-              {/* Save Button for Profile Tab */}
-              <div className="flex justify-end pt-4">
-                <Button onClick={handleSave} className="w-32">
-                  Save Profile
+                <Button 
+                  variant="outline" 
+                  className="mb-2" 
+                  onClick={handleChangeAvatarClick}
+                  disabled={uploading}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {uploading ? "Uploading..." : "Change Avatar"}
                 </Button>
+                <p className="text-sm text-muted-foreground">
+                  Recommended: Square image, at least 400x400px (Max 5MB)
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
 
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Choose how you want to be notified about updates</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            <Separator />
+
+            {/* Personal Details */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange("location", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">Job Title</Label>
+                <Input
+                  id="jobTitle"
+                  value={formData.jobTitle}
+                  onChange={(e) => handleInputChange("jobTitle", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">Department</Label>
+                <Select value={formData.department} onValueChange={(value) => handleInputChange("department", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="operations">Operations</SelectItem>
+                    <SelectItem value="pastoral-care">Pastoral Care</SelectItem>
+                    <SelectItem value="host-team">Host Team</SelectItem>
+                    <SelectItem value="giving-hub">Giving Hub</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="bio">Bio</Label>
+              <Textarea
+                id="bio"
+                value={formData.bio}
+                onChange={(e) => handleInputChange("bio", e.target.value)}
+                placeholder="Tell us about yourself..."
+                className="min-h-[100px]"
+              />
+            </div>
+            
+            <div className="flex justify-end pt-4">
+              <Button onClick={handleSave}>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Save Profile
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notification Preferences Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                <Bell className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>Choose how you want to be notified about updates</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label>Email Notifications</Label>
@@ -442,48 +435,54 @@ const ProfilePage = () => {
 
               <Separator />
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label>Weekly Reports</Label>
-                  <p className="text-sm text-muted-foreground">Receive weekly summary reports</p>
-                </div>
-                <Switch
-                  checked={notifications.weeklyReports}
-                  onCheckedChange={(value) => handleNotificationChange("weeklyReports", value)}
-                />
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Label>Weekly Reports</Label>
+                <p className="text-sm text-muted-foreground">Receive weekly summary reports</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <Switch
+                checked={notifications.weeklyReports}
+                onCheckedChange={(value) => handleNotificationChange("weeklyReports", value)}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="preferences" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Preferences</CardTitle>
-              <CardDescription>Customize your app experience</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Theme</Label>
-                  <Select value={preferences.theme} onValueChange={(value) => handlePreferenceChange("theme", value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Light</SelectItem>
-                      <SelectItem value="dark">Dark</SelectItem>
-                      <SelectItem value="system">System</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+        {/* Application Preferences Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Palette className="h-5 w-5 text-purple-600" />
+              </div>
+              <div>
+                <CardTitle>Application Preferences</CardTitle>
+                <CardDescription>Customize your app experience</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Theme</Label>
+                <Select value={preferences.theme} onValueChange={(value) => handlePreferenceChange("theme", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="space-y-2">
-                  <Label>Language</Label>
-                  <Select value={preferences.language} onValueChange={(value) => handlePreferenceChange("language", value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+              <div className="space-y-2">
+                <Label>Language</Label>
+                <Select value={preferences.language} onValueChange={(value) => handlePreferenceChange("language", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="en">English</SelectItem>
                       <SelectItem value="es">Spanish</SelectItem>
@@ -508,63 +507,61 @@ const ProfilePage = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="security" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Manage your account security and privacy</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Password</h4>
-                  <Button variant="outline">Change Password</Button>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Two-Factor Authentication</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Add an extra layer of security to your account
-                  </p>
-                  <Button variant="outline">Enable 2FA</Button>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Active Sessions</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Manage your active sessions across devices
-                  </p>
-                  <Button variant="outline">View Active Sessions</Button>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Account Deletion</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Permanently delete your account and all data
-                  </p>
-                  <Button variant="destructive">Delete Account</Button>
-                </div>
+        {/* Security Settings Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
+                <Shield className="h-5 w-5 text-red-600" />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <div>
+                <CardTitle>Security Settings</CardTitle>
+                <CardDescription>Manage your account security and privacy</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-2">Password</h4>
+                <Button variant="outline">Change Password</Button>
+              </div>
 
-      {/* Global Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} className="w-32">
-          Save All Changes
-        </Button>
+              <Separator />
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">Two-Factor Authentication</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Add an extra layer of security to your account
+                </p>
+                <Button variant="outline">Enable 2FA</Button>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">Active Sessions</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Manage your active sessions across devices
+                </p>
+                <Button variant="outline">View Active Sessions</Button>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">Account Deletion</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Permanently delete your account and all data
+                </p>
+                <Button variant="destructive">Delete Account</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
