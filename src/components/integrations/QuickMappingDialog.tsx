@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, HelpCircle, Zap, Users, Target, RefreshCw } from 'lucide-react';
+import { Loader2, HelpCircle, Zap, Users, Target } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface QuickMappingDialogProps {
@@ -52,6 +52,13 @@ export function QuickMappingDialog({
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Auto-refresh lists when modal opens
+  useEffect(() => {
+    if (isOpen && integrationId) {
+      refreshListsMutation.mutate();
+    }
+  }, [isOpen, integrationId]);
 
   // Fetch cached lists from database
   const { data: cachedLists, isLoading: listsLoading } = useQuery({
@@ -245,41 +252,29 @@ export function QuickMappingDialog({
           <div className="space-y-6 pt-4">
             {/* Planning Center List Selection */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Planning Center List
-                  </Label>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs">Choose which Planning Center list you want to sync. People from this list will be automatically added to your selected flow stage.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => refreshListsMutation.mutate()}
-                  disabled={refreshListsMutation.isPending}
-                  className="h-8"
-                >
-                  {refreshListsMutation.isPending ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3 w-3" />
-                  )}
-                  Refresh
-                </Button>
+              <div className="flex items-center gap-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Planning Center List
+                </Label>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="max-w-xs">Choose which Planning Center list you want to sync. People from this list will be automatically added to your selected flow stage.</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
               
-              <Select value={selectedListId} onValueChange={setSelectedListId} disabled={listsLoading}>
+              <Select value={selectedListId} onValueChange={setSelectedListId} disabled={listsLoading || refreshListsMutation.isPending}>
                 <SelectTrigger>
                   <SelectValue 
-                    placeholder={listsLoading ? "Loading lists..." : "Select a Planning Center list"} 
+                    placeholder={
+                      listsLoading || refreshListsMutation.isPending 
+                        ? "Loading latest lists..." 
+                        : "Select a Planning Center list"
+                    } 
                   />
                 </SelectTrigger>
                 <SelectContent>
@@ -299,13 +294,13 @@ export function QuickMappingDialog({
               {(listsLoading || refreshListsMutation.isPending) && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  {refreshListsMutation.isPending ? 'Refreshing lists...' : 'Loading cached lists...'}
+                  {refreshListsMutation.isPending ? 'Syncing latest lists from Planning Center...' : 'Loading cached lists...'}
                 </div>
               )}
               
               {!listsLoading && !refreshListsMutation.isPending && cachedLists?.length === 0 && (
                 <div className="text-sm text-muted-foreground">
-                  No lists found. Click "Refresh" to fetch lists from Planning Center.
+                  No lists found. Please check your Planning Center integration.
                 </div>
               )}
             </div>
