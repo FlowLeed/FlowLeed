@@ -212,11 +212,17 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
     const data = await response.json();
     const lists = data.data || [];
 
-    // Cache list metadata
+    // First, delete old cached metadata for this integration to avoid duplicates
+    await supabase
+      .from('integration_list_metadata')
+      .delete()
+      .eq('integration_id', integrationId);
+
+    // Cache fresh list metadata
     for (const list of lists) {
       await supabase
         .from('integration_list_metadata')
-        .upsert({
+        .insert({
           integration_id: integrationId,
           external_list_id: list.id,
           name: list.attributes.name,
