@@ -505,7 +505,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
 };
 
 const Logo = () => (
-  <div className="px-4 py-6 flex items-center">
+  <div className="px-8 py-6 flex items-center">
     <img src="/lovable-uploads/55fbe855-f2cf-4756-8840-95900f9d4fbf.png" alt="Flowleed" className="h-8 w-auto" />
   </div>
 );
