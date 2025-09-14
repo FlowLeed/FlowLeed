@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, GripVertical } from "lucide-react";
 import { FlowStage as FlowStageType, Contact } from "@/types/crm";
 import { ContactCard } from "./ContactCard";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
-import { Droppable, Draggable } from "react-beautiful-dnd";
+import { Droppable, Draggable, DraggableProvidedDragHandleProps } from "react-beautiful-dnd";
 
 interface FlowStageProps {
   stage: FlowStageType;
@@ -11,6 +11,7 @@ interface FlowStageProps {
   onEditContact?: (contact: Contact) => void;
   onDeleteContact?: (contactId: string, stageId: string) => void;
   onUpdateStage?: (stageId: string, name: string, color: string) => void;
+  dragHandleProps?: DraggableProvidedDragHandleProps;
 }
 
 // Default colors for different stages
@@ -33,7 +34,8 @@ export const FlowStage: React.FC<FlowStageProps> = ({
   onAddContact,
   onEditContact,
   onDeleteContact,
-  onUpdateStage
+  onUpdateStage,
+  dragHandleProps
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const stageColor = stage.color || getStageColor(stage.name);
@@ -50,6 +52,14 @@ export const FlowStage: React.FC<FlowStageProps> = ({
       >
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
+            {dragHandleProps && (
+              <div 
+                {...dragHandleProps}
+                className="flex items-center justify-center w-6 h-6 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing"
+              >
+                <GripVertical className="h-4 w-4" />
+              </div>
+            )}
             <button 
               className="w-3 h-3 rounded-full cursor-pointer hover:scale-110 transition-transform" 
               style={{ backgroundColor: stageColor }} 

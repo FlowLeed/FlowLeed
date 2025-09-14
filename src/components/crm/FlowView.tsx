@@ -4,7 +4,7 @@ import { FlowStage } from "./FlowStage";
 import { ContactFormDialog } from "./ContactFormDialog";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
-import { DragDropContext, DropResult } from "react-beautiful-dnd";
+import { DragDropContext, DropResult, Droppable, Draggable } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useQueryClient } from "@tanstack/react-query";
@@ -218,7 +218,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   };
 
   const handleDragEnd = (result: DropResult) => {
-    const { source, destination } = result;
+    const { source, destination, type } = result;
     
     // Dropped outside the list
     if (!destination) return;
@@ -231,7 +231,23 @@ export const FlowView: React.FC<FlowViewProps> = ({
       return;
     }
     
-    // Find the source and destination stages
+    // Handle stage reordering
+    if (type === 'STAGE') {
+      const reorderedStages = Array.from(flow.stages);
+      const [movedStage] = reorderedStages.splice(source.index, 1);
+      reorderedStages.splice(destination.index, 0, movedStage);
+      
+      const updatedFlow = {
+        ...flow,
+        stages: reorderedStages
+      };
+      
+      onFlowChange?.(updatedFlow);
+      toast.success("Stage order updated");
+      return;
+    }
+    
+    // Handle contact movement between stages
     const sourceStage = flow.stages.find(stage => stage.id === source.droppableId);
     const destStage = flow.stages.find(stage => stage.id === destination.droppableId);
     
@@ -300,18 +316,41 @@ export const FlowView: React.FC<FlowViewProps> = ({
       />
       <div className="flex-1 overflow-x-auto p-6">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex gap-4">
-            {flow.stages.map((stage) => (
-              <FlowStage
-                key={stage.id}
-                stage={stage}
-                onAddContact={handleAddContact}
-                onEditContact={handleEditContact}
-                onDeleteContact={handleDeleteContact}
-                onUpdateStage={handleUpdateStage}
-              />
-            ))}
-          </div>
+          <Droppable droppableId="stages" direction="horizontal" type="STAGE">
+            {(provided, snapshot) => (
+              <div 
+                className={`flex gap-4 transition-colors ${
+                  snapshot.isDraggingOver ? "bg-muted/30" : ""
+                }`}
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+              >
+                {flow.stages.map((stage, index) => (
+                  <Draggable key={stage.id} draggableId={stage.id} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className={`transition-transform ${
+                          snapshot.isDragging ? "rotate-2 scale-105" : ""
+                        }`}
+                      >
+                        <FlowStage
+                          stage={stage}
+                          onAddContact={handleAddContact}
+                          onEditContact={handleEditContact}
+                          onDeleteContact={handleDeleteContact}
+                          onUpdateStage={handleUpdateStage}
+                          dragHandleProps={provided.dragHandleProps}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
         </DragDropContext>
       </div>
       {isFormOpen && (
