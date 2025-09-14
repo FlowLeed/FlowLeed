@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
 import { ContactFormDialog } from "./ContactFormDialog";
-import { FlowTeamFilter } from "./FlowTeamFilter";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
@@ -397,8 +396,6 @@ export const FlowView: React.FC<FlowViewProps> = ({
           setCurrentContact(null);
           setIsFormOpen(true);
         }}
-      />
-      <FlowTeamFilter
         teamMembers={teamMembers}
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}

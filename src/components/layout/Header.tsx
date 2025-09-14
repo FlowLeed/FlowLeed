@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2, GripVertical } from "lucide-react";
+import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,18 +46,37 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { LucideIcon } from "lucide-react";
 
+interface TeamMember {
+  id: string;
+  name: string;
+  avatar?: string;
+  email: string;
+}
+
 interface HeaderProps {
   title: string;
   showAddButton?: boolean;
   onAddClick?: () => void;
   addButtonLabel?: string;
+  teamMembers?: TeamMember[];
+  selectedFilter?: string | null;
+  onFilterChange?: (filter: string | null) => void;
+  contactCounts?: {
+    all: number;
+    unassigned: number;
+    byMember: Record<string, number>;
+  };
 }
 
 export const Header: React.FC<HeaderProps> = ({
   title,
   showAddButton = true,
   onAddClick,
-  addButtonLabel = "New Person"
+  addButtonLabel = "New Person",
+  teamMembers = [],
+  selectedFilter = null,
+  onFilterChange,
+  contactCounts
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
@@ -284,6 +304,16 @@ export const Header: React.FC<HeaderProps> = ({
         <Button variant="ghost" size="sm" className="ml-2" onClick={openEditDialog}>
           <Settings2 className="h-4 w-4" />
         </Button>
+        
+        {/* Assignee Filters */}
+        {teamMembers.length > 0 && contactCounts && onFilterChange && (
+          <FlowHeaderFilters
+            teamMembers={teamMembers}
+            selectedFilter={selectedFilter}
+            onFilterChange={onFilterChange}
+            contactCounts={contactCounts}
+          />
+        )}
       </div>
       
       {/* Add Button */}
