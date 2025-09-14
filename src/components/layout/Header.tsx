@@ -277,7 +277,7 @@ export const Header: React.FC<HeaderProps> = ({
     ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
   return (
-    <div className="flex items-center justify-between h-16 px-6 border-b border-crm-border bg-white">
+    <div className="flex items-center justify-between h-16 px-6 bg-white">
       <div className="flex items-center gap-3">
         <FlowIcon className="h-6 w-6 text-primary" />
         <div className="text-xl font-semibold">{title}</div>
