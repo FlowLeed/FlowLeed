@@ -279,7 +279,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <div className="flex items-center justify-between h-16 px-6 bg-white">
       <div className="flex items-center gap-3">
-        <FlowIcon className="h-6 w-6 text-primary" />
+        <FlowIcon className="h-6 w-6 text-purple-500" />
         <div className="text-xl font-semibold">{title}</div>
         <Button variant="ghost" size="sm" className="ml-2" onClick={openEditDialog}>
           <Settings2 className="h-4 w-4" />
