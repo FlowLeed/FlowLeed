@@ -605,7 +605,7 @@ export const Sidebar = () => {
   return (
     <div className="h-screen w-64 border-r border-sidebar-border bg-white flex flex-col">
       <Logo />
-      <div className="flex-1 overflow-auto py-2 space-y-6 bg-white">
+      <div className="flex-1 overflow-auto py-2 px-4 space-y-6 bg-white">
         <SidebarSection title="Pages" items={pageItems} />
         <SidebarSection title="Flows" items={flowItems} />
         <SidebarSection title="Settings" items={settingsItems} />
