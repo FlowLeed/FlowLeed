@@ -86,13 +86,13 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
           : "text-sidebar-foreground hover:bg-sidebar-accent/50"
       }`}
     >
-      <item.icon className="mr-3 h-5 w-5" />
+      <item.icon className={`mr-3 h-5 w-5 ${isActive ? "text-white" : "text-purple-500"}`} />
       <span>{item.title}</span>
       {item.badge != null && item.badge > 0 && (
         <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${
           isActive 
             ? "bg-white text-purple-500" 
-            : "bg-sidebar-primary text-sidebar-primary-foreground"
+            : "bg-purple-500 text-white"
         }`}>
           {item.badge}
         </span>
