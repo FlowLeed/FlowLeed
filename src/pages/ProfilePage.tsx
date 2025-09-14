@@ -197,7 +197,7 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-6 max-w-6xl mx-auto">
+      <div className="min-h-screen p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -206,7 +206,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 pb-12">
+    <div className="min-h-screen p-6 space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button
