@@ -316,13 +316,6 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
       
-      {/* Add Button */}
-      {showAddButton && onAddClick && (
-        <Button onClick={onAddClick} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          {addButtonLabel}
-        </Button>
-      )}
       
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
