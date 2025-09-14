@@ -80,7 +80,7 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
   return (
     <Link
       to={item.path}
-      className={`flex items-center px-4 py-2.5 rounded-full text-sm font-medium transition-colors ${
+      className={`flex items-center px-6 py-2.5 rounded-full text-sm font-medium transition-colors ${
         isActive
           ? "bg-purple-500 text-white"
           : "text-sidebar-foreground hover:bg-sidebar-accent/50"
@@ -89,7 +89,11 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
       <item.icon className="mr-3 h-5 w-5" />
       <span>{item.title}</span>
       {item.badge != null && item.badge > 0 && (
-        <span className="ml-auto bg-sidebar-primary text-sidebar-primary-foreground text-xs rounded-full px-2 py-0.5">
+        <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${
+          isActive 
+            ? "bg-white text-purple-500" 
+            : "bg-sidebar-primary text-sidebar-primary-foreground"
+        }`}>
           {item.badge}
         </span>
       )}
