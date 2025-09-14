@@ -4,7 +4,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2, GripVertical } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -298,6 +298,7 @@ export const Header: React.FC<HeaderProps> = ({
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-2">
                 <Avatar className="h-8 w-8">
+                  <AvatarImage src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} alt={displayName} />
                   <AvatarFallback>
                     {initials}
                   </AvatarFallback>
