@@ -4,12 +4,18 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MoreVertical, MessageSquare, Mail, Phone } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
-import { differenceInDays, parse } from "date-fns";
+import { differenceInDays } from "date-fns";
 
-// Helper function to generate random days since activity
-const getDaysSince = (dateString: string): number => {
-  // Generate random number between 1 and 30 days
-  return Math.floor(Math.random() * 30) + 1;
+// Helper function to calculate days in current stage
+const getDaysInStage = (stageEnteredAt?: string): number => {
+  if (!stageEnteredAt) return 0;
+  try {
+    const enteredDate = new Date(stageEnteredAt);
+    const today = new Date();
+    return Math.max(0, differenceInDays(today, enteredDate));
+  } catch {
+    return 0;
+  }
 };
 interface ContactCardProps {
   contact: Contact;
@@ -28,7 +34,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({
     tags,
     assignedTo,
     email,
-    phone
+    phone,
+    stageEnteredAt
   } = contact;
   return <div className="contact-card bg-white p-3 border border-gray-200 mb-3 hover:border-blue-300 transition-all duration-200 rounded-xl">
       <div className="flex justify-between items-start mb-3">
@@ -45,7 +52,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
               <h4 className="font-medium text-sm cursor-pointer">{name}</h4>
             </Link>
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span>Last: {getDaysSince(date)} days ago</span>
+              <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
             </div>
           </div>
         </div>

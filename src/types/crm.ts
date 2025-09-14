@@ -16,6 +16,7 @@ export interface Contact {
   notes?: string;
   email?: string;
   phone?: string;
+  stageEnteredAt?: string;
 }
 
 export interface FlowStage {
