@@ -1,13 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
 import { ContactFormDialog } from "./ContactFormDialog";
+import { FlowTeamFilter } from "./FlowTeamFilter";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useQueryClient } from "@tanstack/react-query";
+
+interface TeamMember {
+  id: string;
+  name: string;
+  avatar?: string;
+  email: string;
+}
 
 interface FlowViewProps {
   flow: Flow;
@@ -21,8 +29,100 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+
+  // Fetch team members when component mounts
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      if (!organization) return;
+
+      try {
+        // First get organization members
+        const { data: organizationMembers, error: membersError } = await supabase
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', organization.id);
+
+        if (membersError) throw membersError;
+
+        if (!organizationMembers || organizationMembers.length === 0) {
+          setTeamMembers([]);
+          return;
+        }
+
+        // Then get profiles for those users
+        const userIds = organizationMembers.map(member => member.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email, avatar_url')
+          .in('user_id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        const members: TeamMember[] = profiles?.map(profile => ({
+          id: profile.user_id,
+          name: profile.full_name || profile.email || 'Unknown User',
+          email: profile.email,
+          avatar: profile.avatar_url || undefined
+        })) || [];
+
+        setTeamMembers(members);
+      } catch (error) {
+        console.error('Error fetching team members:', error);
+      }
+    };
+
+    fetchTeamMembers();
+  }, [organization]);
+
+  // Filter contacts based on selected filter
+  const filteredFlow = useMemo(() => {
+    if (!selectedFilter) return flow;
+
+    const filteredStages = flow.stages.map(stage => ({
+      ...stage,
+      contacts: stage.contacts.filter(contact => {
+        if (selectedFilter === "unassigned") {
+          return !contact.assignedTo;
+        }
+        
+        // Find the team member by ID and match with contact's assignedTo
+        const teamMember = teamMembers.find(member => member.id === selectedFilter);
+        if (!teamMember || !contact.assignedTo) return false;
+        
+        // Match by name or email
+        return contact.assignedTo.name === teamMember.name || 
+               contact.assignedTo.name === teamMember.email;
+      })
+    }));
+
+    return {
+      ...flow,
+      stages: filteredStages
+    };
+  }, [flow, selectedFilter, teamMembers]);
+
+  // Calculate contact counts for filter badges
+  const contactCounts = useMemo(() => {
+    const allContacts = flow.stages.flatMap(stage => stage.contacts);
+    const byMember: Record<string, number> = {};
+    
+    teamMembers.forEach(member => {
+      byMember[member.id] = allContacts.filter(contact => 
+        contact.assignedTo && 
+        (contact.assignedTo.name === member.name || contact.assignedTo.name === member.email)
+      ).length;
+    });
+
+    return {
+      all: allContacts.length,
+      unassigned: allContacts.filter(contact => !contact.assignedTo).length,
+      byMember
+    };
+  }, [flow, teamMembers]);
 
   const handleAddContact = (stageId: string) => {
     setCurrentContact(null);
@@ -298,10 +398,16 @@ export const FlowView: React.FC<FlowViewProps> = ({
           setIsFormOpen(true);
         }}
       />
+      <FlowTeamFilter
+        teamMembers={teamMembers}
+        selectedFilter={selectedFilter}
+        onFilterChange={setSelectedFilter}
+        contactCounts={contactCounts}
+      />
       <div className="flex-1 overflow-x-auto p-6">
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="flex gap-4">
-            {flow.stages.map((stage) => (
+            {filteredFlow.stages.map((stage) => (
               <FlowStage
                 key={stage.id}
                 stage={stage}
