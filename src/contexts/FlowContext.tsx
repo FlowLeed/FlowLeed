@@ -77,8 +77,14 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
   // Load flows from database when user/organization is available
   useEffect(() => {
-    // Don't load if still loading profile or if no user
-    if (profileLoading || !user) {
+    // Don't load if still loading profile, no user, or no organization
+    if (profileLoading || !user || !organization) {
+      // If we're not loading and we have a user but no organization, that's an error
+      if (!profileLoading && user && !organization) {
+        setError("Organization not found. Please ensure you're associated with an organization.");
+        setFlows({});
+        setLoading(false);
+      }
       return;
     }
 
@@ -86,24 +92,6 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       try {
         setLoading(true);
         setError(null);
-
-        // Wait a bit longer for organization to be available (with timeout)
-        let attempts = 0;
-        const maxAttempts = 10; // 5 seconds total
-        
-        while (!organization && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          attempts++;
-        }
-
-        if (!organization) {
-          console.error("No organization available after waiting");
-          setError("Organization not found. Please ensure you're associated with an organization.");
-          // Fallback to empty flows state instead of failing completely
-          setFlows({});
-          setLoading(false);
-          return;
-        }
 
         console.log("Loading flows for organization:", organization.id);
 
