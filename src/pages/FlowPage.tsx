@@ -1,5 +1,5 @@
-import React from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { FlowView } from "@/components/crm/FlowView";
 import { Flow } from "@/types/crm";
 import { useFlowContext } from "@/contexts/FlowContext";
@@ -7,7 +7,18 @@ import { Loader2 } from "lucide-react";
 
 const FlowPage = () => {
   const { flowId } = useParams<{ flowId: string }>();
-  const { flows, updateFlow, loading } = useFlowContext();
+  const navigate = useNavigate();
+  const { flows, updateFlow, loading, error } = useFlowContext();
+
+  // Redirect to dashboard if there's an organization error or no flows available
+  useEffect(() => {
+    if (error && error.includes("Organization not found")) {
+      navigate("/");
+    } else if (!loading && Object.keys(flows).length === 0) {
+      // If no flows are available, redirect to dashboard
+      navigate("/");
+    }
+  }, [error, navigate, loading, flows]);
 
   // Show loading spinner while flows are being fetched
   if (loading) {

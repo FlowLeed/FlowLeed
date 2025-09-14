@@ -126,6 +126,30 @@ const Dashboard = () => {
   }
 
   if (error) {
+    // If it's an organization error, show a different message and stay on dashboard
+    if (error.includes("Organization not found")) {
+      return (
+        <div className="flex flex-col h-full overflow-hidden">
+          <Header title="Dashboard" showAddButton={false} />
+          <div className="flex-1 overflow-auto p-6">
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <p className="text-gray-600 mb-4">No flows available yet. Create your first flow to get started!</p>
+                  <div className="flex gap-2 justify-center">
+                    <Button onClick={() => window.location.reload()}>
+                      Refresh
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="flex flex-col h-full overflow-hidden">
         <Header title="Dashboard" showAddButton={false} />

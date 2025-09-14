@@ -99,6 +99,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         if (!organization) {
           console.error("No organization available after waiting");
           setError("Organization not found. Please ensure you're associated with an organization.");
+          // Fallback to empty flows state instead of failing completely
+          setFlows({});
           setLoading(false);
           return;
         }
