@@ -80,7 +80,7 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
   return (
     <Link
       to={item.path}
-      className={`flex items-center px-8 py-2.5 rounded-full text-sm font-medium transition-colors ${
+      className={`flex items-center px-10 py-3 rounded-xl text-sm font-medium transition-colors ${
         isActive
           ? "bg-purple-500 text-white"
           : "text-sidebar-foreground hover:bg-sidebar-accent/50"
