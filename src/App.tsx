@@ -13,6 +13,7 @@ import NotFound from "./pages/NotFound";
 import FlowPage from "./pages/FlowPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import ProfilePage from "./pages/ProfilePage";
+import TeamPage from "./pages/TeamPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import AuthPage from "./pages/AuthPage";
 
@@ -33,6 +34,7 @@ const App = () => (
                 <Route path="/flows/:flowId" element={<FlowPage />} />
                 <Route path="/contacts/:contactId" element={<UserProfilePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/team" element={<TeamPage />} />
                 <Route path="/integrations" element={<IntegrationsPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />

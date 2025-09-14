@@ -596,6 +596,11 @@ export const Sidebar = () => {
       path: "/profile",
     },
     {
+      title: "My Team",
+      icon: Users,
+      path: "/team",
+    },
+    {
       title: "Integrations",
       icon: Puzzle,
       path: "/integrations",

@@ -323,6 +323,7 @@ export type Database = {
         Row: {
           auto_sync: boolean
           created_at: string
+          display_order: number
           external_list_id: string
           external_list_name: string
           id: string
@@ -335,6 +336,7 @@ export type Database = {
         Insert: {
           auto_sync?: boolean
           created_at?: string
+          display_order?: number
           external_list_id: string
           external_list_name: string
           id?: string
@@ -347,6 +349,7 @@ export type Database = {
         Update: {
           auto_sync?: boolean
           created_at?: string
+          display_order?: number
           external_list_id?: string
           external_list_name?: string
           id?: string
@@ -502,6 +505,45 @@ export type Database = {
         }
         Relationships: []
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by_user_id: string
+          organization_id: string
+          role: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by_user_id: string
+          organization_id: string
+          role?: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by_user_id?: string
+          organization_id?: string
+          role?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -560,8 +602,10 @@ export type Database = {
       }
       pipeline_contacts: {
         Row: {
+          completed_end_at: string | null
           contact_id: string
           created_at: string
+          entered_start_at: string | null
           id: string
           pipeline_id: string
           source_id: string | null
@@ -571,8 +615,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          completed_end_at?: string | null
           contact_id: string
           created_at?: string
+          entered_start_at?: string | null
           id?: string
           pipeline_id: string
           source_id?: string | null
@@ -582,8 +628,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          completed_end_at?: string | null
           contact_id?: string
           created_at?: string
+          entered_start_at?: string | null
           id?: string
           pipeline_id?: string
           source_id?: string | null
@@ -621,6 +669,8 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          is_end_step: boolean
+          is_start_step: boolean
           name: string
           pipeline_id: string
           stage_order: number
@@ -630,6 +680,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_end_step?: boolean
+          is_start_step?: boolean
           name: string
           pipeline_id: string
           stage_order: number
@@ -639,6 +691,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_end_step?: boolean
+          is_start_step?: boolean
           name?: string
           pipeline_id?: string
           stage_order?: number
