@@ -291,15 +291,37 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
                 })()}
                 <h4 className="font-medium">{flow.pipeline.name}</h4>
               </div>
-              <Badge 
-                variant="secondary"
-                style={{ 
-                  backgroundColor: flow.currentStage.color ? `${flow.currentStage.color}20` : undefined,
-                  color: flow.currentStage.color || undefined 
-                }}
-              >
-                {flow.currentStage.name}
-              </Badge>
+              <div className="flex flex-col items-end gap-2">
+                <Badge 
+                  variant="secondary"
+                  style={{ 
+                    backgroundColor: flow.currentStage.color ? `${flow.currentStage.color}20` : undefined,
+                    color: flow.currentStage.color || undefined 
+                  }}
+                >
+                  {flow.currentStage.name}
+                </Badge>
+                <div 
+                  className="cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReassignClick(flow.id);
+                  }}
+                >
+                  {assignedUser ? (
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
+                      <UserCheck className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -317,57 +339,6 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
               <span>Next: Continue in {flow.pipeline.name}</span>
             </div>
 
-            {/* Assignment section for this flow */}
-            <div className="border-t pt-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted-foreground">Assigned to:</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleReassignClick(flow.id);
-                  }}
-                  className="text-xs h-6 px-2"
-                >
-                  <UserCheck className="h-3 w-3 mr-1" />
-                  Reassign
-                </Button>
-              </div>
-              
-              {assignedUser ? (
-                <div 
-                  className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/30 cursor-pointer transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleReassignClick(flow.id);
-                  }}
-                >
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs">
-                      {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs">
-                    {assignedUser.profiles?.full_name || assignedUser.profiles?.email || 'Unknown User'}
-                  </span>
-                </div>
-              ) : (
-                <div 
-                  className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/30 cursor-pointer transition-colors text-muted-foreground"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleReassignClick(flow.id);
-                  }}
-                >
-                  <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
-                    <UserCheck className="h-2.5 w-2.5" />
-                  </div>
-                  <span className="text-xs">Unassigned</span>
-                </div>
-              )}
-            </div>
           </div>
           );
         })}
