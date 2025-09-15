@@ -94,10 +94,12 @@ const UserProfilePage = () => {
           const progressPercentage = (currentStageOrder / totalStages) * 100;
 
           flows.push({
+            id: pc.id, // Add the pipeline_contacts ID
             pipeline: pc.pipelines,
             currentStage: pc.pipeline_stages,
             totalStages,
-            progressPercentage
+            progressPercentage,
+            assignedToUserId: pc.assigned_to_user_id // Include assignment info
           });
         }
       }

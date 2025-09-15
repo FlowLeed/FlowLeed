@@ -29,10 +29,12 @@ interface Stage {
 }
 
 interface ContactFlow {
+  id: string; // pipeline_contacts.id
   pipeline: Pipeline;
   currentStage: Stage;
   totalStages: number;
   progressPercentage: number;
+  assignedToUserId?: string | null;
 }
 
 interface OrganizationMember {
@@ -57,8 +59,8 @@ interface ContactFlowStatusProps {
 export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, contactId }) => {
   const [showAddToFlowDialog, setShowAddToFlowDialog] = useState(false);
   const [showReassignDialog, setShowReassignDialog] = useState(false);
-  const [contact, setContact] = useState<Contact | null>(null);
-  const [assignedUser, setAssignedUser] = useState<OrganizationMember | null>(null);
+  const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
+  const [flowAssignments, setFlowAssignments] = useState<{ [flowId: string]: OrganizationMember | null }>({});
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [reassigning, setReassigning] = useState(false);
@@ -93,10 +95,10 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
   };
   
   
-  // Fetch contact and assigned user data
+  // Fetch flow assignments on component mount and when flows change
   useEffect(() => {
-    fetchContactData();
-  }, [contactId]);
+    fetchFlowAssignments();
+  }, [flows]);
 
   // Fetch organization members when reassign dialog opens
   useEffect(() => {
@@ -105,39 +107,47 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
     }
   }, [showReassignDialog, organization]);
 
-  const fetchContactData = async () => {
-    if (!contactId) return;
+  const fetchFlowAssignments = async () => {
+    if (!flows.length) return;
 
     try {
-      // Fetch contact details
-      const { data: contactData, error: contactError } = await supabase
-        .from('contacts')
+      const flowIds = flows.map(flow => flow.id);
+      
+      // Fetch pipeline_contacts to get assigned users for each flow
+      const { data: pipelineContacts, error } = await supabase
+        .from('pipeline_contacts')
         .select('id, assigned_to_user_id')
-        .eq('id', contactId)
-        .single();
+        .in('id', flowIds);
 
-      if (contactError) throw contactError;
-      setContact(contactData);
+      if (error) throw error;
 
-      // If contact has assigned user, fetch their profile
-      if (contactData.assigned_to_user_id) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, email, avatar_url')
-          .eq('user_id', contactData.assigned_to_user_id)
-          .single();
+      // For each flow that has an assigned user, fetch their profile
+      const assignments: { [flowId: string]: OrganizationMember | null } = {};
+      
+      for (const pc of pipelineContacts || []) {
+        if (pc.assigned_to_user_id) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, email, avatar_url')
+            .eq('user_id', pc.assigned_to_user_id)
+            .single();
 
-        if (!profileError && profileData) {
-          setAssignedUser({
-            user_id: profileData.user_id,
-            profiles: profileData
-          });
+          if (!profileError && profileData) {
+            assignments[pc.id] = {
+              user_id: profileData.user_id,
+              profiles: profileData
+            };
+          } else {
+            assignments[pc.id] = null;
+          }
+        } else {
+          assignments[pc.id] = null;
         }
-      } else {
-        setAssignedUser(null);
       }
+
+      setFlowAssignments(assignments);
     } catch (error) {
-      console.error('Error fetching contact data:', error);
+      console.error('Error fetching flow assignments:', error);
     }
   };
 
@@ -180,27 +190,33 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
   };
 
   const handleReassign = async (newUserId: string) => {
-    if (!contact) return;
+    if (!selectedFlowId) return;
 
     setReassigning(true);
     try {
       const { error } = await supabase
-        .from('contacts')
+        .from('pipeline_contacts')
         .update({ assigned_to_user_id: newUserId === 'unassigned' ? null : newUserId })
-        .eq('id', contact.id);
+        .eq('id', selectedFlowId);
 
       if (error) throw error;
 
-      // Refresh contact data
-      await fetchContactData();
+      // Refresh flow assignments
+      await fetchFlowAssignments();
       setShowReassignDialog(false);
-      toast({ title: "Contact reassigned successfully" });
+      setSelectedFlowId(null);
+      toast({ title: "Flow assignment updated successfully" });
     } catch (error) {
-      console.error('Error reassigning contact:', error);
-      toast({ title: "Error reassigning contact", variant: "destructive" });
+      console.error('Error reassigning flow:', error);
+      toast({ title: "Error updating flow assignment", variant: "destructive" });
     } finally {
       setReassigning(false);
     }
+  };
+
+  const handleReassignClick = (flowId: string) => {
+    setSelectedFlowId(flowId);
+    setShowReassignDialog(true);
   };
 
   const currentPipelineIds = flows.map(flow => flow.pipeline.id);
@@ -255,50 +271,10 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Team Assignment Section */}
-        <div className="border-b pb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h5 className="text-sm font-medium text-muted-foreground">Assigned To</h5>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowReassignDialog(true)}
-              className="text-xs"
-            >
-              <UserCheck className="h-3 w-3 mr-1" />
-              Reassign
-            </Button>
-          </div>
-          {assignedUser ? (
-            <div 
-              className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors"
-              onClick={() => setShowReassignDialog(true)}
-            >
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
-                <AvatarFallback className="text-xs">
-                  {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm">
-                {assignedUser.profiles?.full_name || assignedUser.profiles?.email || 'Unknown User'}
-              </span>
-            </div>
-          ) : (
-            <div 
-              className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors text-muted-foreground"
-              onClick={() => setShowReassignDialog(true)}
-            >
-              <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                <UserCheck className="h-3 w-3" />
-              </div>
-              <span className="text-sm">Unassigned</span>
-            </div>
-          )}
-        </div>
-
-        {/* Flows Section */}
-        {flows.map((flow) => (
+        {/* Flows Section with per-flow assignments */}
+        {flows.map((flow) => {
+          const assignedUser = flowAssignments[flow.id];
+          return (
           <div 
             key={flow.pipeline.id} 
             className="border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-muted/50 transition-colors"
@@ -340,8 +316,61 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
               <ArrowRight className="h-3 w-3" />
               <span>Next: Continue in {flow.pipeline.name}</span>
             </div>
+
+            {/* Assignment section for this flow */}
+            <div className="border-t pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-muted-foreground">Assigned to:</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReassignClick(flow.id);
+                  }}
+                  className="text-xs h-6 px-2"
+                >
+                  <UserCheck className="h-3 w-3 mr-1" />
+                  Reassign
+                </Button>
+              </div>
+              
+              {assignedUser ? (
+                <div 
+                  className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/30 cursor-pointer transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReassignClick(flow.id);
+                  }}
+                >
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
+                    <AvatarFallback className="text-xs">
+                      {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs">
+                    {assignedUser.profiles?.full_name || assignedUser.profiles?.email || 'Unknown User'}
+                  </span>
+                </div>
+              ) : (
+                <div 
+                  className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/30 cursor-pointer transition-colors text-muted-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReassignClick(flow.id);
+                  }}
+                >
+                  <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+                    <UserCheck className="h-2.5 w-2.5" />
+                  </div>
+                  <span className="text-xs">Unassigned</span>
+                </div>
+              )}
+            </div>
           </div>
-        ))}
+          );
+        })}
       </CardContent>
       
       <AddToFlowDialog
@@ -364,15 +393,15 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
                 onValueChange={handleReassign}
                 disabled={loadingMembers || reassigning}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-background">
                   <SelectValue placeholder={
                     loadingMembers ? "Loading team members..." : 
                     reassigning ? "Reassigning..." : 
                     "Select team member"
                   } />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">
+                <SelectContent className="bg-background border z-50">
+                  <SelectItem value="unassigned" className="bg-background hover:bg-muted">
                     <div className="flex items-center gap-2">
                       <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
                         <UserCheck className="h-3 w-3" />
@@ -381,7 +410,11 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
                     </div>
                   </SelectItem>
                   {organizationMembers.map((member) => (
-                    <SelectItem key={member.user_id} value={member.user_id}>
+                    <SelectItem 
+                      key={member.user_id} 
+                      value={member.user_id}
+                      className="bg-background hover:bg-muted"
+                    >
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={member.profiles?.avatar_url || undefined} />

@@ -602,6 +602,7 @@ export type Database = {
       }
       pipeline_contacts: {
         Row: {
+          assigned_to_user_id: string | null
           completed_end_at: string | null
           contact_id: string
           created_at: string
@@ -615,6 +616,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_to_user_id?: string | null
           completed_end_at?: string | null
           contact_id: string
           created_at?: string
@@ -628,6 +630,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_to_user_id?: string | null
           completed_end_at?: string | null
           contact_id?: string
           created_at?: string
