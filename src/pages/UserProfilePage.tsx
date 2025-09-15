@@ -16,6 +16,8 @@ import { ContactNotes } from "@/components/contact/ContactNotes";
 import { PrayerRequestsList } from "@/components/contact/PrayerRequestsList";
 import { QuickActionsBar } from "@/components/contact/QuickActionsBar";
 import { AISuggestions } from "@/components/contact/AISuggestions";
+import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
+import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
 
 const UserProfilePage = () => {
@@ -23,6 +25,7 @@ const UserProfilePage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   // Fetch comprehensive contact data
   const { data: contactData, isLoading, error } = useQuery({
@@ -191,6 +194,37 @@ const UserProfilePage = () => {
     }
   });
 
+  
+  // Handle contact edit
+  const handleEditContact = (updatedContact: any) => {
+    // Here you would typically update the contact in the database
+    // For now, we'll just invalidate the query to refetch data
+    queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
+    setIsEditDialogOpen(false);
+    toast({ title: "Contact updated successfully" });
+  };
+
+  // Transform database contact to Contact type format for the dialog
+  const getContactForDialog = () => {
+    if (!contact) return null;
+    
+    return {
+      id: contact.id,
+      name: contact.name,
+      email: contact.email || "",
+      phone: contact.phone || "",
+      avatar: contact.avatar,
+      date: new Date(contact.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+      tags: [], // You may need to map tags from the database format
+      status: contact.status as ContactStatus,
+      assignedTo: contact.assigned_to_user_id ? {
+        name: "Assigned User", // You'd fetch this from the user profile
+        avatar: undefined
+      } : undefined,
+      notes: contact.notes
+    };
+  };
+
   if (error) {
     console.error("Error fetching contact:", error);
     navigate(-1);
@@ -235,7 +269,18 @@ const UserProfilePage = () => {
         
         <Card>
           <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 relative">
+              {/* Edit button in top right corner */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditDialogOpen(true)}
+                className="absolute top-0 right-0 p-2"
+                title="Edit Contact"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              
               <Avatar className="h-16 w-16">
                 <AvatarImage src={contact.avatar} alt={contact.name} />
                 <AvatarFallback>
@@ -332,6 +377,14 @@ const UserProfilePage = () => {
         {/* AI Suggestions Block */}
         <AISuggestions />
       </div>
+
+      {/* Edit Contact Dialog */}
+      <ContactFormDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        contact={getContactForDialog()}
+        onSave={handleEditContact}
+      />
     </div>
   );
 };
