@@ -223,7 +223,7 @@ const UserProfilePage = () => {
   const { contact, tags, demographics, addresses, familyMembers, flows, interactions, notes, prayerRequests } = contactData;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="w-full p-6 space-y-6">
       {/* Enhanced Header */}
       <div className="space-y-4">
         <div className="flex items-center gap-4">
