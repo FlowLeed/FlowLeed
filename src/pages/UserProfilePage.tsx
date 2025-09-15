@@ -273,15 +273,6 @@ const UserProfilePage = () => {
         </Card>
       </div>
 
-      {/* Quick Actions Bar */}
-      <QuickActionsBar
-        contact={contact}
-        onEditContact={() => toast({ title: "Edit contact feature coming soon" })}
-        onAddNote={() => toast({ title: "Scroll down to add notes" })}
-        onAddInteraction={() => toast({ title: "Add interaction feature coming soon" })}
-        onAddPrayerRequest={() => toast({ title: "Scroll down to add prayer requests" })}
-        onScheduleFollowUp={() => toast({ title: "Schedule follow-up feature coming soon" })}
-      />
 
       {/* Vertical Content Blocks */}
       <div className="space-y-6">
