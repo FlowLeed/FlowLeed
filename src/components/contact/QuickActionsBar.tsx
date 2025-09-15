@@ -54,8 +54,6 @@ export const QuickActionsBar: React.FC<QuickActionsBarProps> = ({
 
   return (
     <Card>
-      <CardContent className="p-4">
-      </CardContent>
     </Card>
   );
 };
