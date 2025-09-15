@@ -16,8 +16,12 @@ const AuthPage = () => {
   const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isResetMode, setIsResetMode] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -61,6 +65,34 @@ const AuthPage = () => {
     setLoading(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setError('');
+
+    const { error } = await resetPassword(resetEmail);
+    
+    if (error) {
+      setError(error.message);
+      setResetSuccess(false);
+    } else {
+      setResetSuccess(true);
+      toast({
+        title: "Reset email sent!",
+        description: "Check your email for password reset instructions.",
+      });
+    }
+    
+    setResetLoading(false);
+  };
+
+  const handleBackToSignIn = () => {
+    setIsResetMode(false);
+    setResetEmail('');
+    setError('');
+    setResetSuccess(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
@@ -78,39 +110,104 @@ const AuthPage = () => {
             </TabsList>
             
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+              {!isResetMode ? (
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                  
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setIsResetMode(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Forgot your password?
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  {resetSuccess ? (
+                    <div className="text-center space-y-4">
+                      <Alert>
+                        <AlertDescription>
+                          Password reset email sent! Check your inbox and follow the instructions to reset your password.
+                        </AlertDescription>
+                      </Alert>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handleBackToSignIn}
+                        className="w-full"
+                      >
+                        Back to Sign In
+                      </Button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                      {error && (
+                        <Alert variant="destructive">
+                          <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email Address</Label>
+                        <Input
+                          id="reset-email"
+                          type="email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          placeholder="Enter your email address"
+                          required
+                        />
+                      </div>
+                      
+                      <Button type="submit" className="w-full" disabled={resetLoading}>
+                        {resetLoading ? 'Sending...' : 'Send Reset Email'}
+                      </Button>
+                      
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handleBackToSignIn}
+                        className="w-full"
+                      >
+                        Back to Sign In
+                      </Button>
+                    </form>
+                  )}
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign In'}
-                </Button>
-              </form>
+              )}
             </TabsContent>
             
             <TabsContent value="signup">
