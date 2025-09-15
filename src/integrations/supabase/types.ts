@@ -121,6 +121,7 @@ export type Database = {
       }
       contact_interactions: {
         Row: {
+          assigned_to_user_id: string | null
           completed_at: string | null
           contact_id: string
           created_at: string
@@ -128,13 +129,17 @@ export type Database = {
           details: string | null
           id: string
           interaction_type: string
+          metadata: Json | null
           outcome: string | null
           pipeline_id: string | null
+          previous_stage_id: string | null
           scheduled_at: string | null
+          stage_id: string | null
           subject: string | null
           updated_at: string
         }
         Insert: {
+          assigned_to_user_id?: string | null
           completed_at?: string | null
           contact_id: string
           created_at?: string
@@ -142,13 +147,17 @@ export type Database = {
           details?: string | null
           id?: string
           interaction_type: string
+          metadata?: Json | null
           outcome?: string | null
           pipeline_id?: string | null
+          previous_stage_id?: string | null
           scheduled_at?: string | null
+          stage_id?: string | null
           subject?: string | null
           updated_at?: string
         }
         Update: {
+          assigned_to_user_id?: string | null
           completed_at?: string | null
           contact_id?: string
           created_at?: string
@@ -156,9 +165,12 @@ export type Database = {
           details?: string | null
           id?: string
           interaction_type?: string
+          metadata?: Json | null
           outcome?: string | null
           pipeline_id?: string | null
+          previous_stage_id?: string | null
           scheduled_at?: string | null
+          stage_id?: string | null
           subject?: string | null
           updated_at?: string
         }

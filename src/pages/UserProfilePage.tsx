@@ -104,7 +104,7 @@ const UserProfilePage = () => {
         }
       }
 
-      // Fetch interactions
+      // Fetch interactions (we'll enrich with pipeline/stage data separately)
       const { data: interactions } = await supabase
         .from("contact_interactions")
         .select("*")

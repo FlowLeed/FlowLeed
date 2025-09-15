@@ -8,7 +8,13 @@ import {
   MessageSquare, 
   Calendar,
   Clock,
-  Plus
+  Plus,
+  GitBranch,
+  Users,
+  ArrowRight,
+  UserCheck,
+  UserMinus,
+  UserPlus
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -21,6 +27,22 @@ interface Interaction {
   completed_at?: string;
   scheduled_at?: string;
   created_at: string;
+  stage_id?: string;
+  previous_stage_id?: string;
+  assigned_to_user_id?: string;
+  metadata?: any; // Use any to handle Supabase Json type
+  pipeline?: {
+    name: string;
+    id: string;
+  };
+  stage?: {
+    name: string;
+    color?: string;
+  };
+  previous_stage?: {
+    name: string;
+    color?: string;
+  };
 }
 
 interface InteractionTimelineProps {
@@ -39,6 +61,16 @@ const getInteractionIcon = (type: string) => {
       return <MessageSquare className="h-4 w-4" />;
     case 'meeting':
       return <Calendar className="h-4 w-4" />;
+    case 'flow_stage_changed':
+      return <ArrowRight className="h-4 w-4" />;
+    case 'flow_assignment_changed':
+      return <UserCheck className="h-4 w-4" />;
+    case 'flow_added':
+      return <UserPlus className="h-4 w-4" />;
+    case 'flow_removed':
+      return <UserMinus className="h-4 w-4" />;
+    case 'flow_note_added':
+      return <GitBranch className="h-4 w-4" />;
     default:
       return <Clock className="h-4 w-4" />;
   }
@@ -47,16 +79,26 @@ const getInteractionIcon = (type: string) => {
 const getInteractionColor = (type: string) => {
   switch (type.toLowerCase()) {
     case 'call':
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
     case 'email':
-      return 'bg-green-100 text-green-800';
+      return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
     case 'text':
     case 'message':
-      return 'bg-purple-100 text-purple-800';
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
     case 'meeting':
-      return 'bg-orange-100 text-orange-800';
+      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+    case 'flow_stage_changed':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
+    case 'flow_assignment_changed':
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300';
+    case 'flow_added':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300';
+    case 'flow_removed':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
+    case 'flow_note_added':
+      return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300';
     default:
-      return 'bg-gray-100 text-gray-800';
+      return 'bg-muted text-muted-foreground';
   }
 };
 
@@ -116,6 +158,40 @@ export const InteractionTimeline: React.FC<InteractionTimelineProps> = ({
                   
                   {interaction.details && (
                     <p className="text-sm text-muted-foreground">{interaction.details}</p>
+                  )}
+
+                  {/* Flow-specific context display */}
+                  {(interaction.metadata?.pipeline_name || interaction.pipeline?.name) && (
+                    <div className="text-sm text-muted-foreground">
+                      <span className="font-medium">Pipeline: </span>
+                      <span>{interaction.metadata?.pipeline_name || interaction.pipeline?.name}</span>
+                    </div>
+                  )}
+
+                  {/* Stage information for flow activities */}
+                  {(interaction.metadata?.stage_name || interaction.metadata?.previous_stage_name || 
+                    interaction.stage?.name || interaction.previous_stage?.name) && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      {(interaction.metadata?.previous_stage_name || interaction.previous_stage?.name) && (
+                        <Badge variant="outline" className="text-xs">
+                          {interaction.metadata?.previous_stage_name || interaction.previous_stage?.name}
+                        </Badge>
+                      )}
+                      {(interaction.metadata?.previous_stage_name || interaction.previous_stage?.name) && 
+                       (interaction.metadata?.new_stage_name || interaction.stage?.name) && (
+                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      {(interaction.metadata?.new_stage_name || interaction.stage?.name) && (
+                        <Badge variant="outline" className="text-xs">
+                          {interaction.metadata?.new_stage_name || interaction.stage?.name}
+                        </Badge>
+                      )}
+                      {interaction.metadata?.stage_name && !interaction.metadata?.new_stage_name && (
+                        <Badge variant="outline" className="text-xs">
+                          {interaction.metadata.stage_name}
+                        </Badge>
+                      )}
+                    </div>
                   )}
                   
                   {interaction.outcome && (
