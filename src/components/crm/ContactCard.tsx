@@ -37,19 +37,19 @@ export const ContactCard: React.FC<ContactCardProps> = ({
     phone,
     stageEnteredAt
   } = contact;
-  return <div className="contact-card bg-white p-3 border border-gray-200 mb-3 hover:border-blue-300 transition-all duration-200 rounded-xl">
+  return <div className="contact-card bg-white p-3 border border-gray-200 mb-3 hover:border-blue-300 transition-all duration-200 rounded-xl overflow-hidden max-w-full">
       <div className="flex justify-between items-start mb-3">
-        <div className="flex gap-2 items-center">
-          <Link to={`/contacts/${contact.id}`}>
+        <div className="flex gap-2 items-center min-w-0 flex-1">
+          <Link to={`/contacts/${contact.id}`} className="flex-shrink-0">
             <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all">
               {avatar ? <img src={avatar} alt={name} className="rounded-full" /> : <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
                   {name.charAt(0)}
                 </div>}
             </Avatar>
           </Link>
-          <div>
+          <div className="min-w-0 flex-1">
             <Link to={`/contacts/${contact.id}`} className="hover:text-blue-600 transition-colors">
-              <h4 className="font-medium text-sm cursor-pointer">{name}</h4>
+              <h4 className="font-medium text-sm cursor-pointer truncate" title={name}>{name}</h4>
             </Link>
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
@@ -80,16 +80,16 @@ export const ContactCard: React.FC<ContactCardProps> = ({
           {tags.includes("location") && <span className="tag bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full">Location</span>}
         </div>}
 
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
         {assignedTo ? (
-          <div className="flex gap-2 items-center">
-            <Avatar className="h-6 w-6">
+          <div className="flex gap-2 items-center min-w-0 flex-1">
+            <Avatar className="h-6 w-6 flex-shrink-0">
               <AvatarImage src={assignedTo.avatar} alt={assignedTo.name} />
               <AvatarFallback className="bg-gray-300 text-white text-xs">
                 {assignedTo.name.charAt(0)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-gray-600 truncate" title={assignedTo.name}>
               {(() => {
                 const nameParts = assignedTo.name.split(' ');
                 const firstName = nameParts[0] || '';
@@ -99,8 +99,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             </span>
           </div>
         ) : (
-          <div className="flex gap-2 items-center">
-            <Avatar className="h-6 w-6">
+          <div className="flex gap-2 items-center min-w-0 flex-1">
+            <Avatar className="h-6 w-6 flex-shrink-0">
               <AvatarFallback className="bg-gray-400 text-white text-xs">
                 ?
               </AvatarFallback>
@@ -108,7 +108,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             <span className="text-xs text-gray-500">Unassigned</span>
           </div>
         )}
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-shrink-0">
           {phone && <a href={`sms:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send text message">
               <MessageSquare className="h-3.5 w-3.5" />
             </a>}
