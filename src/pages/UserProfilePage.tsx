@@ -264,7 +264,25 @@ const UserProfilePage = () => {
                         {contact.email}
                       </button>
                     )}
-                    {contact.phone && <div>{contact.phone}</div>}
+                    {contact.phone && (
+                      <div className="flex items-center gap-2">
+                        <span>{contact.phone}</span>
+                        <button 
+                          onClick={() => window.open(`tel:${contact.phone}`)}
+                          className="hover:text-primary cursor-pointer transition-colors p-1"
+                          title="Call"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => window.open(`sms:${contact.phone}`)}
+                          className="hover:text-primary cursor-pointer transition-colors p-1"
+                          title="Text"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
