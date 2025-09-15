@@ -14,7 +14,8 @@ import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
 import { InteractionTimeline } from "@/components/contact/InteractionTimeline";
 import { ContactNotes } from "@/components/contact/ContactNotes";
 import { PrayerRequestsList } from "@/components/contact/PrayerRequestsList";
-import { QuickActionsSidebar } from "@/components/contact/QuickActionsSidebar";
+import { QuickActionsBar } from "@/components/contact/QuickActionsBar";
+import { AISuggestions } from "@/components/contact/AISuggestions";
 import { useAuth } from "@/hooks/useAuth";
 
 const UserProfilePage = () => {
@@ -222,113 +223,98 @@ const UserProfilePage = () => {
   const { contact, tags, demographics, addresses, familyMembers, flows, interactions, notes, prayerRequests } = contactData;
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Enhanced Header */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate(-1)} size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={contact.avatar} alt={contact.name} />
-              <AvatarFallback>
-                <User className="h-6 w-6" />
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-2xl font-bold">{contact.name}</h1>
-              <div className="flex items-center gap-2">
-                <Badge variant={contact.status === 'active' ? 'default' : 'secondary'}>
-                  {contact.status}
-                </Badge>
-                {tags.map((tag, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
         
-        {/* Quick Contact Actions */}
-        <div className="flex items-center gap-2">
-          {contact.phone && (
-            <Button variant="outline" size="sm" onClick={() => window.open(`tel:${contact.phone}`)}>
-              <Phone className="h-4 w-4 mr-2" />
-              Call
-            </Button>
-          )}
-          {contact.email && (
-            <Button variant="outline" size="sm" onClick={() => window.open(`mailto:${contact.email}`)}>
-              <Mail className="h-4 w-4 mr-2" />
-              Email
-            </Button>
-          )}
-          {contact.phone && (
-            <Button variant="outline" size="sm" onClick={() => window.open(`sms:${contact.phone}`)}>
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Text
-            </Button>
-          )}
-          <Button variant="outline" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={contact.avatar} alt={contact.name} />
+                <AvatarFallback>
+                  <User className="h-8 w-8" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold">{contact.name}</h1>
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <Badge variant={contact.status === 'active' ? 'default' : 'secondary'}>
+                    {contact.status}
+                  </Badge>
+                  {tags.map((tag, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+                {(contact.email || contact.phone) && (
+                  <div className="mt-2 text-sm text-muted-foreground space-y-1">
+                    {contact.email && <div>{contact.email}</div>}
+                    {contact.phone && <div>{contact.phone}</div>}
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left Sidebar - General Information */}
-        <div className="lg:col-span-1 space-y-6">
-          <ContactDemographics
-            demographics={demographics}
-            addresses={addresses}
-            familyMembers={familyMembers}
-          />
-        </div>
+      {/* Quick Actions Bar */}
+      <QuickActionsBar
+        contact={contact}
+        onEditContact={() => toast({ title: "Edit contact feature coming soon" })}
+        onAddNote={() => toast({ title: "Scroll down to add notes" })}
+        onAddInteraction={() => toast({ title: "Add interaction feature coming soon" })}
+        onAddPrayerRequest={() => toast({ title: "Scroll down to add prayer requests" })}
+        onScheduleFollowUp={() => toast({ title: "Schedule follow-up feature coming soon" })}
+      />
 
-        {/* Main Content Area - Flow-Specific Information */}
-        <div className="lg:col-span-2 space-y-6">
-          <ContactFlowStatus flows={flows} contactId={contactId!} />
-          
-          <InteractionTimeline
-            interactions={interactions}
-            onAddInteraction={() => toast({ title: "Add interaction feature coming soon" })}
-          />
-          
-          <ContactNotes
-            notes={notes}
-            onAddNote={(content, noteType, isPrivate) => 
-              addNoteMutation.mutate({ content, noteType, isPrivate })
-            }
-          />
-          
-          <PrayerRequestsList
-            prayerRequests={prayerRequests}
-            onAddPrayerRequest={(title, description) => 
-              addPrayerRequestMutation.mutate({ title, description })
-            }
-            onMarkAnswered={(id, answerDescription) => 
-              markPrayerAnsweredMutation.mutate({ id, answerDescription })
-            }
-          />
-        </div>
+      {/* Vertical Content Blocks */}
+      <div className="space-y-6">
+        {/* Flow Status Block */}
+        <ContactFlowStatus flows={flows} contactId={contactId!} />
+        
+        {/* Demographics Block */}
+        <ContactDemographics
+          demographics={demographics}
+          addresses={addresses}
+          familyMembers={familyMembers}
+        />
+        
+        {/* Recent Interactions Block */}
+        <InteractionTimeline
+          interactions={interactions}
+          onAddInteraction={() => toast({ title: "Add interaction feature coming soon" })}
+        />
+        
+        {/* Notes Block */}
+        <ContactNotes
+          notes={notes}
+          onAddNote={(content, noteType, isPrivate) => 
+            addNoteMutation.mutate({ content, noteType, isPrivate })
+          }
+        />
+        
+        {/* Prayer Requests Block */}
+        <PrayerRequestsList
+          prayerRequests={prayerRequests}
+          onAddPrayerRequest={(title, description) => 
+            addPrayerRequestMutation.mutate({ title, description })
+          }
+          onMarkAnswered={(id, answerDescription) => 
+            markPrayerAnsweredMutation.mutate({ id, answerDescription })
+          }
+        />
 
-        {/* Right Sidebar - Quick Actions */}
-        <div className="lg:col-span-1">
-          <QuickActionsSidebar
-            contact={contact}
-            onEditContact={() => toast({ title: "Edit contact feature coming soon" })}
-            onAddNote={() => toast({ title: "Scroll down to add notes" })}
-            onAddInteraction={() => toast({ title: "Add interaction feature coming soon" })}
-            onAddPrayerRequest={() => toast({ title: "Scroll down to add prayer requests" })}
-            onScheduleFollowUp={() => toast({ title: "Schedule follow-up feature coming soon" })}
-          />
-        </div>
+        {/* AI Suggestions Block */}
+        <AISuggestions />
       </div>
     </div>
   );
