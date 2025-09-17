@@ -208,32 +208,6 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>Assigned To</Label>
-            <Select
-              value={
-                formData.assignedTo
-                  ? organizationMembers.find(member => 
-                      (member.profiles?.full_name || member.profiles?.email) === formData.assignedTo?.name
-                    )?.user_id || "unassigned"
-                  : "unassigned"
-              }
-              onValueChange={handleAssignedToChange}
-              disabled={loadingMembers}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={loadingMembers ? "Loading..." : "Select assignee"} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {organizationMembers.map((member) => (
-                  <SelectItem key={member.user_id} value={member.user_id}>
-                    {member.profiles?.full_name || member.profiles?.email || "Unknown User"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="space-y-2">
             <Label>Tags</Label>
