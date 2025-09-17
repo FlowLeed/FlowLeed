@@ -26,7 +26,7 @@ export const ContactNotes: React.FC<ContactNotesProps> = ({
   notes,
   onAddNote
 }) => {
-  const [isAddingNote, setIsAddingNote] = useState(false);
+  const [isAddingNote, setIsAddingNote] = useState(true);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [noteType, setNoteType] = useState('general');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -66,15 +66,6 @@ export const ContactNotes: React.FC<ContactNotesProps> = ({
             <StickyNote className="h-4 w-4" />
             Notes
           </CardTitle>
-          <Button 
-            onClick={() => setIsAddingNote(true)} 
-            size="sm" 
-            variant="outline"
-            disabled={isAddingNote}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Note
-          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
