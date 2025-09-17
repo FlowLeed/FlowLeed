@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/use-toast";
 import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User } from "lucide-react";
-import { ContactDemographics } from "@/components/contact/ContactDemographics";
+
 import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
 import { InteractionTimeline } from "@/components/contact/InteractionTimeline";
 import { ContactNotes } from "@/components/contact/ContactNotes";
@@ -301,37 +301,105 @@ const UserProfilePage = () => {
                     </Badge>
                   ))}
                 </div>
-                {(contact.email || contact.phone) && (
-                  <div className="mt-2 text-sm text-muted-foreground space-y-1">
-                    {contact.email && (
-                      <button 
-                        onClick={() => window.open(`mailto:${contact.email}`)}
-                        className="hover:text-primary cursor-pointer transition-colors"
-                      >
-                        {contact.email}
-                      </button>
-                    )}
-                    {contact.phone && (
-                      <div className="flex items-center gap-2">
-                        <span>{contact.phone}</span>
+                
+                {/* Contact Details */}
+                <div className="mt-4 space-y-2">
+                  {(contact.email || contact.phone) && (
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      {contact.email && (
                         <button 
-                          onClick={() => window.open(`tel:${contact.phone}`)}
-                          className="hover:text-primary cursor-pointer transition-colors p-1"
-                          title="Call"
+                          onClick={() => window.open(`mailto:${contact.email}`)}
+                          className="hover:text-primary cursor-pointer transition-colors block"
                         >
+                          <Mail className="h-4 w-4 inline mr-2" />
+                          {contact.email}
+                        </button>
+                      )}
+                      {contact.phone && (
+                        <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => window.open(`sms:${contact.phone}`)}
-                          className="hover:text-primary cursor-pointer transition-colors p-1"
-                          title="Text"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                        </button>
+                          <span>{contact.phone}</span>
+                          <button 
+                            onClick={() => window.open(`tel:${contact.phone}`)}
+                            className="hover:text-primary cursor-pointer transition-colors p-1"
+                            title="Call"
+                          >
+                            <Phone className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => window.open(`sms:${contact.phone}`)}
+                            className="hover:text-primary cursor-pointer transition-colors p-1"
+                            title="Text"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Demographics Information */}
+                  {(demographics || addresses?.length > 0) && (
+                    <div className="pt-2 border-t border-border/40">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                        {/* Demographics */}
+                        {demographics && (
+                          <>
+                            {demographics.birthday && (
+                              <div>
+                                <span className="text-muted-foreground">Age: </span>
+                                <span>{(() => {
+                                  const today = new Date();
+                                  const birthDate = new Date(demographics.birthday);
+                                  let age = today.getFullYear() - birthDate.getFullYear();
+                                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                                  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                                    age--;
+                                  }
+                                  return age;
+                                })()}</span>
+                              </div>
+                            )}
+                            {demographics.occupation && (
+                              <div>
+                                <span className="text-muted-foreground">Occupation: </span>
+                                <span>{demographics.occupation}</span>
+                              </div>
+                            )}
+                            {demographics.marital_status && (
+                              <div>
+                                <span className="text-muted-foreground">Marital Status: </span>
+                                <span>{demographics.marital_status}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Primary Address */}
+                        {(() => {
+                          const primaryAddress = addresses?.find(addr => addr.is_primary) || addresses?.[0];
+                          if (primaryAddress) {
+                            const addressParts = [
+                              primaryAddress.street_address,
+                              primaryAddress.city,
+                              primaryAddress.state,
+                              primaryAddress.zip_code
+                            ].filter(Boolean);
+                            if (addressParts.length > 0) {
+                              return (
+                                <div className="sm:col-span-2 lg:col-span-1">
+                                  <span className="text-muted-foreground">Address: </span>
+                                  <span>{addressParts.join(', ')}</span>
+                                </div>
+                              );
+                            }
+                          }
+                          return null;
+                        })()}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -344,12 +412,40 @@ const UserProfilePage = () => {
         {/* Flow Status Block */}
         <ContactFlowStatus flows={flows} contactId={contactId!} />
         
-        {/* Demographics Block */}
-        <ContactDemographics
-          demographics={demographics}
-          addresses={addresses}
-          familyMembers={familyMembers}
-        />
+        {/* Family Members Block (if any) */}
+        {familyMembers && familyMembers.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Family Members</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {familyMembers.map((member) => (
+                  <div key={member.id} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
+                    <div>
+                      <div className="font-medium">{member.name}</div>
+                      <div className="text-sm text-muted-foreground capitalize">{member.relationship}</div>
+                    </div>
+                    {member.birthday && (
+                      <div className="text-sm text-muted-foreground">
+                        Age {(() => {
+                          const today = new Date();
+                          const birthDate = new Date(member.birthday);
+                          let age = today.getFullYear() - birthDate.getFullYear();
+                          const monthDiff = today.getMonth() - birthDate.getMonth();
+                          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                            age--;
+                          }
+                          return age;
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
         
         {/* Recent Interactions Block */}
         <InteractionTimeline
