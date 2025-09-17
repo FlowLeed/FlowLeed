@@ -35,7 +35,6 @@ export const ContactNotes: React.FC<ContactNotesProps> = ({
     if (newNoteContent.trim()) {
       onAddNote(newNoteContent.trim(), noteType, isPrivate);
       setNewNoteContent('');
-      setIsAddingNote(false);
       setNoteType('general');
       setIsPrivate(false);
     }
