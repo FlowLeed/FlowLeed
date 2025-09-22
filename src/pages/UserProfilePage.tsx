@@ -17,6 +17,7 @@ import { PrayerRequestsList } from "@/components/contact/PrayerRequestsList";
 import { QuickActionsBar } from "@/components/contact/QuickActionsBar";
 import { AISuggestions } from "@/components/contact/AISuggestions";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
+import { EditDemographicsDialog } from "@/components/contact/EditDemographicsDialog";
 import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -26,6 +27,7 @@ const UserProfilePage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDemographicsDialogOpen, setIsDemographicsDialogOpen] = useState(false);
 
   // Fetch comprehensive contact data
   const { data: contactData, isLoading, error } = useQuery({
@@ -339,9 +341,9 @@ const UserProfilePage = () => {
                   )}
                   
                   {/* Demographics Information */}
-                  {(demographics || addresses?.length > 0) && (
-                    <div className="pt-2 border-t border-border/40">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                  <div className="pt-2 border-t border-border/40">
+                    <div className="flex items-start justify-between">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm flex-1">
                         {/* Demographics */}
                         {demographics && (
                           <>
@@ -396,9 +398,26 @@ const UserProfilePage = () => {
                           }
                           return null;
                         })()}
+                        
+                        {/* Show placeholders if no demographics data */}
+                        {!demographics?.birthday && !demographics?.occupation && !demographics?.marital_status && !addresses?.length && (
+                          <div className="col-span-full">
+                            <span className="text-muted-foreground text-sm">No demographic information available</span>
+                          </div>
+                        )}
                       </div>
+                      
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsDemographicsDialogOpen(true)}
+                        className="ml-2 shrink-0"
+                        title="Edit Demographics"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -482,6 +501,17 @@ const UserProfilePage = () => {
         onOpenChange={setIsEditDialogOpen}
         contact={getContactForDialog()}
         onSave={handleEditContact}
+      />
+
+      {/* Edit Demographics Dialog */}
+      <EditDemographicsDialog
+        open={isDemographicsDialogOpen}
+        onOpenChange={setIsDemographicsDialogOpen}
+        contactId={contactId!}
+        demographics={contactData?.demographics}
+        addresses={contactData?.addresses}
+        familyMembers={contactData?.familyMembers}
+        onSave={() => queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] })}
       />
     </div>
   );
