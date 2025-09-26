@@ -266,6 +266,10 @@ const UserProfilePage = () => {
     const demographics = contactData?.demographics;
     const primaryAddress = contactData?.addresses?.find(addr => addr.is_primary) || contactData?.addresses?.[0];
     
+    console.log("Demographics data:", demographics);
+    console.log("Primary address data:", primaryAddress);
+    console.log("All addresses:", contactData?.addresses);
+    
     return {
       id: contact.id,
       name: contact.name,

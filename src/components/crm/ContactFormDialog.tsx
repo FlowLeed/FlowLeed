@@ -114,7 +114,19 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
 
   useEffect(() => {
     if (contact) {
-      setFormData(contact);
+      console.log("Setting form data with contact:", contact);
+      const extendedContact = contact as any; // Type assertion for extended properties
+      setFormData({
+        ...contact,
+        // Ensure all demographic fields are included
+        birthday: extendedContact.birthday || "",
+        occupation: extendedContact.occupation || "",
+        maritalStatus: extendedContact.maritalStatus || "",
+        streetAddress: extendedContact.streetAddress || "",
+        city: extendedContact.city || "",
+        state: extendedContact.state || "",
+        zipCode: extendedContact.zipCode || "",
+      });
     } else {
       setFormData({
         name: "",
