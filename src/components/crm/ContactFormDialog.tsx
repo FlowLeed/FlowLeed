@@ -278,7 +278,6 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                   <SelectValue placeholder="Select marital status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Not specified</SelectItem>
                   <SelectItem value="single">Single</SelectItem>
                   <SelectItem value="married">Married</SelectItem>
                   <SelectItem value="divorced">Divorced</SelectItem>
