@@ -338,7 +338,7 @@ async function syncSingleList(mapping: any, userId: string) {
         
         try {
           const personResponse = await fetch(
-            `https://api.planningcenteronline.com/people/v2/people/${personId}?include=emails,phone_numbers,addresses,households,field_data`,
+            `https://api.planningcenteronline.com/people/v2/people/${personId}?include=emails,phone_numbers,addresses,households,field_data,marital_status`,
             {
               headers: {
                 'Authorization': `Basic ${auth}`,
@@ -358,6 +358,7 @@ async function syncSingleList(mapping: any, userId: string) {
               const addresses = personData.included?.filter((item: any) => item.type === 'Address') || [];
               const households = personData.included?.filter((item: any) => item.type === 'Household') || [];
               const fieldData = personData.included?.filter((item: any) => item.type === 'FieldDatum') || [];
+              const maritalStatus = personData.included?.find((item: any) => item.type === 'MaritalStatus') || null;
               
               // Add email and phone data to person attributes
               const primaryEmail = emails.find((email: any) => email.attributes.primary)?.attributes.address;
@@ -372,7 +373,8 @@ async function syncSingleList(mapping: any, userId: string) {
                 phoneNumbers,
                 addresses,
                 households,
-                fieldData
+                fieldData,
+                maritalStatus
               };
               
               console.log('Enhanced person with contact info:', JSON.stringify(person.attributes, null, 2));
@@ -554,8 +556,13 @@ async function syncDemographicData(contactId: string, person: any) {
       }
     }
     
-    console.log('Demographics data to sync:', demoData);
+    // Fallback to relationship-included marital status
+    if (!demoData.marital_status && includedData.maritalStatus && includedData.maritalStatus.attributes?.name) {
+      demoData.marital_status = includedData.maritalStatus.attributes.name;
+      console.log('Found marital status via relationship include:', demoData.marital_status);
+    }
     
+    console.log('Demographics data to sync:', demoData);
     if (Object.keys(demoData).length > 0) {
       console.log('Syncing demographics for contact:', contactId);
       
