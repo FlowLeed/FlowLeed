@@ -551,16 +551,20 @@ async function syncDemographicData(contactId: string, person: any) {
       
       for (const [index, address] of includedData.addresses.entries()) {
         const addrAttrs = address.attributes;
+        console.log('Processing address:', JSON.stringify(addrAttrs, null, 2));
+        
         const addressData = {
           contact_id: contactId,
           address_type: addrAttrs.location?.toLowerCase() || 'home',
-          street_address: addrAttrs.street,
+          street_address: addrAttrs.street || null,
           city: addrAttrs.city,
           state: addrAttrs.state,
           zip_code: addrAttrs.zip,
-          country: addrAttrs.country || 'US',
-          is_primary: index === 0 // Mark first address as primary
+          country: addrAttrs.country_code || addrAttrs.country || 'US',
+          is_primary: addrAttrs.primary || index === 0 // Use PCO primary field if available, otherwise first address
         };
+        
+        console.log('Inserting address data:', JSON.stringify(addressData, null, 2));
         
         await supabase
           .from('contact_addresses')
