@@ -10,6 +10,7 @@ interface FlowContextType {
   updateFlow: (flowId: string, flow: Flow) => void;
   createFlow: (flow: Omit<Flow, 'id'>) => Promise<string>;
   deleteFlow: (flowId: string) => Promise<void>;
+  refreshFlows: () => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -295,6 +296,47 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     return flowsData;
   };
 
+  const refreshFlows = async () => {
+    if (!user || profileLoading || !organization) {
+      return;
+    }
+
+    try {
+      setError(null);
+      console.log("Refreshing flows...");
+      
+      const { data: existingPipelines, error: pipelinesError } = await supabase
+        .from('pipelines')
+        .select('*')
+        .eq('organization_id', organization.id);
+
+      if (pipelinesError) {
+        console.error("Error fetching pipelines:", pipelinesError);
+        throw pipelinesError;
+      }
+
+      if (existingPipelines && existingPipelines.length > 0) {
+        const flowsData = await loadFlowData(existingPipelines);
+        setFlows(flowsData);
+        console.log("Flows refreshed successfully");
+      }
+    } catch (err) {
+      console.error("Error refreshing flows:", err);
+      setError(err instanceof Error ? err.message : "Failed to refresh flows");
+    }
+  };
+
+  // Listen for sync completion events to refresh flow data
+  useEffect(() => {
+    const handleSyncComplete = () => {
+      console.log("Sync completed, refreshing flows...");
+      refreshFlows();
+    };
+
+    window.addEventListener('pco-sync-complete', handleSyncComplete);
+    return () => window.removeEventListener('pco-sync-complete', handleSyncComplete);
+  }, [user, organization, profileLoading]);
+
   const updateFlow = async (flowId: string, flow: Flow) => {
     if (!organization) return;
 
@@ -506,7 +548,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
   };
 
   return (
-    <FlowContext.Provider value={{ flows, updateFlow, createFlow, deleteFlow, loading, error }}>
+    <FlowContext.Provider value={{ flows, updateFlow, createFlow, deleteFlow, refreshFlows, loading, error }}>
       {children}
     </FlowContext.Provider>
   );

@@ -121,6 +121,9 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
 
         queryClient.invalidateQueries({ queryKey: ['integration-list-mappings'] });
         
+        // Dispatch event to refresh flow data
+        window.dispatchEvent(new CustomEvent('pco-sync-complete'));
+        
         toast({
           title: 'Sync completed',
           description: `Added ${result.contactsAdded} new contacts, updated ${result.contactsUpdated} existing contacts.`,
