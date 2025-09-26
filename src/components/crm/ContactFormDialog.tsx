@@ -39,7 +39,15 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   const { profile, organization } = useProfile();
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
-  const [formData, setFormData] = useState<Partial<Contact>>({
+  const [formData, setFormData] = useState<Partial<Contact & {
+    birthday?: string;
+    occupation?: string;
+    maritalStatus?: string;
+    streetAddress?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+  }>>({
     name: "",
     date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
     tags: [],
@@ -50,6 +58,13 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     } : undefined,
     email: "",
     phone: "",
+    birthday: "",
+    occupation: "",
+    maritalStatus: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    zipCode: "",
   });
 
   // Fetch organization members when dialog opens
@@ -112,6 +127,13 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         } : undefined,
         email: "",
         phone: "",
+        birthday: "",
+        occupation: "",
+        maritalStatus: "",
+        streetAddress: "",
+        city: "",
+        state: "",
+        zipCode: "",
       });
     }
   }, [contact, profile]);
@@ -157,9 +179,9 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{contact ? "Edit Contact" : "Add New Contact"}</DialogTitle>
+          <DialogTitle>{contact ? "Edit Contact & Demographics" : "Add New Contact"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">
@@ -219,7 +241,91 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                   onCheckedChange={() => handleTagToggle("active")}
                 />
                 <label htmlFor="tag-active">Active</label>
+          </div>
+
+          {/* Demographics Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-sm font-medium">Demographics</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="birthday">Birthday</Label>
+                <Input
+                  id="birthday"
+                  type="date"
+                  value={formData.birthday || ""}
+                  onChange={(e) => handleChange("birthday", e.target.value)}
+                />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="occupation">Occupation</Label>
+                <Input
+                  id="occupation"
+                  value={formData.occupation || ""}
+                  onChange={(e) => handleChange("occupation", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Marital Status</Label>
+              <Select
+                value={formData.maritalStatus}
+                onValueChange={(value) => handleChange("maritalStatus", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select marital status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Not specified</SelectItem>
+                  <SelectItem value="single">Single</SelectItem>
+                  <SelectItem value="married">Married</SelectItem>
+                  <SelectItem value="divorced">Divorced</SelectItem>
+                  <SelectItem value="widowed">Widowed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium">Address</h4>
+              <div className="space-y-2">
+                <Label htmlFor="streetAddress">Street Address</Label>
+                <Input
+                  id="streetAddress"
+                  value={formData.streetAddress || ""}
+                  onChange={(e) => handleChange("streetAddress", e.target.value)}
+                />
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    value={formData.city || ""}
+                    onChange={(e) => handleChange("city", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    value={formData.state || ""}
+                    onChange={(e) => handleChange("state", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">Zip Code</Label>
+                  <Input
+                    id="zipCode"
+                    value={formData.zipCode || ""}
+                    onChange={(e) => handleChange("zipCode", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="tag-partner"

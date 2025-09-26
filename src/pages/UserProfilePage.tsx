@@ -17,7 +17,7 @@ import { PrayerRequestsList } from "@/components/contact/PrayerRequestsList";
 import { QuickActionsBar } from "@/components/contact/QuickActionsBar";
 import { AISuggestions } from "@/components/contact/AISuggestions";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
-import { EditDemographicsDialog } from "@/components/contact/EditDemographicsDialog";
+
 import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -27,7 +27,6 @@ const UserProfilePage = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDemographicsDialogOpen, setIsDemographicsDialogOpen] = useState(false);
 
   // Fetch comprehensive contact data
   const { data: contactData, isLoading, error } = useQuery({
@@ -200,17 +199,72 @@ const UserProfilePage = () => {
 
   
   // Handle contact edit
-  const handleEditContact = (updatedContact: any) => {
-    // Here you would typically update the contact in the database
-    // For now, we'll just invalidate the query to refetch data
-    queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
-    setIsEditDialogOpen(false);
-    toast({ title: "Contact updated successfully" });
+  const handleEditContact = async (updatedContact: any) => {
+    try {
+      // Update basic contact information
+      const { error: contactError } = await supabase
+        .from('contacts')
+        .update({
+          name: updatedContact.name,
+          email: updatedContact.email,
+          phone: updatedContact.phone,
+          status: updatedContact.status,
+          notes: updatedContact.notes
+        })
+        .eq('id', contactId);
+
+      if (contactError) throw contactError;
+
+      // Update or create demographics
+      if (updatedContact.birthday || updatedContact.occupation || updatedContact.maritalStatus) {
+        const { error: demoError } = await supabase
+          .from('contact_demographics')
+          .upsert({
+            contact_id: contactId,
+            birthday: updatedContact.birthday || null,
+            occupation: updatedContact.occupation || null,
+            marital_status: updatedContact.maritalStatus || null
+          });
+
+        if (demoError) throw demoError;
+      }
+
+      // Update or create primary address
+      if (updatedContact.streetAddress || updatedContact.city || updatedContact.state || updatedContact.zipCode) {
+        const { error: addressError } = await supabase
+          .from('contact_addresses')
+          .upsert({
+            contact_id: contactId,
+            street_address: updatedContact.streetAddress || null,
+            city: updatedContact.city || null,
+            state: updatedContact.state || null,
+            zip_code: updatedContact.zipCode || null,
+            is_primary: true,
+            address_type: 'home'
+          });
+
+        if (addressError) throw addressError;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
+      setIsEditDialogOpen(false);
+      toast({ title: "Contact updated successfully" });
+    } catch (error) {
+      console.error("Error updating contact:", error);
+      toast({ 
+        title: "Error updating contact", 
+        description: "Please try again",
+        variant: "destructive"
+      });
+    }
   };
 
   // Transform database contact to Contact type format for the dialog
   const getContactForDialog = () => {
     if (!contact) return null;
+    
+    const demographics = contactData?.demographics;
+    const primaryAddress = contactData?.addresses?.find(addr => addr.is_primary) || contactData?.addresses?.[0];
     
     return {
       id: contact.id,
@@ -225,7 +279,15 @@ const UserProfilePage = () => {
         name: "Assigned User", // You'd fetch this from the user profile
         avatar: undefined
       } : undefined,
-      notes: contact.notes
+      notes: contact.notes,
+      // Add demographic fields
+      birthday: demographics?.birthday || "",
+      occupation: demographics?.occupation || "",
+      maritalStatus: demographics?.marital_status || "",
+      streetAddress: primaryAddress?.street_address || "",
+      city: primaryAddress?.city || "",
+      state: primaryAddress?.state || "",
+      zipCode: primaryAddress?.zip_code || "",
     };
   };
 
@@ -280,7 +342,7 @@ const UserProfilePage = () => {
                 size="sm"
                 onClick={() => setIsEditDialogOpen(true)}
                 className="absolute top-0 right-0 p-2"
-                title="Edit Contact"
+                title="Edit Contact & Demographics"
               >
                 <Edit className="h-4 w-4" />
               </Button>
@@ -407,15 +469,6 @@ const UserProfilePage = () => {
                         )}
                       </div>
                       
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setIsDemographicsDialogOpen(true)}
-                        className="ml-2 shrink-0"
-                        title="Edit Demographics"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 </div>
@@ -503,16 +556,6 @@ const UserProfilePage = () => {
         onSave={handleEditContact}
       />
 
-      {/* Edit Demographics Dialog */}
-      <EditDemographicsDialog
-        open={isDemographicsDialogOpen}
-        onOpenChange={setIsDemographicsDialogOpen}
-        contactId={contactId!}
-        demographics={contactData?.demographics}
-        addresses={contactData?.addresses}
-        familyMembers={contactData?.familyMembers}
-        onSave={() => queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] })}
-      />
     </div>
   );
 };
