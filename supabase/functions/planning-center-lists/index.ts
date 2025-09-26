@@ -510,7 +510,53 @@ async function syncDemographicData(contactId: string, person: any) {
   
   try {
     // 1. Sync demographics (birthday, marital status, occupation)
-    if (attrs.birthdate || attrs.anniversary || attrs.marital_status || attrs.occupation) {
+    const demoData: any = {};
+    
+    // Handle built-in PCO fields
+    if (attrs.birthdate) demoData.birthday = attrs.birthdate;
+    if (attrs.marital_status) demoData.marital_status = attrs.marital_status;
+    if (attrs.occupation) demoData.occupation = attrs.occupation;
+    
+    // Handle custom fields that might contain marital status or occupation
+    if (includedData.fieldData && includedData.fieldData.length > 0) {
+      console.log('Checking custom fields for demographic data:', includedData.fieldData.length, 'fields');
+      
+      for (const field of includedData.fieldData) {
+        const fieldAttrs = field.attributes;
+        const fieldName = fieldAttrs.name?.toLowerCase() || '';
+        const fieldValue = fieldAttrs.value?.trim();
+        
+        console.log('Processing custom field:', fieldName, '=', fieldValue);
+        
+        // Check for marital status fields
+        if (fieldValue && (
+          fieldName.includes('marital') || 
+          fieldName.includes('married') || 
+          fieldName.includes('single') ||
+          fieldName.includes('relationship status') ||
+          fieldName === 'status' // Sometimes just called "status"
+        )) {
+          demoData.marital_status = fieldValue;
+          console.log('Found marital status in custom field:', fieldName, '=', fieldValue);
+        }
+        
+        // Check for occupation fields
+        if (fieldValue && (
+          fieldName.includes('occupation') || 
+          fieldName.includes('job') || 
+          fieldName.includes('work') ||
+          fieldName.includes('employment') ||
+          fieldName.includes('profession')
+        )) {
+          demoData.occupation = fieldValue;
+          console.log('Found occupation in custom field:', fieldName, '=', fieldValue);
+        }
+      }
+    }
+    
+    console.log('Demographics data to sync:', demoData);
+    
+    if (Object.keys(demoData).length > 0) {
       console.log('Syncing demographics for contact:', contactId);
       
       // Check if demographics record exists
@@ -520,21 +566,26 @@ async function syncDemographicData(contactId: string, person: any) {
         .eq('contact_id', contactId)
         .maybeSingle();
       
-      const demoData: any = {};
-      if (attrs.birthdate) demoData.birthday = attrs.birthdate;
-      if (attrs.marital_status) demoData.marital_status = attrs.marital_status;
-      if (attrs.occupation) demoData.occupation = attrs.occupation;
-      
-      if (Object.keys(demoData).length > 0) {
-        if (existingDemo) {
-          await supabase
-            .from('contact_demographics')
-            .update(demoData)
-            .eq('id', existingDemo.id);
+      if (existingDemo) {
+        const { error: updateError } = await supabase
+          .from('contact_demographics')
+          .update(demoData)
+          .eq('id', existingDemo.id);
+        
+        if (updateError) {
+          console.error('Error updating demographics:', updateError);
         } else {
-          await supabase
-            .from('contact_demographics')
-            .insert({ contact_id: contactId, ...demoData });
+          console.log('Successfully updated demographics');
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from('contact_demographics')
+          .insert({ contact_id: contactId, ...demoData });
+        
+        if (insertError) {
+          console.error('Error inserting demographics:', insertError);
+        } else {
+          console.log('Successfully inserted demographics');
         }
       }
     }
