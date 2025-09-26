@@ -235,6 +235,36 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     }
   };
 
+  const refreshFlows = async () => {
+    if (!user || profileLoading || !organization) {
+      return;
+    }
+
+    try {
+      setError(null);
+      console.log("Refreshing flows...");
+      
+      const { data: existingPipelines, error: pipelinesError } = await supabase
+        .from('pipelines')
+        .select('*')
+        .eq('organization_id', organization.id);
+
+      if (pipelinesError) {
+        console.error("Error fetching pipelines:", pipelinesError);
+        throw pipelinesError;
+      }
+
+      if (existingPipelines && existingPipelines.length > 0) {
+        const flowsData = await loadFlowData(existingPipelines);
+        setFlows(flowsData);
+        console.log("Flows refreshed successfully");
+      }
+    } catch (err) {
+      console.error("Error refreshing flows:", err);
+      setError(err instanceof Error ? err.message : "Failed to refresh flows");
+    }
+  };
+
   const loadFlowData = async (pipelinesList: any[]): Promise<Record<string, Flow>> => {
     const flowsData: Record<string, Flow> = {};
 
@@ -294,36 +324,6 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     }
 
     return flowsData;
-  };
-
-  const refreshFlows = async () => {
-    if (!user || profileLoading || !organization) {
-      return;
-    }
-
-    try {
-      setError(null);
-      console.log("Refreshing flows...");
-      
-      const { data: existingPipelines, error: pipelinesError } = await supabase
-        .from('pipelines')
-        .select('*')
-        .eq('organization_id', organization.id);
-
-      if (pipelinesError) {
-        console.error("Error fetching pipelines:", pipelinesError);
-        throw pipelinesError;
-      }
-
-      if (existingPipelines && existingPipelines.length > 0) {
-        const flowsData = await loadFlowData(existingPipelines);
-        setFlows(flowsData);
-        console.log("Flows refreshed successfully");
-      }
-    } catch (err) {
-      console.error("Error refreshing flows:", err);
-      setError(err instanceof Error ? err.message : "Failed to refresh flows");
-    }
   };
 
   // Listen for sync completion events to refresh flow data
