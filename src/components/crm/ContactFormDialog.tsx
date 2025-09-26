@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +67,9 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     zipCode: "",
   });
 
+  // Normalize values coming from external sources (e.g., PCO)
+  const normalizeMaritalStatus = (value?: string) => (value ? String(value).trim().toLowerCase() : "");
+
   // Fetch organization members when dialog opens
   useEffect(() => {
     if (open && organization) {
@@ -121,7 +124,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         // Ensure all demographic fields are included
         birthday: extendedContact.birthday || "",
         occupation: extendedContact.occupation || "",
-        maritalStatus: extendedContact.maritalStatus || "",
+        maritalStatus: normalizeMaritalStatus(extendedContact.maritalStatus || ""),
         streetAddress: extendedContact.streetAddress || "",
         city: extendedContact.city || "",
         state: extendedContact.state || "",
@@ -194,6 +197,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{contact ? "Edit Contact & Demographics" : "Add New Contact"}</DialogTitle>
+          <DialogDescription>Update personal details and demographics like birthday, marital status, and address.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="space-y-2">

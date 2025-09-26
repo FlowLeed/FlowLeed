@@ -287,7 +287,7 @@ const UserProfilePage = () => {
       // Add demographic fields
       birthday: demographics?.birthday || "",
       occupation: demographics?.occupation || "",
-      maritalStatus: demographics?.marital_status || "",
+      maritalStatus: demographics?.marital_status ? String(demographics.marital_status).toLowerCase() : "",
       streetAddress: primaryAddress?.street_address || "",
       city: primaryAddress?.city || "",
       state: primaryAddress?.state || "",
