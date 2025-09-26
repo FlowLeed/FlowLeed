@@ -46,7 +46,7 @@ serve(async (req) => {
     return new Response('Invalid action', { status: 400, headers: corsHeaders });
   } catch (error) {
     console.error('Error in planning-center-lists function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -162,7 +162,7 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
 
     return new Response(JSON.stringify({ 
       success: false, 
-      error: `Connection error: ${error.message}` 
+      error: `Connection error: ${error instanceof Error ? error.message : 'Unknown error'}` 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -257,7 +257,7 @@ async function syncPlanningCenterLists(listMappings: any[], userId: string) {
       results.push({
         listId: mapping.external_list_id,
         success: false,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -338,7 +338,7 @@ async function syncSingleList(mapping: any, userId: string) {
         
         try {
           const personResponse = await fetch(
-            `https://api.planningcenteronline.com/people/v2/people/${personId}?include=emails,phone_numbers`,
+            `https://api.planningcenteronline.com/people/v2/people/${personId}?include=emails,phone_numbers,addresses,households,field_data`,
             {
               headers: {
                 'Authorization': `Basic ${auth}`,
@@ -351,10 +351,13 @@ async function syncSingleList(mapping: any, userId: string) {
             const personData = await personResponse.json();
             console.log('Person data received:', JSON.stringify(personData, null, 2));
             if (personData.data) {
-              // Merge person data with email and phone data from included
+              // Merge person data with contact info and demographic data from included
               const person = personData.data;
               const emails = personData.included?.filter((item: any) => item.type === 'Email') || [];
               const phoneNumbers = personData.included?.filter((item: any) => item.type === 'PhoneNumber') || [];
+              const addresses = personData.included?.filter((item: any) => item.type === 'Address') || [];
+              const households = personData.included?.filter((item: any) => item.type === 'Household') || [];
+              const fieldData = personData.included?.filter((item: any) => item.type === 'FieldDatum') || [];
               
               // Add email and phone data to person attributes
               const primaryEmail = emails.find((email: any) => email.attributes.primary)?.attributes.address;
@@ -362,6 +365,15 @@ async function syncSingleList(mapping: any, userId: string) {
               
               person.attributes.primary_email = primaryEmail || person.attributes.primary_email;
               person.attributes.primary_phone_number = primaryPhone || person.attributes.primary_phone_number;
+              
+              // Add demographic and address data
+              person.included_data = {
+                emails,
+                phoneNumbers,
+                addresses,
+                households,
+                fieldData
+              };
               
               console.log('Enhanced person with contact info:', JSON.stringify(person.attributes, null, 2));
               people.push(person);
@@ -444,6 +456,9 @@ async function syncSingleList(mapping: any, userId: string) {
     }
 
     if (contactId) {
+      // Sync demographic data if available
+      await syncDemographicData(contactId, person);
+      
       console.log('Adding contact to pipeline:', contactId, 'pipeline:', mapping.pipeline_id, 'stage:', mapping.stage_id);
       
       // Add to pipeline stage if not already there using maybeSingle
@@ -486,6 +501,140 @@ async function syncSingleList(mapping: any, userId: string) {
     contactsUpdated,
     totalPeople: people.length,
   };
+}
+
+// Sync demographic data to database tables
+async function syncDemographicData(contactId: string, person: any) {
+  const attrs = person.attributes;
+  const includedData = person.included_data || {};
+  
+  try {
+    // 1. Sync demographics (birthday, marital status, occupation)
+    if (attrs.birthdate || attrs.anniversary || attrs.marital_status || attrs.occupation) {
+      console.log('Syncing demographics for contact:', contactId);
+      
+      // Check if demographics record exists
+      const { data: existingDemo } = await supabase
+        .from('contact_demographics')
+        .select('id')
+        .eq('contact_id', contactId)
+        .maybeSingle();
+      
+      const demoData: any = {};
+      if (attrs.birthdate) demoData.birthday = attrs.birthdate;
+      if (attrs.marital_status) demoData.marital_status = attrs.marital_status;
+      if (attrs.occupation) demoData.occupation = attrs.occupation;
+      
+      if (Object.keys(demoData).length > 0) {
+        if (existingDemo) {
+          await supabase
+            .from('contact_demographics')
+            .update(demoData)
+            .eq('id', existingDemo.id);
+        } else {
+          await supabase
+            .from('contact_demographics')
+            .insert({ contact_id: contactId, ...demoData });
+        }
+      }
+    }
+    
+    // 2. Sync addresses
+    if (includedData.addresses && includedData.addresses.length > 0) {
+      console.log('Syncing addresses for contact:', contactId);
+      
+      // Clear existing addresses to avoid duplicates
+      await supabase
+        .from('contact_addresses')
+        .delete()
+        .eq('contact_id', contactId);
+      
+      for (const [index, address] of includedData.addresses.entries()) {
+        const addrAttrs = address.attributes;
+        const addressData = {
+          contact_id: contactId,
+          address_type: addrAttrs.location?.toLowerCase() || 'home',
+          street_address: addrAttrs.street,
+          city: addrAttrs.city,
+          state: addrAttrs.state,
+          zip_code: addrAttrs.zip,
+          country: addrAttrs.country || 'US',
+          is_primary: index === 0 // Mark first address as primary
+        };
+        
+        await supabase
+          .from('contact_addresses')
+          .insert(addressData);
+      }
+    }
+    
+    // 3. Sync family/household data  
+    if (includedData.households && includedData.households.length > 0) {
+      console.log('Syncing household data for contact:', contactId);
+      
+      // For now, we'll extract basic family info from household data
+      // This could be enhanced to sync actual family member relationships
+      for (const household of includedData.households) {
+        const householdAttrs = household.attributes;
+        if (householdAttrs.name && householdAttrs.name !== attrs.name) {
+          // Check if this family member already exists
+          const { data: existingFamily } = await supabase
+            .from('contact_family_members')
+            .select('id')
+            .eq('contact_id', contactId)
+            .eq('name', householdAttrs.name)
+            .maybeSingle();
+          
+          if (!existingFamily) {
+            await supabase
+              .from('contact_family_members')
+              .insert({
+                contact_id: contactId,
+                name: householdAttrs.name,
+                relationship: 'household_member',
+                notes: `Household: ${household.id}`
+              });
+          }
+        }
+      }
+    }
+    
+    // 4. Sync custom field data as notes
+    if (includedData.fieldData && includedData.fieldData.length > 0) {
+      console.log('Syncing custom field data for contact:', contactId);
+      
+      for (const field of includedData.fieldData) {
+        const fieldAttrs = field.attributes;
+        if (fieldAttrs.value && fieldAttrs.value.trim()) {
+          // Check if note already exists for this field
+          const noteContent = `${fieldAttrs.name || 'Custom Field'}: ${fieldAttrs.value}`;
+          const { data: existingNote } = await supabase
+            .from('contact_notes')
+            .select('id')
+            .eq('contact_id', contactId)
+            .eq('content', noteContent)
+            .eq('note_type', 'planning_center_field')
+            .maybeSingle();
+          
+          if (!existingNote) {
+            await supabase
+              .from('contact_notes')
+              .insert({
+                contact_id: contactId,
+                content: noteContent,
+                note_type: 'planning_center_field',
+                created_by_user_id: (await supabase.auth.getUser()).data.user?.id || contactId
+              });
+          }
+        }
+      }
+    }
+    
+    console.log('Successfully synced demographic data for contact:', contactId);
+  } catch (error) {
+    console.error('Error syncing demographic data for contact:', contactId, error);
+    // Continue processing other contacts even if demographic sync fails
+  }
 }
 
 // Helper function to check if enough time has passed for sync
@@ -583,7 +732,7 @@ async function autoSyncAllMappings() {
         results.push({
           listId: mapping.external_list_id,
           success: false,
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -605,7 +754,7 @@ async function autoSyncAllMappings() {
     console.error('Error in auto-sync:', error);
     return new Response(JSON.stringify({ 
       error: 'Auto-sync failed',
-      details: error.message
+      details: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
