@@ -57,7 +57,13 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             name,
             email,
             phone,
-            avatar
+            avatar,
+            pipeline_contacts(
+              pipelines(
+                name,
+                icon
+              )
+            )
           `)
           .eq('organization_id', organization.id)
           .or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
