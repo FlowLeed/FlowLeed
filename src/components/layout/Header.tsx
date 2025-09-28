@@ -44,6 +44,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useFlowContext } from "@/contexts/FlowContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
+import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 import type { LucideIcon } from "lucide-react";
 
 interface TeamMember {
@@ -88,8 +90,14 @@ export const Header: React.FC<HeaderProps> = ({
   // Edit flow dialog state
   const [showEditFlowDialog, setShowEditFlowDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [editFlowName, setEditFlowName] = useState("");
   const [editFlowDescription, setEditFlowDescription] = useState("");
+
+  // Global search keyboard shortcut
+  useGlobalSearch({ 
+    onToggle: () => setShowGlobalSearch(prev => !prev) 
+  });
   const [editFlowIcon, setEditFlowIcon] = useState<LucideIcon>(Users);
   const [editFlowSteps, setEditFlowSteps] = useState<Array<{id: string, name: string, color: string}>>([]);
 
@@ -322,7 +330,11 @@ export const Header: React.FC<HeaderProps> = ({
           <button className="p-2 rounded-full hover:bg-slate-100">
             <Bell className="h-5 w-5 text-slate-500" />
           </button>
-          <button className="p-2 rounded-full hover:bg-slate-100">
+          <button 
+            className="p-2 rounded-full hover:bg-slate-100"
+            onClick={() => setShowGlobalSearch(true)}
+            title="Search people (Ctrl+K)"
+          >
             <Search className="h-5 w-5 text-slate-500" />
           </button>
           <div className="border-l border-gray-200 h-6 mx-2" />
@@ -371,6 +383,12 @@ export const Header: React.FC<HeaderProps> = ({
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Global Search */}
+      <GlobalSearch 
+        open={showGlobalSearch} 
+        onOpenChange={setShowGlobalSearch} 
+      />
       
       {/* Edit Flow Dialog */}
       <Dialog open={showEditFlowDialog} onOpenChange={setShowEditFlowDialog}>
