@@ -144,17 +144,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
   };
 
   const highlightMatch = (text: string, query: string) => {
-    if (!query) return text;
-    const regex = new RegExp(`(${query})`, 'gi');
-    const parts = text.split(regex);
-    
-    return parts.map((part, index) => 
-      regex.test(part) ? (
-        <mark key={index} className="bg-primary/20 text-primary-foreground px-0.5 rounded">
-          {part}
-        </mark>
-      ) : part
-    );
+    return text;
   };
 
   return (
@@ -214,7 +204,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
                           <Tooltip key={index}>
                             <TooltipTrigger asChild>
                               <div>
-                                <IconComponent className="h-4 w-4 text-muted-foreground" />
+                                <IconComponent className="h-3 w-3 text-muted-foreground" />
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
