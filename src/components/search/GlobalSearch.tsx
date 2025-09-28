@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Phone, Mail, User } from "lucide-react";
+import { Search, Phone, Mail, User, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   CommandDialog,
@@ -12,9 +12,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FlowIconBadge } from "./FlowIconBadge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
+import type { LucideIcon } from 'lucide-react';
 
 interface SearchContact {
   id: string;
@@ -39,6 +40,33 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
   const [isLoading, setIsLoading] = useState(false);
   const { organization } = useProfile();
   const navigate = useNavigate();
+  
+  // Icon mapping object - same as in ContactFlowStatus
+  const iconMap: { [key: string]: LucideIcon } = {
+    'Users': Users,
+    'MessageSquare': MessageSquare,
+    'Calendar': Calendar,
+    'Settings': Settings,
+    'Heart': Heart,
+    'Star': Star,
+    'Target': Target,
+    'Zap': Zap,
+    'Shield': Shield,
+    'Globe': Globe,
+    'Briefcase': Briefcase,
+    'BookOpen': BookOpen,
+    'Music': Music,
+    'Coffee': Coffee,
+    'Camera': Camera,
+    'Gift': Gift,
+    'Flame': Flame,
+    'Sparkles': Sparkles,
+    'Check': Check,
+    'Plus': Plus,
+    'Puzzle': Puzzle,
+    'LayoutDashboard': LayoutDashboard,
+    'BarChart3': BarChart3
+  };
 
   // Debounced search effect
   useEffect(() => {
@@ -122,7 +150,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
     
     return parts.map((part, index) => 
       regex.test(part) ? (
-        <mark key={index} className="bg-yellow-200 text-yellow-900 px-0.5 rounded">
+        <mark key={index} className="bg-primary/20 text-primary-foreground px-0.5 rounded">
           {part}
         </mark>
       ) : part
@@ -177,13 +205,27 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Flow badges */}
-                  <div className="flex items-center gap-1">
-                    {contact.flows.slice(0, 3).map((flow, index) => (
-                      <FlowIconBadge key={index} flow={flow} size="sm" />
-                    ))}
+                  {/* Flow icons */}
+                  <div className="flex items-center gap-1.5">
+                    <TooltipProvider>
+                      {contact.flows.slice(0, 3).map((flow, index) => {
+                        const IconComponent = iconMap[flow.icon] || Workflow;
+                        return (
+                          <Tooltip key={index}>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <IconComponent className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{flow.name}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })}
+                    </TooltipProvider>
                     {contact.flows.length > 3 && (
-                      <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0.5 ml-1">
                         +{contact.flows.length - 3}
                       </Badge>
                     )}
