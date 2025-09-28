@@ -326,6 +326,14 @@ export const Header: React.FC<HeaderProps> = ({
       
       
       <div className="flex items-center gap-4">
+        {/* Add Button */}
+        {showAddButton && onAddClick && (
+          <Button onClick={onAddClick} className="gap-2">
+            <Plus className="h-4 w-4" />
+            {addButtonLabel}
+          </Button>
+        )}
+        
         <div className="flex items-center gap-2">
           <button className="p-2 rounded-full hover:bg-slate-100">
             <Bell className="h-5 w-5 text-slate-500" />
