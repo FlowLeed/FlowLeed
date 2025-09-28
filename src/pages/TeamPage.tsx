@@ -256,21 +256,29 @@ const TeamPage = () => {
     <div className="flex flex-col h-full">
       <Header 
         title="My Team" 
-        onAddClick={canManageMembers ? () => setIsInviteDialogOpen(true) : undefined}
-        addButtonLabel="Invite Member"
       />
       
       <div className="flex-1 overflow-auto p-6 space-y-6">
         {/* Team Members */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Team Members ({teamMembers.length})
-            </CardTitle>
-            <CardDescription>
-              Manage your organization's team members and their roles
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Team Members ({teamMembers.length})
+                </CardTitle>
+                <CardDescription>
+                  Manage your organization's team members and their roles
+                </CardDescription>
+              </div>
+              {canManageMembers && (
+                <Button onClick={() => setIsInviteDialogOpen(true)} className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Invite Member
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
