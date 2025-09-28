@@ -230,36 +230,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
                       </Badge>
                     )}
                   </div>
-
-                  {/* Quick action buttons */}
-                  <div className="flex gap-1">
-                    {contact.phone && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(`tel:${contact.phone}`, '_self');
-                        }}
-                      >
-                        <Phone className="h-3 w-3" />
-                      </Button>
-                    )}
-                    {contact.email && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(`mailto:${contact.email}`, '_self');
-                        }}
-                      >
-                        <Mail className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
                 </div>
               </CommandItem>
             ))}
