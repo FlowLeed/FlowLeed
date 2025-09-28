@@ -116,7 +116,28 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
 
       if (inviteError) throw inviteError;
 
-      toast.success(`Invitation sent to ${email}`);
+      // Send the invitation email
+      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          email: email.toLowerCase(),
+          organizationName: organization.name,
+          inviterName: profile.full_name || profile.email,
+          role: role,
+          inviteToken: token
+        }
+      });
+
+      if (emailError) {
+        console.error('Error sending invitation email:', emailError);
+        // Delete the invitation since email failed
+        await supabase
+          .from('invitations')
+          .delete()
+          .eq('token', token);
+        throw new Error('Failed to send invitation email');
+      }
+
+      toast.success(`Invitation sent to ${email}! They will receive an email with instructions to join.`);
       setEmail("");
       setRole("member");
       onInviteSent();

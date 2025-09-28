@@ -16,6 +16,7 @@ import ProfilePage from "./pages/ProfilePage";
 import TeamPage from "./pages/TeamPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import AuthPage from "./pages/AuthPage";
+import InvitePage from "./pages/InvitePage";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
           <FlowProvider>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/invite/:token" element={<InvitePage />} />
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/flows/:flowId" element={<FlowPage />} />

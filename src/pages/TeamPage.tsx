@@ -28,6 +28,7 @@ interface PendingInvitation {
   id: string;
   email: string;
   role: string;
+  token: string;
   created_at: string;
   expires_at: string;
   invited_by: {
@@ -96,7 +97,7 @@ const TeamPage = () => {
       // Fetch pending invitations - separate query to avoid relation issues
       const { data: invitationData, error: invitationsError } = await supabase
         .from('invitations')
-        .select('id, email, role, created_at, expires_at, invited_by_user_id')
+        .select('id, email, role, token, created_at, expires_at, invited_by_user_id')
         .eq('organization_id', organization.id)
         .is('accepted_at', null)
         .gt('expires_at', new Date().toISOString());
@@ -189,6 +190,33 @@ const TeamPage = () => {
     } catch (error) {
       console.error('Error cancelling invitation:', error);
       toast.error('Failed to cancel invitation');
+    }
+  };
+
+  const handleResendInvitation = async (invitation: PendingInvitation) => {
+    if (!organization || !profile) return;
+
+    try {
+      // Send the invitation email again
+      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+        body: {
+          email: invitation.email,
+          organizationName: organization.name,
+          inviterName: profile.full_name || profile.email,
+          role: invitation.role,
+          inviteToken: invitation.token
+        }
+      });
+
+      if (emailError) {
+        console.error('Error resending invitation email:', emailError);
+        throw new Error('Failed to resend invitation email');
+      }
+
+      toast.success(`Invitation resent to ${invitation.email}`);
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast.error('Failed to resend invitation');
     }
   };
 
@@ -339,14 +367,25 @@ const TeamPage = () => {
                     <div className="flex items-center gap-2">
                       {getRoleBadge(invitation.role)}
                       {canManageMembers && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleResendInvitation(invitation)}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Mail className="h-4 w-4 mr-1" />
+                            Resend
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>
