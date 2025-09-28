@@ -204,7 +204,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
                           <Tooltip key={index}>
                             <TooltipTrigger asChild>
                               <div>
-                                <IconComponent className="h-3 w-3 text-muted-foreground" />
+                                <IconComponent className="h-5 w-5 text-muted-foreground" />
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
