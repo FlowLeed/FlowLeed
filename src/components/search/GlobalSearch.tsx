@@ -144,7 +144,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
                 className="flex items-center gap-3 p-3 cursor-pointer"
               >
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={contact.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${contact.email}`} />
+                  <AvatarImage src={contact.avatar} />
                   <AvatarFallback>
                     {contact.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </AvatarFallback>
