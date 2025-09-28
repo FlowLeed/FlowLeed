@@ -57,13 +57,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             name,
             email,
             phone,
-            avatar,
-            pipeline_contacts(
-              pipelines(
-                name,
-                icon
-              )
-            )
+            avatar
           `)
           .eq('organization_id', organization.id)
           .or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
@@ -145,6 +139,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             {searchResults.map((contact) => (
               <CommandItem
                 key={contact.id}
+                value={`${contact.name} ${contact.email ?? ''} ${contact.phone ?? ''}`}
                 onSelect={() => handleSelectContact(contact.id)}
                 className="flex items-center gap-3 p-3 cursor-pointer"
               >
