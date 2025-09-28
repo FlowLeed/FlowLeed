@@ -58,8 +58,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             email,
             phone,
             avatar,
-            pipeline_contacts!inner(
-              pipelines!inner(
+            pipeline_contacts(
+              pipelines(
                 name,
                 icon
               )
