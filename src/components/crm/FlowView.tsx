@@ -401,7 +401,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
         onFilterChange={setSelectedFilter}
         contactCounts={contactCounts}
       />
-      <div className="flex-1 overflow-x-auto p-6 bg-white">
+      <div className="flex-1 overflow-x-auto p-6">
         <DragDropContext onDragEnd={handleDragEnd}>
           <div className="flex gap-4">
             {filteredFlow.stages.map((stage) => (
