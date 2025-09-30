@@ -42,50 +42,40 @@ export default function InvitePage() {
 
   const fetchInvitation = async () => {
     try {
-      const { data, error } = await supabase
-        .from('invitations')
-        .select(`
-          id,
-          email,
-          role,
-          expires_at,
-          accepted_at,
-          organization_id,
-          organizations!inner(name),
-          profiles!inner(full_name)
-        `)
-        .eq('token', token)
-        .single();
+      // Call the public edge function to get invitation details
+      const response = await fetch(`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/get-invitation-details?token=${token}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-      if (error) {
-        console.error('Error fetching invitation:', error);
+      if (!response.ok) {
+        console.error('Error fetching invitation:', response.statusText);
         setError('Invalid or expired invitation link.');
         return;
       }
 
-      if (!data) {
-        setError('Invitation not found.');
-        return;
-      }
+      const invitation = await response.json();
 
-      if (data.accepted_at) {
+      if (invitation.accepted_at) {
         setError('This invitation has already been accepted.');
         return;
       }
 
-      if (new Date(data.expires_at) < new Date()) {
+      if (new Date(invitation.expires_at) < new Date()) {
         setError('This invitation has expired.');
         return;
       }
 
       const invitationData: InvitationData = {
-        id: data.id,
-        email: data.email,
-        role: data.role,
-        organization_name: (data.organizations as any).name,
-        inviter_name: (data.profiles as any).full_name,
-        expires_at: data.expires_at,
-        accepted_at: data.accepted_at
+        id: token!, // Use token as id since we don't return the actual id from edge function
+        email: invitation.email,
+        role: invitation.role,
+        organization_name: invitation.organization_name,
+        inviter_name: invitation.inviter_name,
+        expires_at: invitation.expires_at,
+        accepted_at: invitation.accepted_at
       };
 
       setInvitation(invitationData);
