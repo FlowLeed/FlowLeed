@@ -13,8 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url);
-    const token = url.searchParams.get('token');
+    let token: string | null = null;
+
+    // Support both GET (query param) and POST (body)
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      token = url.searchParams.get('token');
+    } else if (req.method === 'POST') {
+      const body = await req.json();
+      token = body.token;
+    }
 
     if (!token) {
       return new Response(
@@ -44,7 +52,7 @@ serve(async (req) => {
         expires_at,
         accepted_at,
         organization_id,
-        organizations!inner (
+        organizations (
           id,
           name
         ),
@@ -53,7 +61,7 @@ serve(async (req) => {
         )
       `)
       .eq('token', token)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Database error:', error);
@@ -78,6 +86,8 @@ serve(async (req) => {
 
     // Return only the necessary invitation details
     const invitationDetails = {
+      id: invitation.id,
+      organization_id: invitation.organization_id,
       email: invitation.email,
       role: invitation.role,
       expires_at: invitation.expires_at,

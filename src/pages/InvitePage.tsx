@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface InvitationData {
   id: string;
+  organization_id: string;
   email: string;
   role: string;
   organization_name: string;
@@ -42,21 +43,26 @@ export default function InvitePage() {
 
   const fetchInvitation = async () => {
     try {
+      console.log('Fetching invitation with token:', token);
+      
       // Call the public edge function to get invitation details
-      const response = await fetch(`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/get-invitation-details?token=${token}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const { data: invitation, error: invokeError } = await supabase.functions.invoke('get-invitation-details', {
+        body: { token }
       });
 
-      if (!response.ok) {
-        console.error('Error fetching invitation:', response.statusText);
+      if (invokeError) {
+        console.error('Error fetching invitation:', invokeError);
         setError('Invalid or expired invitation link.');
         return;
       }
 
-      const invitation = await response.json();
+      if (!invitation) {
+        console.error('No invitation data returned');
+        setError('Invalid or expired invitation link.');
+        return;
+      }
+
+      console.log('Invitation data received:', invitation);
 
       if (invitation.accepted_at) {
         setError('This invitation has already been accepted.');
@@ -69,7 +75,8 @@ export default function InvitePage() {
       }
 
       const invitationData: InvitationData = {
-        id: token!, // Use token as id since we don't return the actual id from edge function
+        id: invitation.id,
+        organization_id: invitation.organization_id,
         email: invitation.email,
         role: invitation.role,
         organization_name: invitation.organization_name,
@@ -142,6 +149,8 @@ export default function InvitePage() {
       setAccepting(true);
       setError(null);
 
+      console.log('Accepting invitation:', invitation.id);
+      
       // Accept the invitation
       const { error: inviteError } = await supabase
         .from('invitations')
@@ -149,23 +158,23 @@ export default function InvitePage() {
         .eq('id', invitation.id);
 
       if (inviteError) {
+        console.error('Error updating invitation:', inviteError);
         throw inviteError;
       }
 
+      console.log('Adding user to organization:', invitation.organization_id);
+      
       // Add user to organization
       const { error: memberError } = await supabase
         .from('organization_members')
         .insert({
-          organization_id: (await supabase
-            .from('invitations')
-            .select('organization_id')
-            .eq('id', invitation.id)
-            .single()).data?.organization_id,
+          organization_id: invitation.organization_id,
           user_id: user.id,
           role: invitation.role
         });
 
       if (memberError) {
+        console.error('Error adding member:', memberError);
         throw memberError;
       }
 
