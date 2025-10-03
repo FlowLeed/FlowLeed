@@ -35,31 +35,28 @@ serve(async (req) => {
     }
 
     // Create Supabase client with service role key to bypass RLS
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in environment');
+      return new Response(
+        JSON.stringify({ error: 'Server misconfiguration' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     console.log('Looking up invitation with token:', token);
 
     // Fetch invitation details with organization and profile information
     const { data: invitation, error } = await supabase
       .from('invitations')
-      .select(`
-        id,
-        email,
-        role,
-        expires_at,
-        accepted_at,
-        organization_id,
-        organizations (
-          id,
-          name
-        ),
-        profiles!invitations_invited_by_user_id_fkey (
-          full_name
-        )
-      `)
+      .select('id, email, role, expires_at, accepted_at, organization_id')
       .eq('token', token)
       .maybeSingle();
 
@@ -92,8 +89,8 @@ serve(async (req) => {
       role: invitation.role,
       expires_at: invitation.expires_at,
       accepted_at: invitation.accepted_at,
-      organization_name: (invitation.organizations as any)?.name || 'Unknown Organization',
-      inviter_name: (invitation.profiles as any)?.full_name || 'Someone'
+      organization_name: 'Unknown Organization',
+      inviter_name: 'Someone'
     };
 
     console.log('Returning invitation details:', invitationDetails);

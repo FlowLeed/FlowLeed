@@ -45,44 +45,56 @@ export default function InvitePage() {
     try {
       console.log('Fetching invitation with token:', token);
       
-      // Call the public edge function to get invitation details
+      // First try via Supabase invoke (POST)
       const { data: invitation, error: invokeError } = await supabase.functions.invoke('get-invitation-details', {
         body: { token }
       });
 
-      if (invokeError) {
-        console.error('Error fetching invitation:', invokeError);
+      let invitationDataRaw: any = invitation;
+
+      if (invokeError || !invitationDataRaw) {
+        console.warn('Invoke failed or returned empty, falling back to GET fetch...', invokeError);
+        // Fallback: direct GET call (helps in environments where invoke is blocked/misconfigured)
+        const resp = await fetch(`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/get-invitation-details?token=${token}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!resp.ok) {
+          const errText = await resp.text();
+          console.error('GET fetch failed:', resp.status, errText);
+          setError('Invalid or expired invitation link.');
+          return;
+        }
+        invitationDataRaw = await resp.json();
+      }
+
+      if (!invitationDataRaw) {
+        console.error('No invitation data returned after both attempts');
         setError('Invalid or expired invitation link.');
         return;
       }
 
-      if (!invitation) {
-        console.error('No invitation data returned');
-        setError('Invalid or expired invitation link.');
-        return;
-      }
+      console.log('Invitation data received:', invitationDataRaw);
 
-      console.log('Invitation data received:', invitation);
-
-      if (invitation.accepted_at) {
+      if (invitationDataRaw.accepted_at) {
         setError('This invitation has already been accepted.');
         return;
       }
 
-      if (new Date(invitation.expires_at) < new Date()) {
+      if (new Date(invitationDataRaw.expires_at) < new Date()) {
         setError('This invitation has expired.');
         return;
       }
 
       const invitationData: InvitationData = {
-        id: invitation.id,
-        organization_id: invitation.organization_id,
-        email: invitation.email,
-        role: invitation.role,
-        organization_name: invitation.organization_name,
-        inviter_name: invitation.inviter_name,
-        expires_at: invitation.expires_at,
-        accepted_at: invitation.accepted_at
+        id: invitationDataRaw.id,
+        organization_id: invitationDataRaw.organization_id,
+        email: invitationDataRaw.email,
+        role: invitationDataRaw.role,
+        organization_name: invitationDataRaw.organization_name,
+        inviter_name: invitationDataRaw.inviter_name,
+        expires_at: invitationDataRaw.expires_at,
+        accepted_at: invitationDataRaw.accepted_at
       };
 
       setInvitation(invitationData);
