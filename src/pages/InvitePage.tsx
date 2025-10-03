@@ -43,36 +43,65 @@ export default function InvitePage() {
 
   const fetchInvitation = async () => {
     try {
-      // Extract token from URL - handle Resend link tracking redirects
-      const urlToken = token || new URL(window.location.href).pathname.split('/invite/')[1];
-      console.log('Fetching invitation with token:', urlToken);
+      // Robust token extraction - handles Resend tracking URLs, query params, etc.
+      let extractedToken = token;
+      
+      if (!extractedToken) {
+        const url = window.location.href;
+        console.log('No param token, extracting from URL:', url);
+        
+        // Extract UUID from URL (handles /invite/TOKEN/clicks/... or /invite/TOKEN?...)
+        const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+        const match = url.match(uuidRegex);
+        
+        if (match) {
+          extractedToken = match[0];
+          console.log('Extracted token from URL:', extractedToken);
+        } else {
+          console.error('No valid UUID token found in URL');
+          setError('Invalid invitation link - no token found.');
+          setLoading(false);
+          return;
+        }
+      } else {
+        console.log('Using token from route param:', extractedToken);
+      }
       
       // First try via Supabase invoke (POST)
+      console.log('Calling get-invitation-details with token:', extractedToken);
       const { data: invitation, error: invokeError } = await supabase.functions.invoke('get-invitation-details', {
-        body: { token: urlToken }
+        body: { token: extractedToken }
       });
+
+      console.log('Invoke result:', { data: invitation, error: invokeError });
 
       let invitationDataRaw: any = invitation;
 
       if (invokeError || !invitationDataRaw) {
         console.warn('Invoke failed or returned empty, falling back to GET fetch...', invokeError);
         // Fallback: direct GET call (helps in environments where invoke is blocked/misconfigured)
-        const resp = await fetch(`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/get-invitation-details?token=${urlToken}`, {
+        const resp = await fetch(`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/get-invitation-details?token=${extractedToken}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
+        
+        console.log('GET fetch response:', resp.status, resp.statusText);
+        
         if (!resp.ok) {
           const errText = await resp.text();
           console.error('GET fetch failed:', resp.status, errText);
           setError('Invalid or expired invitation link.');
+          setLoading(false);
           return;
         }
         invitationDataRaw = await resp.json();
+        console.log('GET fetch data:', invitationDataRaw);
       }
 
       if (!invitationDataRaw) {
         console.error('No invitation data returned after both attempts');
         setError('Invalid or expired invitation link.');
+        setLoading(false);
         return;
       }
 
@@ -231,6 +260,15 @@ export default function InvitePage() {
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
+            
+            {import.meta.env.DEV && (
+              <div className="mt-4 p-3 bg-gray-100 rounded-md text-xs font-mono space-y-1">
+                <div className="font-semibold mb-2 text-gray-700">Debug Info:</div>
+                <div className="text-gray-600">Token (param): {token || 'none'}</div>
+                <div className="text-gray-600">Full URL: {window.location.href}</div>
+              </div>
+            )}
+            
             <Button 
               className="w-full mt-4" 
               onClick={() => navigate('/')}
