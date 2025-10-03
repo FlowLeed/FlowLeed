@@ -43,11 +43,13 @@ export default function InvitePage() {
 
   const fetchInvitation = async () => {
     try {
-      console.log('Fetching invitation with token:', token);
+      // Extract token from URL - handle Resend link tracking redirects
+      const urlToken = token || new URL(window.location.href).pathname.split('/invite/')[1];
+      console.log('Fetching invitation with token:', urlToken);
       
       // First try via Supabase invoke (POST)
       const { data: invitation, error: invokeError } = await supabase.functions.invoke('get-invitation-details', {
-        body: { token }
+        body: { token: urlToken }
       });
 
       let invitationDataRaw: any = invitation;
@@ -55,7 +57,7 @@ export default function InvitePage() {
       if (invokeError || !invitationDataRaw) {
         console.warn('Invoke failed or returned empty, falling back to GET fetch...', invokeError);
         // Fallback: direct GET call (helps in environments where invoke is blocked/misconfigured)
-        const resp = await fetch(`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/get-invitation-details?token=${token}`, {
+        const resp = await fetch(`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/get-invitation-details?token=${urlToken}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
