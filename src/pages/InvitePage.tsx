@@ -158,17 +158,46 @@ export default function InvitePage() {
       setError(null);
 
       if (authMode === 'signup') {
-        const { error } = await signUp(email, password, fullName, invitation.organization_name);
-        
+        // Use the edge function to create user without email confirmation
+        const { data, error } = await supabase.functions.invoke('create-invited-user', {
+          body: {
+            token,
+            email,
+            password,
+            fullName: fullName || email.split('@')[0]
+          }
+        });
+
         if (error) {
           setError(error.message);
           return;
         }
 
+        if (data?.error) {
+          setError(data.error);
+          return;
+        }
+
+        if (data?.requiresSignIn) {
+          toast({
+            title: "Account created",
+            description: "Please sign in to continue.",
+          });
+          setAuthMode('signin');
+          return;
+        }
+
+        // Success! User created and invitation accepted
         toast({
-          title: "Account created",
-          description: "Please check your email to verify your account, then return to accept the invitation.",
+          title: "Welcome!",
+          description: "Your account has been created and you've joined the organization.",
         });
+        
+        // Refresh the session
+        await supabase.auth.refreshSession();
+        
+        // Redirect to dashboard
+        navigate('/');
       } else {
         const { error } = await signIn(email, password);
         
@@ -176,6 +205,9 @@ export default function InvitePage() {
           setError(error.message);
           return;
         }
+
+        // After successful sign in, accept the invitation
+        await acceptInvitation();
       }
     } catch (error) {
       console.error('Auth error:', error);
