@@ -47,94 +47,31 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
 
     try {
       setLoading(true);
+      
+      console.log('Creating invitation via edge function:', {
+        email: email.toLowerCase(),
+        role,
+        organizationId: organization.id
+      });
 
-      // Check if user is already a member
-      const { data: existingMember, error: memberCheckError } = await supabase
-        .from('organization_members')
-        .select('id')
-        .eq('organization_id', organization.id)
-        .eq('user_id', profile.user_id);
-
-      if (memberCheckError) throw memberCheckError;
-
-      // Check if user already has a profile with this email
-      const { data: existingProfile, error: profileCheckError } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('email', email.toLowerCase())
-        .maybeSingle();
-
-      if (profileCheckError) throw profileCheckError;
-
-      if (existingProfile) {
-        // Check if this user is already a member of the organization
-        const { data: existingOrgMember, error: orgMemberError } = await supabase
-          .from('organization_members')
-          .select('id')
-          .eq('organization_id', organization.id)
-          .eq('user_id', existingProfile.user_id)
-          .maybeSingle();
-
-        if (orgMemberError) throw orgMemberError;
-
-        if (existingOrgMember) {
-          toast.error("This user is already a member of your organization");
-          return;
-        }
-      }
-
-      // Check if there's already a pending invitation
-      const { data: existingInvitation, error: invitationCheckError } = await supabase
-        .from('invitations')
-        .select('id')
-        .eq('organization_id', organization.id)
-        .eq('email', email.toLowerCase())
-        .is('accepted_at', null)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
-
-      if (invitationCheckError) throw invitationCheckError;
-
-      if (existingInvitation) {
-        toast.error("There's already a pending invitation for this email");
-        return;
-      }
-
-      // Generate a secure token for the invitation
-      const token = crypto.randomUUID();
-
-      // Create the invitation
-      const { error: inviteError } = await supabase
-        .from('invitations')
-        .insert({
-          organization_id: organization.id,
-          email: email.toLowerCase(),
-          role: role,
-          invited_by_user_id: profile.user_id,
-          token: token
-        });
-
-      if (inviteError) throw inviteError;
-
-      // Send the invitation email
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+      // Call the atomic create-invitation edge function
+      const { data, error } = await supabase.functions.invoke('create-invitation', {
         body: {
           email: email.toLowerCase(),
-          organizationName: organization.name,
-          inviterName: profile.full_name || profile.email,
           role: role,
-          inviteToken: token
+          organizationId: organization.id
         }
       });
 
-      if (emailError) {
-        console.error('Error sending invitation email:', emailError);
-        // Delete the invitation since email failed
-        await supabase
-          .from('invitations')
-          .delete()
-          .eq('token', token);
-        throw new Error('Failed to send invitation email');
+      console.log('Edge function response:', { data, error });
+
+      if (error) {
+        console.error('Error from create-invitation function:', error);
+        throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to create invitation');
       }
 
       toast.success(`Invitation sent to ${email}! They will receive an email with instructions to join.`);
@@ -142,9 +79,10 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
       setRole("member");
       onInviteSent();
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending invitation:', error);
-      toast.error('Failed to send invitation');
+      const errorMessage = error?.message || error?.error || 'Failed to send invitation';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

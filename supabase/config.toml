@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.get-invitation-details]
 verify_jwt = false
+
+[functions.create-invitation]
+verify_jwt = true
