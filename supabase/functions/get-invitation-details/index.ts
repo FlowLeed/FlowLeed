@@ -56,7 +56,7 @@ serve(async (req) => {
     // Fetch invitation details with organization and profile information
     const { data: invitation, error } = await supabase
       .from('invitations')
-      .select('id, email, role, expires_at, accepted_at, organization_id')
+      .select('id, email, role, expires_at, accepted_at, organization_id, organizations(name), profiles!invitations_invited_by_user_id_fkey(full_name)')
       .eq('token', token)
       .maybeSingle();
 
@@ -89,8 +89,8 @@ serve(async (req) => {
       role: invitation.role,
       expires_at: invitation.expires_at,
       accepted_at: invitation.accepted_at,
-      organization_name: 'Unknown Organization',
-      inviter_name: 'Someone'
+      organization_name: invitation.organizations?.name || 'Unknown Organization',
+      inviter_name: invitation.profiles?.full_name || 'Someone'
     };
 
     console.log('Returning invitation details:', invitationDetails);
