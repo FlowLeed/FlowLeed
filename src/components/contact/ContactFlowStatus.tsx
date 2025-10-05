@@ -152,38 +152,36 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
   };
 
   const fetchOrganizationMembers = async () => {
-    if (!organization) return;
+    if (!selectedFlowId) return;
 
     setLoadingMembers(true);
     try {
-      // First get organization members
-      const { data: members, error: membersError } = await supabase
-        .from('organization_members')
-        .select('user_id')
-        .eq('organization_id', organization.id);
+      // Fetch flow team members instead of organization members
+      const flow = flows.find(f => f.id === selectedFlowId);
+      if (!flow) return;
 
-      if (membersError) throw membersError;
+      const { data, error } = await supabase
+        .from('pipeline_team_members')
+        .select(`
+          user_id,
+          profiles:user_id (
+            full_name,
+            email,
+            avatar_url
+          )
+        `)
+        .eq('pipeline_id', flow.pipeline.id);
 
-      if (members && members.length > 0) {
-        // Then get profiles for these users
-        const userIds = members.map(m => m.user_id);
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, email, avatar_url')
-          .in('user_id', userIds);
+      if (error) throw error;
 
-        if (profilesError) throw profilesError;
+      const members: OrganizationMember[] = data.map((m: any) => ({
+        user_id: m.user_id,
+        profiles: m.profiles
+      })).filter(member => member.profiles !== null);
 
-        // Combine the data
-        const combinedData: OrganizationMember[] = members.map(member => ({
-          user_id: member.user_id,
-          profiles: profiles?.find(p => p.user_id === member.user_id) || null
-        })).filter(member => member.profiles !== null);
-
-        setOrganizationMembers(combinedData);
-      }
+      setOrganizationMembers(members);
     } catch (error) {
-      console.error('Error fetching organization members:', error);
+      console.error('Error fetching flow team members:', error);
     } finally {
       setLoadingMembers(false);
     }

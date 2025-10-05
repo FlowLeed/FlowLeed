@@ -28,6 +28,7 @@ interface ContactFormDialogProps {
   onOpenChange: (open: boolean) => void;
   contact: Contact | null;
   onSave: (contact: Contact) => void;
+  flowId?: string; // Optional flow ID to filter team members
 }
 
 export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
@@ -35,6 +36,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   onOpenChange,
   contact,
   onSave,
+  flowId,
 }) => {
   const { profile, organization } = useProfile();
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
@@ -70,12 +72,47 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   // Normalize values coming from external sources (e.g., PCO)
   const normalizeMaritalStatus = (value?: string) => (value ? String(value).trim().toLowerCase() : "");
 
-  // Fetch organization members when dialog opens
+  // Fetch flow team members or organization members when dialog opens
   useEffect(() => {
-    if (open && organization) {
-      fetchOrganizationMembers();
+    if (open) {
+      if (flowId) {
+        fetchFlowTeamMembers();
+      } else if (organization) {
+        fetchOrganizationMembers();
+      }
     }
-  }, [open, organization]);
+  }, [open, flowId, organization]);
+
+  const fetchFlowTeamMembers = async () => {
+    if (!flowId) return;
+
+    setLoadingMembers(true);
+    try {
+      const { data, error } = await supabase
+        .from('pipeline_team_members')
+        .select(`
+          user_id,
+          profiles:user_id (
+            full_name,
+            email
+          )
+        `)
+        .eq('pipeline_id', flowId);
+
+      if (error) throw error;
+
+      const members: OrganizationMember[] = data.map((m: any) => ({
+        user_id: m.user_id,
+        profiles: m.profiles
+      }));
+
+      setOrganizationMembers(members);
+    } catch (error) {
+      console.error('Error fetching flow team members:', error);
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
 
   const fetchOrganizationMembers = async () => {
     if (!organization) return;

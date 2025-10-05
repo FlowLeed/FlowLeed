@@ -738,6 +738,41 @@ export type Database = {
           },
         ]
       }
+      pipeline_team_members: {
+        Row: {
+          created_at: string
+          id: string
+          pipeline_id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pipeline_id: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pipeline_id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_team_members_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipelines: {
         Row: {
           created_at: string
@@ -803,9 +838,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_flow_role: {
+        Args: { _pipeline_id: string; _user_id: string }
+        Returns: string
+      }
       get_user_organization_role: {
         Args: { _organization_id: string; _user_id: string }
         Returns: string
+      }
+      is_flow_team_member: {
+        Args: { _pipeline_id: string; _user_id: string }
+        Returns: boolean
       }
       is_user_in_organization: {
         Args: { _organization_id: string; _user_id: string }

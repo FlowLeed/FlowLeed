@@ -2,12 +2,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
 import { ContactFormDialog } from "./ContactFormDialog";
+import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
 
 interface TeamMember {
   id: string;
@@ -26,56 +28,23 @@ export const FlowView: React.FC<FlowViewProps> = ({
   onFlowChange 
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+  
+  // Use flow team members instead of organization members
+  const { teamMembers: flowTeamMembers, loading: teamMembersLoading } = useFlowTeamMembers(flow.id);
+  
+  const teamMembers: TeamMember[] = flowTeamMembers.map(m => ({
+    id: m.user_id,
+    name: m.full_name || m.email,
+    email: m.email,
+    avatar: m.avatar_url || undefined,
+  }));
 
-  // Fetch team members when component mounts
-  useEffect(() => {
-    const fetchTeamMembers = async () => {
-      if (!organization) return;
-
-      try {
-        // First get organization members
-        const { data: organizationMembers, error: membersError } = await supabase
-          .from('organization_members')
-          .select('user_id')
-          .eq('organization_id', organization.id);
-
-        if (membersError) throw membersError;
-
-        if (!organizationMembers || organizationMembers.length === 0) {
-          setTeamMembers([]);
-          return;
-        }
-
-        // Then get profiles for those users
-        const userIds = organizationMembers.map(member => member.user_id);
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, email, avatar_url')
-          .in('user_id', userIds);
-
-        if (profilesError) throw profilesError;
-
-        const members: TeamMember[] = profiles?.map(profile => ({
-          id: profile.user_id,
-          name: profile.full_name || profile.email || 'Unknown User',
-          email: profile.email,
-          avatar: profile.avatar_url || undefined
-        })) || [];
-
-        setTeamMembers(members);
-      } catch (error) {
-        console.error('Error fetching team members:', error);
-      }
-    };
-
-    fetchTeamMembers();
-  }, [organization]);
 
   // Filter contacts based on selected filter
   const filteredFlow = useMemo(() => {
@@ -396,6 +365,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
           setCurrentContact(null);
           setIsFormOpen(true);
         }}
+        onSettingsClick={() => setIsSettingsOpen(true)}
         teamMembers={teamMembers}
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}
@@ -423,6 +393,16 @@ export const FlowView: React.FC<FlowViewProps> = ({
           onOpenChange={setIsFormOpen}
           contact={currentContact}
           onSave={handleSaveContact}
+          flowId={flow.id}
+        />
+      )}
+      {isSettingsOpen && organization && (
+        <FlowSettingsDialog
+          open={isSettingsOpen}
+          onOpenChange={setIsSettingsOpen}
+          flowId={flow.id}
+          flowName={flow.name}
+          organizationId={organization.id}
         />
       )}
     </div>

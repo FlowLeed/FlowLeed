@@ -59,6 +59,7 @@ interface HeaderProps {
   title: string;
   showAddButton?: boolean;
   onAddClick?: () => void;
+  onSettingsClick?: () => void;
   addButtonLabel?: string;
   teamMembers?: TeamMember[];
   selectedFilter?: string | null;
@@ -74,6 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
   title,
   showAddButton = true,
   onAddClick,
+  onSettingsClick,
   addButtonLabel = "New Person",
   teamMembers = [],
   selectedFilter = null,
@@ -309,9 +311,16 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-3">
         <FlowIcon className="h-6 w-6 text-purple-500" />
         <div className="text-xl font-semibold">{title}</div>
-        <Button variant="ghost" size="sm" className="ml-2" onClick={openEditDialog}>
-          <Settings2 className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={openEditDialog}>
+            <Settings2 className="h-4 w-4" />
+          </Button>
+          {onSettingsClick && (
+            <Button variant="ghost" size="sm" onClick={onSettingsClick}>
+              <Users className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
         
         {/* Assignee Filters */}
         {teamMembers.length > 0 && contactCounts && onFilterChange && (
