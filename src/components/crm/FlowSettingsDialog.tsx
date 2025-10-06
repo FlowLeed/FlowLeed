@@ -62,7 +62,7 @@ export const FlowSettingsDialog = ({
         id,
         user_id,
         role,
-        profiles!pipeline_team_members_user_id_fkey (
+        profiles (
           full_name,
           email,
           avatar_url
