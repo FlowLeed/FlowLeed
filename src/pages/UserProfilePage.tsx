@@ -301,6 +301,8 @@ const UserProfilePage = () => {
 
       // Refresh data
       queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
+      // Notify flows to refresh
+      window.dispatchEvent(new Event('flow-assignment-updated'));
       setShowReassignDialog(false);
       toast({ title: "Assignment updated successfully" });
     } catch (error) {

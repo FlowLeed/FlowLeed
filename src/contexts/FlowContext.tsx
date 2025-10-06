@@ -62,8 +62,8 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
       .map(pc => {
         const contact = pc.contacts;
         const tags = contactTags.filter(ct => ct.contact_id === contact.id);
-        const assignedProfile = contact.assigned_to_user_id 
-          ? profiles.find(p => p.user_id === contact.assigned_to_user_id)
+        const assignedProfile = pc.assigned_to_user_id 
+          ? profiles.find(p => p.user_id === pc.assigned_to_user_id)
           : undefined;
         return convertDbContactToFrontend(contact, tags, assignedProfile, pc);
       })
@@ -295,7 +295,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
       // Load profiles for assigned users
       const assignedUserIds = flowContacts
-        ?.map(pc => pc.contacts?.assigned_to_user_id)
+        ?.map(pc => pc.assigned_to_user_id)
         .filter(id => id) || [];
       
       const { data: profiles, error: profilesError } = assignedUserIds.length > 0 
@@ -321,15 +321,23 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     return flowsData;
   };
 
-  // Listen for sync completion events to refresh flow data
+  // Listen for events to refresh flow data
   useEffect(() => {
-    const handleSyncComplete = () => {
-      console.log("Sync completed, refreshing flows...");
+    const refresh = (label: string) => {
+      console.log(`${label} event, refreshing flows...`);
       refreshFlows();
     };
 
-    window.addEventListener('pco-sync-complete', handleSyncComplete);
-    return () => window.removeEventListener('pco-sync-complete', handleSyncComplete);
+    const onSync = () => refresh('Sync completed');
+    const onAssignment = () => refresh('Assignment updated');
+
+    window.addEventListener('pco-sync-complete', onSync);
+    window.addEventListener('flow-assignment-updated', onAssignment);
+
+    return () => {
+      window.removeEventListener('pco-sync-complete', onSync);
+      window.removeEventListener('flow-assignment-updated', onAssignment);
+    };
   }, [user, profileLoading]);
 
   const updateFlow = async (flowId: string, flow: Flow) => {

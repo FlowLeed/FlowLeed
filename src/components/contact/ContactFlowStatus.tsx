@@ -201,6 +201,8 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
 
       // Refresh flow assignments
       await fetchFlowAssignments();
+      // Notify flows to refresh
+      window.dispatchEvent(new Event('flow-assignment-updated'));
       setShowReassignDialog(false);
       setSelectedFlowId(null);
       toast({ title: "Flow assignment updated successfully" });
