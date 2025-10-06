@@ -1,6 +1,6 @@
-
 export type ContactStatus = 'active' | 'inactive' | 'pending';
 export type Tag = 'active' | 'partner' | 'location' | 'florida';
+export type FlowRole = 'lead' | 'manager' | 'contributor';
 
 export interface Contact {
   id: string;

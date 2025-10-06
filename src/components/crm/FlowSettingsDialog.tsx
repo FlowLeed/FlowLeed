@@ -6,12 +6,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, X, Crown, Shield, User } from "lucide-react";
+import { UserPlus, X, Star, Wrench, User } from "lucide-react";
 
 interface FlowTeamMember {
   id: string;
   user_id: string;
-  role: 'owner' | 'admin' | 'member';
+  role: 'lead' | 'manager' | 'contributor';
   profiles: {
     full_name: string | null;
     email: string;
@@ -44,7 +44,7 @@ export const FlowSettingsDialog = ({
   const [teamMembers, setTeamMembers] = useState<FlowTeamMember[]>([]);
   const [orgMembers, setOrgMembers] = useState<OrganizationMember[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedRole, setSelectedRole] = useState<'member' | 'admin'>('member');
+  const [selectedRole, setSelectedRole] = useState<'contributor' | 'manager'>('contributor');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -140,7 +140,7 @@ export const FlowSettingsDialog = ({
       });
       fetchTeamMembers();
       setSelectedUserId("");
-      setSelectedRole('member');
+      setSelectedRole('contributor');
     }
     setLoading(false);
   };
@@ -193,10 +193,10 @@ export const FlowSettingsDialog = ({
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case 'owner':
-        return <Crown className="h-4 w-4" />;
-      case 'admin':
-        return <Shield className="h-4 w-4" />;
+      case 'lead':
+        return <Star className="h-4 w-4" />;
+      case 'manager':
+        return <Wrench className="h-4 w-4" />;
       default:
         return <User className="h-4 w-4" />;
     }
@@ -204,9 +204,9 @@ export const FlowSettingsDialog = ({
 
   const getRoleBadgeVariant = (role: string): "default" | "secondary" | "outline" => {
     switch (role) {
-      case 'owner':
+      case 'lead':
         return 'default';
-      case 'admin':
+      case 'manager':
         return 'secondary';
       default:
         return 'outline';
@@ -242,13 +242,13 @@ export const FlowSettingsDialog = ({
                 </SelectContent>
               </Select>
 
-              <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as 'member' | 'admin')}>
+              <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as 'contributor' | 'manager')}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">Member</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="contributor">Contributor</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -294,7 +294,7 @@ export const FlowSettingsDialog = ({
                     <Select
                       value={member.role}
                       onValueChange={(v) => handleChangeRole(member.id, v)}
-                      disabled={member.role === 'owner' || loading}
+                      disabled={member.role === 'lead' || loading}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue>
@@ -305,13 +305,13 @@ export const FlowSettingsDialog = ({
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="owner" disabled>Owner</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="member">Member</SelectItem>
+                        <SelectItem value="lead" disabled>Lead</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="contributor">Contributor</SelectItem>
                       </SelectContent>
                     </Select>
 
-                    {member.role !== 'owner' && (
+                    {member.role !== 'lead' && (
                       <Button
                         variant="ghost"
                         size="icon"
