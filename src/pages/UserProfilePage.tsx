@@ -187,21 +187,34 @@ const UserProfilePage = () => {
     const fetchTeamMembers = async () => {
       if (!showReassignDialog || !pipelineId) return;
 
-      const { data } = await supabase
+      // First fetch team member user IDs
+      const { data: teamData } = await supabase
         .from('pipeline_team_members')
-        .select(`
-          user_id,
-          profiles:user_id (
-            full_name,
-            email,
-            avatar_url
-          )
-        `)
+        .select('user_id, role')
         .eq('pipeline_id', pipelineId);
 
-      if (data) {
-        setPipelineTeamMembers(data.filter((m: any) => m.profiles !== null));
+      if (!teamData || teamData.length === 0) {
+        setPipelineTeamMembers([]);
+        return;
       }
+
+      // Then fetch their profiles
+      const userIds = teamData.map(m => m.user_id);
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email, avatar_url')
+        .in('user_id', userIds);
+
+      // Combine the data
+      const members = teamData.map(tm => {
+        const profile = profilesData?.find(p => p.user_id === tm.user_id);
+        return {
+          user_id: tm.user_id,
+          profiles: profile || null
+        };
+      }).filter(m => m.profiles !== null);
+
+      setPipelineTeamMembers(members);
     };
 
     fetchTeamMembers();
