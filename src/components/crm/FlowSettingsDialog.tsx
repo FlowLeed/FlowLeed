@@ -12,11 +12,9 @@ interface FlowTeamMember {
   id: string;
   user_id: string;
   role: 'lead' | 'manager' | 'contributor';
-  profiles: {
-    full_name: string | null;
-    email: string;
-    avatar_url: string | null;
-  };
+  full_name: string | null;
+  email: string;
+  avatar_url: string | null;
 }
 
 interface OrganizationMember {
@@ -56,63 +54,102 @@ export const FlowSettingsDialog = ({
   }, [open, flowId]);
 
   const fetchTeamMembers = async () => {
-    const { data, error } = await supabase
-      .from("pipeline_team_members")
-      .select(`
-        id,
-        user_id,
-        role,
-        profiles (
-          full_name,
-          email,
-          avatar_url
-        )
-      `)
-      .eq("pipeline_id", flowId)
-      .order("role", { ascending: true });
+    setLoading(true);
+    try {
+      // Step 1: Fetch pipeline team members
+      const { data: teamData, error: teamError } = await supabase
+        .from("pipeline_team_members")
+        .select("id, user_id, role")
+        .eq("pipeline_id", flowId)
+        .order("role", { ascending: true });
 
-    if (error) {
+      if (teamError) throw teamError;
+
+      if (!teamData || teamData.length === 0) {
+        setTeamMembers([]);
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Fetch profiles separately
+      const userIds = teamData.map(m => m.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email, avatar_url")
+        .in("user_id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Step 3: Combine the data
+      const members = teamData.map((m) => {
+        const profile = profilesData?.find(p => p.user_id === m.user_id);
+        return {
+          id: m.id,
+          user_id: m.user_id,
+          role: m.role as 'lead' | 'manager' | 'contributor',
+          full_name: profile?.full_name || null,
+          email: profile?.email || "",
+          avatar_url: profile?.avatar_url || null,
+        };
+      });
+
+      setTeamMembers(members);
+    } catch (error) {
+      console.error("Error fetching team members:", error);
       toast({
         title: "Error",
         description: "Failed to load team members",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    setTeamMembers(data as any);
   };
 
   const fetchOrgMembers = async () => {
-    const { data, error } = await supabase
-      .from("organization_members")
-      .select(`
-        user_id,
-        profiles:user_id (
-          full_name,
-          email,
-          avatar_url
-        )
-      `)
-      .eq("organization_id", organizationId);
+    try {
+      // Step 1: Fetch organization members
+      const { data: orgData, error: orgError } = await supabase
+        .from("organization_members")
+        .select("user_id")
+        .eq("organization_id", organizationId);
 
-    if (error) {
+      if (orgError) throw orgError;
+
+      if (!orgData || orgData.length === 0) {
+        setOrgMembers([]);
+        return;
+      }
+
+      // Step 2: Fetch profiles separately
+      const userIds = orgData.map(m => m.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email, avatar_url")
+        .in("user_id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Step 3: Combine the data
+      const members = orgData.map((m) => {
+        const profile = profilesData?.find(p => p.user_id === m.user_id);
+        return {
+          user_id: m.user_id,
+          full_name: profile?.full_name || null,
+          email: profile?.email || "",
+          avatar_url: profile?.avatar_url || null,
+        };
+      });
+
+      setOrgMembers(members);
+    } catch (error) {
+      console.error("Error fetching organization members:", error);
       toast({
         title: "Error",
         description: "Failed to load organization members",
         variant: "destructive",
       });
-      return;
     }
-
-    const members = data.map((m: any) => ({
-      user_id: m.user_id,
-      full_name: m.profiles?.full_name,
-      email: m.profiles?.email,
-      avatar_url: m.profiles?.avatar_url,
-    }));
-
-    setOrgMembers(members);
   };
 
   const handleAddMember = async () => {
@@ -273,19 +310,19 @@ export const FlowSettingsDialog = ({
                 >
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={member.profiles.avatar_url || undefined} />
+                      <AvatarImage src={member.avatar_url || undefined} />
                       <AvatarFallback>
-                        {(member.profiles.full_name || member.profiles.email)
+                        {(member.full_name || member.email)
                           .charAt(0)
                           .toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">
-                        {member.profiles.full_name || "Unknown"}
+                        {member.full_name || "Unknown"}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {member.profiles.email}
+                        {member.email}
                       </p>
                     </div>
                   </div>
