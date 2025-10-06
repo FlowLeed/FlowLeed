@@ -97,11 +97,10 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
         console.log("Loading flows for organization:", organization.id);
 
-        // Check if organization has any pipelines (database table name stays the same)
+        // Check if user has access to any pipelines (RLS will filter based on team membership)
         const { data: existingPipelines, error: pipelinesError } = await supabase
           .from('pipelines')
-          .select('*')
-          .eq('organization_id', organization.id);
+          .select('*');
 
         if (pipelinesError) {
           console.error("Error fetching pipelines:", pipelinesError);
@@ -117,8 +116,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
           // Reload after creating defaults
           const { data: newPipelines, error: newError } = await supabase
             .from('pipelines')
-            .select('*')
-            .eq('organization_id', organization.id);
+            .select('*');
           
           if (newError) throw newError;
           const flowsData = await loadFlowData(newPipelines || []);
