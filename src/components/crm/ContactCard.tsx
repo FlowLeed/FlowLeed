@@ -21,11 +21,13 @@ interface ContactCardProps {
   contact: Contact;
   onEdit?: (contact: Contact) => void;
   onDelete?: (contact: Contact) => void;
+  pipelineId?: string;
 }
 export const ContactCard: React.FC<ContactCardProps> = ({
   contact,
   onEdit,
-  onDelete
+  onDelete,
+  pipelineId
 }) => {
   const {
     name,
@@ -40,7 +42,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
   return <div className="contact-card bg-white p-3 border border-gray-200 mb-3 hover:border-blue-300 transition-all duration-200 rounded-xl overflow-hidden max-w-full">
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-2 items-center min-w-0 flex-1">
-          <Link to={`/contacts/${contact.id}`} className="flex-shrink-0">
+          <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="flex-shrink-0">
             <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all">
               {avatar ? <img src={avatar} alt={name} className="rounded-full" /> : <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
                   {name.charAt(0)}
@@ -48,7 +50,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             </Avatar>
           </Link>
           <div className="min-w-0 flex-1">
-            <Link to={`/contacts/${contact.id}`} className="hover:text-blue-600 transition-colors">
+            <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="hover:text-blue-600 transition-colors">
               <h4 className="font-medium text-sm cursor-pointer truncate" title={name}>{name}</h4>
             </Link>
             <div className="flex items-center gap-1 text-xs text-gray-500">

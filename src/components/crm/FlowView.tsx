@@ -382,6 +382,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
                 onEditContact={handleEditContact}
                 onDeleteContact={handleDeleteContact}
                 onUpdateStage={handleUpdateStage}
+                pipelineId={flow.id}
               />
             ))}
           </div>

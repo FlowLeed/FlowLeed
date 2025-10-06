@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow } from "lucide-react";
 
 import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
 import { InteractionTimeline } from "@/components/contact/InteractionTimeline";
@@ -23,10 +25,17 @@ import { useAuth } from "@/hooks/useAuth";
 
 const UserProfilePage = () => {
   const { contactId } = useParams<{ contactId: string }>();
+  const [searchParams] = useSearchParams();
+  const pipelineId = searchParams.get('pipelineId');
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [showReassignDialog, setShowReassignDialog] = useState(false);
+  const [assignedUser, setAssignedUser] = useState<any>(null);
+  const [currentFlow, setCurrentFlow] = useState<any>(null);
+  const [pipelineTeamMembers, setPipelineTeamMembers] = useState<any[]>([]);
+  const [reassigning, setReassigning] = useState(false);
 
   // Fetch comprehensive contact data
   const { data: contactData, isLoading, error } = useQuery({
@@ -141,6 +150,63 @@ const UserProfilePage = () => {
     enabled: !!contactId,
   });
 
+  // Fetch assignment for the current pipeline if pipelineId is provided
+  useEffect(() => {
+    const fetchCurrentFlowAssignment = async () => {
+      if (!pipelineId || !contactData?.flows) return;
+
+      const flow = contactData.flows.find((f: any) => f.pipeline.id === pipelineId);
+      if (!flow) return;
+
+      setCurrentFlow(flow);
+
+      // Fetch assigned user if exists
+      if (flow.assignedToUserId) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email, avatar_url')
+          .eq('user_id', flow.assignedToUserId)
+          .single();
+
+        if (profileData) {
+          setAssignedUser({
+            user_id: profileData.user_id,
+            profiles: profileData
+          });
+        }
+      } else {
+        setAssignedUser(null);
+      }
+    };
+
+    fetchCurrentFlowAssignment();
+  }, [pipelineId, contactData]);
+
+  // Fetch pipeline team members when reassign dialog opens
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      if (!showReassignDialog || !pipelineId) return;
+
+      const { data } = await supabase
+        .from('pipeline_team_members')
+        .select(`
+          user_id,
+          profiles:user_id (
+            full_name,
+            email,
+            avatar_url
+          )
+        `)
+        .eq('pipeline_id', pipelineId);
+
+      if (data) {
+        setPipelineTeamMembers(data.filter((m: any) => m.profiles !== null));
+      }
+    };
+
+    fetchTeamMembers();
+  }, [showReassignDialog, pipelineId]);
+
   // Mutations for adding data
   const addNoteMutation = useMutation({
     mutationFn: async ({ content, noteType, isPrivate }: { content: string; noteType: string; isPrivate: boolean }) => {
@@ -196,6 +262,41 @@ const UserProfilePage = () => {
       toast({ title: "Prayer request marked as answered" });
     }
   });
+
+  // Handle reassignment
+  const handleReassign = async (newUserId: string) => {
+    if (!currentFlow) return;
+
+    setReassigning(true);
+    try {
+      const { error } = await supabase
+        .from('pipeline_contacts')
+        .update({ assigned_to_user_id: newUserId === 'unassigned' ? null : newUserId })
+        .eq('id', currentFlow.id);
+
+      if (error) throw error;
+
+      // Update local state
+      if (newUserId === 'unassigned') {
+        setAssignedUser(null);
+      } else {
+        const member = pipelineTeamMembers.find(m => m.user_id === newUserId);
+        if (member) {
+          setAssignedUser(member);
+        }
+      }
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
+      setShowReassignDialog(false);
+      toast({ title: "Assignment updated successfully" });
+    } catch (error) {
+      console.error('Error reassigning:', error);
+      toast({ title: "Error updating assignment", variant: "destructive" });
+    } finally {
+      setReassigning(false);
+    }
+  };
 
   
   // Handle contact edit
@@ -369,6 +470,42 @@ const UserProfilePage = () => {
                     </Badge>
                   ))}
                 </div>
+
+                {/* Board Assignment - only show if we have a pipelineId context */}
+                {currentFlow && (
+                  <div className="mt-3">
+                    <div 
+                      className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 hover:bg-muted cursor-pointer transition-colors border border-border/50 max-w-fit"
+                      onClick={() => setShowReassignDialog(true)}
+                      title="Click to reassign"
+                    >
+                      <Workflow className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {currentFlow.pipeline.name}:
+                      </span>
+                      {assignedUser ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">
+                            {assignedUser.profiles?.full_name || assignedUser.profiles?.email || 'Unknown User'}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+                            <UserCheck className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                          <span className="text-sm text-muted-foreground italic">Unassigned</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 {/* Contact Details */}
                 <div className="mt-4 space-y-2">
@@ -559,6 +696,61 @@ const UserProfilePage = () => {
         contact={getContactForDialog()}
         onSave={handleEditContact}
       />
+
+      {/* Reassignment Dialog */}
+      {currentFlow && (
+        <Dialog open={showReassignDialog} onOpenChange={setShowReassignDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Reassign Contact on {currentFlow.pipeline.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Assign to team member:</label>
+                <Select
+                  onValueChange={handleReassign}
+                  disabled={reassigning}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder={
+                      reassigning ? "Reassigning..." : "Select team member"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-50">
+                    <SelectItem value="unassigned" className="bg-background hover:bg-muted">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+                          <UserCheck className="h-3 w-3" />
+                        </div>
+                        Unassigned
+                      </div>
+                    </SelectItem>
+                    {pipelineTeamMembers.map((member: any) => (
+                      <SelectItem 
+                        key={member.user_id} 
+                        value={member.user_id}
+                        className="bg-background hover:bg-muted"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={member.profiles?.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {member.profiles?.full_name?.[0] || member.profiles?.email?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>
+                            {member.profiles?.full_name || member.profiles?.email || 'Unknown User'}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </div>
   );
