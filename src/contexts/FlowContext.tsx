@@ -77,16 +77,10 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load flows from database when user/organization is available
+  // Load flows from database when user is available
   useEffect(() => {
-    // Don't load if still loading profile, no user, or no organization
-    if (profileLoading || !user || !organization) {
-      // If we're not loading and we have a user but no organization, that's an error
-      if (!profileLoading && user && !organization) {
-        setError("Organization not found. Please ensure you're associated with an organization.");
-        setFlows({});
-        setLoading(false);
-      }
+    // Don't load if still loading profile or no user
+    if (profileLoading || !user) {
       return;
     }
 
@@ -95,9 +89,11 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         setLoading(true);
         setError(null);
 
-        console.log("Loading flows for organization:", organization.id);
+        console.log("Loading flows for user:", user.id);
+        console.log("Active organization:", organization?.id || "none yet");
 
-        // Check if user has access to any pipelines (RLS will filter based on team membership)
+        // Fetch pipelines - RLS will filter based on team membership
+        // Don't filter by organization_id here to allow RLS to handle access
         const { data: existingPipelines, error: pipelinesError } = await supabase
           .from('pipelines')
           .select('*');
@@ -109,9 +105,9 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
         console.log("Found existing pipelines:", existingPipelines?.length || 0);
 
-        // If no flows exist, create default ones
-        if (!existingPipelines || existingPipelines.length === 0) {
-          console.log("Creating default flows...");
+        // If no flows exist and we have an organization, create default ones
+        if ((!existingPipelines || existingPipelines.length === 0) && organization) {
+          console.log("Creating default flows for organization:", organization.id);
           await createDefaultFlows(organization.id);
           // Reload after creating defaults
           const { data: newPipelines, error: newError } = await supabase
@@ -122,22 +118,20 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
           const flowsData = await loadFlowData(newPipelines || []);
           setFlows(flowsData);
           console.log("Default flows created and loaded");
-        } else {
+        } else if (existingPipelines && existingPipelines.length > 0) {
           console.log("Loading existing flows...");
           const flowsData = await loadFlowData(existingPipelines);
           setFlows(flowsData);
           console.log("Existing flows loaded");
+        } else {
+          // No pipelines and no organization yet
+          console.log("No pipelines found and organization not loaded yet");
+          setFlows({});
         }
       } catch (err) {
         console.error("Error loading flows:", err);
         setError(err instanceof Error ? err.message : "Failed to load flows");
-        // Fallback to default flows on error
-        setFlows({
-          "host-team": hostTeamPipeline,
-          "pastoral-care": pastoralCarePipeline,
-          "operations": operationsPipeline,
-          "giving-hub": givingHubPipeline,
-        });
+        setFlows({});
       } finally {
         setLoading(false);
       }
@@ -234,7 +228,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
   };
 
   const refreshFlows = async () => {
-    if (!user || profileLoading || !organization) {
+    if (!user || profileLoading) {
       return;
     }
 
@@ -242,10 +236,10 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       setError(null);
       console.log("Refreshing flows...");
       
+      // Rely on RLS to filter pipelines by user access
       const { data: existingPipelines, error: pipelinesError } = await supabase
         .from('pipelines')
-        .select('*')
-        .eq('organization_id', organization.id);
+        .select('*');
 
       if (pipelinesError) {
         console.error("Error fetching pipelines:", pipelinesError);
@@ -256,6 +250,9 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         const flowsData = await loadFlowData(existingPipelines);
         setFlows(flowsData);
         console.log("Flows refreshed successfully");
+      } else {
+        setFlows({});
+        console.log("No flows found during refresh");
       }
     } catch (err) {
       console.error("Error refreshing flows:", err);
@@ -333,7 +330,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
     window.addEventListener('pco-sync-complete', handleSyncComplete);
     return () => window.removeEventListener('pco-sync-complete', handleSyncComplete);
-  }, [user, organization, profileLoading]);
+  }, [user, profileLoading]);
 
   const updateFlow = async (flowId: string, flow: Flow) => {
     if (!organization) return;

@@ -16,6 +16,17 @@ interface Organization {
   slug: string;
 }
 
+interface OrganizationMembership {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  role: string;
+  created_at: string;
+  organizations: Organization;
+}
+
+const SELECTED_ORG_KEY = 'selectedOrganizationId';
+
 export const useProfile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -45,41 +56,64 @@ export const useProfile = () => {
           setProfile(profileData);
         }
 
-        // Fetch user's organization with retry logic
-        let orgData = null;
-        let attempts = 0;
-        const maxAttempts = 3;
-        
-        while (!orgData && attempts < maxAttempts) {
-          const { data: fetchedOrgData, error: orgError } = await supabase
-            .from('organization_members')
-            .select(`
-              organizations (
-                id,
-                name,
-                slug
-              )
-            `)
-            .eq('user_id', user.id)
-            .maybeSingle();
+        // Fetch ALL user's organizations
+        const { data: memberships, error: orgError } = await supabase
+          .from('organization_members')
+          .select(`
+            id,
+            organization_id,
+            user_id,
+            role,
+            created_at,
+            organizations (
+              id,
+              name,
+              slug
+            )
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-          if (orgError) {
-            console.error(`Error fetching organization (attempt ${attempts + 1}):`, orgError);
-            attempts++;
-            if (attempts < maxAttempts) {
-              await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+        if (orgError) {
+          console.error('Error fetching organizations:', orgError);
+        } else if (memberships && memberships.length > 0) {
+          // Get previously selected organization from localStorage
+          const savedOrgId = localStorage.getItem(SELECTED_ORG_KEY);
+          
+          let selectedOrg: Organization | null = null;
+          
+          // Check if saved org still exists in memberships
+          if (savedOrgId) {
+            const savedMembership = memberships.find(m => m.organization_id === savedOrgId);
+            if (savedMembership) {
+              selectedOrg = savedMembership.organizations as Organization;
+              console.log('Using saved organization:', selectedOrg);
             }
-          } else {
-            orgData = fetchedOrgData;
-            break;
           }
-        }
-
-        if (orgData) {
-          console.log('Organization loaded:', orgData.organizations);
-          setOrganization(orgData.organizations as Organization);
+          
+          // If no saved org or it doesn't exist, pick default deterministically
+          if (!selectedOrg) {
+            // Sort by role priority (owner > admin > member) then by created_at
+            const rolePriority = { owner: 0, admin: 1, member: 2 };
+            const sortedMemberships = [...memberships].sort((a, b) => {
+              const roleA = rolePriority[a.role as keyof typeof rolePriority] ?? 999;
+              const roleB = rolePriority[b.role as keyof typeof rolePriority] ?? 999;
+              if (roleA !== roleB) return roleA - roleB;
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+            
+            selectedOrg = sortedMemberships[0].organizations as Organization;
+            console.log('Selected default organization:', selectedOrg, 'role:', sortedMemberships[0].role);
+          }
+          
+          if (selectedOrg) {
+            // Persist selection
+            localStorage.setItem(SELECTED_ORG_KEY, selectedOrg.id);
+            setOrganization(selectedOrg);
+            console.log('Organization loaded:', selectedOrg);
+          }
         } else {
-          console.error('Failed to load organization after retries');
+          console.error('No organization memberships found for user');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
