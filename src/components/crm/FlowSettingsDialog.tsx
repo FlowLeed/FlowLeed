@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -96,6 +97,7 @@ export const FlowSettingsDialog = ({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [selectedRole, setSelectedRole] = useState<'contributor' | 'manager'>('contributor');
   const [loading, setLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
 
   // Initialize flow data when dialog opens
@@ -340,6 +342,36 @@ export const FlowSettingsDialog = ({
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteFlow = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('pipelines')
+        .delete()
+        .eq('id', flowId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Flow "${flowName}" deleted successfully`,
+      });
+
+      onOpenChange(false);
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error deleting flow:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete flow",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -635,16 +667,45 @@ export const FlowSettingsDialog = ({
             </DragDropContext>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+          <DialogFooter className="sm:justify-between">
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={loading}
+            >
+              Delete Flow
             </Button>
-            <Button onClick={handleSaveFlow} disabled={loading}>
-              Save Changes
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveFlow} disabled={loading}>
+                Save Changes
+              </Button>
+            </div>
           </DialogFooter>
         </div>
       </DialogContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the flow "{flowName}" and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteFlow}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Flow
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
