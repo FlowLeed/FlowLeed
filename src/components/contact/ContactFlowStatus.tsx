@@ -302,38 +302,6 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
               </Badge>
             </div>
             
-            {/* Assigned To Section */}
-            <div 
-              className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 hover:bg-muted cursor-pointer transition-colors border border-border/50"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleReassignClick(flow.id);
-              }}
-              title="Click to reassign"
-            >
-              <span className="text-xs text-muted-foreground font-medium">Assigned to:</span>
-              {assignedUser ? (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
-                    <AvatarFallback className="text-xs">
-                      {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium">
-                    {assignedUser.profiles?.full_name || assignedUser.profiles?.email || 'Unknown User'}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
-                    <UserCheck className="h-3 w-3 text-muted-foreground" />
-                  </div>
-                  <span className="text-sm text-muted-foreground italic">Unassigned</span>
-                </div>
-              )}
-            </div>
-            
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Progress</span>
