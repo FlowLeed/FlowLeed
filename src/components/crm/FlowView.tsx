@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
 import { ContactFormDialog } from "./ContactFormDialog";
+import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
@@ -27,6 +28,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   onFlowChange 
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -363,6 +365,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
           setCurrentContact(null);
           setIsFormOpen(true);
         }}
+        onSettingsClick={() => setIsSettingsOpen(true)}
         teamMembers={teamMembers}
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}
@@ -392,6 +395,26 @@ export const FlowView: React.FC<FlowViewProps> = ({
           contact={currentContact}
           onSave={handleSaveContact}
           flowId={flow.id}
+        />
+      )}
+      {isSettingsOpen && organization && (
+        <FlowSettingsDialog
+          open={isSettingsOpen}
+          onOpenChange={setIsSettingsOpen}
+          flowId={flow.id}
+          flowName={flow.name}
+          flowDescription={flow.description}
+          flowIcon={flow.icon}
+          flowStages={flow.stages.map((s, index) => ({
+            id: s.id,
+            name: s.name,
+            color: s.color || '#3b82f6',
+            stage_order: index
+          }))}
+          organizationId={organization.id}
+          onSave={() => {
+            window.location.reload();
+          }}
         />
       )}
     </div>
