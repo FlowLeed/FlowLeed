@@ -222,7 +222,7 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
   const currentPipelineIds = flows.map(flow => flow.pipeline.id);
   
   const handleFlowClick = (pipelineId: string) => {
-    navigate(`/pipelines/${pipelineId}`);
+    navigate(`/flows/${pipelineId}`);
   };
   if (flows.length === 0) {
     return (
