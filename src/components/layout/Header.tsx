@@ -312,12 +312,9 @@ export const Header: React.FC<HeaderProps> = ({
         <FlowIcon className="h-6 w-6 text-purple-500" />
         <div className="text-xl font-semibold">{title}</div>
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" onClick={openEditDialog}>
-            <Settings2 className="h-4 w-4" />
-          </Button>
           {onSettingsClick && (
             <Button variant="ghost" size="sm" onClick={onSettingsClick}>
-              <Users className="h-4 w-4" />
+              <Settings2 className="h-4 w-4" />
             </Button>
           )}
         </div>
