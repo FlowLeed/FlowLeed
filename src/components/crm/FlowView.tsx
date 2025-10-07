@@ -403,7 +403,18 @@ export const FlowView: React.FC<FlowViewProps> = ({
           onOpenChange={setIsSettingsOpen}
           flowId={flow.id}
           flowName={flow.name}
+          flowDescription={flow.description}
+          flowIcon={flow.icon}
+          flowStages={flow.stages.map((s, index) => ({
+            id: s.id,
+            name: s.name,
+            color: s.color || '#3b82f6',
+            stage_order: index
+          }))}
           organizationId={organization.id}
+          onSave={() => {
+            window.location.reload();
+          }}
         />
       )}
     </div>
