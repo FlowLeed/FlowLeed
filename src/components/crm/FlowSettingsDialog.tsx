@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -85,8 +84,6 @@ export const FlowSettingsDialog = ({
   organizationId,
   onSave,
 }: FlowSettingsDialogProps) => {
-  const [activeTab, setActiveTab] = useState("details");
-  
   // Flow details state
   const [flowName, setFlowName] = useState(initialFlowName);
   const [flowDescription, setFlowDescription] = useState(initialFlowDescription);
@@ -404,153 +401,67 @@ export const FlowSettingsDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Flow Settings - {initialFlowName}</DialogTitle>
+          <DialogTitle>Edit Flow</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="details">Flow Details</TabsTrigger>
-            <TabsTrigger value="team">Team Members</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="space-y-4 mt-4">
-            {/* Flow Name and Icon */}
-            <div className="space-y-2">
-              <Label htmlFor="flow-name">Flow Name</Label>
-              <div className="flex gap-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="shrink-0">
-                      {React.createElement(flowIcon, { className: "h-4 w-4" })}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64">
-                    <div className="grid grid-cols-6 gap-2">
-                      {Object.entries(iconMap).map(([name, IconComponent]) => (
-                        <Button
-                          key={name}
-                          variant="outline"
-                          size="icon"
-                          onClick={() => setFlowIcon(IconComponent)}
-                          className={
-                            flowIcon === IconComponent ? 'bg-primary/10 border-primary' : ''
-                          }
-                        >
-                          <IconComponent className="h-4 w-4" />
-                        </Button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-                <Input
-                  id="flow-name"
-                  value={flowName}
-                  onChange={(e) => setFlowName(e.target.value)}
-                  placeholder="Enter flow name"
-                  className="flex-1"
-                />
-              </div>
-            </div>
-
-            {/* Flow Description */}
-            <div className="space-y-2">
-              <Label htmlFor="flow-description">Description</Label>
-              <Textarea
-                id="flow-description"
-                value={flowDescription}
-                onChange={(e) => setFlowDescription(e.target.value)}
-                placeholder="Enter flow description (optional)"
-                rows={3}
+        <div className="space-y-6 mt-4">
+          {/* Flow Name and Icon */}
+          <div className="space-y-2">
+            <Label htmlFor="flow-name">Flow Name</Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" className="shrink-0">
+                    {React.createElement(flowIcon, { className: "h-4 w-4" })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64">
+                  <div className="grid grid-cols-6 gap-2">
+                    {Object.entries(iconMap).map(([name, IconComponent]) => (
+                      <Button
+                        key={name}
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setFlowIcon(IconComponent)}
+                        className={
+                          flowIcon === IconComponent ? 'bg-primary/10 border-primary' : ''
+                        }
+                      >
+                        <IconComponent className="h-4 w-4" />
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Input
+                id="flow-name"
+                value={flowName}
+                onChange={(e) => setFlowName(e.target.value)}
+                placeholder="Enter flow name"
+                className="flex-1"
               />
             </div>
+          </div>
 
-            {/* Flow Steps */}
+          {/* Flow Description */}
+          <div className="space-y-2">
+            <Label htmlFor="flow-description">Description</Label>
+            <Textarea
+              id="flow-description"
+              value={flowDescription}
+              onChange={(e) => setFlowDescription(e.target.value)}
+              placeholder="Enter flow description (optional)"
+              rows={3}
+            />
+          </div>
+
+          {/* Team Members Section */}
+          <div className="space-y-4 pt-2 border-t">
+            <h3 className="text-base font-semibold">Team Members</h3>
+            
+            {/* Add New Member */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Flow Steps</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addNewStep}
-                  className="gap-2"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  Add Step
-                </Button>
-              </div>
-
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="steps">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="space-y-2"
-                    >
-                      {flowSteps.map((step, index) => (
-                        <Draggable
-                          key={step.id}
-                          draggableId={step.id}
-                          index={index}
-                        >
-                          {(provided) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              className="flex items-center gap-2 p-3 border rounded-md bg-background"
-                            >
-                              <div {...provided.dragHandleProps}>
-                                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                              <Input
-                                value={step.name}
-                                onChange={(e) => updateStepName(index, e.target.value)}
-                                className="flex-1"
-                              />
-                              <input
-                                type="color"
-                                value={step.color}
-                                onChange={(e) => {
-                                  const updatedSteps = [...flowSteps];
-                                  updatedSteps[index].color = e.target.value;
-                                  setFlowSteps(updatedSteps);
-                                }}
-                                className="w-10 h-10 rounded cursor-pointer"
-                              />
-                              {flowSteps.length > 1 && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeStep(index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveFlow} disabled={loading}>
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </TabsContent>
-
-          <TabsContent value="team" className="space-y-4 mt-4">
-            {/* Add New Member Section */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium">Add Team Member</h3>
+              <Label className="text-sm">Add Team Member</Label>
               <div className="flex gap-2">
                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                   <SelectTrigger className="flex-1">
@@ -586,8 +497,8 @@ export const FlowSettingsDialog = ({
             </div>
 
             {/* Current Team Members */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-medium">Team Members ({teamMembers.length})</h3>
+            <div className="space-y-2">
+              <Label className="text-sm">Current Members ({teamMembers.length})</Label>
               <div className="space-y-2">
                 {teamMembers.map((member) => (
                   <div
@@ -649,8 +560,90 @@ export const FlowSettingsDialog = ({
                 ))}
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+
+          {/* Flow Steps */}
+          <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <Label>Flow Steps</Label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addNewStep}
+                className="gap-2"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add Step
+              </Button>
+            </div>
+
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="steps">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-2"
+                  >
+                    {flowSteps.map((step, index) => (
+                      <Draggable
+                        key={step.id}
+                        draggableId={step.id}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className="flex items-center gap-2 p-3 border rounded-md bg-background"
+                          >
+                            <div {...provided.dragHandleProps}>
+                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <Input
+                              value={step.name}
+                              onChange={(e) => updateStepName(index, e.target.value)}
+                              className="flex-1"
+                            />
+                            <input
+                              type="color"
+                              value={step.color}
+                              onChange={(e) => {
+                                const updatedSteps = [...flowSteps];
+                                updatedSteps[index].color = e.target.value;
+                                setFlowSteps(updatedSteps);
+                              }}
+                              className="w-10 h-10 rounded cursor-pointer"
+                            />
+                            {flowSteps.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeStep(index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveFlow} disabled={loading}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
