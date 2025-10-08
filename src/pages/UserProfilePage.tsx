@@ -331,6 +331,29 @@ const UserProfilePage = () => {
 
       if (contactError) throw contactError;
 
+      // Update tags - delete existing and insert new ones
+      if (updatedContact.tags) {
+        // Delete existing tags
+        const { error: deleteTagsError } = await supabase
+          .from('contact_tags')
+          .delete()
+          .eq('contact_id', contactId);
+
+        if (deleteTagsError) throw deleteTagsError;
+
+        // Insert new tags
+        if (updatedContact.tags.length > 0) {
+          const { error: insertTagsError } = await supabase
+            .from('contact_tags')
+            .insert(updatedContact.tags.map((tag: string) => ({
+              contact_id: contactId,
+              tag
+            })));
+
+          if (insertTagsError) throw insertTagsError;
+        }
+      }
+
       // Update or create demographics
       if (updatedContact.birthday || updatedContact.occupation || updatedContact.maritalStatus) {
         const { error: demoError } = await supabase
@@ -393,7 +416,7 @@ const UserProfilePage = () => {
       phone: contact.phone || "",
       avatar: contact.avatar,
       date: new Date(contact.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-      tags: [], // You may need to map tags from the database format
+      tags: (tags || []) as any,
       status: contact.status as ContactStatus,
       assignedTo: contact.assigned_to_user_id ? {
         name: "Assigned User", // You'd fetch this from the user profile
