@@ -256,7 +256,8 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const markAsStartStep = (index: number) => {
     const updated = newFlowSteps.map((step, i) => ({
       ...step,
-      isStartStep: i === index
+      isStartStep: i === index,
+      isEndStep: i === index ? false : step.isEndStep // Clear end if marking as start
     }));
     setNewFlowSteps(updated);
   };
@@ -264,7 +265,8 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
   const markAsEndStep = (index: number) => {
     const updated = newFlowSteps.map((step, i) => ({
       ...step,
-      isEndStep: i === index
+      isEndStep: i === index,
+      isStartStep: i === index ? false : step.isStartStep // Clear start if marking as end
     }));
     setNewFlowSteps(updated);
   };

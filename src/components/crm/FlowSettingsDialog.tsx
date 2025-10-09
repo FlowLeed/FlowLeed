@@ -394,7 +394,8 @@ export const FlowSettingsDialog = ({
   const markAsStartStep = (index: number) => {
     const updated = flowSteps.map((step, i) => ({
       ...step,
-      is_start_step: i === index
+      is_start_step: i === index,
+      is_end_step: i === index ? false : step.is_end_step // Clear end if marking as start
     }));
     setFlowSteps(updated);
   };
@@ -402,7 +403,8 @@ export const FlowSettingsDialog = ({
   const markAsEndStep = (index: number) => {
     const updated = flowSteps.map((step, i) => ({
       ...step,
-      is_end_step: i === index
+      is_end_step: i === index,
+      is_start_step: i === index ? false : step.is_start_step // Clear start if marking as end
     }));
     setFlowSteps(updated);
   };
