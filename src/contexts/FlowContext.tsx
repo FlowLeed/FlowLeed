@@ -477,7 +477,9 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
             pipeline_id: flowData.id,
             name: stage.name,
             color: stage.color,
-            stage_order: i
+            stage_order: i,
+            is_start_step: (stage as any).isStartStep || false,
+            is_end_step: (stage as any).isEndStep || false
           })
           .select()
           .single();

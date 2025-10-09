@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, X, Star, Wrench, User, Users, MessageSquare, Calendar, Settings, Heart, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon } from "lucide-react";
+import { UserPlus, X, Star, Wrench, User, Users, MessageSquare, Calendar, Settings, Heart, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import type { LucideIcon } from "lucide-react";
 
@@ -89,7 +89,7 @@ export const FlowSettingsDialog = ({
   const [flowName, setFlowName] = useState(initialFlowName);
   const [flowDescription, setFlowDescription] = useState(initialFlowDescription);
   const [flowIcon, setFlowIcon] = useState<LucideIcon>(Users);
-  const [flowSteps, setFlowSteps] = useState<Array<{id: string, name: string, color: string, stage_order: number}>>(initialFlowStages);
+  const [flowSteps, setFlowSteps] = useState<Array<{id: string, name: string, color: string, stage_order: number, is_start_step?: boolean, is_end_step?: boolean}>>(initialFlowStages);
   
   // Team management state
   const [teamMembers, setTeamMembers] = useState<FlowTeamMember[]>([]);
@@ -319,7 +319,9 @@ export const FlowSettingsDialog = ({
           .update({
             name: step.name,
             color: step.color,
-            stage_order: step.stage_order
+            stage_order: step.stage_order,
+            is_start_step: step.is_start_step || false,
+            is_end_step: step.is_end_step || false
           })
           .eq('id', step.id);
 
@@ -383,8 +385,26 @@ export const FlowSettingsDialog = ({
       id: `temp-${Date.now()}`,
       name: `Stage ${flowSteps.length + 1}`, 
       color: availableColor,
-      stage_order: flowSteps.length
+      stage_order: flowSteps.length,
+      is_start_step: false,
+      is_end_step: false
     }]);
+  };
+
+  const markAsStartStep = (index: number) => {
+    const updated = flowSteps.map((step, i) => ({
+      ...step,
+      is_start_step: i === index
+    }));
+    setFlowSteps(updated);
+  };
+
+  const markAsEndStep = (index: number) => {
+    const updated = flowSteps.map((step, i) => ({
+      ...step,
+      is_end_step: i === index
+    }));
+    setFlowSteps(updated);
   };
 
   const removeStep = (index: number) => {
@@ -647,6 +667,31 @@ export const FlowSettingsDialog = ({
                               }}
                               className="w-10 h-10 rounded cursor-pointer"
                             />
+                            
+                            {/* Start/End Markers */}
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant={step.is_start_step ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => markAsStartStep(index)}
+                                className="h-8 px-2"
+                                title="Mark as start step"
+                              >
+                                <Flag className="h-3 w-3 mr-1" />
+                                Start
+                              </Button>
+                              <Button
+                                variant={step.is_end_step ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => markAsEndStep(index)}
+                                className="h-8 px-2"
+                                title="Mark as end step"
+                              >
+                                <FlagTriangleRight className="h-3 w-3 mr-1" />
+                                End
+                              </Button>
+                            </div>
+                            
                             {flowSteps.length > 1 && (
                               <Button
                                 variant="ghost"
