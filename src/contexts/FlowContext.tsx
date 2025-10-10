@@ -461,6 +461,22 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         throw flowError;
       }
 
+      // Add current user as lead (flow owner) - use upsert to handle duplicate key issues
+      const { error: teamMemberError } = await supabase
+        .from('pipeline_team_members')
+        .upsert({
+          pipeline_id: flowId,
+          user_id: user!.id,
+          role: 'lead'
+        }, {
+          onConflict: 'pipeline_id,user_id'
+        });
+
+      if (teamMemberError) {
+        console.error("Error adding team member:", teamMemberError);
+        // Continue even if this fails as the trigger might have already added it
+      }
+
       // Create stages
       console.log("Creating stages...");
       const createdStages: any[] = [];
