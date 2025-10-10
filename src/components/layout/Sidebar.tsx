@@ -395,13 +395,12 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
       
       {/* Create Flow Dialog */}
       <Dialog open={showCreateFlowDialog} onOpenChange={setShowCreateFlowDialog}>
-        <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New Flow</DialogTitle>
           </DialogHeader>
           
-          <div className="flex-1 overflow-hidden">
-            <div className="max-h-[50vh] overflow-y-auto pr-2 space-y-4">
+          <div className="space-y-6 mt-4">
               <div className="space-y-2">
                 <Label htmlFor="flow-name">Flow Name</Label>
                 <div className="flex items-center space-x-2">
@@ -559,7 +558,6 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
                   Add Step
                 </Button>
               </div>
-            </div>
           </div>
           
           <DialogFooter>
