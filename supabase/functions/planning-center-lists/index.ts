@@ -620,12 +620,15 @@ async function syncDemographicData(contactId: string, person: any) {
       
       for (const [index, address] of includedData.addresses.entries()) {
         const addrAttrs = address.attributes;
-        console.log('Processing address:', JSON.stringify(addrAttrs, null, 2));
+        console.log('Processing address attributes:', JSON.stringify(addrAttrs, null, 2));
+        
+        // Planning Center may use different field names for street address
+        const streetAddress = addrAttrs.street || addrAttrs.street_address || addrAttrs.address || addrAttrs.line1 || null;
         
         const addressData = {
           contact_id: contactId,
           address_type: addrAttrs.location?.toLowerCase() || 'home',
-          street_address: addrAttrs.street || null,
+          street_address: streetAddress,
           city: addrAttrs.city,
           state: addrAttrs.state,
           zip_code: addrAttrs.zip,
