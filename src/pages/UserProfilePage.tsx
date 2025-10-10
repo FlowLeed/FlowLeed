@@ -642,28 +642,30 @@ const UserProfilePage = () => {
                     </div>
                   )}
                   {contact.phone && (
-                    <div>
+                    <div className="flex items-center gap-2">
                       <span className="text-muted-foreground">Phone: </span>
                       <span>{contact.phone}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(`tel:${contact.phone}`)}
-                            className="h-8"
-                          >
-                            <Phone className="h-3.5 w-3.5 mr-1.5" />
-                            Call
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => window.open(`sms:${contact.phone}`)}
-                            className="h-8"
-                          >
-                            <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                            Text
-                          </Button>
-                        </div>
+                      <div className="flex items-center gap-3 ml-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`tel:${contact.phone}`)}
+                          className="h-8"
+                        >
+                          <Phone className="h-3.5 w-3.5 mr-1.5" />
+                          Call
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(`sms:${contact.phone}`)}
+                          className="h-8"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                          Text
+                        </Button>
+                      </div>
+                    </div>
                       )}
                     </div>
                   )}
