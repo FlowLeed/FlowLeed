@@ -44,20 +44,19 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
   const { data: availablePipelines, isLoading: loadingPipelines } = useQuery({
     queryKey: ['available-pipelines', currentPipelineIds],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('pipelines')
         .select('id, name, description, icon')
         .order('name');
 
-      // Only filter out current pipelines if there are any
-      if (currentPipelineIds.length > 0) {
-        query = query.not('id', 'in', `(${currentPipelineIds.join(',')})`);
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
-      return data as Pipeline[];
+      
+      // Filter out pipelines the contact is already in
+      const filtered = currentPipelineIds.length > 0
+        ? data?.filter(p => !currentPipelineIds.includes(p.id))
+        : data;
+      
+      return filtered as Pipeline[];
     },
     enabled: open
   });
