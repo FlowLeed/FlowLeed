@@ -37,7 +37,7 @@ interface FlowSettingsDialogProps {
   flowName: string;
   flowDescription?: string;
   flowIcon?: string;
-  flowStages?: Array<{id: string, name: string, color: string, stage_order: number}>;
+  flowStages?: Array<{id: string, name: string, color: string, stage_order: number, is_start_step?: boolean, is_end_step?: boolean}>;
   organizationId: string;
   onSave?: () => void;
 }

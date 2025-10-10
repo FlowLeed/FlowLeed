@@ -24,6 +24,8 @@ export interface FlowStage {
   name: string;
   contacts: Contact[];
   color?: string;
+  is_start_step?: boolean;
+  is_end_step?: boolean;
 }
 
 export interface Flow {

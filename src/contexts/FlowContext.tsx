@@ -57,6 +57,8 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
     id: stage.id,
     name: stage.name,
     color: stage.color,
+    is_start_step: stage.is_start_step,
+    is_end_step: stage.is_end_step,
     contacts: contacts
       .filter(pc => pc.stage_id === stage.id)
       .map(pc => {
