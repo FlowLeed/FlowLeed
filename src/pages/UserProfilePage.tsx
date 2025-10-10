@@ -677,6 +677,12 @@ const UserProfilePage = () => {
                         {/* Demographics */}
                         {demographics && (
                           <>
+                            {demographics.gender && (
+                              <div>
+                                <span className="text-muted-foreground">Gender: </span>
+                                <span>{demographics.gender}</span>
+                              </div>
+                            )}
                             {demographics.birthday && (
                               <div>
                                 <span className="text-muted-foreground">Age: </span>
@@ -692,16 +698,16 @@ const UserProfilePage = () => {
                                 })()}</span>
                               </div>
                             )}
-                            {demographics.occupation && (
-                              <div>
-                                <span className="text-muted-foreground">Occupation: </span>
-                                <span>{demographics.occupation}</span>
-                              </div>
-                            )}
                             {demographics.marital_status && (
                               <div>
                                 <span className="text-muted-foreground">Marital Status: </span>
                                 <span>{demographics.marital_status}</span>
+                              </div>
+                            )}
+                            {demographics.occupation && (
+                              <div>
+                                <span className="text-muted-foreground">Occupation: </span>
+                                <span>{demographics.occupation}</span>
                               </div>
                             )}
                           </>

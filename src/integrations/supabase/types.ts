@@ -61,6 +61,7 @@ export type Database = {
           birthday: string | null
           contact_id: string
           created_at: string
+          gender: string | null
           id: string
           marital_status: string | null
           occupation: string | null
@@ -70,6 +71,7 @@ export type Database = {
           birthday?: string | null
           contact_id: string
           created_at?: string
+          gender?: string | null
           id?: string
           marital_status?: string | null
           occupation?: string | null
@@ -79,6 +81,7 @@ export type Database = {
           birthday?: string | null
           contact_id?: string
           created_at?: string
+          gender?: string | null
           id?: string
           marital_status?: string | null
           occupation?: string | null

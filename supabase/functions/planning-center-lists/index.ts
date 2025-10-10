@@ -512,13 +512,17 @@ async function syncDemographicData(contactId: string, person: any) {
   const includedData = person.included_data || {};
   
   try {
-    // 1. Sync demographics (birthday, marital status, occupation)
+    // 1. Sync demographics (birthday, marital status, occupation, gender)
     const demoData: any = {};
     
     // Handle built-in PCO fields
     if (attrs.birthdate) demoData.birthday = attrs.birthdate;
     if (attrs.marital_status) demoData.marital_status = attrs.marital_status;
     if (attrs.occupation) demoData.occupation = attrs.occupation;
+    if (attrs.gender) demoData.gender = attrs.gender;
+    if (attrs.sex) demoData.gender = attrs.sex; // Some PCO versions use 'sex' instead
+    
+    console.log('Initial demographic data from attrs:', demoData);
     
     // Handle custom fields that might contain marital status or occupation
     if (includedData.fieldData && includedData.fieldData.length > 0) {
@@ -563,7 +567,13 @@ async function syncDemographicData(contactId: string, person: any) {
       console.log('Found marital status via relationship include:', demoData.marital_status);
     }
     
-    console.log('Demographics data to sync:', demoData);
+    // Also check if marital status is in demographic info
+    if (!demoData.marital_status && includedData.demographic && includedData.demographic.attributes?.marital_status) {
+      demoData.marital_status = includedData.demographic.attributes.marital_status;
+      console.log('Found marital status in demographic data:', demoData.marital_status);
+    }
+    
+    console.log('Final demographics data to sync:', demoData);
     if (Object.keys(demoData).length > 0) {
       console.log('Syncing demographics for contact:', contactId);
       
