@@ -312,20 +312,53 @@ export const FlowSettingsDialog = ({
 
       if (flowError) throw flowError;
 
-      // Update stages
-      for (const step of flowSteps) {
-        const { error: stageError } = await supabase
-          .from('pipeline_stages')
-          .update({
-            name: step.name,
-            color: step.color,
-            stage_order: step.stage_order,
-            is_start_step: step.is_start_step || false,
-            is_end_step: step.is_end_step || false
-          })
-          .eq('id', step.id);
+      // Find deleted stages (stages in initial but not in current)
+      const deletedStageIds = initialFlowStages
+        .filter(initialStage => !flowSteps.some(step => step.id === initialStage.id))
+        .map(stage => stage.id)
+        .filter(id => !id.startsWith('temp-')); // Only delete real stages, not temporary ones
 
-        if (stageError) throw stageError;
+      // Delete removed stages
+      if (deletedStageIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('pipeline_stages')
+          .delete()
+          .in('id', deletedStageIds);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Update or insert stages
+      for (const step of flowSteps) {
+        // If it's a temporary ID, insert new stage
+        if (step.id.startsWith('temp-')) {
+          const { error: insertError } = await supabase
+            .from('pipeline_stages')
+            .insert({
+              pipeline_id: flowId,
+              name: step.name,
+              color: step.color,
+              stage_order: step.stage_order,
+              is_start_step: step.is_start_step || false,
+              is_end_step: step.is_end_step || false
+            });
+
+          if (insertError) throw insertError;
+        } else {
+          // Otherwise update existing stage
+          const { error: stageError } = await supabase
+            .from('pipeline_stages')
+            .update({
+              name: step.name,
+              color: step.color,
+              stage_order: step.stage_order,
+              is_start_step: step.is_start_step || false,
+              is_end_step: step.is_end_step || false
+            })
+            .eq('id', step.id);
+
+          if (stageError) throw stageError;
+        }
       }
 
       toast({
