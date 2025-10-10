@@ -7,12 +7,22 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Target, Plus, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, UserCheck } from 'lucide-react';
+import { ArrowRight, Target, Plus, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, UserCheck, X } from 'lucide-react';
 import { AddToFlowDialog } from './AddToFlowDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { toast } from '@/hooks/use-toast';
 import type { LucideIcon } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Pipeline {
   id: string;
@@ -59,11 +69,14 @@ interface ContactFlowStatusProps {
 export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, contactId }) => {
   const [showAddToFlowDialog, setShowAddToFlowDialog] = useState(false);
   const [showReassignDialog, setShowReassignDialog] = useState(false);
+  const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [selectedFlowId, setSelectedFlowId] = useState<string | null>(null);
+  const [selectedFlowName, setSelectedFlowName] = useState<string>('');
   const [flowAssignments, setFlowAssignments] = useState<{ [flowId: string]: OrganizationMember | null }>({});
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [reassigning, setReassigning] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const navigate = useNavigate();
   const { organization } = useProfile();
   
@@ -219,6 +232,40 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
     setShowReassignDialog(true);
   };
 
+  const handleRemoveClick = (e: React.MouseEvent, flowId: string, flowName: string) => {
+    e.stopPropagation();
+    setSelectedFlowId(flowId);
+    setSelectedFlowName(flowName);
+    setShowRemoveDialog(true);
+  };
+
+  const handleRemoveFromFlow = async () => {
+    if (!selectedFlowId) return;
+
+    setRemoving(true);
+    try {
+      const { error } = await supabase
+        .from('pipeline_contacts')
+        .delete()
+        .eq('id', selectedFlowId);
+
+      if (error) throw error;
+
+      toast({ title: "Contact removed from flow successfully" });
+      setShowRemoveDialog(false);
+      setSelectedFlowId(null);
+      setSelectedFlowName('');
+      
+      // Reload the page to reflect the changes
+      window.location.reload();
+    } catch (error) {
+      console.error('Error removing contact from flow:', error);
+      toast({ title: "Error removing contact from flow", variant: "destructive" });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
   const currentPipelineIds = flows.map(flow => flow.pipeline.id);
   
   const handleFlowClick = (pipelineId: string) => {
@@ -300,15 +347,26 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
                 })()}
                 <h4 className="font-medium">{flow.pipeline.name}</h4>
               </div>
-              <Badge 
-                variant="secondary"
-                style={{ 
-                  backgroundColor: flow.currentStage.color ? `${flow.currentStage.color}20` : undefined,
-                  color: flow.currentStage.color || undefined 
-                }}
-              >
-                {flow.currentStage.name}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant="secondary"
+                  style={{ 
+                    backgroundColor: flow.currentStage.color ? `${flow.currentStage.color}20` : undefined,
+                    color: flow.currentStage.color || undefined 
+                  }}
+                >
+                  {flow.currentStage.name}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                  onClick={(e) => handleRemoveClick(e, flow.id, flow.pipeline.name)}
+                  title="Remove from flow"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -392,6 +450,28 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Remove from Flow Confirmation Dialog */}
+      <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove from Flow</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this contact from <strong>{selectedFlowName}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveFromFlow}
+              disabled={removing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removing ? "Removing..." : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
