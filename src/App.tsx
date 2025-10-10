@@ -17,6 +17,7 @@ import TeamPage from "./pages/TeamPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import AuthPage from "./pages/AuthPage";
 import InvitePage from "./pages/InvitePage";
+import AnalyticsPage from "./pages/AnalyticsPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/integrations" element={<IntegrationsPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
