@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, CheckCircle, X } from "lucide-react";
+import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, CheckCircle, X, Settings } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InviteTeamMemberDialog } from "@/components/team/InviteTeamMemberDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +39,7 @@ interface PendingInvitation {
 }
 
 const TeamPage = () => {
+  const navigate = useNavigate();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
@@ -273,10 +275,16 @@ const TeamPage = () => {
                 </CardDescription>
               </div>
               {canManageMembers && (
-                <Button onClick={() => setIsInviteDialogOpen(true)} className="gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Invite Member
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => navigate('/organization/settings')} className="gap-2">
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </Button>
+                  <Button onClick={() => setIsInviteDialogOpen(true)} className="gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Invite Member
+                  </Button>
+                </div>
               )}
             </div>
           </CardHeader>
