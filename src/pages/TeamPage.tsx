@@ -75,6 +75,10 @@ const TeamPage = () => {
   const { organization, profile } = useProfile();
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
   
+  // Org settings state
+  const [orgName, setOrgName] = useState("");
+  const [isEditingOrgName, setIsEditingOrgName] = useState(false);
+  
   // Tag management state
   const { tagStats, isLoading: tagsLoading, renameTag, deleteTag, mergeTags } = useOrgTagManagement(organization?.id);
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,6 +98,7 @@ const TeamPage = () => {
   useEffect(() => {
     if (organization) {
       fetchTeamData();
+      setOrgName(organization.name);
     }
   }, [organization]);
 
@@ -289,6 +294,30 @@ const TeamPage = () => {
   };
 
   const canManageMembers = currentUserRole === 'owner' || currentUserRole === 'admin';
+  const isOwner = currentUserRole === 'owner';
+
+  const handleUpdateOrgName = async () => {
+    if (!organization || !orgName.trim() || orgName === organization.name) {
+      setIsEditingOrgName(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ name: orgName.trim() })
+        .eq('id', organization.id);
+
+      if (error) throw error;
+
+      toast.success('Organization name updated');
+      setIsEditingOrgName(false);
+    } catch (error) {
+      console.error('Error updating organization name:', error);
+      toast.error('Failed to update organization name');
+      setOrgName(organization.name);
+    }
+  };
 
   const handleDeleteClick = (tag: string) => {
     setTagToDelete(tag);
@@ -354,8 +383,12 @@ const TeamPage = () => {
       <Header title="My Organization" />
       
       <div className="flex-1 overflow-auto p-6">
-        <Tabs defaultValue="members" className="w-full">
+        <Tabs defaultValue="settings" className="w-full">
           <TabsList>
+            <TabsTrigger value="settings">
+              <Shield className="h-4 w-4 mr-2" />
+              Org Settings
+            </TabsTrigger>
             <TabsTrigger value="members">
               <User className="h-4 w-4 mr-2" />
               Team Members
@@ -365,6 +398,67 @@ const TeamPage = () => {
               Tag Management
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="settings" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Organization Settings</CardTitle>
+                <CardDescription>
+                  Manage your organization's general settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="orgName">Organization Name</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="orgName"
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      disabled={!isOwner || !isEditingOrgName}
+                      className="flex-1"
+                    />
+                    {isOwner && (
+                      <>
+                        {!isEditingOrgName ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsEditingOrgName(true)}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="default"
+                              onClick={handleUpdateOrgName}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setOrgName(organization?.name || "");
+                                setIsEditingOrgName(false);
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {!isOwner && (
+                    <p className="text-sm text-muted-foreground">
+                      Only organization owners can change the organization name.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="members" className="space-y-6 mt-6">
             {/* Team Members */}
