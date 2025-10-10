@@ -562,15 +562,29 @@ async function syncDemographicData(contactId: string, person: any) {
     }
     
     // Fallback to relationship-included marital status
-    if (!demoData.marital_status && includedData.maritalStatus && includedData.maritalStatus.attributes?.name) {
-      demoData.marital_status = includedData.maritalStatus.attributes.name;
-      console.log('Found marital status via relationship include:', demoData.marital_status);
+    if (!demoData.marital_status && includedData.maritalStatus && includedData.maritalStatus.attributes) {
+      const msAttrs = includedData.maritalStatus.attributes;
+      demoData.marital_status = msAttrs.name || msAttrs.label || msAttrs.value || msAttrs.status || null;
+      if (demoData.marital_status) {
+        console.log('Found marital status via relationship include:', demoData.marital_status);
+      }
     }
     
-    // Also check if marital status is in demographic info
-    if (!demoData.marital_status && includedData.demographic && includedData.demographic.attributes?.marital_status) {
-      demoData.marital_status = includedData.demographic.attributes.marital_status;
-      console.log('Found marital status in demographic data:', demoData.marital_status);
+    // Also check if marital status is in demographic info (some payloads)
+    if (!demoData.marital_status && includedData.demographic && includedData.demographic.attributes) {
+      const dAttrs = includedData.demographic.attributes;
+      demoData.marital_status = dAttrs.marital_status || dAttrs.maritalStatus || null;
+      if (demoData.marital_status) {
+        console.log('Found marital status in demographic data:', demoData.marital_status);
+      }
+    }
+    
+    // Title-case common enum-like values if needed
+    if (typeof demoData.marital_status === 'string') {
+      const s = demoData.marital_status.trim();
+      if (s && s === s.toLowerCase()) {
+        demoData.marital_status = s.charAt(0).toUpperCase() + s.slice(1);
+      }
     }
     
     console.log('Final demographics data to sync:', demoData);
