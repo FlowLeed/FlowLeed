@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, HelpCircle, Zap, Users, Target } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { FlowIconBadge } from '@/components/search/FlowIconBadge';
 
 interface QuickMappingDialogProps {
   isOpen: boolean;
@@ -332,7 +333,13 @@ export function QuickMappingDialog({
                   {flows?.map((flow) => (
                     <SelectItem key={flow.id} value={flow.id}>
                       <div className="flex items-center gap-2">
-                        {flow.icon && <span>{flow.icon}</span>}
+                        {flow.icon && (
+                          <FlowIconBadge 
+                            flow={{ name: flow.name, icon: flow.icon }} 
+                            size="sm" 
+                            showTooltip={false}
+                          />
+                        )}
                         <span>{flow.name}</span>
                       </div>
                     </SelectItem>
