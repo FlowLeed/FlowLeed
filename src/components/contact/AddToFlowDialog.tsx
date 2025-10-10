@@ -51,10 +51,15 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
 
       if (error) throw error;
       
+      console.log('All pipelines from DB:', data);
+      console.log('Current pipeline IDs:', currentPipelineIds);
+      
       // Filter out pipelines the contact is already in
       const filtered = currentPipelineIds.length > 0
         ? data?.filter(p => !currentPipelineIds.includes(p.id))
         : data;
+      
+      console.log('Filtered available pipelines:', filtered);
       
       return filtered as Pipeline[];
     },
