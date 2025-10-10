@@ -142,7 +142,7 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pr-8">
               <DialogTitle className="text-2xl">Manage Flows</DialogTitle>
               <Button onClick={() => setShowCreateDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
