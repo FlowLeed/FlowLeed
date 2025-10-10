@@ -10,7 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
 import { InteractionTimeline } from "@/components/contact/InteractionTimeline";
@@ -19,9 +20,12 @@ import { PrayerRequestsList } from "@/components/contact/PrayerRequestsList";
 import { QuickActionsBar } from "@/components/contact/QuickActionsBar";
 import { AISuggestions } from "@/components/contact/AISuggestions";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
+import { TagManager } from "@/components/contact/TagManager";
 
 import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrgTagSuggestions } from "@/hooks/useContactTags";
+import { useProfile } from "@/hooks/useProfile";
 
 const UserProfilePage = () => {
   const { contactId } = useParams<{ contactId: string }>();
@@ -29,6 +33,7 @@ const UserProfilePage = () => {
   const pipelineId = searchParams.get('pipelineId');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { organization } = useProfile();
   const queryClient = useQueryClient();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showReassignDialog, setShowReassignDialog] = useState(false);
@@ -36,6 +41,11 @@ const UserProfilePage = () => {
   const [currentFlow, setCurrentFlow] = useState<any>(null);
   const [pipelineTeamMembers, setPipelineTeamMembers] = useState<any[]>([]);
   const [reassigning, setReassigning] = useState(false);
+  const [showTagEditor, setShowTagEditor] = useState(false);
+  const [editingTags, setEditingTags] = useState<string[]>([]);
+  
+  // Get tag suggestions for the organization
+  const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
 
   // Fetch comprehensive contact data
   const { data: contactData, isLoading, error } = useQuery({
@@ -314,6 +324,42 @@ const UserProfilePage = () => {
   };
 
   
+  // Handle tag updates
+  const handleSaveTags = async () => {
+    try {
+      // Delete existing tags
+      const { error: deleteError } = await supabase
+        .from('contact_tags')
+        .delete()
+        .eq('contact_id', contactId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new tags
+      if (editingTags.length > 0) {
+        const { error: insertError } = await supabase
+          .from('contact_tags')
+          .insert(editingTags.map((tag: string) => ({
+            contact_id: contactId,
+            tag
+          })));
+
+        if (insertError) throw insertError;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
+      setShowTagEditor(false);
+      toast({ title: "Tags updated successfully" });
+    } catch (error) {
+      console.error("Error updating tags:", error);
+      toast({ 
+        title: "Error updating tags", 
+        description: "Please try again",
+        variant: "destructive"
+      });
+    }
+  };
+
   // Handle contact edit
   const handleEditContact = async (updatedContact: any) => {
     try {
@@ -499,11 +545,60 @@ const UserProfilePage = () => {
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{contact.name}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>Tags ({tags.length}):</span>
+                  </div>
                   {tags.map((tag, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
+                  
+                  {/* Tag Editor Popover */}
+                  <Popover open={showTagEditor} onOpenChange={setShowTagEditor}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => {
+                          setEditingTags([...tags]);
+                          setShowTagEditor(true);
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium mb-2">Manage Tags</h4>
+                          <TagManager
+                            tags={editingTags}
+                            onTagsChange={setEditingTags}
+                            suggestions={tagSuggestions}
+                            placeholder="Type to add tags..."
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setShowTagEditor(false);
+                              setEditingTags([...tags]);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button size="sm" onClick={handleSaveTags}>
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 {/* Board Assignment - only show if we have a pipelineId context */}

@@ -14,6 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Contact, Tag } from "@/types/crm";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
+import { TagManager } from "@/components/contact/TagManager";
+import { useOrgTagSuggestions } from "@/hooks/useContactTags";
 
 interface OrganizationMember {
   user_id: string;
@@ -41,6 +43,9 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   const { profile, organization } = useProfile();
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  
+  // Get tag suggestions for the organization
+  const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
   const [formData, setFormData] = useState<Partial<Contact & {
     birthday?: string;
     occupation?: string;
@@ -206,15 +211,8 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleTagToggle = (tag: Tag) => {
-    setFormData((prev) => {
-      const currentTags = prev.tags || [];
-      if (currentTags.includes(tag)) {
-        return { ...prev, tags: currentTags.filter((t) => t !== tag) };
-      } else {
-        return { ...prev, tags: [...currentTags, tag] };
-      }
-    });
+  const handleTagsChange = (newTags: string[]) => {
+    setFormData((prev) => ({ ...prev, tags: newTags }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -286,14 +284,12 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
 
           <div className="space-y-2">
             <Label>Tags</Label>
-            <div className="flex flex-wrap gap-4 pt-1">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="tag-active"
-                  checked={(formData.tags || []).includes("active")}
-                  onCheckedChange={() => handleTagToggle("active")}
-                />
-                <label htmlFor="tag-active">Active</label>
+            <TagManager
+              tags={formData.tags || []}
+              onTagsChange={handleTagsChange}
+              suggestions={tagSuggestions}
+              placeholder="Type to add tags..."
+            />
           </div>
 
           {/* Demographics Section */}
@@ -375,24 +371,6 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                     onChange={(e) => handleChange("zipCode", e.target.value)}
                   />
                 </div>
-              </div>
-            </div>
-          </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="tag-partner"
-                  checked={(formData.tags || []).includes("partner")}
-                  onCheckedChange={() => handleTagToggle("partner")}
-                />
-                <label htmlFor="tag-partner">Partner</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="tag-florida"
-                  checked={(formData.tags || []).includes("florida")}
-                  onCheckedChange={() => handleTagToggle("florida")}
-                />
-                <label htmlFor="tag-florida">Florida</label>
               </div>
             </div>
           </div>

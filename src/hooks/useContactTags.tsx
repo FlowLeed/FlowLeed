@@ -1,0 +1,140 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+
+export const useContactTags = (contactId: string) => {
+  const queryClient = useQueryClient();
+
+  // Fetch tags for a specific contact
+  const { data: tags = [], isLoading } = useQuery({
+    queryKey: ["contact-tags", contactId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contact_tags")
+        .select("tag")
+        .eq("contact_id", contactId);
+
+      if (error) throw error;
+      return data?.map((t) => t.tag) || [];
+    },
+    enabled: !!contactId,
+  });
+
+  // Add a tag
+  const addTagMutation = useMutation({
+    mutationFn: async (tag: string) => {
+      const { error } = await supabase
+        .from("contact_tags")
+        .insert({ contact_id: contactId, tag });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contact-tags", contactId] });
+      queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
+    },
+    onError: (error) => {
+      console.error("Error adding tag:", error);
+      toast({ title: "Error adding tag", variant: "destructive" });
+    },
+  });
+
+  // Remove a tag
+  const removeTagMutation = useMutation({
+    mutationFn: async (tag: string) => {
+      const { error } = await supabase
+        .from("contact_tags")
+        .delete()
+        .eq("contact_id", contactId)
+        .eq("tag", tag);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contact-tags", contactId] });
+      queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
+    },
+    onError: (error) => {
+      console.error("Error removing tag:", error);
+      toast({ title: "Error removing tag", variant: "destructive" });
+    },
+  });
+
+  // Update all tags (replace)
+  const updateTagsMutation = useMutation({
+    mutationFn: async (newTags: string[]) => {
+      // Delete all existing tags
+      await supabase
+        .from("contact_tags")
+        .delete()
+        .eq("contact_id", contactId);
+
+      // Insert new tags
+      if (newTags.length > 0) {
+        const { error } = await supabase
+          .from("contact_tags")
+          .insert(newTags.map((tag) => ({ contact_id: contactId, tag })));
+
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contact-tags", contactId] });
+      queryClient.invalidateQueries({ queryKey: ["contact-comprehensive", contactId] });
+      toast({ title: "Tags updated successfully" });
+    },
+    onError: (error) => {
+      console.error("Error updating tags:", error);
+      toast({ title: "Error updating tags", variant: "destructive" });
+    },
+  });
+
+  return {
+    tags,
+    isLoading,
+    addTag: addTagMutation.mutate,
+    removeTag: removeTagMutation.mutate,
+    updateTags: updateTagsMutation.mutate,
+  };
+};
+
+export const useOrgTagSuggestions = (organizationId?: string) => {
+  const { data: suggestions = [] } = useQuery({
+    queryKey: ["org-tag-suggestions", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+
+      // Get all contacts in the organization
+      const { data: contacts } = await supabase
+        .from("contacts")
+        .select("id")
+        .eq("organization_id", organizationId);
+
+      if (!contacts || contacts.length === 0) return [];
+
+      const contactIds = contacts.map((c) => c.id);
+
+      // Get unique tags from all contacts
+      const { data, error } = await supabase
+        .from("contact_tags")
+        .select("tag")
+        .in("contact_id", contactIds);
+
+      if (error) throw error;
+
+      // Get unique tags and sort by frequency
+      const tagCounts = new Map<string, number>();
+      data?.forEach((item) => {
+        const count = tagCounts.get(item.tag) || 0;
+        tagCounts.set(item.tag, count + 1);
+      });
+
+      return Array.from(tagCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([tag]) => tag);
+    },
+    enabled: !!organizationId,
+  });
+
+  return { suggestions };
+};

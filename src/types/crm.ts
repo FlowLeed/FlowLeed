@@ -1,5 +1,5 @@
 export type ContactStatus = 'active' | 'inactive' | 'pending';
-export type Tag = 'active' | 'partner' | 'location' | 'florida';
+export type Tag = string; // Changed from enum to string for flexible tags
 export type FlowRole = 'lead' | 'manager' | 'contributor';
 
 export interface Contact {
