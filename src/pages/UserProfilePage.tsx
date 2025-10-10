@@ -605,30 +605,21 @@ const UserProfilePage = () => {
                     <div 
                       className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 hover:bg-muted cursor-pointer transition-colors border border-border/50 max-w-fit"
                       onClick={() => setShowReassignDialog(true)}
-                      title="Click to reassign"
+                      title={assignedUser 
+                        ? `Assigned to: ${assignedUser.profiles?.full_name || assignedUser.profiles?.email || 'Unknown User'}`
+                        : 'Click to assign'}
                     >
-                      <Workflow className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {currentFlow.pipeline.name}:
-                      </span>
+                      <UserCheck className="h-4 w-4 text-muted-foreground" />
                       {assignedUser ? (
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs">
-                              {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium">
-                            {assignedUser.profiles?.full_name || assignedUser.profiles?.email || 'Unknown User'}
-                          </span>
-                        </div>
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
                       ) : (
-                        <div className="flex items-center gap-2">
-                          <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
-                            <UserCheck className="h-3 w-3 text-muted-foreground" />
-                          </div>
-                          <span className="text-sm text-muted-foreground italic">Unassigned</span>
+                        <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground">?</span>
                         </div>
                       )}
                     </div>
