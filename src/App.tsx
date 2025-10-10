@@ -18,7 +18,7 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import AuthPage from "./pages/AuthPage";
 import InvitePage from "./pages/InvitePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
-import OrganizationSettingsPage from "./pages/OrganizationSettingsPage";
+
 
 const queryClient = new QueryClient();
 
@@ -39,7 +39,6 @@ const App = () => (
                 <Route path="/contacts/:contactId" element={<UserProfilePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/team" element={<TeamPage />} />
-                <Route path="/organization/settings" element={<OrganizationSettingsPage />} />
                 <Route path="/integrations" element={<IntegrationsPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
               </Route>
