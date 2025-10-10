@@ -630,19 +630,21 @@ const UserProfilePage = () => {
                 <div className="mt-4 space-y-2">
                   {(contact.email || contact.phone) && (
                     <div className="text-sm text-muted-foreground space-y-1">
-                      {contact.email && (
-                        <button 
-                          onClick={() => window.open(`mailto:${contact.email}`)}
-                          className="hover:text-primary cursor-pointer transition-colors block"
-                        >
-                          <Mail className="h-4 w-4 inline mr-2" />
-                          {contact.email}
-                        </button>
-                      )}
-                      {contact.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
-                          <span>{contact.phone}</span>
+                  {contact.email && (
+                    <div>
+                      <span className="text-muted-foreground">Email: </span>
+                      <button 
+                        onClick={() => window.open(`mailto:${contact.email}`)}
+                        className="hover:text-primary cursor-pointer transition-colors"
+                      >
+                        {contact.email}
+                      </button>
+                    </div>
+                  )}
+                  {contact.phone && (
+                    <div>
+                      <span className="text-muted-foreground">Phone: </span>
+                      <span>{contact.phone}</span>
                           <Button
                             variant="outline"
                             size="sm"
