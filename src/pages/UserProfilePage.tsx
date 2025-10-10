@@ -545,9 +545,7 @@ const UserProfilePage = () => {
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{contact.name}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                  {tags.length > 0 && (
-                    <Tags className="h-3.5 w-3.5 text-muted-foreground" />
-                  )}
+                  <Tags className="h-3.5 w-3.5 text-muted-foreground" />
                   {tags.map((tag, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
                       {tag}
