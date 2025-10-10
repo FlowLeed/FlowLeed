@@ -60,6 +60,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { calculateFlowContactCount } from "@/lib/utils";
 import { useFlowContext } from "@/contexts/FlowContext";
+import { FlowsManagementDialog } from "@/components/flows/FlowsManagementDialog";
 import type { LucideIcon } from "lucide-react";
 
 interface SidebarItem {
@@ -80,6 +81,7 @@ interface FlowStep {
 interface SidebarSectionProps {
   title: string;
   items: SidebarItem[];
+  onSettingsClick?: () => void;
 }
 
 const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) => {
@@ -107,7 +109,7 @@ const NavItem = ({ item, isActive }: { item: SidebarItem; isActive: boolean }) =
   );
 };
 
-const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
+const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items, onSettingsClick }) => {
   const location = useLocation();
   const { toast } = useToast();
   const { createFlow, loading: flowLoading } = useFlowContext();
@@ -333,63 +335,15 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items }) => {
         <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           {title}
         </div>
-        {title === "Flows" && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent">
-                <Settings2 className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Flows Settings</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              
-               <DropdownMenuItem 
-                onClick={() => setShowCreateFlowDialog(true)}
-                disabled={flowLoading}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {flowLoading ? "Loading..." : "Create New Flow"}
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator />
-              
-              {isConnectedToPC ? (
-                <>
-                  <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-                    Planning Center Lists
-                  </DropdownMenuLabel>
-                  {planningCenterLists.map((list) => (
-                    <DropdownMenuItem 
-                      key={list.id}
-                      onClick={() => handleCreateFlow(list.name, list.id)}
-                      className="flex items-center justify-between"
-                    >
-                      <span>{list.name}</span>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {list.count}
-                        </Badge>
-                        <Plus className="h-3 w-3" />
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setIsConnectedToPC(false)}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Manage Connection
-                  </DropdownMenuItem>
-                </>
-              ) : (
-                <>
-                  <DropdownMenuItem onClick={() => setIsConnectedToPC(true)}>
-                    <Puzzle className="h-4 w-4 mr-2" />
-                    Connect Planning Center
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {title === "Flows" && onSettingsClick && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-6 w-6 p-0 hover:bg-sidebar-accent"
+            onClick={onSettingsClick}
+          >
+            <Settings2 className="h-3 w-3" />
+          </Button>
         )}
       </div>
       
@@ -592,6 +546,7 @@ const Logo = () => (
 
 export const Sidebar = () => {
   const { flows } = useFlowContext();
+  const [showFlowsManagement, setShowFlowsManagement] = useState(false);
 
   const iconOptions = [
     Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap,
@@ -639,35 +594,41 @@ export const Sidebar = () => {
     },
   ];
 
-  // Create flow items dynamically from all flows (database data)
-  const flowItems: SidebarItem[] = Object.entries(flows).map(([key, flow]) => {
-    // Use stored icon if available, otherwise determine icon based on flow name
-    let icon = Users;
-    
-    // If flow has a stored icon, try to find the matching icon component
-    if (flow.icon && iconMap[flow.icon]) {
-      icon = iconMap[flow.icon];
-    } else {
-      // Fallback to name-based icon selection for existing flows
-      const name = flow.name.toLowerCase();
-      if (name.includes('pastoral') || name.includes('care')) {
-        icon = MessageSquare;
-      } else if (name.includes('operation') || name.includes('ops')) {
-        icon = Calendar;
-      } else if (name.includes('host') || name.includes('team')) {
-        icon = Users;
-      } else if (name.includes('giving') || name.includes('hub')) {
-        icon = Heart;
+  // Create flow items dynamically from all flows (database data), sorted by flow_order
+  const flowItems: SidebarItem[] = Object.entries(flows)
+    .map(([key, flow]) => ({
+      flow,
+      key
+    }))
+    .sort((a, b) => (a.flow.flow_order || 0) - (b.flow.flow_order || 0))
+    .map(({ flow }) => {
+      // Use stored icon if available, otherwise determine icon based on flow name
+      let icon = Users;
+      
+      // If flow has a stored icon, try to find the matching icon component
+      if (flow.icon && iconMap[flow.icon]) {
+        icon = iconMap[flow.icon];
+      } else {
+        // Fallback to name-based icon selection for existing flows
+        const name = flow.name.toLowerCase();
+        if (name.includes('pastoral') || name.includes('care')) {
+          icon = MessageSquare;
+        } else if (name.includes('operation') || name.includes('ops')) {
+          icon = Calendar;
+        } else if (name.includes('host') || name.includes('team')) {
+          icon = Users;
+        } else if (name.includes('giving') || name.includes('hub')) {
+          icon = Heart;
+        }
       }
-    }
 
-    return {
-      title: flow.name,
-      icon,
-      path: `/flows/${flow.id}`, // Use flow.id instead of key for database flows
-      badge: calculateFlowContactCount(flow),
-    };
-  });
+      return {
+        title: flow.name,
+        icon,
+        path: `/flows/${flow.id}`, // Use flow.id instead of key for database flows
+        badge: calculateFlowContactCount(flow),
+      };
+    });
 
   const settingsItems: SidebarItem[] = [
     {
@@ -688,13 +649,24 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className="h-screen w-80 bg-white flex flex-col">
-      <Logo />
-      <div className="flex-1 overflow-auto py-2 px-4 space-y-6 bg-white">
-        <SidebarSection title="Pages" items={pageItems} />
-        <SidebarSection title="Flows" items={flowItems} />
-        <SidebarSection title="Settings" items={settingsItems} />
+    <>
+      <div className="h-screen w-80 bg-white flex flex-col">
+        <Logo />
+        <div className="flex-1 overflow-auto py-2 px-4 space-y-6 bg-white">
+          <SidebarSection title="Pages" items={pageItems} />
+          <SidebarSection 
+            title="Flows" 
+            items={flowItems}
+            onSettingsClick={() => setShowFlowsManagement(true)}
+          />
+          <SidebarSection title="Settings" items={settingsItems} />
+        </div>
       </div>
-    </div>
+      
+      <FlowsManagementDialog 
+        open={showFlowsManagement} 
+        onOpenChange={setShowFlowsManagement}
+      />
+    </>
   );
 };

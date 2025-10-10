@@ -34,4 +34,5 @@ export interface Flow {
   description?: string;
   stages: FlowStage[];
   icon?: string;
+  flow_order?: number;
 }

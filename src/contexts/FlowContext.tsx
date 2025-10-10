@@ -11,6 +11,7 @@ interface FlowContextType {
   createFlow: (flow: Omit<Flow, 'id'>) => Promise<string>;
   deleteFlow: (flowId: string) => Promise<void>;
   refreshFlows: () => Promise<void>;
+  reorderFlows: (flows: Flow[]) => Promise<void>;
   loading: boolean;
   error: string | null;
 }
@@ -53,6 +54,7 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
   name: dbPipeline.name,
   description: dbPipeline.description,
   icon: dbPipeline.icon,
+  flow_order: dbPipeline.flow_order || 0,
   stages: stages.map(stage => ({
     id: stage.id,
     name: stage.name,
@@ -575,8 +577,43 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     }
   };
 
+  const reorderFlows = async (reorderedFlows: Flow[]): Promise<void> => {
+    if (!organization) {
+      throw new Error("No organization available");
+    }
+
+    try {
+      // Update flow_order in database for each flow
+      const updates = reorderedFlows.map((flow, index) => 
+        supabase
+          .from('pipelines')
+          .update({ flow_order: index })
+          .eq('id', flow.id)
+          .eq('organization_id', organization.id)
+      );
+
+      await Promise.all(updates);
+
+      // Update local state
+      setFlows(prev => {
+        const updated = { ...prev };
+        reorderedFlows.forEach((flow) => {
+          if (updated[flow.id]) {
+            updated[flow.id] = { ...updated[flow.id], flow_order: flow.flow_order };
+          }
+        });
+        return updated;
+      });
+
+    } catch (err) {
+      console.error("Error reordering flows:", err);
+      setError(err instanceof Error ? err.message : "Failed to reorder flows");
+      throw err;
+    }
+  };
+
   return (
-    <FlowContext.Provider value={{ flows, updateFlow, createFlow, deleteFlow, refreshFlows, loading, error }}>
+    <FlowContext.Provider value={{ flows, updateFlow, createFlow, deleteFlow, refreshFlows, reorderFlows, loading, error }}>
       {children}
     </FlowContext.Provider>
   );
