@@ -226,28 +226,37 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
   };
   if (flows.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Current Flows
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowAddToFlowDialog(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add to Flow
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">No active flows</p>
-        </CardContent>
-      </Card>
+      <>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Current Flows
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddToFlowDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add to Flow
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">No active flows</p>
+          </CardContent>
+        </Card>
+
+        <AddToFlowDialog
+          open={showAddToFlowDialog}
+          onOpenChange={setShowAddToFlowDialog}
+          contactId={contactId}
+          currentPipelineIds={currentPipelineIds}
+        />
+      </>
     );
   }
 
