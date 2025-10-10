@@ -637,7 +637,7 @@ export const Sidebar = () => {
       path: "/profile",
     },
     {
-      title: "My Team",
+      title: "My Organization",
       icon: Users,
       path: "/team",
     },

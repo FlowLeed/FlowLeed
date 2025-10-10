@@ -255,7 +255,7 @@ const TeamPage = () => {
   return (
     <div className="flex flex-col h-full">
       <Header 
-        title="My Team" 
+        title="My Organization" 
       />
       
       <div className="flex-1 overflow-auto p-6 space-y-6">
