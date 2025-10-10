@@ -524,7 +524,7 @@ const UserProfilePage = () => {
         
         <Card>
           <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 relative">
+            <div className="flex flex-col sm:flex-row items-start gap-4 relative">
               {/* Edit button in top right corner */}
               <Button
                 variant="ghost"
@@ -643,20 +643,24 @@ const UserProfilePage = () => {
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4" />
                           <span>{contact.phone}</span>
-                          <button 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => window.open(`tel:${contact.phone}`)}
-                            className="hover:text-primary cursor-pointer transition-colors p-1"
-                            title="Call"
+                            className="h-8"
                           >
-                            <Phone className="h-4 w-4" />
-                          </button>
-                          <button 
+                            <Phone className="h-3.5 w-3.5 mr-1.5" />
+                            Call
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => window.open(`sms:${contact.phone}`)}
-                            className="hover:text-primary cursor-pointer transition-colors p-1"
-                            title="Text"
+                            className="h-8"
                           >
-                            <MessageSquare className="h-4 w-4" />
-                          </button>
+                            <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                            Text
+                          </Button>
                         </div>
                       )}
                     </div>
