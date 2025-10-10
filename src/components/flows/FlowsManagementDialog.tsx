@@ -38,6 +38,7 @@ import {
 import { useFlowContext } from "@/contexts/FlowContext";
 import { useProfile } from "@/hooks/useProfile";
 import { FlowSettingsDialog } from "@/components/crm/FlowSettingsDialog";
+import { CreateFlowDialog } from "@/components/flows/CreateFlowDialog";
 import { calculateFlowContactCount } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import type { Flow } from "@/types/crm";
@@ -88,11 +89,12 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { flows, deleteFlow, reorderFlows } = useFlowContext();
+  const { flows, deleteFlow, reorderFlows, createFlow } = useFlowContext();
   const { organization } = useProfile();
   const [editingFlowId, setEditingFlowId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [flowToDelete, setFlowToDelete] = useState<Flow | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Convert flows object to array and sort by flow_order
   const flowsArray = Object.values(flows).sort((a, b) => 
@@ -140,7 +142,13 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Manage Flows</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl">Manage Flows</DialogTitle>
+              <Button onClick={() => setShowCreateDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Flow
+              </Button>
+            </div>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto pr-2">
@@ -256,6 +264,12 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
           }}
         />
       )}
+
+      {/* Create Flow Dialog */}
+      <CreateFlowDialog 
+        open={showCreateDialog} 
+        onOpenChange={setShowCreateDialog}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
