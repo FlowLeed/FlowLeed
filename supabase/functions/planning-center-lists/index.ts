@@ -270,10 +270,10 @@ async function syncPlanningCenterLists(listMappings: any[], userId: string) {
 async function syncSingleList(mapping: any, userId: string) {
   console.log('Syncing single list:', mapping);
   
-  // Get integration credentials
+  // Get integration credentials and user_id
   const { data: integration } = await supabase
     .from('integrations')
-    .select('credentials, organization_id')
+    .select('credentials, organization_id, user_id')
     .eq('id', mapping.integration_id)
     .single();
 
@@ -479,6 +479,7 @@ async function syncSingleList(mapping: any, userId: string) {
             contact_id: contactId,
             pipeline_id: mapping.pipeline_id,
             stage_id: mapping.stage_id,
+            assigned_to_user_id: integration.user_id,
             source_type: 'planning_center',
             source_id: mapping.external_list_id,
           });
