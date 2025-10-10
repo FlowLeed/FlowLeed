@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus, Tags } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
@@ -545,9 +545,9 @@ const UserProfilePage = () => {
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{contact.name}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>Tags ({tags.length}):</span>
-                  </div>
+                  {tags.length > 0 && (
+                    <Tags className="h-3.5 w-3.5 text-muted-foreground" />
+                  )}
                   {tags.map((tag, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
                       {tag}
