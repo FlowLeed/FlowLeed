@@ -162,7 +162,7 @@ export const useFlowAnalytics = () => {
             id: flow.id,
             name: flow.name,
             icon: flow.icon,
-            totalContacts: flow.pipeline_contacts.length,
+            totalContacts: (flow.pipeline_contacts as any)[0]?.count || 0,
             startCount,
             endCount,
             conversionRate,
