@@ -523,8 +523,8 @@ const UserProfilePage = () => {
         </div>
         
         <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 relative">
+          <CardContent className="p-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 relative">
               {/* Edit button in top right corner */}
               <Button
                 variant="ghost"
@@ -536,14 +536,14 @@ const UserProfilePage = () => {
                 <Edit className="h-4 w-4" />
               </Button>
               
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-24 w-24 ring-2 ring-border/50">
                 <AvatarImage src={contact.avatar} alt={contact.name} />
                 <AvatarFallback>
-                  <User className="h-8 w-8" />
+                  <User className="h-12 w-12" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h1 className="text-3xl font-bold">{contact.name}</h1>
+                <h1 className="text-3xl font-bold mb-3">{contact.name}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <Tags className="h-3.5 w-3.5 text-muted-foreground" />
                   {tags.map((tag, index) => (
@@ -629,33 +629,33 @@ const UserProfilePage = () => {
                 {/* Contact Details */}
                 <div className="mt-4 space-y-2">
                   {(contact.email || contact.phone) && (
-                    <div className="text-sm text-muted-foreground space-y-1">
+                    <div className="text-sm space-y-2 p-3 rounded-md bg-muted/30">
                       {contact.email && (
                         <button 
                           onClick={() => window.open(`mailto:${contact.email}`)}
-                          className="hover:text-primary cursor-pointer transition-colors block"
+                          className="hover:text-primary cursor-pointer transition-colors flex items-center gap-2 text-foreground"
                         >
-                          <Mail className="h-4 w-4 inline mr-2" />
-                          {contact.email}
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{contact.email}</span>
                         </button>
                       )}
                       {contact.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
-                          <span>{contact.phone}</span>
+                        <div className="flex items-center gap-3">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-foreground">{contact.phone}</span>
                           <button 
                             onClick={() => window.open(`tel:${contact.phone}`)}
-                            className="hover:text-primary cursor-pointer transition-colors p-1"
+                            className="hover:text-primary cursor-pointer transition-colors p-1.5 hover:bg-accent rounded"
                             title="Call"
                           >
-                            <Phone className="h-4 w-4" />
+                            <Phone className="h-3.5 w-3.5" />
                           </button>
                           <button 
                             onClick={() => window.open(`sms:${contact.phone}`)}
-                            className="hover:text-primary cursor-pointer transition-colors p-1"
+                            className="hover:text-primary cursor-pointer transition-colors p-1.5 hover:bg-accent rounded"
                             title="Text"
                           >
-                            <MessageSquare className="h-4 w-4" />
+                            <MessageSquare className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       )}
@@ -663,9 +663,9 @@ const UserProfilePage = () => {
                   )}
                   
                   {/* Demographics Information */}
-                  <div className="pt-2 border-t border-border/40">
+                  <div className="pt-4 mt-2 border-t border-border/40">
                     <div className="flex items-start justify-between">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm flex-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 text-sm flex-1">
                         {/* Demographics */}
                         {demographics && (
                           <>
