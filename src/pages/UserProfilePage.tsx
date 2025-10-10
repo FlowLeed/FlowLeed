@@ -499,9 +499,6 @@ const UserProfilePage = () => {
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{contact.name}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                  <Badge variant={contact.status === 'active' ? 'default' : 'secondary'}>
-                    {contact.status}
-                  </Badge>
                   {tags.map((tag, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
                       {tag}
