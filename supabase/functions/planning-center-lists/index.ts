@@ -637,7 +637,9 @@ async function syncDemographicData(contactId: string, person: any) {
         console.log('Processing address attributes:', JSON.stringify(addrAttrs, null, 2));
         
         // Planning Center may use different field names for street address
-        const streetAddress = addrAttrs.street || addrAttrs.street_address || addrAttrs.address || addrAttrs.line1 || null;
+        const line1 = addrAttrs.street || addrAttrs.street_address || addrAttrs.address || addrAttrs.line1 || addrAttrs.street_line_1 || null;
+        const line2 = addrAttrs.street_line_2 || addrAttrs.line2 || null;
+        const streetAddress = [line1, line2].filter(Boolean).join(', ') || null;
         
         const addressData = {
           contact_id: contactId,
