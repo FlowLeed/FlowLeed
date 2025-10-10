@@ -446,18 +446,16 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       
       // Create flow in database (stored as pipeline)
       console.log("Creating flow in database...");
-      const { data: flowData, error: flowError } = await supabase
+      const { error: flowError } = await supabase
         .from('pipelines')
         .insert({
           id: flowId,
           name: flow.name,
           icon: flow.icon,
           organization_id: organization.id
-        })
-        .select()
-        .single();
+        });
 
-      console.log("Flow creation result:", { flowData, flowError });
+      console.log("Flow creation result:", { flowError });
       if (flowError) {
         console.error("Flow creation error:", flowError);
         throw flowError;
@@ -472,19 +470,26 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         const stageId = crypto.randomUUID();
         console.log(`Creating stage ${i + 1}:`, { stageId, stage });
         
-        const { data: stageData, error: stageError } = await supabase
+        const { error: stageError } = await supabase
           .from('pipeline_stages')
           .insert({
             id: stageId,
-            pipeline_id: flowData.id,
+            pipeline_id: flowId,
             name: stage.name,
             color: stage.color,
             stage_order: i,
             is_start_step: (stage as any).isStartStep || false,
             is_end_step: (stage as any).isEndStep || false
-          })
-          .select()
-          .single();
+          });
+        
+        const stageData = {
+          id: stageId,
+          name: stage.name,
+          color: stage.color,
+          stage_order: i,
+          is_start_step: (stage as any).isStartStep || false,
+          is_end_step: (stage as any).isEndStep || false
+        };
 
         console.log("Stage creation result:", { stageData, stageError });
         if (stageError) {
