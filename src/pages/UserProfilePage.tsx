@@ -524,7 +524,7 @@ const UserProfilePage = () => {
         
         <Card>
           <CardContent className="p-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 relative">
+            <div className="flex flex-col sm:flex-row items-start gap-4 relative">
               {/* Edit button in top right corner */}
               <Button
                 variant="ghost"
