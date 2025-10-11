@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, Phone, Mail, User, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3 } from "lucide-react";
+import { Search, Phone, Mail, User, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3, Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video, UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish, Sun, Moon, Navigation, MapPin, Home, Smile, Footprints } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   CommandDialog,
@@ -65,7 +65,28 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
     'Plus': Plus,
     'Puzzle': Puzzle,
     'LayoutDashboard': LayoutDashboard,
-    'BarChart3': BarChart3
+    'BarChart3': BarChart3,
+    'Church': Church,
+    'Cross': Cross,
+    'Book': Book,
+    'Footprints': Footprints,
+    'Handshake': Handshake,
+    'HeartHandshake': HeartHandshake,
+    'Fish': Fish,
+    'Waves': Waves,
+    'Sun': Sun,
+    'Moon': Moon,
+    'Podcast': Podcast,
+    'Video': Video,
+    'UserCheck': UserCheck,
+    'Users2': Users2,
+    'GraduationCap': GraduationCap,
+    'Baby': Baby,
+    'TrendingUp': TrendingUp,
+    'Navigation': Navigation,
+    'MapPin': MapPin,
+    'Home': Home,
+    'Smile': Smile
   };
 
   // Debounced search effect

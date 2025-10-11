@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3 } from 'lucide-react';
+import { Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3, Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video, UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish, Sun, Moon, Navigation, MapPin, Home, Smile, Footprints } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface Pipeline {
@@ -46,7 +46,28 @@ export const FlowSelectionStep: React.FC<FlowSelectionStepProps> = ({
     'Plus': Plus,
     'Puzzle': Puzzle,
     'LayoutDashboard': LayoutDashboard,
-    'BarChart3': BarChart3
+    'BarChart3': BarChart3,
+    'Church': Church,
+    'Cross': Cross,
+    'Book': Book,
+    'Footprints': Footprints,
+    'Handshake': Handshake,
+    'HeartHandshake': HeartHandshake,
+    'Fish': Fish,
+    'Waves': Waves,
+    'Sun': Sun,
+    'Moon': Moon,
+    'Podcast': Podcast,
+    'Video': Video,
+    'UserCheck': UserCheck,
+    'Users2': Users2,
+    'GraduationCap': GraduationCap,
+    'Baby': Baby,
+    'TrendingUp': TrendingUp,
+    'Navigation': Navigation,
+    'MapPin': MapPin,
+    'Home': Home,
+    'Smile': Smile
   };
   if (loading) {
     return (

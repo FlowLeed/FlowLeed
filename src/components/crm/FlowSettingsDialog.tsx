@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, X, Star, Wrench, User, Users, MessageSquare, Calendar, Settings, Heart, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight } from "lucide-react";
+import { UserPlus, X, Star, Wrench, User, Users, MessageSquare, Calendar, Settings, Heart, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video, UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish, Sun, Moon, Navigation, MapPin, Home, Smile, Footprints } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import type { LucideIcon } from "lucide-react";
 
@@ -64,7 +64,30 @@ const iconMap: { [key: string]: LucideIcon } = {
   'Check': Check,
   'Puzzle': Puzzle,
   'LayoutDashboard': LayoutDashboard,
-  'BarChart3': BarChart3
+  'BarChart3': BarChart3,
+  // Faith-related icons
+  'Church': Church,
+  'Cross': Cross,
+  'Book': Book,
+  'Handshake': Handshake,
+  'HeartHandshake': HeartHandshake,
+  'Fish': Fish,
+  'Waves': Waves,
+  'Sun': Sun,
+  'Moon': Moon,
+  'Footprints': Footprints,
+  // Flow-related icons
+  'Podcast': Podcast,
+  'Video': Video,
+  'UserCheck': UserCheck,
+  'Users2': Users2,
+  'GraduationCap': GraduationCap,
+  'Baby': Baby,
+  'TrendingUp': TrendingUp,
+  'Navigation': Navigation,
+  'MapPin': MapPin,
+  'Home': Home,
+  'Smile': Smile
 };
 
 const STAGE_COLORS = [

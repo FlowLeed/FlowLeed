@@ -2,7 +2,10 @@ import React from "react";
 import { 
   Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap,
   Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift,
-  Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3, Workflow
+  Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3, Workflow,
+  Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video,
+  UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish,
+  Sun, Moon, Navigation, MapPin, Home, Smile, Footprints
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -40,7 +43,28 @@ const iconMap: { [key: string]: React.ComponentType<any> } = {
   'Puzzle': Puzzle,
   'LayoutDashboard': LayoutDashboard,
   'BarChart3': BarChart3,
-  'Workflow': Workflow
+  'Workflow': Workflow,
+  'Church': Church,
+  'Cross': Cross,
+  'Book': Book,
+  'Footprints': Footprints,
+  'Handshake': Handshake,
+  'HeartHandshake': HeartHandshake,
+  'Fish': Fish,
+  'Waves': Waves,
+  'Sun': Sun,
+  'Moon': Moon,
+  'Podcast': Podcast,
+  'Video': Video,
+  'UserCheck': UserCheck,
+  'Users2': Users2,
+  'GraduationCap': GraduationCap,
+  'Baby': Baby,
+  'TrendingUp': TrendingUp,
+  'Navigation': Navigation,
+  'MapPin': MapPin,
+  'Home': Home,
+  'Smile': Smile
 };
 
 export const FlowIconBadge: React.FC<FlowIconBadgeProps> = ({ 
