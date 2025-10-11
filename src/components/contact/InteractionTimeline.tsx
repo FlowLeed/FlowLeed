@@ -71,6 +71,10 @@ const getInteractionIcon = (type: string) => {
       return <UserMinus className="h-4 w-4" />;
     case 'flow_note_added':
       return <GitBranch className="h-4 w-4" />;
+    case 'note':
+      return <GitBranch className="h-4 w-4" />;
+    case 'prayer_request':
+      return <Users className="h-4 w-4" />;
     default:
       return <Clock className="h-4 w-4" />;
   }
@@ -97,6 +101,10 @@ const getInteractionColor = (type: string) => {
       return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300';
     case 'flow_note_added':
       return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300';
+    case 'note':
+      return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-300';
+    case 'prayer_request':
+      return 'bg-violet-100 text-violet-800 dark:bg-violet-900/20 dark:text-violet-300';
     default:
       return 'bg-muted text-muted-foreground';
   }

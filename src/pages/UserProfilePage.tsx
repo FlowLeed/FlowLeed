@@ -145,6 +145,35 @@ const UserProfilePage = () => {
         .eq("contact_id", contactId)
         .order("created_at", { ascending: false });
 
+      // Combine interactions, notes, and prayer requests into a unified timeline
+      const allInteractions = [
+        ...(interactions || []),
+        ...(notes || []).map(note => ({
+          id: note.id,
+          contact_id: note.contact_id,
+          pipeline_id: note.pipeline_id,
+          interaction_type: 'note',
+          subject: note.note_type || 'General Note',
+          details: note.content,
+          created_at: note.created_at,
+          completed_at: note.created_at,
+          created_by_user_id: note.created_by_user_id,
+          metadata: { is_private: note.is_private, note_type: note.note_type }
+        })),
+        ...(prayerRequests || []).map(prayer => ({
+          id: prayer.id,
+          contact_id: prayer.contact_id,
+          interaction_type: 'prayer_request',
+          subject: prayer.title,
+          details: prayer.description,
+          outcome: prayer.status === 'answered' ? prayer.answer_description : undefined,
+          created_at: prayer.created_at,
+          completed_at: prayer.answered_at || prayer.created_at,
+          created_by_user_id: prayer.created_by_user_id,
+          metadata: { status: prayer.status, answered_at: prayer.answered_at }
+        }))
+      ];
+
       return {
         contact,
         tags: tags?.map(t => t.tag) || [],
@@ -152,7 +181,7 @@ const UserProfilePage = () => {
         addresses: addresses || [],
         familyMembers: familyMembers || [],
         flows,
-        interactions: interactions || [],
+        interactions: allInteractions,
         notes: notes || [],
         prayerRequests: prayerRequests || []
       };
