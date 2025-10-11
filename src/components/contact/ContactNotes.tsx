@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Plus, StickyNote, Lock } from 'lucide-react';
+import { Plus, FileText, Lock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Note {
@@ -62,7 +62,7 @@ export const ContactNotes: React.FC<ContactNotesProps> = ({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <StickyNote className="h-4 w-4" />
+            <FileText className="h-4 w-4" />
             Notes
           </CardTitle>
         </div>
