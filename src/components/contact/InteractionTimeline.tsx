@@ -14,7 +14,8 @@ import {
   ArrowRight,
   UserCheck,
   UserMinus,
-  UserPlus
+  UserPlus,
+  FileText
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -72,7 +73,7 @@ const getInteractionIcon = (type: string) => {
     case 'flow_note_added':
       return <GitBranch className="h-4 w-4" />;
     case 'note':
-      return <GitBranch className="h-4 w-4" />;
+      return <FileText className="h-4 w-4" />;
     case 'prayer_request':
       return <Users className="h-4 w-4" />;
     default:
