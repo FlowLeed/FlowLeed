@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, MoveRight, UserPlus, Tag as TagIcon, Trash2 } from "lucide-react";
+import { X, MoveRight, UserPlus, Tag as TagIcon, Trash2, ArrowRightLeft } from "lucide-react";
 import { BulkStageChangeDialog } from "./BulkStageChangeDialog";
 import { BulkReassignDialog } from "./BulkReassignDialog";
 import { BulkTagDialog } from "./BulkTagDialog";
+import { BulkMoveToFlowDialog } from "./BulkMoveToFlowDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +25,11 @@ interface BulkActionsToolbarProps {
   onAddTags: (tags: string[]) => Promise<void>;
   onRemoveTags: (tags: string[]) => Promise<void>;
   onDelete: () => Promise<void>;
+  onMoveToFlow: (targetPipelineId: string, targetStageId: string) => Promise<void>;
   stages: FlowStage[];
   teamMembers: Array<{ id: string; name: string; avatar?: string }>;
+  currentPipelineId: string;
+  currentPipelineName: string;
   isLoading?: boolean;
 }
 
@@ -37,8 +41,11 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
   onAddTags,
   onRemoveTags,
   onDelete,
+  onMoveToFlow,
   stages,
   teamMembers,
+  currentPipelineId,
+  currentPipelineName,
   isLoading = false,
 }) => {
   const [stageDialogOpen, setStageDialogOpen] = useState(false);
@@ -46,6 +53,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
   const [addTagDialogOpen, setAddTagDialogOpen] = useState(false);
   const [removeTagDialogOpen, setRemoveTagDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [moveToFlowDialogOpen, setMoveToFlowDialogOpen] = useState(false);
 
   const handleStageChange = async (stageId: string) => {
     await onStageChange(stageId);
@@ -77,6 +85,12 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
     onClearSelection();
   };
 
+  const handleMoveToFlow = async (targetPipelineId: string, targetStageId: string) => {
+    await onMoveToFlow(targetPipelineId, targetStageId);
+    setMoveToFlowDialogOpen(false);
+    onClearSelection();
+  };
+
   return (
     <>
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-4 min-w-[600px]">
@@ -96,6 +110,16 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
             >
               <MoveRight className="h-4 w-4 mr-2" />
               Change Stage
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMoveToFlowDialogOpen(true)}
+              disabled={isLoading}
+            >
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Move to Flow
             </Button>
             
             <Button
@@ -196,6 +220,15 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BulkMoveToFlowDialog
+        open={moveToFlowDialogOpen}
+        onOpenChange={setMoveToFlowDialogOpen}
+        currentPipelineId={currentPipelineId}
+        currentPipelineName={currentPipelineName}
+        selectedCount={selectedCount}
+        onConfirm={handleMoveToFlow}
+      />
     </>
   );
 };

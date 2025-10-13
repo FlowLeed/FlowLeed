@@ -142,12 +142,56 @@ export const useBulkActions = (flowId: string) => {
     }
   };
 
+  const bulkMoveToFlow = async (
+    contactIds: string[], 
+    targetPipelineId: string, 
+    targetStageId: string
+  ) => {
+    setIsLoading(true);
+    try {
+      // Step 1: Delete from current flow
+      const { error: deleteError } = await supabase
+        .from('pipeline_contacts')
+        .delete()
+        .in('contact_id', contactIds)
+        .eq('pipeline_id', flowId);
+
+      if (deleteError) throw deleteError;
+
+      // Step 2: Add to target flow
+      const inserts = contactIds.map((contactId, index) => ({
+        contact_id: contactId,
+        pipeline_id: targetPipelineId,
+        stage_id: targetStageId,
+        stage_order: index,
+        source_type: 'manual'
+      }));
+
+      const { error: insertError } = await supabase
+        .from('pipeline_contacts')
+        .insert(inserts);
+
+      if (insertError) throw insertError;
+
+      queryClient.invalidateQueries({ queryKey: ['flows'] });
+      toast.success(`${contactIds.length} contacts moved to new flow`);
+      return true;
+    } catch (error) {
+      console.error("Error in bulk move to flow:", error);
+      toast.error("Failed to move contacts");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     bulkChangeStage,
     bulkReassign,
     bulkAddTags,
     bulkRemoveTags,
     bulkDelete,
+    bulkMoveToFlow,
     isLoading
   };
 };

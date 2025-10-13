@@ -398,7 +398,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   };
 
   // Bulk actions
-  const { bulkChangeStage, bulkReassign, bulkAddTags, bulkRemoveTags, bulkDelete, isLoading: bulkLoading } = useBulkActions(flow.id);
+  const { bulkChangeStage, bulkReassign, bulkAddTags, bulkRemoveTags, bulkDelete, bulkMoveToFlow, isLoading: bulkLoading } = useBulkActions(flow.id);
 
   const handleBulkStageChange = async (stageId: string) => {
     const success = await bulkChangeStage(Array.from(selectedContacts), stageId);
@@ -430,6 +430,13 @@ export const FlowView: React.FC<FlowViewProps> = ({
 
   const handleBulkDelete = async () => {
     const success = await bulkDelete(Array.from(selectedContacts));
+    if (success) {
+      window.location.reload();
+    }
+  };
+
+  const handleBulkMoveToFlow = async (targetPipelineId: string, targetStageId: string) => {
+    const success = await bulkMoveToFlow(Array.from(selectedContacts), targetPipelineId, targetStageId);
     if (success) {
       window.location.reload();
     }
@@ -497,8 +504,11 @@ export const FlowView: React.FC<FlowViewProps> = ({
           onAddTags={handleBulkAddTags}
           onRemoveTags={handleBulkRemoveTags}
           onDelete={handleBulkDelete}
+          onMoveToFlow={handleBulkMoveToFlow}
           stages={flow.stages}
           teamMembers={teamMembers}
+          currentPipelineId={flow.id}
+          currentPipelineName={flow.name}
           isLoading={bulkLoading}
         />
       )}
