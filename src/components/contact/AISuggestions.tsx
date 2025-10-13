@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 interface Suggestion {
-  type: 'follow_up' | 'prayer_check' | 'birthday' | 'next_step' | 'engagement' | 'milestone';
+  type: 'follow_up' | 'prayer_check' | 'birthday' | 'next_step' | 'engagement' | 'milestone' | 'stage_action';
   title: string;
   description: string;
   priority: 'low' | 'medium' | 'high';
@@ -26,6 +26,7 @@ const typeColors = {
   next_step: { bg: 'bg-green-50 dark:bg-green-950', border: 'border-green-200 dark:border-green-800', text: 'text-green-900 dark:text-green-100', subtext: 'text-green-700 dark:text-green-300' },
   engagement: { bg: 'bg-indigo-50 dark:bg-indigo-950', border: 'border-indigo-200 dark:border-indigo-800', text: 'text-indigo-900 dark:text-indigo-100', subtext: 'text-indigo-700 dark:text-indigo-300' },
   milestone: { bg: 'bg-pink-50 dark:bg-pink-950', border: 'border-pink-200 dark:border-pink-800', text: 'text-pink-900 dark:text-pink-100', subtext: 'text-pink-700 dark:text-pink-300' },
+  stage_action: { bg: 'bg-teal-50 dark:bg-teal-950', border: 'border-teal-200 dark:border-teal-800', text: 'text-teal-900 dark:text-teal-100', subtext: 'text-teal-700 dark:text-teal-300' },
 };
 
 const priorityVariants = {
