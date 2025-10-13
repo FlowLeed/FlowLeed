@@ -289,15 +289,12 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                         </TableCell>
                         <TableCell>
                           {contact.assignedTo ? (
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={contact.assignedTo.avatar} alt={contact.assignedTo.name} />
-                                <AvatarFallback className="text-xs">
-                                  {contact.assignedTo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-sm">{contact.assignedTo.name}</span>
-                            </div>
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={contact.assignedTo.avatar} alt={contact.assignedTo.name} />
+                              <AvatarFallback className="text-xs">
+                                {contact.assignedTo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
