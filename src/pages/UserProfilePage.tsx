@@ -848,7 +848,14 @@ const UserProfilePage = () => {
         />
 
         {/* AI Suggestions Block */}
-        <AISuggestions contactId={contactId!} />
+        <AISuggestions 
+          contactId={contactId!}
+          contactName={contact?.name}
+          contactPhone={contact?.phone}
+          contactEmail={contact?.email}
+          currentPipelineId={pipelineId || undefined}
+          currentPipelineName={contactData?.flows?.find((f: any) => f.pipeline.id === pipelineId)?.pipeline?.name}
+        />
       </div>
 
       {/* Edit Contact Dialog */}

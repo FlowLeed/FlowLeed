@@ -15,7 +15,8 @@ import {
   UserCheck,
   UserMinus,
   UserPlus,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -166,7 +167,15 @@ export const InteractionTimeline: React.FC<InteractionTimelineProps> = ({
                   </div>
                   
                   {interaction.details && (
-                    <p className="text-sm text-muted-foreground">{interaction.details}</p>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">{interaction.details}</p>
+                      {interaction.metadata?.ai_generated && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          AI-Assisted
+                        </Badge>
+                      )}
+                    </div>
                   )}
 
                   {/* Flow-specific context display */}

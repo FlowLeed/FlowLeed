@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, RefreshCw, AlertCircle } from 'lucide-react';
+import { Lightbulb, RefreshCw, AlertCircle, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { MessageComposerDialog } from './MessageComposerDialog';
 
 interface Suggestion {
   type: 'follow_up' | 'prayer_check' | 'birthday' | 'next_step' | 'engagement' | 'milestone' | 'stage_action';
@@ -13,10 +14,17 @@ interface Suggestion {
   description: string;
   priority: 'low' | 'medium' | 'high';
   actionText?: string;
+  requiresMessage?: boolean;
+  messageType?: 'text' | 'email';
 }
 
 interface AISuggestionsProps {
   contactId: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  currentPipelineId?: string;
+  currentPipelineName?: string;
 }
 
 const typeColors = {
@@ -35,10 +43,19 @@ const priorityVariants = {
   low: 'outline',
 } as const;
 
-export const AISuggestions: React.FC<AISuggestionsProps> = ({ contactId }) => {
+export const AISuggestions: React.FC<AISuggestionsProps> = ({ 
+  contactId,
+  contactName,
+  contactPhone,
+  contactEmail,
+  currentPipelineId,
+  currentPipelineName
+}) => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
 
   const fetchSuggestions = async () => {
     setIsLoading(true);
@@ -68,6 +85,11 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({ contactId }) => {
   useEffect(() => {
     fetchSuggestions();
   }, [contactId]);
+
+  const handleGenerateMessage = (suggestion: Suggestion) => {
+    setSelectedSuggestion(suggestion);
+    setMessageDialogOpen(true);
+  };
 
   if (isLoading) {
     return (
@@ -137,39 +159,72 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({ contactId }) => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5" />
-            AI Suggestions
-          </span>
-          <Button variant="ghost" size="icon" onClick={fetchSuggestions}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {suggestions.map((suggestion, index) => {
-            const colors = typeColors[suggestion.type];
-            return (
-              <div 
-                key={index}
-                className={`p-3 rounded-lg border ${colors.bg} ${colors.border}`}
-              >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <p className={`font-medium ${colors.text}`}>{suggestion.title}</p>
-                  <Badge variant={priorityVariants[suggestion.priority]} className="text-xs">
-                    {suggestion.priority}
-                  </Badge>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5" />
+              AI Suggestions
+            </span>
+            <Button variant="ghost" size="icon" onClick={fetchSuggestions}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {suggestions.map((suggestion, index) => {
+              const colors = typeColors[suggestion.type];
+              return (
+                <div 
+                  key={index}
+                  className={`p-3 rounded-lg border ${colors.bg} ${colors.border}`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className={`font-medium ${colors.text}`}>{suggestion.title}</p>
+                    <Badge variant={priorityVariants[suggestion.priority]} className="text-xs">
+                      {suggestion.priority}
+                    </Badge>
+                  </div>
+                  <p className={`text-sm ${colors.subtext}`}>{suggestion.description}</p>
+                  
+                  {suggestion.requiresMessage && (
+                    <div className="mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleGenerateMessage(suggestion)}
+                        className="w-full"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Generate Message
+                      </Button>
+                    </div>
+                  )}
                 </div>
-                <p className={`text-sm ${colors.subtext}`}>{suggestion.description}</p>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {selectedSuggestion && (
+        <MessageComposerDialog
+          open={messageDialogOpen}
+          onOpenChange={setMessageDialogOpen}
+          contactId={contactId}
+          contactName={contactName || 'Contact'}
+          contactPhone={contactPhone}
+          suggestionContext={{
+            type: selectedSuggestion.type,
+            title: selectedSuggestion.title,
+            description: selectedSuggestion.description
+          }}
+          messageType={selectedSuggestion.messageType || 'text'}
+          currentPipelineId={currentPipelineId}
+        />
+      )}
+    </>
   );
 };

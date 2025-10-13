@@ -134,6 +134,15 @@ IMPORTANT:
 - Recommend stage progression when appropriate
 - Give context-aware advice that aligns with the flow's purpose
 
+MESSAGE CAPABILITY:
+- When suggesting text messages, emails, or thank-you notes, set requiresMessage: true and specify messageType
+- Examples:
+  * "Send Thank-you Text" → requiresMessage: true, messageType: "text"
+  * "Follow-up Email" → requiresMessage: true, messageType: "email"
+  * "Check in via text" → requiresMessage: true, messageType: "text"
+  * "Schedule Call" → requiresMessage: false (no message content needed)
+  * "Update stage" → requiresMessage: false (action-based, not message-based)
+
 Return 3-5 prioritized, actionable suggestions.`;
 
     // Build enriched pipeline context
@@ -217,7 +226,12 @@ ${pipelineContexts || 'Not in any pipeline'}`;
                           type: 'string', 
                           enum: ['low', 'medium', 'high'] 
                         },
-                        actionText: { type: 'string' }
+                        actionText: { type: 'string' },
+                        requiresMessage: { type: 'boolean' },
+                        messageType: { 
+                          type: 'string',
+                          enum: ['text', 'email']
+                        }
                       },
                       required: ['type', 'title', 'description', 'priority'],
                       additionalProperties: false
