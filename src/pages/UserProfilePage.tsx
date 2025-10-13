@@ -848,7 +848,7 @@ const UserProfilePage = () => {
         />
 
         {/* AI Suggestions Block */}
-        <AISuggestions />
+        <AISuggestions contactId={contactId!} />
       </div>
 
       {/* Edit Contact Dialog */}
