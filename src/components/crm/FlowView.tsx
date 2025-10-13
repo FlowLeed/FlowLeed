@@ -377,13 +377,15 @@ export const FlowView: React.FC<FlowViewProps> = ({
   };
 
   const handleToggleContact = (contactId: string) => {
-    const newSelected = new Set(selectedContacts);
-    if (newSelected.has(contactId)) {
-      newSelected.delete(contactId);
-    } else {
-      newSelected.add(contactId);
-    }
-    setSelectedContacts(newSelected);
+    setSelectedContacts(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(contactId)) {
+        newSelected.delete(contactId);
+      } else {
+        newSelected.add(contactId);
+      }
+      return newSelected;
+    });
   };
 
   const handleSelectAll = () => {
