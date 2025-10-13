@@ -94,11 +94,8 @@ export const FlowsSection = () => {
                     className="cursor-pointer"
                     onClick={() => navigate(`/flows/${flow.id}`)}
                   >
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {flow.icon && <span>{flow.icon}</span>}
-                        {flow.name}
-                      </div>
+                    <TableCell className="font-light">
+                      {flow.name}
                     </TableCell>
                     <TableCell className="text-right">{flow.totalContacts}</TableCell>
                     <TableCell className="text-right">{flow.startCount}</TableCell>
