@@ -107,7 +107,7 @@ export const FlowSelectionStep: React.FC<FlowSelectionStepProps> = ({
               <div className="flex-1">
                 <h3 className="font-medium">{pipeline.name}</h3>
                 {pipeline.description && (
-                  <p className="text-sm text-muted-foreground">{pipeline.description}</p>
+                  <p className="text-sm text-muted-foreground truncate">{pipeline.description}</p>
                 )}
               </div>
             </div>
