@@ -279,7 +279,7 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
               </div>
           
           <div className="space-y-2">
-            <Label>Pipeline Steps</Label>
+            <Label>Flow</Label>
             <DragDropContext onDragEnd={handleDragEnd}>
               <Droppable droppableId="flow-steps">
                 {(provided) => (
