@@ -18,6 +18,7 @@ import IntegrationsPage from "./pages/IntegrationsPage";
 import AuthPage from "./pages/AuthPage";
 import InvitePage from "./pages/InvitePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import ContactsPage from "./pages/ContactsPage";
 
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/flows/:flowId" element={<FlowPage />} />
+                <Route path="/contacts" element={<ContactsPage />} />
                 <Route path="/contacts/:contactId" element={<UserProfilePage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/team" element={<TeamPage />} />

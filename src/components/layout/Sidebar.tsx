@@ -412,6 +412,10 @@ export const Sidebar = () => {
     icon: LayoutDashboard,
     path: "/"
   }, {
+    title: "Contacts",
+    icon: Users,
+    path: "/contacts"
+  }, {
     title: "Analytics",
     icon: BarChart3,
     path: "/analytics"
