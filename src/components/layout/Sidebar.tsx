@@ -13,24 +13,13 @@ import {
   Plus,
   Settings2,
   X,
-  Heart,
-  Star,
-  Target,
-  Zap,
-  Shield,
-  Globe,
-  Briefcase,
-  BookOpen,
-  Music,
-  Coffee,
-  Camera,
-  Gift,
-  Flame,
-  Sparkles,
   GripVertical,
   Flag,
-  FlagTriangleRight
+  FlagTriangleRight,
+  Target,
+  Heart
 } from "lucide-react";
+import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
 import { 
@@ -295,39 +284,6 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items, onSetting
     "#3b82f6", "#f59e0b", "#10b981", "#6366f1", 
     "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"
   ];
-
-  const iconOptions = [
-    Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap,
-    Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift,
-    Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3
-  ];
-
-  // Create an icon mapping object for easier lookup
-  const iconMap: { [key: string]: LucideIcon } = {
-    'Users': Users,
-    'MessageSquare': MessageSquare,
-    'Calendar': Calendar,
-    'Settings': Settings,
-    'Heart': Heart,
-    'Star': Star,
-    'Target': Target,
-    'Zap': Zap,
-    'Shield': Shield,
-    'Globe': Globe,
-    'Briefcase': Briefcase,
-    'BookOpen': BookOpen,
-    'Music': Music,
-    'Coffee': Coffee,
-    'Camera': Camera,
-    'Gift': Gift,
-    'Flame': Flame,
-    'Sparkles': Sparkles,
-    'Check': Check,
-    'Plus': Plus,
-    'Puzzle': Puzzle,
-    'LayoutDashboard': LayoutDashboard,
-    'BarChart3': BarChart3
-  };
   
   return (
     <div className="space-y-1">
@@ -366,16 +322,16 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items, onSetting
                     </PopoverTrigger>
                     <PopoverContent className="w-64 p-3">
                       <div className="grid grid-cols-6 gap-2">
-                        {iconOptions.map((IconComponent, iconIndex) => (
+                        {iconOptions.map((iconOption, iconIndex) => (
                           <button
                             key={iconIndex}
                             type="button"
-                            onClick={() => setNewFlowIcon(IconComponent)}
+                            onClick={() => setNewFlowIcon(iconOption.icon)}
                             className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
-                              newFlowIcon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
+                              newFlowIcon === iconOption.icon ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
                             }`}
                           >
-                            <IconComponent className="h-4 w-4" />
+                            <iconOption.icon className="h-4 w-4" />
                           </button>
                         ))}
                       </div>
@@ -547,39 +503,6 @@ const Logo = () => (
 export const Sidebar = () => {
   const { flows } = useFlowContext();
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
-
-  const iconOptions = [
-    Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap,
-    Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift,
-    Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3
-  ];
-
-  // Create an icon mapping object for easier lookup
-  const iconMap: { [key: string]: LucideIcon } = {
-    'Users': Users,
-    'MessageSquare': MessageSquare,
-    'Calendar': Calendar,
-    'Settings': Settings,
-    'Heart': Heart,
-    'Star': Star,
-    'Target': Target,
-    'Zap': Zap,
-    'Shield': Shield,
-    'Globe': Globe,
-    'Briefcase': Briefcase,
-    'BookOpen': BookOpen,
-    'Music': Music,
-    'Coffee': Coffee,
-    'Camera': Camera,
-    'Gift': Gift,
-    'Flame': Flame,
-    'Sparkles': Sparkles,
-    'Check': Check,
-    'Plus': Plus,
-    'Puzzle': Puzzle,
-    'LayoutDashboard': LayoutDashboard,
-    'BarChart3': BarChart3
-  };
   
   const pageItems: SidebarItem[] = [
     {

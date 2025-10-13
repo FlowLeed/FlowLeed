@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, X, Star, Wrench, User, Users, MessageSquare, Calendar, Settings, Heart, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video, UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish, Sun, Moon, Navigation, MapPin, Home, Smile, Footprints } from "lucide-react";
+import { UserPlus, X, Star, Wrench, User, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Users } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import type { LucideIcon } from "lucide-react";
 import { AIDescriptionSuggestions } from "@/components/flows/AIDescriptionSuggestions";
+import { iconMap, iconOptions } from "@/lib/flowIcons";
 
 interface FlowTeamMember {
   id: string;
@@ -42,54 +43,6 @@ interface FlowSettingsDialogProps {
   organizationId: string;
   onSave?: () => void;
 }
-
-const iconMap: { [key: string]: LucideIcon } = {
-  'Users': Users,
-  'MessageSquare': MessageSquare,
-  'Calendar': Calendar,
-  'Settings': Settings,
-  'Heart': Heart,
-  'Star': Star,
-  'Target': Target,
-  'Zap': Zap,
-  'Shield': Shield,
-  'Globe': Globe,
-  'Briefcase': Briefcase,
-  'BookOpen': BookOpen,
-  'Music': Music,
-  'Coffee': Coffee,
-  'Camera': Camera,
-  'Gift': Gift,
-  'Flame': Flame,
-  'Sparkles': Sparkles,
-  'Check': Check,
-  'Puzzle': Puzzle,
-  'LayoutDashboard': LayoutDashboard,
-  'BarChart3': BarChart3,
-  // Faith-related icons
-  'Church': Church,
-  'Cross': Cross,
-  'Book': Book,
-  'Handshake': Handshake,
-  'HeartHandshake': HeartHandshake,
-  'Fish': Fish,
-  'Waves': Waves,
-  'Sun': Sun,
-  'Moon': Moon,
-  'Footprints': Footprints,
-  // Flow-related icons
-  'Podcast': Podcast,
-  'Video': Video,
-  'UserCheck': UserCheck,
-  'Users2': Users2,
-  'GraduationCap': GraduationCap,
-  'Baby': Baby,
-  'TrendingUp': TrendingUp,
-  'Navigation': Navigation,
-  'MapPin': MapPin,
-  'Home': Home,
-  'Smile': Smile
-};
 
 const STAGE_COLORS = [
   "#ef4444", "#f97316", "#f59e0b", "#eab308", "#84cc16",

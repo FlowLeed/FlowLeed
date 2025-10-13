@@ -1,7 +1,8 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2, GripVertical, LayoutGrid, Table2 } from "lucide-react";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart } from "lucide-react";
+import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
@@ -99,40 +100,13 @@ export const Header: React.FC<HeaderProps> = ({
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [editFlowName, setEditFlowName] = useState("");
   const [editFlowDescription, setEditFlowDescription] = useState("");
+  const [editFlowIcon, setEditFlowIcon] = useState<LucideIcon>(Users);
 
   // Global search keyboard shortcut
   useGlobalSearch({ 
     onToggle: () => setShowGlobalSearch(prev => !prev) 
   });
-  const [editFlowIcon, setEditFlowIcon] = useState<LucideIcon>(Users);
   const [editFlowSteps, setEditFlowSteps] = useState<Array<{id: string, name: string, color: string}>>([]);
-
-  // Icon mapping object
-  const iconMap: { [key: string]: LucideIcon } = {
-    'Users': Users,
-    'MessageSquare': MessageSquare,
-    'Calendar': Calendar,
-    'Settings': Settings,
-    'Heart': Heart,
-    'Star': Star,
-    'Target': Target,
-    'Zap': Zap,
-    'Shield': Shield,
-    'Globe': Globe,
-    'Briefcase': Briefcase,
-    'BookOpen': BookOpen,
-    'Music': Music,
-    'Coffee': Coffee,
-    'Camera': Camera,
-    'Gift': Gift,
-    'Flame': Flame,
-    'Sparkles': Sparkles,
-    'Check': Check,
-    'Plus': Plus,
-    'Puzzle': Puzzle,
-    'LayoutDashboard': LayoutDashboard,
-    'BarChart3': BarChart3
-  };
 
   // Get the current flow and its icon
   const currentFlow = flowId ? Object.values(flows).find(f => f.id === flowId) : null;
@@ -153,12 +127,6 @@ export const Header: React.FC<HeaderProps> = ({
       FlowIcon = Heart;
     }
   }
-
-  const iconOptions = [
-    Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap,
-    Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift,
-    Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3
-  ];
 
   const colorOptions = [
     "#3b82f6", "#f59e0b", "#10b981", "#6366f1", 
@@ -442,16 +410,16 @@ export const Header: React.FC<HeaderProps> = ({
                     </PopoverTrigger>
                     <PopoverContent className="w-64 p-3">
                       <div className="grid grid-cols-6 gap-2">
-                        {iconOptions.map((IconComponent, iconIndex) => (
+                        {iconOptions.map((iconOption, iconIndex) => (
                           <button
                             key={iconIndex}
                             type="button"
-                            onClick={() => setEditFlowIcon(IconComponent)}
+                            onClick={() => setEditFlowIcon(iconOption.icon)}
                             className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
-                              editFlowIcon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
+                              editFlowIcon === iconOption.icon ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
                             }`}
                           >
-                            <IconComponent className="h-4 w-4" />
+                            <iconOption.icon className="h-4 w-4" />
                           </button>
                         ))}
                       </div>
