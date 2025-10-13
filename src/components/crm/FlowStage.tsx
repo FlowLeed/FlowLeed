@@ -12,6 +12,9 @@ interface FlowStageProps {
   onDeleteContact?: (contactId: string, stageId: string) => void;
   onUpdateStage?: (stageId: string, name: string, color: string) => void;
   pipelineId?: string;
+  isSelectMode?: boolean;
+  selectedContacts?: Set<string>;
+  onToggleContact?: (contactId: string) => void;
 }
 
 // Default colors for different stages
@@ -35,7 +38,10 @@ export const FlowStage: React.FC<FlowStageProps> = ({
   onEditContact,
   onDeleteContact,
   onUpdateStage,
-  pipelineId
+  pipelineId,
+  isSelectMode = false,
+  selectedContacts = new Set(),
+  onToggleContact
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const stageColor = stage.color || getStageColor(stage.name);
@@ -92,6 +98,9 @@ export const FlowStage: React.FC<FlowStageProps> = ({
                         onEdit={() => onEditContact?.(contact)} 
                         onDelete={() => onDeleteContact?.(contact.id, stage.id)}
                         pipelineId={pipelineId}
+                        isSelectMode={isSelectMode}
+                        isSelected={selectedContacts.has(contact.id)}
+                        onToggleSelect={() => onToggleContact?.(contact.id)}
                       />
                     </div>
                   )}

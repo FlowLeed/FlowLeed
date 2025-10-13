@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,9 @@ interface FlowTableViewProps {
   onEditContact: (contact: Contact) => void;
   onDeleteContact: (contactId: string, stageId: string) => void;
   onFlowChange?: (flow: Flow) => void;
+  isSelectMode?: boolean;
+  selectedContacts?: Set<string>;
+  onToggleContact?: (contactId: string) => void;
 }
 
 type SortField = 'name' | 'stage' | 'email' | 'phone' | 'assignedTo' | 'date';
@@ -44,6 +48,9 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
   onEditContact,
   onDeleteContact,
   onFlowChange,
+  isSelectMode = false,
+  selectedContacts = new Set(),
+  onToggleContact
 }) => {
   const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>('date');
@@ -209,6 +216,22 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {isSelectMode && (
+                      <TableHead className="w-12">
+                        <Checkbox 
+                          checked={contacts.length > 0 && contacts.every(c => selectedContacts.has(c.id))}
+                          onCheckedChange={(checked) => {
+                            contacts.forEach(c => {
+                              if (checked && !selectedContacts.has(c.id)) {
+                                onToggleContact?.(c.id);
+                              } else if (!checked && selectedContacts.has(c.id)) {
+                                onToggleContact?.(c.id);
+                              }
+                            });
+                          }}
+                        />
+                      </TableHead>
+                    )}
                     <SortableHeader field="name">Name</SortableHeader>
                     <SortableHeader field="email">Email</SortableHeader>
                     <SortableHeader field="phone">Phone</SortableHeader>
@@ -219,7 +242,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                 <TableBody>
                   {contacts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
+                      <TableCell colSpan={isSelectMode ? 6 : 5} className="text-center text-muted-foreground py-4">
                         No contacts in this stage
                       </TableCell>
                     </TableRow>
@@ -227,9 +250,26 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                     contacts.map((contact) => (
                       <TableRow 
                         key={contact.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/contacts/${contact.id}?pipelineId=${flow.id}`)}
+                        className={`cursor-pointer hover:bg-muted/50 ${
+                          isSelectMode && selectedContacts.has(contact.id) ? 'bg-primary/5' : ''
+                        }`}
+                        onClick={(e) => {
+                          if (isSelectMode) {
+                            e.preventDefault();
+                            onToggleContact?.(contact.id);
+                          } else {
+                            navigate(`/contacts/${contact.id}?pipelineId=${flow.id}`);
+                          }
+                        }}
                       >
+                        {isSelectMode && (
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox 
+                              checked={selectedContacts.has(contact.id)}
+                              onCheckedChange={() => onToggleContact?.(contact.id)}
+                            />
+                          </TableCell>
+                        )}
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Avatar className="h-8 w-8">
@@ -286,7 +326,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                   
                   {/* Add Item Row */}
                   <TableRow className="hover:bg-muted/30 border-t">
-                    <TableCell colSpan={5}>
+                    <TableCell colSpan={isSelectMode ? 6 : 5}>
                       <button 
                         className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 w-full py-1"
                         onClick={() => {

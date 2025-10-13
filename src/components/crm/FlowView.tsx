@@ -4,6 +4,7 @@ import { FlowStage } from "./FlowStage";
 import { FlowTableView } from "./FlowTableView";
 import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
+import { BulkActionsToolbar } from "./BulkActionsToolbar";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
@@ -11,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
+import { useBulkActions } from "@/hooks/useBulkActions";
 
 interface TeamMember {
   id: string;
@@ -37,6 +39,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
     const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
     return (saved === 'table' || saved === 'kanban') ? saved : 'kanban';
   });
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const { organization } = useProfile();
   const queryClient = useQueryClient();
 
@@ -366,6 +370,71 @@ export const FlowView: React.FC<FlowViewProps> = ({
     return "active";
   };
 
+  // Selection handlers
+  const handleToggleSelectMode = () => {
+    setIsSelectMode(!isSelectMode);
+    setSelectedContacts(new Set());
+  };
+
+  const handleToggleContact = (contactId: string) => {
+    const newSelected = new Set(selectedContacts);
+    if (newSelected.has(contactId)) {
+      newSelected.delete(contactId);
+    } else {
+      newSelected.add(contactId);
+    }
+    setSelectedContacts(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    const allContactIds = flow.stages.flatMap(stage => 
+      stage.contacts.map(c => c.id)
+    );
+    setSelectedContacts(new Set(allContactIds));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedContacts(new Set());
+  };
+
+  // Bulk actions
+  const { bulkChangeStage, bulkReassign, bulkAddTags, bulkRemoveTags, bulkDelete, isLoading: bulkLoading } = useBulkActions(flow.id);
+
+  const handleBulkStageChange = async (stageId: string) => {
+    const success = await bulkChangeStage(Array.from(selectedContacts), stageId);
+    if (success) {
+      window.location.reload();
+    }
+  };
+
+  const handleBulkReassign = async (userId: string | null) => {
+    const success = await bulkReassign(Array.from(selectedContacts), userId);
+    if (success) {
+      window.location.reload();
+    }
+  };
+
+  const handleBulkAddTags = async (tags: string[]) => {
+    const success = await bulkAddTags(Array.from(selectedContacts), tags);
+    if (success) {
+      window.location.reload();
+    }
+  };
+
+  const handleBulkRemoveTags = async (tags: string[]) => {
+    const success = await bulkRemoveTags(Array.from(selectedContacts), tags);
+    if (success) {
+      window.location.reload();
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const success = await bulkDelete(Array.from(selectedContacts));
+    if (success) {
+      window.location.reload();
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Header 
@@ -382,6 +451,9 @@ export const FlowView: React.FC<FlowViewProps> = ({
         contactCounts={contactCounts}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        isSelectMode={isSelectMode}
+        onToggleSelectMode={handleToggleSelectMode}
+        onSelectAll={handleSelectAll}
       />
       <div className="flex-1 overflow-x-auto p-6">
         {viewMode === 'kanban' ? (
@@ -396,6 +468,9 @@ export const FlowView: React.FC<FlowViewProps> = ({
                   onDeleteContact={handleDeleteContact}
                   onUpdateStage={handleUpdateStage}
                   pipelineId={flow.id}
+                  isSelectMode={isSelectMode}
+                  selectedContacts={selectedContacts}
+                  onToggleContact={handleToggleContact}
                 />
               ))}
             </div>
@@ -406,9 +481,27 @@ export const FlowView: React.FC<FlowViewProps> = ({
             onEditContact={handleEditContact}
             onDeleteContact={handleDeleteContact}
             onFlowChange={onFlowChange}
+            isSelectMode={isSelectMode}
+            selectedContacts={selectedContacts}
+            onToggleContact={handleToggleContact}
           />
         )}
       </div>
+      
+      {isSelectMode && selectedContacts.size > 0 && (
+        <BulkActionsToolbar
+          selectedCount={selectedContacts.size}
+          onClearSelection={handleClearSelection}
+          onStageChange={handleBulkStageChange}
+          onReassign={handleBulkReassign}
+          onAddTags={handleBulkAddTags}
+          onRemoveTags={handleBulkRemoveTags}
+          onDelete={handleBulkDelete}
+          stages={flow.stages}
+          teamMembers={teamMembers}
+          isLoading={bulkLoading}
+        />
+      )}
       {isFormOpen && (
         <ContactFormDialog
           open={isFormOpen}

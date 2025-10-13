@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart } from "lucide-react";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
@@ -72,6 +72,9 @@ interface HeaderProps {
   };
   viewMode?: 'kanban' | 'table';
   onViewModeChange?: (mode: 'kanban' | 'table') => void;
+  isSelectMode?: boolean;
+  onToggleSelectMode?: () => void;
+  onSelectAll?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -85,7 +88,10 @@ export const Header: React.FC<HeaderProps> = ({
   onFilterChange,
   contactCounts,
   viewMode,
-  onViewModeChange
+  onViewModeChange,
+  isSelectMode = false,
+  onToggleSelectMode,
+  onSelectAll
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
@@ -291,27 +297,54 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
         
-        {/* View Toggle */}
-        {viewMode && onViewModeChange && (
-          <div className="flex items-center gap-1 ml-2 border rounded-md p-1">
-            <Button
-              variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => onViewModeChange('kanban')}
-              className="h-7 px-2"
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => onViewModeChange('table')}
-              className="h-7 px-2"
-            >
-              <Table2 className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        {/* View Toggle and Select Mode */}
+        <div className="flex items-center gap-2">
+          {viewMode && onViewModeChange && (
+            <div className="flex items-center gap-1 border rounded-md p-1">
+              <Button
+                variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => onViewModeChange('kanban')}
+                className="h-7 px-2"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => onViewModeChange('table')}
+                className="h-7 px-2"
+              >
+                <Table2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          
+          {onToggleSelectMode && (
+            <div className="flex items-center gap-1 border rounded-md p-1">
+              <Button
+                variant={isSelectMode ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={onToggleSelectMode}
+                className="h-7 px-2"
+                title={isSelectMode ? 'Exit select mode' : 'Enter select mode'}
+              >
+                <CheckSquare className="h-4 w-4" />
+              </Button>
+              {isSelectMode && onSelectAll && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onSelectAll}
+                  className="h-7 px-2"
+                  title="Select all"
+                >
+                  <SquareCheck className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
         
         {/* Assignee Filters */}
         {teamMembers.length > 0 && contactCounts && onFilterChange && (

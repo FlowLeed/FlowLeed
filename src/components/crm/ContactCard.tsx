@@ -3,6 +3,7 @@ import { Contact } from "@/types/crm";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MoreVertical, MessageSquare, Mail, Phone } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
 import { differenceInDays } from "date-fns";
 
@@ -22,12 +23,18 @@ interface ContactCardProps {
   onEdit?: (contact: Contact) => void;
   onDelete?: (contact: Contact) => void;
   pipelineId?: string;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }
 export const ContactCard: React.FC<ContactCardProps> = ({
   contact,
   onEdit,
   onDelete,
-  pipelineId
+  pipelineId,
+  isSelectMode = false,
+  isSelected = false,
+  onToggleSelect
 }) => {
   const {
     name,
@@ -39,40 +46,77 @@ export const ContactCard: React.FC<ContactCardProps> = ({
     phone,
     stageEnteredAt
   } = contact;
-  return <div className="contact-card bg-white p-3 border border-gray-200 mb-3 hover:border-blue-300 transition-all duration-200 rounded-xl overflow-hidden max-w-full">
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (isSelectMode) {
+      e.preventDefault();
+      onToggleSelect?.();
+    }
+  };
+
+  return <div 
+      className={`contact-card bg-white p-3 border-2 mb-3 transition-all duration-200 rounded-xl overflow-hidden max-w-full cursor-pointer ${
+        isSelectMode 
+          ? (isSelected ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50')
+          : 'border-gray-200 hover:border-blue-300'
+      }`}
+      onClick={handleCardClick}
+    >
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-2 items-center min-w-0 flex-1">
-          <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="flex-shrink-0">
-            <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all">
-              {avatar ? <img src={avatar} alt={name} className="rounded-full" /> : <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
-                  {name.charAt(0)}
-                </div>}
-            </Avatar>
-          </Link>
-          <div className="min-w-0 flex-1">
-            <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="hover:text-blue-600 transition-colors">
-              <h4 className="font-medium text-sm cursor-pointer truncate" title={name}>{name}</h4>
-            </Link>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
+          {isSelectMode ? (
+            <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+              <Checkbox 
+                checked={isSelected}
+                onCheckedChange={onToggleSelect}
+                className="h-5 w-5"
+              />
             </div>
+          ) : (
+            <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="flex-shrink-0">
+              <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all">
+                {avatar ? <img src={avatar} alt={name} className="rounded-full" /> : <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
+                    {name.charAt(0)}
+                  </div>}
+              </Avatar>
+            </Link>
+          )}
+          <div className="min-w-0 flex-1">
+            {isSelectMode ? (
+              <>
+                <h4 className="font-medium text-sm truncate" title={name}>{name}</h4>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="hover:text-blue-600 transition-colors">
+                  <h4 className="font-medium text-sm cursor-pointer truncate" title={name}>{name}</h4>
+                </Link>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="action-button">
-              <MoreVertical className="h-4 w-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit?.(contact)}>
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDelete?.(contact)} className="text-red-600">
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {!isSelectMode && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="action-button" onClick={(e) => e.stopPropagation()}>
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit?.(contact)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onDelete?.(contact)} className="text-red-600">
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {tags && tags.length > 0 && <div className="flex gap-1.5 mb-3 flex-wrap">
