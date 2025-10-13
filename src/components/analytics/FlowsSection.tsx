@@ -78,8 +78,6 @@ export const FlowsSection = () => {
               <TableRow>
                 <TableHead>Flow Name</TableHead>
                 <TableHead className="text-right">Total Contacts</TableHead>
-                <TableHead className="text-right">Start Step</TableHead>
-                <TableHead className="text-right">End Step</TableHead>
                 <TableHead className="text-right">Conversion Rate</TableHead>
                 <TableHead className="text-right">Avg. Time (days)</TableHead>
                 <TableHead>Status</TableHead>
@@ -98,8 +96,6 @@ export const FlowsSection = () => {
                       {flow.name}
                     </TableCell>
                     <TableCell className="text-right">{flow.totalContacts}</TableCell>
-                    <TableCell className="text-right">{flow.startCount}</TableCell>
-                    <TableCell className="text-right">{flow.endCount}</TableCell>
                     <TableCell className="text-right">
                       {flow.conversionRate.toFixed(1)}%
                     </TableCell>
@@ -114,7 +110,7 @@ export const FlowsSection = () => {
               })}
               {flows?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     No flows found
                   </TableCell>
                 </TableRow>
