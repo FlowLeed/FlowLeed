@@ -48,7 +48,7 @@ export const FlowStage: React.FC<FlowStageProps> = ({
     <>
       <div 
         style={{ borderColor: stageColor }} 
-        className="flow-column w-72 flex-shrink-0 bg-transparent p-3 border shadow-sm rounded-xl"
+        className="flow-column w-72 flex-shrink-0 bg-transparent p-3 border shadow-sm rounded-xl flex flex-col"
       >
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export const FlowStage: React.FC<FlowStageProps> = ({
         <Droppable droppableId={stage.id}>
           {(provided, snapshot) => (
             <div 
-              className={`space-y-3 min-h-[200px] transition-colors ${
+              className={`space-y-3 min-h-[200px] flex-1 p-2 rounded-lg transition-colors ${
                 snapshot.isDraggingOver ? "bg-blue-50" : ""
               }`} 
               ref={provided.innerRef} 
