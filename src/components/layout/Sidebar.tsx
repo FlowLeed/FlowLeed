@@ -29,8 +29,7 @@ import {
   Sparkles,
   GripVertical,
   Flag,
-  FlagTriangleRight,
-  Church
+  FlagTriangleRight
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -540,9 +539,8 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items, onSetting
 };
 
 const Logo = () => (
-  <div className="px-8 py-6 flex items-center gap-2">
-    <Church className="h-8 w-8 text-purple-500" />
-    <span className="text-xl font-bold">Flowleed</span>
+  <div className="px-8 py-6 flex items-center">
+    <img src="/lovable-uploads/55fbe855-f2cf-4756-8840-95900f9d4fbf.png" alt="Flowleed" className="h-8 w-auto" />
   </div>
 );
 
