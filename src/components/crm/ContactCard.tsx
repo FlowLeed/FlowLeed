@@ -52,58 +52,37 @@ export const ContactCard: React.FC<ContactCardProps> = ({
       onToggleSelect?.();
     }
   };
-
-  return <div 
-      className={`contact-card bg-white p-3 border-2 mb-3 transition-all duration-200 rounded-xl overflow-hidden max-w-full cursor-pointer ${
-        isSelectMode 
-          ? (isSelected ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50')
-          : 'border-gray-200 hover:border-blue-300'
-      }`}
-      onClick={handleCardClick}
-    >
+  return <div className={`contact-card bg-white p-3 border-2 mb-3 transition-all duration-200 rounded-xl overflow-hidden max-w-full cursor-pointer ${isSelectMode ? isSelected ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50' : 'border-gray-200 hover:border-blue-300'}`} onClick={handleCardClick}>
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-2 items-center min-w-0 flex-1">
-          {isSelectMode ? (
-            <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-              <Checkbox 
-                checked={isSelected}
-                onCheckedChange={onToggleSelect}
-                className="h-5 w-5"
-              />
-            </div>
-          ) : (
-            <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="flex-shrink-0">
+          {isSelectMode ? <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+              <Checkbox checked={isSelected} onCheckedChange={onToggleSelect} className="h-5 w-5" />
+            </div> : <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="flex-shrink-0">
               <Avatar className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all">
                 {avatar ? <img src={avatar} alt={name} className="rounded-full" /> : <div className="bg-crm-primary text-white rounded-full w-full h-full flex items-center justify-center">
                     {name.charAt(0)}
                   </div>}
               </Avatar>
-            </Link>
-          )}
+            </Link>}
           <div className="min-w-0 flex-1">
-            {isSelectMode ? (
-              <>
+            {isSelectMode ? <>
                 <h4 className="font-medium text-sm truncate" title={name}>{name}</h4>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
                 </div>
-              </>
-            ) : (
-              <>
+              </> : <>
                 <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="hover:text-blue-600 transition-colors">
-                  <h4 className="font-medium text-sm cursor-pointer truncate" title={name}>{name}</h4>
+                  <h4 title={name} className="text-sm cursor-pointer truncate font-normal">{name}</h4>
                 </Link>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
                 </div>
-              </>
-            )}
+              </>}
           </div>
         </div>
-        {!isSelectMode && (
-          <DropdownMenu>
+        {!isSelectMode && <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="action-button" onClick={(e) => e.stopPropagation()}>
+              <button className="action-button" onClick={e => e.stopPropagation()}>
                 <MoreVertical className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
@@ -115,8 +94,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+          </DropdownMenu>}
       </div>
 
       {tags && tags.length > 0 && <div className="flex gap-1.5 mb-3 flex-wrap">
@@ -127,8 +105,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
         </div>}
 
       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
-        {assignedTo ? (
-          <div className="flex gap-2 items-center min-w-0 flex-1">
+        {assignedTo ? <div className="flex gap-2 items-center min-w-0 flex-1">
             <Avatar className="h-6 w-6 flex-shrink-0">
               <AvatarImage src={assignedTo.avatar} alt={assignedTo.name} />
               <AvatarFallback className="bg-gray-300 text-white text-xs">
@@ -137,23 +114,20 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             </Avatar>
             <span className="text-xs text-gray-600 truncate" title={assignedTo.name}>
               {(() => {
-                const nameParts = assignedTo.name.split(' ');
-                const firstName = nameParts[0] || '';
-                const lastNameInitial = nameParts[1]?.charAt(0) || '';
-                return `${firstName}${lastNameInitial ? ` ${lastNameInitial}.` : ''}`;
-              })()}
+            const nameParts = assignedTo.name.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastNameInitial = nameParts[1]?.charAt(0) || '';
+            return `${firstName}${lastNameInitial ? ` ${lastNameInitial}.` : ''}`;
+          })()}
             </span>
-          </div>
-        ) : (
-          <div className="flex gap-2 items-center min-w-0 flex-1">
+          </div> : <div className="flex gap-2 items-center min-w-0 flex-1">
             <Avatar className="h-6 w-6 flex-shrink-0">
               <AvatarFallback className="bg-gray-400 text-white text-xs">
                 ?
               </AvatarFallback>
             </Avatar>
             <span className="text-xs text-gray-500">Unassigned</span>
-          </div>
-        )}
+          </div>}
         <div className="flex gap-1 flex-shrink-0">
           {phone && <a href={`sms:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send text message">
               <MessageSquare className="h-3.5 w-3.5" />
