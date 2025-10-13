@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { UserPlus, X, Star, Wrench, User, Users, MessageSquare, Calendar, Settings, Heart, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video, UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish, Sun, Moon, Navigation, MapPin, Home, Smile, Footprints } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import type { LucideIcon } from "lucide-react";
+import { AIDescriptionSuggestions } from "@/components/flows/AIDescriptionSuggestions";
 
 interface FlowTeamMember {
   id: string;
@@ -562,6 +563,12 @@ export const FlowSettingsDialog = ({
               onChange={(e) => setFlowDescription(e.target.value)}
               placeholder="Enter flow description (optional)"
               rows={3}
+            />
+            <AIDescriptionSuggestions
+              flowName={flowName}
+              stages={flowSteps}
+              currentDescription={flowDescription}
+              onSelect={setFlowDescription}
             />
           </div>
 

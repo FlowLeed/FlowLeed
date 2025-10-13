@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.generate-contact-suggestions]
 verify_jwt = false
+
+[functions.generate-flow-description]
+verify_jwt = false

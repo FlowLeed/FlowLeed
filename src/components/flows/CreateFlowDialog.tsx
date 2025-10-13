@@ -48,6 +48,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useFlowContext } from "@/contexts/FlowContext";
 import type { LucideIcon } from "lucide-react";
+import { AIDescriptionSuggestions } from "./AIDescriptionSuggestions";
 
 interface FlowStep {
   name: string;
@@ -260,16 +261,22 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="flow-description">Description</Label>
-            <Textarea
-              id="flow-description"
-              value={newFlowDescription}
-              onChange={(e) => setNewFlowDescription(e.target.value)}
-              placeholder="Enter flow description (optional)"
-              className="min-h-[80px]"
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="flow-description">Description</Label>
+                <Textarea
+                  id="flow-description"
+                  value={newFlowDescription}
+                  onChange={(e) => setNewFlowDescription(e.target.value)}
+                  placeholder="Enter flow description (optional)"
+                  className="min-h-[80px]"
+                />
+                <AIDescriptionSuggestions
+                  flowName={newFlowName}
+                  stages={newFlowSteps}
+                  currentDescription={newFlowDescription}
+                  onSelect={setNewFlowDescription}
+                />
+              </div>
           
           <div className="space-y-2">
             <Label>Pipeline Steps</Label>
