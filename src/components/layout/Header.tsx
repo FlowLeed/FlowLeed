@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2, GripVertical, LayoutGrid, Table2, Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video, UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish, Sun, Moon, Navigation, MapPin, Home, Smile, Footprints } from "lucide-react";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2, GripVertical, LayoutGrid, Table2, Church } from "lucide-react";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
@@ -131,30 +131,7 @@ export const Header: React.FC<HeaderProps> = ({
     'Plus': Plus,
     'Puzzle': Puzzle,
     'LayoutDashboard': LayoutDashboard,
-    'BarChart3': BarChart3,
-    // Faith-related
-    'Church': Church,
-    'Cross': Cross,
-    'Book': Book,
-    'Handshake': Handshake,
-    'HeartHandshake': HeartHandshake,
-    'Fish': Fish,
-    'Waves': Waves,
-    'Sun': Sun,
-    'Moon': Moon,
-    'Footprints': Footprints,
-    // Others used in settings
-    'Podcast': Podcast,
-    'Video': Video,
-    'UserCheck': UserCheck,
-    'Users2': Users2,
-    'GraduationCap': GraduationCap,
-    'Baby': Baby,
-    'TrendingUp': TrendingUp,
-    'Navigation': Navigation,
-    'MapPin': MapPin,
-    'Home': Home,
-    'Smile': Smile
+    'BarChart3': BarChart3
   };
 
   // Get the current flow and its icon
