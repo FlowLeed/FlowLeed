@@ -206,7 +206,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
               {stage.name}
             </span>
             <Badge variant="secondary" className="text-xs">
-              {contacts.length} {contacts.length === 1 ? 'item' : 'items'}
+              {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
             </Badge>
           </div>
 
