@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Flow, Contact, FlowStage } from "@/types/crm";
 import {
   Table,
@@ -44,6 +45,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
   onDeleteContact,
   onFlowChange,
 }) => {
+  const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [expandedStages, setExpandedStages] = useState<Set<string>>(
@@ -226,7 +228,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                       <TableRow 
                         key={contact.id}
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => onEditContact(contact)}
+                        onClick={() => navigate(`/contacts/${contact.id}?pipelineId=${flow.id}`)}
                       >
                         <TableCell>
                           <div className="flex items-center gap-2">
