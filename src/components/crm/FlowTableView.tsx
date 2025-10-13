@@ -18,7 +18,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2, ArrowUpDown } from "lucide-react";
+import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -46,54 +46,67 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
 }) => {
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [expandedStages, setExpandedStages] = useState<Set<string>>(
+    new Set(flow.stages.map(s => s.id))
+  );
 
-  // Flatten all contacts from all stages
-  const allContacts: ContactWithStage[] = useMemo(() => {
-    const contacts: ContactWithStage[] = [];
-    flow.stages.forEach((stage) => {
-      stage.contacts.forEach((contact) => {
-        contacts.push({
-          ...contact,
-          stageId: stage.id,
-          stageName: stage.name,
-          stageColor: stage.color,
-        });
-      });
-    });
-    return contacts;
-  }, [flow]);
+  // Group contacts by stage
+  const contactsByStage = useMemo(() => {
+    return flow.stages.map(stage => ({
+      stage,
+      contacts: stage.contacts.map(contact => ({
+        ...contact,
+        stageId: stage.id,
+        stageName: stage.name,
+        stageColor: stage.color,
+      }))
+    }));
+  }, [flow.stages]);
 
-  // Sort contacts
-  const sortedContacts = useMemo(() => {
-    const sorted = [...allContacts];
-    sorted.sort((a, b) => {
-      let comparison = 0;
-      
-      switch (sortField) {
-        case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case 'stage':
-          comparison = a.stageName.localeCompare(b.stageName);
-          break;
-        case 'email':
-          comparison = (a.email || '').localeCompare(b.email || '');
-          break;
-        case 'phone':
-          comparison = (a.phone || '').localeCompare(b.phone || '');
-          break;
-        case 'assignedTo':
-          comparison = (a.assignedTo?.name || '').localeCompare(b.assignedTo?.name || '');
-          break;
-        case 'date':
-          comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-          break;
+  // Sort contacts within each stage group
+  const sortedContactsByStage = useMemo(() => {
+    return contactsByStage.map(group => ({
+      ...group,
+      contacts: [...group.contacts].sort((a, b) => {
+        let comparison = 0;
+        
+        switch (sortField) {
+          case 'name':
+            comparison = a.name.localeCompare(b.name);
+            break;
+          case 'stage':
+            comparison = a.stageName.localeCompare(b.stageName);
+            break;
+          case 'email':
+            comparison = (a.email || '').localeCompare(b.email || '');
+            break;
+          case 'phone':
+            comparison = (a.phone || '').localeCompare(b.phone || '');
+            break;
+          case 'assignedTo':
+            comparison = (a.assignedTo?.name || '').localeCompare(b.assignedTo?.name || '');
+            break;
+          case 'date':
+            comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+            break;
+        }
+        
+        return sortDirection === 'asc' ? comparison : -comparison;
+      })
+    }));
+  }, [contactsByStage, sortField, sortDirection]);
+
+  const toggleStage = (stageId: string) => {
+    setExpandedStages(prev => {
+      const next = new Set(prev);
+      if (next.has(stageId)) {
+        next.delete(stageId);
+      } else {
+        next.add(stageId);
       }
-      
-      return sortDirection === 'asc' ? comparison : -comparison;
+      return next;
     });
-    return sorted;
-  }, [allContacts, sortField, sortDirection]);
+  };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -163,158 +176,185 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
   );
 
   return (
-    <div className="w-full overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <SortableHeader field="name">Name</SortableHeader>
-            <SortableHeader field="stage">Stage</SortableHeader>
-            <SortableHeader field="email">Email</SortableHeader>
-            <SortableHeader field="phone">Phone</SortableHeader>
-            <SortableHeader field="assignedTo">Assigned To</SortableHeader>
-            <TableHead>Tags</TableHead>
-            <TableHead>Status</TableHead>
-            <SortableHeader field="date">Date Added</SortableHeader>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedContacts.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
-                No contacts found
-              </TableCell>
-            </TableRow>
-          ) : (
-            sortedContacts.map((contact) => (
-              <TableRow 
-                key={`${contact.id}-${contact.stageId}`}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => onEditContact(contact)}
-              >
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={contact.avatar} alt={contact.name} />
-                      <AvatarFallback>
-                        {contact.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{contact.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Select
-                    value={contact.stageId}
-                    onValueChange={(value) => handleStageChange(contact, value)}
-                  >
-                    <SelectTrigger className="w-[160px] h-8">
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: contact.stageColor || '#3b82f6' }}
-                        />
-                        <SelectValue />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {flow.stages.map((stage) => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: stage.color || '#3b82f6' }}
-                            />
-                            {stage.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {contact.email || '—'}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {contact.phone || '—'}
-                </TableCell>
-                <TableCell>
-                  {contact.assignedTo ? (
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={contact.assignedTo.avatar} alt={contact.assignedTo.name} />
-                        <AvatarFallback className="text-xs">
-                          {contact.assignedTo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">{contact.assignedTo.name}</span>
-                    </div>
+    <div className="w-full space-y-4">
+      {sortedContactsByStage.map(({ stage, contacts }) => (
+        <div key={stage.id} className="space-y-0 border rounded-lg overflow-hidden">
+          {/* Stage Header */}
+          <div 
+            className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 border-l-4 bg-background"
+            style={{ borderLeftColor: stage.color || '#3b82f6' }}
+            onClick={() => toggleStage(stage.id)}
+          >
+            <ChevronDown 
+              className={`h-4 w-4 transition-transform ${
+                expandedStages.has(stage.id) ? '' : '-rotate-90'
+              }`}
+            />
+            <span 
+              className="font-semibold text-base"
+              style={{ color: stage.color || '#3b82f6' }}
+            >
+              {stage.name}
+            </span>
+            <Badge variant="secondary" className="text-xs">
+              {contacts.length} {contacts.length === 1 ? 'item' : 'items'}
+            </Badge>
+          </div>
+
+          {/* Table for this stage */}
+          {expandedStages.has(stage.id) && (
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <SortableHeader field="name">Name</SortableHeader>
+                    <SortableHeader field="email">Email</SortableHeader>
+                    <SortableHeader field="phone">Phone</SortableHeader>
+                    <SortableHeader field="assignedTo">Assigned To</SortableHeader>
+                    <TableHead>Tags</TableHead>
+                    <TableHead>Status</TableHead>
+                    <SortableHeader field="date">Date Added</SortableHeader>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contacts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-4">
+                        No contacts in this stage
+                      </TableCell>
+                    </TableRow>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    contacts.map((contact) => (
+                      <TableRow 
+                        key={contact.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => onEditContact(contact)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={contact.avatar} alt={contact.name} />
+                              <AvatarFallback>
+                                {contact.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{contact.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {contact.email || '—'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {contact.phone || '—'}
+                        </TableCell>
+                        <TableCell>
+                          {contact.assignedTo ? (
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={contact.assignedTo.avatar} alt={contact.assignedTo.name} />
+                                <AvatarFallback className="text-xs">
+                                  {contact.assignedTo.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm">{contact.assignedTo.name}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap max-w-[200px]">
+                            {contact.tags.length > 0 ? (
+                              contact.tags.slice(0, 3).map((tag, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                            {contact.tags.length > 3 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{contact.tags.length - 3}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              contact.status === 'active' ? 'default' : 
+                              contact.status === 'inactive' ? 'secondary' : 
+                              'outline'
+                            }
+                            className="capitalize"
+                          >
+                            {contact.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {new Date(contact.date).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditContact(contact);
+                              }}
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteContact(contact.id, contact.stageId);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
                   )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1 flex-wrap max-w-[200px]">
-                    {contact.tags.length > 0 ? (
-                      contact.tags.slice(0, 3).map((tag, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                    {contact.tags.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{contact.tags.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge 
-                    variant={
-                      contact.status === 'active' ? 'default' : 
-                      contact.status === 'inactive' ? 'secondary' : 
-                      'outline'
-                    }
-                    className="capitalize"
-                  >
-                    {contact.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(contact.date).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditContact(contact);
-                      }}
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteContact(contact.id, contact.stageId);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
+                  
+                  {/* Add Item Row */}
+                  <TableRow className="hover:bg-muted/30 border-t">
+                    <TableCell colSpan={8}>
+                      <button 
+                        className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 w-full py-1"
+                        onClick={() => {
+                          const newContact = {
+                            id: '',
+                            name: '',
+                            email: '',
+                            phone: '',
+                            avatar: '',
+                            tags: [],
+                            status: 'active',
+                            date: new Date().toISOString(),
+                            stageId: stage.id,
+                          } as Contact;
+                          onEditContact(newContact);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add Item
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
           )}
-        </TableBody>
-      </Table>
+        </div>
+      ))}
     </div>
   );
 };
