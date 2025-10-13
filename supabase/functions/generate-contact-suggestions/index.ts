@@ -69,15 +69,33 @@ serve(async (req) => {
       .eq('contact_id', contactId)
       .maybeSingle();
 
-    // Fetch pipeline information
+    // Fetch pipeline information with descriptions and stage details
     const { data: pipelineContacts } = await supabase
       .from('pipeline_contacts')
       .select(`
         created_at,
-        pipelines(name),
-        pipeline_stages(name)
+        stage_order,
+        pipelines(
+          name, 
+          description,
+          id
+        ),
+        pipeline_stages(
+          name,
+          stage_order,
+          is_start_step,
+          is_end_step
+        )
       `)
       .eq('contact_id', contactId);
+
+    // Fetch all stages for each pipeline to show full flow structure
+    const pipelineIds = [...new Set(pipelineContacts?.map(pc => pc.pipelines.id) || [])];
+    const { data: allStages } = await supabase
+      .from('pipeline_stages')
+      .select('pipeline_id, name, stage_order, is_start_step, is_end_step')
+      .in('pipeline_id', pipelineIds)
+      .order('stage_order', { ascending: true });
 
     // Calculate last interaction date
     const lastInteraction = interactions?.[0];
@@ -98,7 +116,7 @@ serve(async (req) => {
       }
     }
 
-    // Build AI prompt
+    // Build AI prompt with enhanced flow context
     const systemPrompt = `You are a pastoral care assistant analyzing contact engagement data to suggest next steps.
 
 Focus on:
@@ -106,9 +124,43 @@ Focus on:
 - Prayer request check-ins (active requests older than 7 days)
 - Upcoming birthdays (within 30 days)
 - Pipeline progression issues (stalled contacts)
+- Stage-specific recommendations based on flow purpose
 - Relationship building opportunities
 
+IMPORTANT: 
+- Consider the flow description to understand the ministry context
+- Use stage sequence to suggest appropriate next steps
+- Identify if contact is stalled (too long in one stage without progression)
+- Recommend stage progression when appropriate
+- Give context-aware advice that aligns with the flow's purpose
+
 Return 3-5 prioritized, actionable suggestions.`;
+
+    // Build enriched pipeline context
+    const pipelineContexts = pipelineIds.map(pipelineId => {
+      const contact = pipelineContacts?.find(pc => pc.pipelines.id === pipelineId);
+      if (!contact) return '';
+      
+      const stages = allStages?.filter(s => s.pipeline_id === pipelineId) || [];
+      const currentStage = contact.pipeline_stages;
+      
+      const stageSequence = stages
+        .map(s => {
+          const marker = s.is_start_step ? '→ START' : s.is_end_step ? '→ END' : '';
+          const current = s.stage_order === currentStage?.stage_order ? '**[CURRENT]**' : '';
+          return `  ${s.stage_order + 1}. ${s.name} ${marker} ${current}`.trim();
+        })
+        .join('\n');
+      
+      const daysInStage = Math.floor((Date.now() - new Date(contact.created_at).getTime()) / (1000 * 60 * 60 * 24));
+      
+      return `
+Flow: ${contact.pipelines.name}
+${contact.pipelines.description ? `Purpose: ${contact.pipelines.description}` : 'Purpose: Not specified'}
+Current Stage: ${currentStage.name} (${daysInStage} days in this stage)
+Stage Progression:
+${stageSequence}`;
+    }).filter(Boolean).join('\n\n---\n\n');
 
     const userPrompt = `Contact: ${contact.name}
 Status: ${contact.status}
@@ -121,10 +173,10 @@ ${interactions?.slice(0, 5).map(i => `- ${i.interaction_type}: ${i.subject} (${M
 Active Prayer Requests:
 ${prayerRequests?.map(pr => `- ${pr.title} (${Math.floor((Date.now() - new Date(pr.created_at).getTime()) / (1000 * 60 * 60 * 24))} days old)`).join('\n') || 'None'}
 
-${birthdayInfo ? `Birthday Coming Up: In ${birthdayInfo.daysUntil} days (${birthdayInfo.date})` : ''}
+${birthdayInfo ? `Birthday Coming Up: In ${birthdayInfo.daysUntil} days (${birthdayInfo.date})\n` : ''}
 
-Current Pipelines:
-${pipelineContacts?.map(pc => `- ${pc.pipelines.name}: ${pc.pipeline_stages.name} (${Math.floor((Date.now() - new Date(pc.created_at).getTime()) / (1000 * 60 * 60 * 24))} days in stage)`).join('\n') || 'Not in any pipeline'}`;
+Current Pipeline Assignments:
+${pipelineContexts || 'Not in any pipeline'}`;
 
     console.log('Calling Lovable AI with prompt:', { systemPrompt, userPrompt });
 
@@ -157,7 +209,7 @@ ${pipelineContacts?.map(pc => `- ${pc.pipelines.name}: ${pc.pipeline_stages.name
                       properties: {
                         type: { 
                           type: 'string', 
-                          enum: ['follow_up', 'prayer_check', 'birthday', 'next_step', 'engagement', 'milestone']
+                          enum: ['follow_up', 'prayer_check', 'birthday', 'next_step', 'engagement', 'milestone', 'stage_action']
                         },
                         title: { type: 'string' },
                         description: { type: 'string' },
