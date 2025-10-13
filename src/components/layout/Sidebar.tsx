@@ -30,7 +30,27 @@ import {
   GripVertical,
   Flag,
   FlagTriangleRight,
-  Church
+  Church,
+  Cross,
+  Book,
+  Handshake,
+  HeartHandshake,
+  Podcast,
+  Video,
+  UserCheck,
+  Users2,
+  GraduationCap,
+  Baby,
+  TrendingUp,
+  Waves,
+  Fish,
+  Sun,
+  Moon,
+  Navigation,
+  MapPin,
+  Home,
+  Smile,
+  Footprints
 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -327,7 +347,30 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({ title, items, onSetting
     'Plus': Plus,
     'Puzzle': Puzzle,
     'LayoutDashboard': LayoutDashboard,
-    'BarChart3': BarChart3
+    'BarChart3': BarChart3,
+    // Faith-related
+    'Church': Church,
+    'Cross': Cross,
+    'Book': Book,
+    'Handshake': Handshake,
+    'HeartHandshake': HeartHandshake,
+    'Fish': Fish,
+    'Waves': Waves,
+    'Sun': Sun,
+    'Moon': Moon,
+    'Footprints': Footprints,
+    // Others used in settings
+    'Podcast': Podcast,
+    'Video': Video,
+    'UserCheck': UserCheck,
+    'Users2': Users2,
+    'GraduationCap': GraduationCap,
+    'Baby': Baby,
+    'TrendingUp': TrendingUp,
+    'Navigation': Navigation,
+    'MapPin': MapPin,
+    'Home': Home,
+    'Smile': Smile
   };
   
   return (
