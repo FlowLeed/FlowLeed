@@ -14,18 +14,24 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const { profile, organization, loading } = useProfile();
+  const {
+    toast
+  } = useToast();
+  const {
+    user
+  } = useAuth();
+  const {
+    profile,
+    organization,
+    loading
+  } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  
   const [formData, setFormData] = useState({
     firstName: "",
-    lastName: "", 
+    lastName: "",
     email: "",
     phone: "",
     location: "",
@@ -39,7 +45,6 @@ const ProfilePage = () => {
     if (profile && user) {
       const fullName = profile.full_name || '';
       const [firstName = '', lastName = ''] = fullName.split(' ');
-      
       setFormData({
         firstName,
         lastName,
@@ -52,7 +57,6 @@ const ProfilePage = () => {
       });
     }
   }, [profile, user]);
-
   const [notifications, setNotifications] = useState({
     emailNotifications: true,
     pushNotifications: false,
@@ -60,56 +64,55 @@ const ProfilePage = () => {
     contactActivity: true,
     weeklyReports: false
   });
-
   const [preferences, setPreferences] = useState({
     theme: "system",
     language: "en",
     timezone: "America/New_York"
   });
-
   const handleSave = async () => {
     if (!user) return;
-
     try {
       // Combine first and last name for full_name
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
       // Update profile in database
-      const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          full_name: fullName || null,
-        })
-        .eq('user_id', user.id);
-
+      const {
+        error
+      } = await supabase.from('profiles').update({
+        full_name: fullName || null
+      }).eq('user_id', user.id);
       if (error) throw error;
-
       toast({
         title: "Profile updated",
-        description: "Your profile has been saved successfully.",
+        description: "Your profile has been saved successfully."
       });
     } catch (error) {
       console.error('Error saving profile:', error);
       toast({
         title: "Save failed",
         description: "Failed to save your profile. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
-
   const handleNotificationChange = (field: string, value: boolean) => {
-    setNotifications(prev => ({ ...prev, [field]: value }));
+    setNotifications(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
-
   const handlePreferenceChange = (field: string, value: string) => {
-    setPreferences(prev => ({ ...prev, [field]: value }));
+    setPreferences(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
-
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
@@ -119,7 +122,7 @@ const ProfilePage = () => {
       toast({
         title: "Invalid file type",
         description: "Please select an image file.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -129,21 +132,17 @@ const ProfilePage = () => {
       toast({
         title: "File too large",
         description: "Please select an image smaller than 5MB.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setUploading(true);
-
     try {
       // Delete existing avatar if it exists
       if (profile?.avatar_url) {
         const existingPath = profile.avatar_url.split('/').pop();
         if (existingPath) {
-          await supabase.storage
-            .from('avatars')
-            .remove([`${user.id}/${existingPath}`]);
+          await supabase.storage.from('avatars').remove([`${user.id}/${existingPath}`]);
         }
       }
 
@@ -151,74 +150,61 @@ const ProfilePage = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
+      const {
+        error: uploadError
+      } = await supabase.storage.from('avatars').upload(filePath, file);
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
+      const {
+        data: {
+          publicUrl
+        }
+      } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
       // Update profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('user_id', user.id);
-
+      const {
+        error: updateError
+      } = await supabase.from('profiles').update({
+        avatar_url: publicUrl
+      }).eq('user_id', user.id);
       if (updateError) throw updateError;
-
       toast({
         title: "Avatar updated",
-        description: "Your profile picture has been updated successfully.",
+        description: "Your profile picture has been updated successfully."
       });
 
       // Refresh the page to show the new avatar
       window.location.reload();
-
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast({
         title: "Upload failed",
         description: "Failed to upload avatar. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setUploading(false);
     }
   };
-
   const handleChangeAvatarClick = () => {
     fileInputRef.current?.click();
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen p-6">
+    return <div className="min-h-screen p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen p-6 space-y-6 pb-12">
+  return <div className="min-h-screen p-6 space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Button
-          variant="ghost" 
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="h-8 w-8"
-        >
+        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">My Profile</h1>
+          <h1 className="text-2xl font-light">My Profile</h1>
           <p className="text-muted-foreground">
             {organization ? `${organization.name} • ` : ''}Manage your account settings and preferences
           </p>
@@ -234,7 +220,7 @@ const ProfilePage = () => {
                 <User className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <CardTitle>Personal Information</CardTitle>
+                <CardTitle className="font-light">Personal Information</CardTitle>
                 <CardDescription>Update your personal details and profile information</CardDescription>
               </div>
             </div>
@@ -251,19 +237,8 @@ const ProfilePage = () => {
                 </AvatarFallback>
               </Avatar>
               <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-                <Button 
-                  variant="outline" 
-                  className="mb-2" 
-                  onClick={handleChangeAvatarClick}
-                  disabled={uploading}
-                >
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                <Button variant="outline" className="mb-2" onClick={handleChangeAvatarClick} disabled={uploading}>
                   <Upload className="h-4 w-4 mr-2" />
                   {uploading ? "Uploading..." : "Change Avatar"}
                 </Button>
@@ -279,63 +254,38 @@ const ProfilePage = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange("firstName", e.target.value)}
-                />
+                <Input id="firstName" value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange("lastName", e.target.value)}
-                />
+                <Input id="lastName" value={formData.lastName} onChange={e => handleInputChange("lastName", e.target.value)} />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-              />
+              <Label htmlFor="email" className="font-light">Email Address</Label>
+              <Input id="email" type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange("phone", e.target.value)}
-                />
+                <Input id="phone" value={formData.phone} onChange={e => handleInputChange("phone", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange("location", e.target.value)}
-                />
+                <Input id="location" value={formData.location} onChange={e => handleInputChange("location", e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="jobTitle">Job Title</Label>
-                <Input
-                  id="jobTitle"
-                  value={formData.jobTitle}
-                  onChange={(e) => handleInputChange("jobTitle", e.target.value)}
-                />
+                <Input id="jobTitle" value={formData.jobTitle} onChange={e => handleInputChange("jobTitle", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
-                <Select value={formData.department} onValueChange={(value) => handleInputChange("department", value)}>
+                <Select value={formData.department} onValueChange={value => handleInputChange("department", value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -351,13 +301,7 @@ const ProfilePage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={formData.bio}
-                onChange={(e) => handleInputChange("bio", e.target.value)}
-                placeholder="Tell us about yourself..."
-                className="min-h-[100px]"
-              />
+              <Textarea id="bio" value={formData.bio} onChange={e => handleInputChange("bio", e.target.value)} placeholder="Tell us about yourself..." className="min-h-[100px]" />
             </div>
             
             <div className="flex justify-end pt-4">
@@ -388,10 +332,7 @@ const ProfilePage = () => {
                   <Label>Email Notifications</Label>
                   <p className="text-sm text-muted-foreground">Receive notifications via email</p>
                 </div>
-                <Switch
-                  checked={notifications.emailNotifications}
-                  onCheckedChange={(value) => handleNotificationChange("emailNotifications", value)}
-                />
+                <Switch checked={notifications.emailNotifications} onCheckedChange={value => handleNotificationChange("emailNotifications", value)} />
               </div>
 
               <Separator />
@@ -401,10 +342,7 @@ const ProfilePage = () => {
                   <Label>Push Notifications</Label>
                   <p className="text-sm text-muted-foreground">Receive push notifications in your browser</p>
                 </div>
-                <Switch
-                  checked={notifications.pushNotifications}
-                  onCheckedChange={(value) => handleNotificationChange("pushNotifications", value)}
-                />
+                <Switch checked={notifications.pushNotifications} onCheckedChange={value => handleNotificationChange("pushNotifications", value)} />
               </div>
 
               <Separator />
@@ -414,10 +352,7 @@ const ProfilePage = () => {
                   <Label>Pipeline Updates</Label>
                   <p className="text-sm text-muted-foreground">Get notified when contacts move between stages</p>
                 </div>
-                <Switch
-                  checked={notifications.pipelineUpdates}
-                  onCheckedChange={(value) => handleNotificationChange("pipelineUpdates", value)}
-                />
+                <Switch checked={notifications.pipelineUpdates} onCheckedChange={value => handleNotificationChange("pipelineUpdates", value)} />
               </div>
 
               <Separator />
@@ -427,10 +362,7 @@ const ProfilePage = () => {
                   <Label>Contact Activity</Label>
                   <p className="text-sm text-muted-foreground">Notifications when contacts are updated or added</p>
                 </div>
-                <Switch
-                  checked={notifications.contactActivity}
-                  onCheckedChange={(value) => handleNotificationChange("contactActivity", value)}
-                />
+                <Switch checked={notifications.contactActivity} onCheckedChange={value => handleNotificationChange("contactActivity", value)} />
               </div>
 
               <Separator />
@@ -440,10 +372,7 @@ const ProfilePage = () => {
                 <Label>Weekly Reports</Label>
                 <p className="text-sm text-muted-foreground">Receive weekly summary reports</p>
               </div>
-              <Switch
-                checked={notifications.weeklyReports}
-                onCheckedChange={(value) => handleNotificationChange("weeklyReports", value)}
-              />
+              <Switch checked={notifications.weeklyReports} onCheckedChange={value => handleNotificationChange("weeklyReports", value)} />
             </div>
           </CardContent>
         </Card>
@@ -465,7 +394,7 @@ const ProfilePage = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Theme</Label>
-                <Select value={preferences.theme} onValueChange={(value) => handlePreferenceChange("theme", value)}>
+                <Select value={preferences.theme} onValueChange={value => handlePreferenceChange("theme", value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -479,7 +408,7 @@ const ProfilePage = () => {
 
               <div className="space-y-2">
                 <Label>Language</Label>
-                <Select value={preferences.language} onValueChange={(value) => handlePreferenceChange("language", value)}>
+                <Select value={preferences.language} onValueChange={value => handlePreferenceChange("language", value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -494,7 +423,7 @@ const ProfilePage = () => {
 
               <div className="space-y-2">
                 <Label>Timezone</Label>
-                <Select value={preferences.timezone} onValueChange={(value) => handlePreferenceChange("timezone", value)}>
+                <Select value={preferences.timezone} onValueChange={value => handlePreferenceChange("timezone", value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -563,8 +492,6 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default ProfilePage;
