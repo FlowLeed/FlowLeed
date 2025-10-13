@@ -212,15 +212,12 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                     <SortableHeader field="phone">Phone</SortableHeader>
                     <SortableHeader field="assignedTo">Assigned To</SortableHeader>
                     <TableHead>Tags</TableHead>
-                    <TableHead>Status</TableHead>
-                    <SortableHeader field="date">Date Added</SortableHeader>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {contacts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-4">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
                         No contacts in this stage
                       </TableCell>
                     </TableRow>
@@ -281,52 +278,13 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={
-                              contact.status === 'active' ? 'default' : 
-                              contact.status === 'inactive' ? 'secondary' : 
-                              'outline'
-                            }
-                            className="capitalize"
-                          >
-                            {contact.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(contact.date).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onEditContact(contact);
-                              }}
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteContact(contact.id, contact.stageId);
-                              }}
-                            >
-                              <Trash2 className="h-3 w-3 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
                       </TableRow>
                     ))
                   )}
                   
                   {/* Add Item Row */}
                   <TableRow className="hover:bg-muted/30 border-t">
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={5}>
                       <button 
                         className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 w-full py-1"
                         onClick={() => {
