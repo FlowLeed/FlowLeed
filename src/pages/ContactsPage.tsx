@@ -47,14 +47,14 @@ const ContactsPage = () => {
     <div className="p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-extralight mb-2">Contacts</h1>
+          <h1 className="text-4xl font-extralight mb-2">People</h1>
           <p className="text-muted-foreground font-light">
-            Manage all your contacts in one place
+            Manage all your people in one place
           </p>
         </div>
         <Button onClick={() => setShowAddDialog(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Contact
+          Add Person
         </Button>
       </div>
 

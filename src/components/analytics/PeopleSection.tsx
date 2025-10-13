@@ -25,9 +25,9 @@ export const PeopleSection = () => {
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-destructive" />
             <div>
-              <CardTitle>At-Risk Contacts</CardTitle>
+              <CardTitle>At-Risk People</CardTitle>
               <CardDescription>
-                Contacts with no interactions in the last 30 days
+                People with no interactions in the last 30 days
               </CardDescription>
             </div>
           </div>
@@ -97,8 +97,8 @@ export const PeopleSection = () => {
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     <div className="flex flex-col items-center gap-2">
                       <AlertCircle className="h-8 w-8 text-muted-foreground/50" />
-                      <p>No at-risk contacts found</p>
-                      <p className="text-sm">All contacts have recent activity!</p>
+                      <p>No at-risk people found</p>
+                      <p className="text-sm">All people have recent activity!</p>
                     </div>
                   </TableCell>
                 </TableRow>

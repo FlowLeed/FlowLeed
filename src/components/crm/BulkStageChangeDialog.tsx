@@ -39,7 +39,7 @@ export const BulkStageChangeDialog: React.FC<BulkStageChangeDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Change Stage</DialogTitle>
           <DialogDescription>
-            Select the stage to move all selected contacts to
+            Select the stage to move all selected people to
           </DialogDescription>
         </DialogHeader>
 
@@ -73,7 +73,7 @@ export const BulkStageChangeDialog: React.FC<BulkStageChangeDialogProps> = ({
             Cancel
           </Button>
           <Button onClick={handleConfirm} disabled={!selectedStageId}>
-            Move Contacts
+            Move People
           </Button>
         </DialogFooter>
       </DialogContent>

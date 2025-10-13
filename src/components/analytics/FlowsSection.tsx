@@ -36,7 +36,7 @@ export const FlowsSection = () => {
       <Card>
         <CardHeader>
           <CardTitle>Flow Distribution</CardTitle>
-          <CardDescription>Number of contacts per flow</CardDescription>
+          <CardDescription>Number of people per flow</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -70,14 +70,14 @@ export const FlowsSection = () => {
       <Card>
         <CardHeader>
           <CardTitle>Flow Conversion Rates</CardTitle>
-          <CardDescription>Track how contacts progress from start to end</CardDescription>
+          <CardDescription>Track how people progress from start to end</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Flow Name</TableHead>
-                <TableHead className="text-right">Total Contacts</TableHead>
+                <TableHead className="text-right">Total People</TableHead>
                 <TableHead className="text-right">Conversion Rate</TableHead>
                 <TableHead className="text-right">Avg. Time (days)</TableHead>
                 <TableHead>Status</TableHead>

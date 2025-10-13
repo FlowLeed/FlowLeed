@@ -64,8 +64,8 @@ export const BulkTagDialog: React.FC<BulkTagDialogProps> = ({
           </DialogTitle>
           <DialogDescription>
             {mode === 'add' 
-              ? 'Enter tags to add to all selected contacts'
-              : 'Enter tags to remove from all selected contacts'
+              ? 'Enter tags to add to all selected people'
+              : 'Enter tags to remove from all selected people'
             }
           </DialogDescription>
         </DialogHeader>

@@ -562,7 +562,7 @@ const TeamPage = () => {
                               </TableCell>
                               <TableCell>
                                 <span className="text-sm text-muted-foreground">
-                                  {count} {count === 1 ? 'contact' : 'contacts'}
+                                  {count} {count === 1 ? 'person' : 'people'}
                                 </span>
                               </TableCell>
                               <TableCell className="text-right">
@@ -591,7 +591,7 @@ const TeamPage = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Tag</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the tag "{tagToDelete}"? This will remove it from all contacts in your organization. This action cannot be undone.
+              Are you sure you want to delete the tag "{tagToDelete}"? This will remove it from all people in your organization. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -609,7 +609,7 @@ const TeamPage = () => {
           <DialogHeader>
             <DialogTitle>Rename Tag</DialogTitle>
             <DialogDescription>
-              Enter a new name for the tag "{tagToRename}". This will update the tag for all contacts using it.
+              Enter a new name for the tag "{tagToRename}". This will update the tag for all people using it.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">

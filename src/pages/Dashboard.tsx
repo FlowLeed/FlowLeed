@@ -26,7 +26,7 @@ const FlowCard = ({
           <div className="p-2 bg-crm-muted rounded-md">
             <Icon className="h-5 w-5 text-crm-primary" />
           </div>
-          <span className="text-sm font-medium text-gray-500">{contactCount} contacts</span>
+          <span className="text-sm font-medium text-gray-500">{contactCount} people</span>
         </div>
         <CardTitle className="mt-4 text-xl font-light">{title}</CardTitle>
         <CardDescription className="line-clamp-2">{description}</CardDescription>
@@ -99,7 +99,7 @@ const Dashboard = () => {
     }
     return {
       title: flow.name,
-      description: flow.description || `Manage and track contacts through the ${flow.name} process`,
+      description: flow.description || `Manage and track people through the ${flow.name} process`,
       icon,
       contactCount: calculateFlowContactCount(flow),
       path: `/flows/${flow.id}`

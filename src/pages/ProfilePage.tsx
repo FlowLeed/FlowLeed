@@ -350,7 +350,7 @@ const ProfilePage = () => {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label>Pipeline Updates</Label>
-                  <p className="text-sm text-muted-foreground">Get notified when contacts move between stages</p>
+                  <p className="text-sm text-muted-foreground">Get notified when people move between stages</p>
                 </div>
                 <Switch checked={notifications.pipelineUpdates} onCheckedChange={value => handleNotificationChange("pipelineUpdates", value)} />
               </div>
@@ -359,8 +359,8 @@ const ProfilePage = () => {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label>Contact Activity</Label>
-                  <p className="text-sm text-muted-foreground">Notifications when contacts are updated or added</p>
+                  <Label>People Activity</Label>
+                  <p className="text-sm text-muted-foreground">Notifications when people are updated or added</p>
                 </div>
                 <Switch checked={notifications.contactActivity} onCheckedChange={value => handleNotificationChange("contactActivity", value)} />
               </div>

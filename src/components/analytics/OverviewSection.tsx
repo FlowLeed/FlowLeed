@@ -13,25 +13,25 @@ export const OverviewSection = ({ dateRange }: OverviewSectionProps) => {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <MetricCard
-          title="Total Contacts"
+          title="Total People"
           value={metrics?.totalContacts || 0}
           icon={Users}
           loading={isLoading}
-          description="All contacts in organization"
+          description="All people in organization"
         />
         <MetricCard
-          title="Contacts Added"
+          title="People Added"
           value={metrics?.contactsAdded || 0}
           icon={UserPlus}
           loading={isLoading}
-          description="New contacts in period"
+          description="New people in period"
         />
         <MetricCard
           title="Active Flows"
           value={metrics?.activeFlows || 0}
           icon={Workflow}
           loading={isLoading}
-          description="Flows with contacts"
+          description="Flows with people"
         />
         <MetricCard
           title="Total Interactions"

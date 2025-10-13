@@ -97,7 +97,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-sm">
-              {selectedCount} contact{selectedCount !== 1 ? 's' : ''} selected
+              {selectedCount} {selectedCount === 1 ? 'person' : 'people'} selected
             </span>
           </div>
           
@@ -208,8 +208,8 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Remove from Flow</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {selectedCount} contact{selectedCount !== 1 ? 's' : ''} from this flow? 
-              This will not delete the contacts from your database.
+              Are you sure you want to remove {selectedCount} {selectedCount === 1 ? 'person' : 'people'} from this flow? 
+              This will not delete the people from your database.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

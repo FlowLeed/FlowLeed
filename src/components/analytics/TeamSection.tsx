@@ -65,7 +65,7 @@ export const TeamSection = ({ dateRange }: TeamSectionProps) => {
             <TableHeader>
               <TableRow>
                 <TableHead>Team Member</TableHead>
-                <TableHead className="text-right">Assigned Contacts</TableHead>
+                <TableHead className="text-right">Assigned People</TableHead>
                 <TableHead className="text-right">Total Interactions</TableHead>
                 <TableHead>Interaction Types</TableHead>
               </TableRow>

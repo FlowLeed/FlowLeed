@@ -412,7 +412,7 @@ export const Sidebar = () => {
     icon: LayoutDashboard,
     path: "/"
   }, {
-    title: "Contacts",
+    title: "People",
     icon: Users,
     path: "/contacts"
   }, {

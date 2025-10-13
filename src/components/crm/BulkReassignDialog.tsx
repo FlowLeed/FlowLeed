@@ -35,9 +35,9 @@ export const BulkReassignDialog: React.FC<BulkReassignDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Reassign Contacts</DialogTitle>
+          <DialogTitle>Reassign People</DialogTitle>
           <DialogDescription>
-            Select a team member to assign all selected contacts to
+            Select a team member to assign all selected people to
           </DialogDescription>
         </DialogHeader>
 
@@ -92,7 +92,7 @@ export const BulkReassignDialog: React.FC<BulkReassignDialogProps> = ({
             Cancel
           </Button>
           <Button onClick={handleConfirm}>
-            Assign Contacts
+            Assign People
           </Button>
         </DialogFooter>
       </DialogContent>

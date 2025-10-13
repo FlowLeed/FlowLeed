@@ -28,7 +28,7 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
     return (
       <Card>
         <div className="p-8 text-center text-muted-foreground">
-          Loading contacts...
+          Loading people...
         </div>
       </Card>
     );
@@ -40,8 +40,8 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
         <div className="p-8 text-center">
           <p className="text-muted-foreground font-light">
             {hasActiveFilters
-              ? "No contacts match your filters. Try adjusting your search criteria."
-              : "No contacts yet. Add your first contact to get started!"}
+              ? "No people match your filters. Try adjusting your search criteria."
+              : "No people yet. Add your first person to get started!"}
           </p>
         </div>
       </Card>
