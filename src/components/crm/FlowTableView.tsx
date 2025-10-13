@@ -220,14 +220,26 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                       <TableHead className="w-12">
                         <Checkbox 
                           checked={contacts.length > 0 && contacts.every(c => selectedContacts.has(c.id))}
+                          indeterminate={
+                            contacts.some(c => selectedContacts.has(c.id)) && 
+                            !contacts.every(c => selectedContacts.has(c.id))
+                          }
                           onCheckedChange={(checked) => {
-                            contacts.forEach(c => {
-                              if (checked && !selectedContacts.has(c.id)) {
-                                onToggleContact?.(c.id);
-                              } else if (!checked && selectedContacts.has(c.id)) {
-                                onToggleContact?.(c.id);
-                              }
-                            });
+                            if (checked) {
+                              // Select all contacts in this stage
+                              contacts.forEach(c => {
+                                if (!selectedContacts.has(c.id)) {
+                                  onToggleContact?.(c.id);
+                                }
+                              });
+                            } else {
+                              // Deselect all contacts in this stage
+                              contacts.forEach(c => {
+                                if (selectedContacts.has(c.id)) {
+                                  onToggleContact?.(c.id);
+                                }
+                              });
+                            }
                           }}
                         />
                       </TableHead>
