@@ -345,7 +345,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                         }}
                       >
                         <Plus className="h-4 w-4" />
-                        Add Item
+                        Add Contact
                       </button>
                     </TableCell>
                   </TableRow>
