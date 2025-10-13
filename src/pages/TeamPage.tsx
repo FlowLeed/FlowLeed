@@ -15,33 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useOrgTagManagement } from "@/hooks/useOrgTagManagement";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 interface TeamMember {
   id: string;
   user_id: string;
@@ -53,7 +29,6 @@ interface TeamMember {
     avatar_url?: string;
   };
 }
-
 interface PendingInvitation {
   id: string;
   email: string;
@@ -66,21 +41,29 @@ interface PendingInvitation {
     email: string;
   };
 }
-
 const TeamPage = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { organization, profile } = useProfile();
+  const {
+    organization,
+    profile
+  } = useProfile();
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
-  
+
   // Org settings state
   const [orgName, setOrgName] = useState("");
   const [isEditingOrgName, setIsEditingOrgName] = useState(false);
-  
+
   // Tag management state
-  const { tagStats, isLoading: tagsLoading, renameTag, deleteTag, mergeTags } = useOrgTagManagement(organization?.id);
+  const {
+    tagStats,
+    isLoading: tagsLoading,
+    renameTag,
+    deleteTag,
+    mergeTags
+  } = useOrgTagManagement(organization?.id);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
@@ -90,52 +73,48 @@ const TeamPage = () => {
   const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
   const [selectedTagsForMerge, setSelectedTagsForMerge] = useState<string[]>([]);
   const [mergeTargetTag, setMergeTargetTag] = useState("");
-
-  const filteredTags = tagStats.filter(({ tag }) =>
-    tag.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
+  const filteredTags = tagStats.filter(({
+    tag
+  }) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
   useEffect(() => {
     if (organization) {
       fetchTeamData();
       setOrgName(organization.name);
     }
   }, [organization]);
-
   const fetchTeamData = async () => {
     if (!organization) return;
-
     try {
       setLoading(true);
 
       // Fetch team members - separate queries to avoid relation issues
-      const { data: memberData, error: membersError } = await supabase
-        .from('organization_members')
-        .select('id, user_id, role, created_at')
-        .eq('organization_id', organization.id)
-        .order('created_at', { ascending: true });
-
+      const {
+        data: memberData,
+        error: membersError
+      } = await supabase.from('organization_members').select('id, user_id, role, created_at').eq('organization_id', organization.id).order('created_at', {
+        ascending: true
+      });
       if (membersError) throw membersError;
-
       if (memberData && memberData.length > 0) {
         // Get user IDs to fetch profiles
         const userIds = memberData.map(member => member.user_id);
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, email, avatar_url')
-          .in('user_id', userIds);
-
+        const {
+          data: profilesData,
+          error: profilesError
+        } = await supabase.from('profiles').select('user_id, full_name, email, avatar_url').in('user_id', userIds);
         if (profilesError) throw profilesError;
-
         const membersWithProfiles: TeamMember[] = memberData.map(member => {
           const memberProfile = profilesData?.find(profile => profile.user_id === member.user_id);
           return {
             ...member,
             role: member.role as 'owner' | 'admin' | 'member',
-            profile: memberProfile || { email: 'Unknown', full_name: undefined, avatar_url: undefined }
+            profile: memberProfile || {
+              email: 'Unknown',
+              full_name: undefined,
+              avatar_url: undefined
+            }
           };
         });
-
         setTeamMembers(membersWithProfiles);
 
         // Find current user's role
@@ -146,23 +125,18 @@ const TeamPage = () => {
       }
 
       // Fetch pending invitations - separate query to avoid relation issues
-      const { data: invitationData, error: invitationsError } = await supabase
-        .from('invitations')
-        .select('id, email, role, token, created_at, expires_at, invited_by_user_id')
-        .eq('organization_id', organization.id)
-        .is('accepted_at', null)
-        .gt('expires_at', new Date().toISOString());
-
+      const {
+        data: invitationData,
+        error: invitationsError
+      } = await supabase.from('invitations').select('id, email, role, token, created_at, expires_at, invited_by_user_id').eq('organization_id', organization.id).is('accepted_at', null).gt('expires_at', new Date().toISOString());
       if (invitationsError) throw invitationsError;
-
       if (invitationData && invitationData.length > 0) {
         // Get inviter profiles
         const inviterIds = invitationData.map(inv => inv.invited_by_user_id);
-        const { data: inviterProfiles, error: inviterError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, email')
-          .in('user_id', inviterIds);
-
+        const {
+          data: inviterProfiles,
+          error: inviterError
+        } = await supabase.from('profiles').select('user_id, full_name, email').in('user_id', inviterIds);
         if (inviterError) throw inviterError;
 
         // Combine invitation data with inviter profiles
@@ -170,13 +144,14 @@ const TeamPage = () => {
           const inviterProfile = inviterProfiles?.find(profile => profile.user_id === invitation.invited_by_user_id);
           return {
             ...invitation,
-            invited_by: inviterProfile || { email: 'Unknown', full_name: undefined }
+            invited_by: inviterProfile || {
+              email: 'Unknown',
+              full_name: undefined
+            }
           };
         });
-
         setPendingInvitations(invitationsWithInviters);
       }
-
     } catch (error) {
       console.error('Error fetching team data:', error);
       toast.error('Failed to load team data');
@@ -184,19 +159,13 @@ const TeamPage = () => {
       setLoading(false);
     }
   };
-
   const handleRemoveMember = async (memberId: string, memberEmail: string) => {
     if (!organization) return;
-
     try {
-      const { error } = await supabase
-        .from('organization_members')
-        .delete()
-        .eq('id', memberId)
-        .eq('organization_id', organization.id);
-
+      const {
+        error
+      } = await supabase.from('organization_members').delete().eq('id', memberId).eq('organization_id', organization.id);
       if (error) throw error;
-
       setTeamMembers(prev => prev.filter(member => member.id !== memberId));
       toast.success(`Removed ${memberEmail} from team`);
     } catch (error) {
@@ -204,38 +173,31 @@ const TeamPage = () => {
       toast.error('Failed to remove team member');
     }
   };
-
   const handleChangeRole = async (memberId: string, newRole: string, memberEmail: string) => {
     if (!organization) return;
-
     try {
-      const { error } = await supabase
-        .from('organization_members')
-        .update({ role: newRole })
-        .eq('id', memberId)
-        .eq('organization_id', organization.id);
-
+      const {
+        error
+      } = await supabase.from('organization_members').update({
+        role: newRole
+      }).eq('id', memberId).eq('organization_id', organization.id);
       if (error) throw error;
-
-      setTeamMembers(prev => prev.map(member => 
-        member.id === memberId ? { ...member, role: newRole as any } : member
-      ));
+      setTeamMembers(prev => prev.map(member => member.id === memberId ? {
+        ...member,
+        role: newRole as any
+      } : member));
       toast.success(`Updated ${memberEmail}'s role to ${newRole}`);
     } catch (error) {
       console.error('Error updating role:', error);
       toast.error('Failed to update role');
     }
   };
-
   const handleCancelInvitation = async (invitationId: string, email: string) => {
     try {
-      const { error } = await supabase
-        .from('invitations')
-        .delete()
-        .eq('id', invitationId);
-
+      const {
+        error
+      } = await supabase.from('invitations').delete().eq('id', invitationId);
       if (error) throw error;
-
       setPendingInvitations(prev => prev.filter(inv => inv.id !== invitationId));
       toast.success(`Cancelled invitation for ${email}`);
     } catch (error) {
@@ -243,13 +205,13 @@ const TeamPage = () => {
       toast.error('Failed to cancel invitation');
     }
   };
-
   const handleResendInvitation = async (invitation: PendingInvitation) => {
     if (!organization || !profile) return;
-
     try {
       // Send the invitation email again
-      const { error: emailError } = await supabase.functions.invoke('send-invitation-email', {
+      const {
+        error: emailError
+      } = await supabase.functions.invoke('send-invitation-email', {
         body: {
           email: invitation.email,
           organizationName: organization.name,
@@ -258,19 +220,16 @@ const TeamPage = () => {
           inviteToken: invitation.token
         }
       });
-
       if (emailError) {
         console.error('Error resending invitation email:', emailError);
         throw new Error('Failed to resend invitation email');
       }
-
       toast.success(`Invitation resent to ${invitation.email}`);
     } catch (error) {
       console.error('Error resending invitation:', error);
       toast.error('Failed to resend invitation');
     }
   };
-
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'owner':
@@ -281,7 +240,6 @@ const TeamPage = () => {
         return <User className="h-4 w-4 text-gray-600" />;
     }
   };
-
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'owner':
@@ -292,24 +250,20 @@ const TeamPage = () => {
         return <Badge variant="secondary">Member</Badge>;
     }
   };
-
   const canManageMembers = currentUserRole === 'owner' || currentUserRole === 'admin';
   const isOwner = currentUserRole === 'owner';
-
   const handleUpdateOrgName = async () => {
     if (!organization || !orgName.trim() || orgName === organization.name) {
       setIsEditingOrgName(false);
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('organizations')
-        .update({ name: orgName.trim() })
-        .eq('id', organization.id);
-
+      const {
+        error
+      } = await supabase.from('organizations').update({
+        name: orgName.trim()
+      }).eq('id', organization.id);
       if (error) throw error;
-
       toast.success('Organization name updated');
       setIsEditingOrgName(false);
     } catch (error) {
@@ -318,12 +272,10 @@ const TeamPage = () => {
       setOrgName(organization.name);
     }
   };
-
   const handleDeleteClick = (tag: string) => {
     setTagToDelete(tag);
     setDeleteDialogOpen(true);
   };
-
   const handleDeleteConfirm = () => {
     if (tagToDelete) {
       deleteTag(tagToDelete);
@@ -331,28 +283,25 @@ const TeamPage = () => {
       setTagToDelete(null);
     }
   };
-
   const handleRenameClick = (tag: string) => {
     setTagToRename(tag);
     setNewTagName(tag);
     setRenameDialogOpen(true);
   };
-
   const handleRenameConfirm = () => {
     if (tagToRename && newTagName && newTagName !== tagToRename) {
-      renameTag({ oldTag: tagToRename, newTag: newTagName });
+      renameTag({
+        oldTag: tagToRename,
+        newTag: newTagName
+      });
       setRenameDialogOpen(false);
       setTagToRename(null);
       setNewTagName("");
     }
   };
-
   const toggleTagForMerge = (tag: string) => {
-    setSelectedTagsForMerge(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    );
+    setSelectedTagsForMerge(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
-
   const handleMergeClick = () => {
     if (selectedTagsForMerge.length < 2) {
       return;
@@ -360,26 +309,23 @@ const TeamPage = () => {
     setMergeTargetTag(selectedTagsForMerge[0]);
     setMergeDialogOpen(true);
   };
-
   const handleMergeConfirm = () => {
     if (selectedTagsForMerge.length >= 2 && mergeTargetTag) {
-      mergeTags({ sourceTags: selectedTagsForMerge, targetTag: mergeTargetTag });
+      mergeTags({
+        sourceTags: selectedTagsForMerge,
+        targetTag: mergeTargetTag
+      });
       setMergeDialogOpen(false);
       setSelectedTagsForMerge([]);
       setMergeTargetTag("");
     }
   };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
+    return <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="flex flex-col h-full">
+  return <div className="flex flex-col h-full">
       <Header title="My Organization" />
       
       <div className="flex-1 overflow-auto p-6">
@@ -402,7 +348,7 @@ const TeamPage = () => {
           <TabsContent value="settings" className="space-y-6 mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Organization Settings</CardTitle>
+                <CardTitle className="font-light">Organization Settings</CardTitle>
                 <CardDescription>
                   Manage your organization's general settings
                 </CardDescription>
@@ -411,50 +357,27 @@ const TeamPage = () => {
                 <div className="space-y-2">
                   <Label htmlFor="orgName">Organization Name</Label>
                   <div className="flex gap-2">
-                    <Input
-                      id="orgName"
-                      value={orgName}
-                      onChange={(e) => setOrgName(e.target.value)}
-                      disabled={!isOwner || !isEditingOrgName}
-                      className="flex-1"
-                    />
-                    {isOwner && (
-                      <>
-                        {!isEditingOrgName ? (
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsEditingOrgName(true)}
-                          >
+                    <Input id="orgName" value={orgName} onChange={e => setOrgName(e.target.value)} disabled={!isOwner || !isEditingOrgName} className="flex-1" />
+                    {isOwner && <>
+                        {!isEditingOrgName ? <Button variant="outline" onClick={() => setIsEditingOrgName(true)}>
                             <Pencil className="h-4 w-4 mr-2" />
                             Edit
-                          </Button>
-                        ) : (
-                          <>
-                            <Button
-                              variant="default"
-                              onClick={handleUpdateOrgName}
-                            >
+                          </Button> : <>
+                            <Button variant="default" onClick={handleUpdateOrgName}>
                               Save
                             </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setOrgName(organization?.name || "");
-                                setIsEditingOrgName(false);
-                              }}
-                            >
+                            <Button variant="outline" onClick={() => {
+                        setOrgName(organization?.name || "");
+                        setIsEditingOrgName(false);
+                      }}>
                               Cancel
                             </Button>
-                          </>
-                        )}
-                      </>
-                    )}
+                          </>}
+                      </>}
                   </div>
-                  {!isOwner && (
-                    <p className="text-sm text-muted-foreground">
+                  {!isOwner && <p className="text-sm text-muted-foreground">
                       Only organization owners can change the organization name.
-                    </p>
-                  )}
+                    </p>}
                 </div>
               </CardContent>
             </Card>
@@ -474,18 +397,15 @@ const TeamPage = () => {
                   Manage your organization's team members and their roles
                 </CardDescription>
               </div>
-              {canManageMembers && (
-                <Button onClick={() => setIsInviteDialogOpen(true)} className="gap-2">
+              {canManageMembers && <Button onClick={() => setIsInviteDialogOpen(true)} className="gap-2">
                   <UserPlus className="h-4 w-4" />
                   Invite Member
-                </Button>
-              )}
+                </Button>}
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {teamMembers.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
+              {teamMembers.map(member => <div key={member.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarImage src={member.profile.avatar_url} />
@@ -502,7 +422,9 @@ const TeamPage = () => {
                       </div>
                       <p className="text-sm text-gray-600">{member.profile.email}</p>
                       <p className="text-xs text-gray-500">
-                        Joined {formatDistanceToNow(new Date(member.created_at), { addSuffix: true })}
+                        Joined {formatDistanceToNow(new Date(member.created_at), {
+                          addSuffix: true
+                        })}
                       </p>
                     </div>
                   </div>
@@ -510,8 +432,7 @@ const TeamPage = () => {
                   <div className="flex items-center gap-2">
                     {getRoleBadge(member.role)}
                     
-                    {canManageMembers && member.role !== 'owner' && member.profile.email !== profile?.email && (
-                      <DropdownMenu>
+                    {canManageMembers && member.role !== 'owner' && member.profile.email !== profile?.email && <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
                             <MoreHorizontal className="h-4 w-4" />
@@ -524,25 +445,19 @@ const TeamPage = () => {
                           <DropdownMenuItem onClick={() => handleChangeRole(member.id, 'member', member.profile.email)}>
                             Make Member
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleRemoveMember(member.id, member.profile.email)}
-                            className="text-red-600"
-                          >
+                          <DropdownMenuItem onClick={() => handleRemoveMember(member.id, member.profile.email)} className="text-red-600">
                             Remove from team
                           </DropdownMenuItem>
                         </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                      </DropdownMenu>}
                   </div>
-                </div>
-              ))}
+                </div>)}
             </div>
           </CardContent>
         </Card>
 
         {/* Pending Invitations */}
-        {pendingInvitations.length > 0 && (
-          <Card>
+        {pendingInvitations.length > 0 && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
@@ -554,8 +469,7 @@ const TeamPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {pendingInvitations.map((invitation) => (
-                  <div key={invitation.id} className="flex items-center justify-between p-4 border rounded-lg bg-yellow-50">
+                {pendingInvitations.map(invitation => <div key={invitation.id} className="flex items-center justify-between p-4 border rounded-lg bg-yellow-50">
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarFallback>
@@ -569,41 +483,29 @@ const TeamPage = () => {
                         </p>
                         <p className="text-xs text-gray-500 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Expires {formatDistanceToNow(new Date(invitation.expires_at), { addSuffix: true })}
+                          Expires {formatDistanceToNow(new Date(invitation.expires_at), {
+                          addSuffix: true
+                        })}
                         </p>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
                       {getRoleBadge(invitation.role)}
-                      {canManageMembers && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleResendInvitation(invitation)}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
+                      {canManageMembers && <>
+                          <Button variant="outline" size="sm" onClick={() => handleResendInvitation(invitation)} className="text-blue-600 hover:text-blue-700">
                             <Mail className="h-4 w-4 mr-1" />
                             Resend
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCancelInvitation(invitation.id, invitation.email)}
-                            className="text-red-600 hover:text-red-700"
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => handleCancelInvitation(invitation.id, invitation.email)} className="text-red-600 hover:text-red-700">
                             <X className="h-4 w-4" />
                           </Button>
-                        </>
-                      )}
+                        </>}
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
           </TabsContent>
 
           <TabsContent value="tags" className="space-y-4 mt-6">
@@ -619,32 +521,22 @@ const TeamPage = () => {
                       Manage tags across your organization ({tagStats.length} unique tags)
                     </CardDescription>
                   </div>
-                  {selectedTagsForMerge.length >= 2 && (
-                    <Button onClick={handleMergeClick} variant="outline" className="gap-2">
+                  {selectedTagsForMerge.length >= 2 && <Button onClick={handleMergeClick} variant="outline" className="gap-2">
                       <GitMerge className="h-4 w-4" />
                       Merge {selectedTagsForMerge.length} Tags
-                    </Button>
-                  )}
+                    </Button>}
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search tags..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
+                    <Input placeholder="Search tags..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
                   </div>
 
-                  {tagsLoading ? (
-                    <div className="flex items-center justify-center py-8">
+                  {tagsLoading ? <div className="flex items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
-                  ) : (
-                    <Table>
+                    </div> : <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-12">Select</TableHead>
@@ -654,22 +546,16 @@ const TeamPage = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredTags.length === 0 ? (
-                          <TableRow>
+                        {filteredTags.length === 0 ? <TableRow>
                             <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                               No tags found
                             </TableCell>
-                          </TableRow>
-                        ) : (
-                          filteredTags.map(({ tag, count }) => (
-                            <TableRow key={tag}>
+                          </TableRow> : filteredTags.map(({
+                      tag,
+                      count
+                    }) => <TableRow key={tag}>
                               <TableCell>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedTagsForMerge.includes(tag)}
-                                  onChange={() => toggleTagForMerge(tag)}
-                                  className="cursor-pointer"
-                                />
+                                <input type="checkbox" checked={selectedTagsForMerge.includes(tag)} onChange={() => toggleTagForMerge(tag)} className="cursor-pointer" />
                               </TableCell>
                               <TableCell>
                                 <Badge variant="secondary">{tag}</Badge>
@@ -681,29 +567,17 @@ const TeamPage = () => {
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRenameClick(tag)}
-                                  >
+                                  <Button variant="ghost" size="sm" onClick={() => handleRenameClick(tag)}>
                                     <Pencil className="h-4 w-4" />
                                   </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDeleteClick(tag)}
-                                    className="text-destructive hover:text-destructive"
-                                  >
+                                  <Button variant="ghost" size="sm" onClick={() => handleDeleteClick(tag)} className="text-destructive hover:text-destructive">
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </TableCell>
-                            </TableRow>
-                          ))
-                        )}
+                            </TableRow>)}
                       </TableBody>
-                    </Table>
-                  )}
+                    </Table>}
                 </div>
               </CardContent>
             </Card>
@@ -741,12 +615,7 @@ const TeamPage = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="new-tag-name">New Tag Name</Label>
-              <Input
-                id="new-tag-name"
-                value={newTagName}
-                onChange={(e) => setNewTagName(e.target.value)}
-                placeholder="Enter new tag name"
-              />
+              <Input id="new-tag-name" value={newTagName} onChange={e => setNewTagName(e.target.value)} placeholder="Enter new tag name" />
             </div>
           </div>
           <DialogFooter>
@@ -773,19 +642,12 @@ const TeamPage = () => {
             <div className="space-y-2">
               <Label>Selected Tags</Label>
               <div className="flex flex-wrap gap-2">
-                {selectedTagsForMerge.map(tag => (
-                  <Badge key={tag} variant="secondary">{tag}</Badge>
-                ))}
+                {selectedTagsForMerge.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="merge-target">Target Tag Name</Label>
-              <Input
-                id="merge-target"
-                value={mergeTargetTag}
-                onChange={(e) => setMergeTargetTag(e.target.value)}
-                placeholder="Enter target tag name"
-              />
+              <Input id="merge-target" value={mergeTargetTag} onChange={e => setMergeTargetTag(e.target.value)} placeholder="Enter target tag name" />
             </div>
           </div>
           <DialogFooter>
@@ -799,18 +661,10 @@ const TeamPage = () => {
         </DialogContent>
       </Dialog>
 
-      {canManageMembers && (
-        <InviteTeamMemberDialog
-          open={isInviteDialogOpen}
-          onOpenChange={setIsInviteDialogOpen}
-          onInviteSent={() => {
-            fetchTeamData();
-            setIsInviteDialogOpen(false);
-          }}
-        />
-      )}
-    </div>
-  );
+      {canManageMembers && <InviteTeamMemberDialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} onInviteSent={() => {
+      fetchTeamData();
+      setIsInviteDialogOpen(false);
+    }} />}
+    </div>;
 };
-
 export default TeamPage;
