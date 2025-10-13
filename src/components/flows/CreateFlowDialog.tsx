@@ -53,7 +53,6 @@ import { AIDescriptionSuggestions } from "./AIDescriptionSuggestions";
 interface FlowStep {
   name: string;
   color: string;
-  icon: LucideIcon;
   isStartStep?: boolean;
   isEndStep?: boolean;
 }
@@ -99,9 +98,9 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
   const [newFlowDescription, setNewFlowDescription] = useState("");
   const [newFlowIcon, setNewFlowIcon] = useState<LucideIcon>(Users);
   const [newFlowSteps, setNewFlowSteps] = useState<FlowStep[]>([
-    { name: "New", color: "#3b82f6", icon: Users, isStartStep: true, isEndStep: false },
-    { name: "In Progress", color: "#f59e0b", icon: Target, isStartStep: false, isEndStep: false },
-    { name: "Completed", color: "#10b981", icon: Check, isStartStep: false, isEndStep: true }
+    { name: "New", color: "#3b82f6", isStartStep: true, isEndStep: false },
+    { name: "In Progress", color: "#f59e0b", isStartStep: false, isEndStep: false },
+    { name: "Completed", color: "#10b981", isStartStep: false, isEndStep: true }
   ]);
 
   const iconOptions = [
@@ -151,9 +150,9 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
       setNewFlowDescription("");
       setNewFlowIcon(Users);
       setNewFlowSteps([
-        { name: "New", color: "#3b82f6", icon: Users, isStartStep: true, isEndStep: false },
-        { name: "In Progress", color: "#f59e0b", icon: Target, isStartStep: false, isEndStep: false },
-        { name: "Completed", color: "#10b981", icon: Check, isStartStep: false, isEndStep: true }
+        { name: "New", color: "#3b82f6", isStartStep: true, isEndStep: false },
+        { name: "In Progress", color: "#f59e0b", isStartStep: false, isEndStep: false },
+        { name: "Completed", color: "#10b981", isStartStep: false, isEndStep: true }
       ]);
       onOpenChange(false);
     } catch (error) {
@@ -170,7 +169,7 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
     const availableColors = ["#3b82f6", "#f59e0b", "#10b981", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
     const usedColors = newFlowSteps.map(step => step.color);
     const newColor = availableColors.find(color => !usedColors.includes(color)) || "#64748b";
-    setNewFlowSteps([...newFlowSteps, { name: "", color: newColor, icon: Users, isStartStep: false, isEndStep: false }]);
+    setNewFlowSteps([...newFlowSteps, { name: "", color: newColor, isStartStep: false, isEndStep: false }]);
   };
 
   const handleDragEnd = (result: DropResult) => {
@@ -211,11 +210,6 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
     setNewFlowSteps(updatedSteps);
   };
 
-  const updateStepIcon = (index: number, icon: LucideIcon) => {
-    const updatedSteps = [...newFlowSteps];
-    updatedSteps[index] = { ...updatedSteps[index], icon };
-    setNewFlowSteps(updatedSteps);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -321,30 +315,6 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
                                         }`}
                                         style={{ backgroundColor: color }}
                                       />
-                                    ))}
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                              
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
-                                    {React.createElement(step.icon, { className: "h-4 w-4" })}
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-64 p-3">
-                                  <div className="grid grid-cols-6 gap-2">
-                                    {iconOptions.map((IconComponent, iconIndex) => (
-                                      <button
-                                        key={iconIndex}
-                                        type="button"
-                                        onClick={() => updateStepIcon(index, IconComponent)}
-                                        className={`w-8 h-8 rounded-md border hover:bg-gray-100 flex items-center justify-center transition-colors ${
-                                          step.icon === IconComponent ? 'bg-blue-100 border-blue-300' : 'border-gray-200'
-                                        }`}
-                                      >
-                                        <IconComponent className="h-4 w-4" />
-                                      </button>
                                     ))}
                                   </div>
                                 </PopoverContent>
