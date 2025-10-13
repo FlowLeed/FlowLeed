@@ -415,7 +415,7 @@ const TeamPage = () => {
                     </Avatar>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium">
+                        <h3 className="font-light">
                           {member.profile.full_name || member.profile.email}
                         </h3>
                         {getRoleIcon(member.role)}

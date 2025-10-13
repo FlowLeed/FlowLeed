@@ -26,7 +26,7 @@ export const MetricCard = ({
             {loading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <p className="text-3xl font-bold">{value}</p>
+              <p className="text-3xl font-semibold">{value}</p>
             )}
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>

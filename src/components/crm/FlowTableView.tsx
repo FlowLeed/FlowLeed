@@ -290,7 +290,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                                 {contact.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="font-medium">{contact.name}</span>
+                            <span className="font-light">{contact.name}</span>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">

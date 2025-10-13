@@ -165,7 +165,7 @@ const Dashboard = () => {
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl mb-6 font-light">Welcome to Flow</h1>
-          <h2 className="text-lg text-gray-700 mb-4 font-normal">Your Flows</h2>
+          <h2 className="text-lg text-gray-700 mb-4 font-light">Your Flows</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {flows.map(flow => <FlowCard key={flow.title} title={flow.title} description={flow.description} icon={flow.icon} contactCount={flow.contactCount} path={flow.path} />)}
           </div>

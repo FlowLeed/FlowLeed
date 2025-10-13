@@ -60,7 +60,7 @@ export const FlowStage: React.FC<FlowStageProps> = ({
             <button className="w-3 h-3 rounded-full cursor-pointer hover:scale-110 transition-transform" style={{
             backgroundColor: stageColor
           }} onClick={() => setShowSettings(true)} />
-            <h3 className="text-gray-700 font-medium">{stage.name}</h3>
+            <h3 className="text-gray-700 font-normal">{stage.name}</h3>
           </div>
           <button className="p-1 rounded-full hover:bg-gray-100" onClick={() => onAddContact?.(stage.id)}>
             <Plus className="h-4 w-4" />

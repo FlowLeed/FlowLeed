@@ -66,13 +66,13 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             </Link>}
           <div className="min-w-0 flex-1">
             {isSelectMode ? <>
-                <h4 className="font-medium text-sm truncate" title={name}>{name}</h4>
+                <h4 className="font-light text-sm truncate" title={name}>{name}</h4>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
                 </div>
               </> : <>
                 <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="hover:text-blue-600 transition-colors">
-                  <h4 title={name} className="text-sm cursor-pointer truncate font-normal">{name}</h4>
+                  <h4 title={name} className="text-sm cursor-pointer truncate font-light">{name}</h4>
                 </Link>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
