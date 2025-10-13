@@ -89,7 +89,7 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { flows, deleteFlow, reorderFlows, createFlow } = useFlowContext();
+  const { flows, deleteFlow, reorderFlows, createFlow, refreshFlows } = useFlowContext();
   const { organization } = useProfile();
   const [editingFlowId, setEditingFlowId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -259,7 +259,8 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
             is_end_step: stage.is_end_step
           }))}
           organizationId={organization.id}
-          onSave={() => {
+          onSave={async () => {
+            await refreshFlows();
             setEditingFlowId(null);
           }}
         />
