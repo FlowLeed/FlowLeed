@@ -40,9 +40,17 @@ serve(async (req) => {
 
     const userPrompt = `Flow Name: ${flowName}
 Stage Progression: ${stageProgression}
-Current Description: ${currentDescription || "None"}
+${currentDescription ? `User's Starting Point: "${currentDescription}"` : 'Current Description: None'}
 
-Based on this information, suggest 2-3 clear, actionable flow descriptions that:
+${currentDescription 
+  ? `The user has already started writing a description. Your task is to:
+- EXPAND and REFINE their ideas into complete, polished descriptions
+- PRESERVE the core intent and tone they've started with
+- ADD ministry-appropriate details, structure, and clarity
+- BUILD UPON their starting points rather than replacing them
+
+Create 3 versions that elaborate on their idea with different tones (professional, friendly, concise).`
+  : `Based on this information, suggest 2-3 clear, actionable flow descriptions that:
 - Explain the purpose and goal of this flow
 - Describe who this flow is for
 - Outline the expected journey through the stages
@@ -52,7 +60,7 @@ Based on this information, suggest 2-3 clear, actionable flow descriptions that:
 Provide options with different tones:
 1. Professional (formal, detailed, ministry-focused)
 2. Friendly (warm, welcoming, conversational)
-3. Concise (brief, action-oriented, to-the-point)`;
+3. Concise (brief, action-oriented, to-the-point)`}`;
 
     console.log('Generating flow descriptions for:', flowName);
 

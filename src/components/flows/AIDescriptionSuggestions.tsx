@@ -104,6 +104,11 @@ export const AIDescriptionSuggestions = ({
 
       {showSuggestions && suggestions.length > 0 && (
         <div className="space-y-2">
+          {currentDescription && (
+            <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+              <span className="font-medium">Expanded from:</span> "{currentDescription}"
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">Select a description to use:</p>
           {suggestions.map((suggestion, index) => (
             <Card key={index} className="p-3 hover:bg-accent/50 transition-colors">
