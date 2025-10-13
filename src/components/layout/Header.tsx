@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2, GripVertical } from "lucide-react";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, Users, MessageSquare, Calendar, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, X, Trash2, GripVertical, LayoutGrid, Table2 } from "lucide-react";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,8 @@ interface HeaderProps {
     unassigned: number;
     byMember: Record<string, number>;
   };
+  viewMode?: 'kanban' | 'table';
+  onViewModeChange?: (mode: 'kanban' | 'table') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -80,7 +82,9 @@ export const Header: React.FC<HeaderProps> = ({
   teamMembers = [],
   selectedFilter = null,
   onFilterChange,
-  contactCounts
+  contactCounts,
+  viewMode,
+  onViewModeChange
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
@@ -318,6 +322,28 @@ export const Header: React.FC<HeaderProps> = ({
             </Button>
           )}
         </div>
+        
+        {/* View Toggle */}
+        {viewMode && onViewModeChange && (
+          <div className="flex items-center gap-1 ml-2 border rounded-md p-1">
+            <Button
+              variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => onViewModeChange('kanban')}
+              className="h-7 px-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => onViewModeChange('table')}
+              className="h-7 px-2"
+            >
+              <Table2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
         
         {/* Assignee Filters */}
         {teamMembers.length > 0 && contactCounts && onFilterChange && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
+import { FlowTableView } from "./FlowTableView";
 import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { Header } from "../layout/Header";
@@ -32,8 +33,17 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
+    const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
+    return (saved === 'table' || saved === 'kanban') ? saved : 'kanban';
+  });
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+
+  // Save view mode preference
+  useEffect(() => {
+    localStorage.setItem(`flow-view-mode-${flow.id}`, viewMode);
+  }, [viewMode, flow.id]);
   
   // Use flow team members instead of organization members
   const { teamMembers: flowTeamMembers, loading: teamMembersLoading } = useFlowTeamMembers(flow.id);
@@ -370,23 +380,34 @@ export const FlowView: React.FC<FlowViewProps> = ({
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}
         contactCounts={contactCounts}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
       <div className="flex-1 overflow-x-auto p-6">
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex gap-4">
-            {filteredFlow.stages.map((stage) => (
-              <FlowStage
-                key={stage.id}
-                stage={stage}
-                onAddContact={handleAddContact}
-                onEditContact={handleEditContact}
-                onDeleteContact={handleDeleteContact}
-                onUpdateStage={handleUpdateStage}
-                pipelineId={flow.id}
-              />
-            ))}
-          </div>
-        </DragDropContext>
+        {viewMode === 'kanban' ? (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="flex gap-4">
+              {filteredFlow.stages.map((stage) => (
+                <FlowStage
+                  key={stage.id}
+                  stage={stage}
+                  onAddContact={handleAddContact}
+                  onEditContact={handleEditContact}
+                  onDeleteContact={handleDeleteContact}
+                  onUpdateStage={handleUpdateStage}
+                  pipelineId={flow.id}
+                />
+              ))}
+            </div>
+          </DragDropContext>
+        ) : (
+          <FlowTableView
+            flow={filteredFlow}
+            onEditContact={handleEditContact}
+            onDeleteContact={handleDeleteContact}
+            onFlowChange={onFlowChange}
+          />
+        )}
       </div>
       {isFormOpen && (
         <ContactFormDialog
