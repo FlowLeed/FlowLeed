@@ -288,7 +288,7 @@ export const Header: React.FC<HeaderProps> = ({
     <div className="flex items-center justify-between h-16 px-6">
       <div className="flex items-center gap-3">
         <FlowIcon className="h-6 w-6 text-purple-500" />
-        <div className="text-xl font-semibold">{title}</div>
+        <div className="text-xl font-extralight">{title}</div>
         <div className="flex gap-1">
           {onSettingsClick && (
             <Button variant="ghost" size="sm" onClick={onSettingsClick}>
