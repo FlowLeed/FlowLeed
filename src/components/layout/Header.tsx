@@ -405,12 +405,6 @@ export const Header: React.FC<HeaderProps> = ({
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col items-start">
-                  <span className="text-sm font-medium">{displayName}</span>
-                  {organization && (
-                    <span className="text-xs text-muted-foreground">{organization.name}</span>
-                  )}
-                </div>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
