@@ -25,8 +25,15 @@ const ContactsPage = () => {
 
   const { contacts, isLoading } = useContacts(filters);
   
-  console.log('ContactsPage - contacts:', contacts);
-  console.log('ContactsPage - isLoading:', isLoading);
+  console.log('📄 ContactsPage render:', { 
+    contactsCount: contacts?.length,
+    contactsType: typeof contacts,
+    isArray: Array.isArray(contacts),
+    isLoading,
+    isUndefined: contacts === undefined,
+    isNull: contacts === null,
+    filters 
+  });
 
   const handleFilterChange = (key: keyof ContactFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));

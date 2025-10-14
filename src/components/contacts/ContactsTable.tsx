@@ -24,11 +24,28 @@ interface ContactsTableProps {
 export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: ContactsTableProps) => {
   const navigate = useNavigate();
 
+  console.log('📊 ContactsTable render:', { 
+    contactsCount: contacts?.length,
+    isLoading,
+    hasActiveFilters,
+    contactsUndefined: contacts === undefined
+  });
+
   if (isLoading) {
     return (
       <Card>
         <div className="p-8 text-center text-muted-foreground">
           Loading people...
+        </div>
+      </Card>
+    );
+  }
+
+  if (contacts === undefined) {
+    return (
+      <Card>
+        <div className="p-8 text-center text-muted-foreground">
+          Initializing...
         </div>
       </Card>
     );

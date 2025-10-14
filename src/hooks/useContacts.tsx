@@ -6,19 +6,34 @@ import type { ContactFilters } from "@/pages/ContactsPage";
 export const useContacts = (filters: ContactFilters) => {
   const { user } = useAuth();
 
-  const { data: contacts, isLoading } = useQuery({
+  console.log('🔍 useContacts hook called', { user: user?.id, filters });
+
+  const { data: contacts, isLoading, error } = useQuery({
     queryKey: ["all-contacts", user?.id, filters],
     queryFn: async () => {
-      if (!user) return [];
+      console.log('📊 useContacts queryFn executing', { userId: user?.id });
+      
+      if (!user) {
+        console.log('❌ No user found in useContacts');
+        return [];
+      }
 
       // Get user's organization
-      const { data: orgMember } = await supabase
+      console.log('🔍 Fetching organization for user:', user.id);
+      const { data: orgMember, error: orgError } = await supabase
         .from("organization_members")
         .select("organization_id")
         .eq("user_id", user.id)
         .single();
 
-      if (!orgMember) return [];
+      console.log('Organization member data:', orgMember, 'error:', orgError);
+
+      if (!orgMember) {
+        console.log('❌ No organization found for user');
+        return [];
+      }
+
+      console.log('✅ Organization ID:', orgMember.organization_id);
 
       // Build base query
       let query = supabase
@@ -56,9 +71,20 @@ export const useContacts = (filters: ContactFilters) => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      
+      console.log('📊 Query result:', { 
+        dataCount: data?.length, 
+        error: error?.message,
+        sampleData: data?.[0]
+      });
+      
+      if (error) {
+        console.error('❌ Query error:', error);
+        throw error;
+      }
 
       let filteredData = data || [];
+      console.log('Initial data count:', filteredData.length);
 
       // Apply flow filter (client-side since it's a nested relationship)
       if (filters.flowId !== "all") {
@@ -136,9 +162,18 @@ export const useContacts = (filters: ContactFilters) => {
         }));
       }
 
+      console.log('✅ Final contacts to return:', filteredData.length);
       return filteredData;
     },
     enabled: !!user,
+  });
+
+  console.log('useContacts hook result:', { 
+    contactsCount: contacts?.length, 
+    isLoading, 
+    error: error?.message,
+    contactsType: typeof contacts,
+    isArray: Array.isArray(contacts)
   });
 
   return { contacts, isLoading };
