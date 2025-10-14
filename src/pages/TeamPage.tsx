@@ -326,7 +326,7 @@ const TeamPage = () => {
       </div>;
   }
   return <div className="flex flex-col h-full">
-      <Header title="My Organization" />
+      <Header title="My Organization" showFlowIcon={false} showAddButton={false} />
       
       <div className="flex-1 overflow-auto p-6">
         <Tabs defaultValue="settings" className="w-full">

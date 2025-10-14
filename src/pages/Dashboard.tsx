@@ -106,8 +106,8 @@ const Dashboard = () => {
     };
   });
   if (loading) {
-    return <div className="flex flex-col h-full overflow-hidden">
-        <Header title="Dashboard" showAddButton={false} />
+    return <div className="flex flex-col h-full">
+        <Header title="Dashboard" showAddButton={false} showFlowIcon={false} />
         <div className="flex-1 overflow-auto p-6">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
@@ -124,8 +124,8 @@ const Dashboard = () => {
   if (error) {
     // If it's an organization error, show a different message and stay on dashboard
     if (error.includes("Organization not found")) {
-      return <div className="flex flex-col h-full overflow-hidden">
-          <Header title="Dashboard" showAddButton={false} />
+      return <div className="flex flex-col h-full">
+          <Header title="Dashboard" showAddButton={false} showFlowIcon={false} />
           <div className="flex-1 overflow-auto p-6">
             <div className="max-w-6xl mx-auto">
               <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
@@ -143,8 +143,8 @@ const Dashboard = () => {
           </div>
         </div>;
     }
-    return <div className="flex flex-col h-full overflow-hidden">
-        <Header title="Dashboard" showAddButton={false} />
+    return <div className="flex flex-col h-full">
+        <Header title="Dashboard" showAddButton={false} showFlowIcon={false} />
         <div className="flex-1 overflow-auto p-6">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-2xl font-bold mb-6">Welcome to Flow</h1>
@@ -160,8 +160,8 @@ const Dashboard = () => {
         </div>
       </div>;
   }
-  return <div className="flex flex-col h-full overflow-hidden">
-      <Header title="Dashboard" showAddButton={false} />
+  return <div className="flex flex-col h-full">
+      <Header title="Dashboard" showAddButton={false} showFlowIcon={false} />
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl mb-6 font-light">Welcome to Flow</h1>

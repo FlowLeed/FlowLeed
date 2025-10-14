@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck } from "lucide-react";
+import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
@@ -58,6 +58,11 @@ interface TeamMember {
 
 interface HeaderProps {
   title: string;
+  description?: string;
+  showBackButton?: boolean;
+  onBackClick?: () => void;
+  showFlowIcon?: boolean;
+  rightContent?: React.ReactNode;
   showAddButton?: boolean;
   onAddClick?: () => void;
   onSettingsClick?: () => void;
@@ -79,6 +84,11 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   title,
+  description,
+  showBackButton = false,
+  onBackClick,
+  showFlowIcon = false,
+  rightContent,
   showAddButton = true,
   onAddClick,
   onSettingsClick,
@@ -285,10 +295,19 @@ export const Header: React.FC<HeaderProps> = ({
     ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
   return (
-    <div className="flex items-center justify-between h-16 px-6">
-      <div className="flex items-center gap-3">
-        <FlowIcon className="h-6 w-6 text-purple-500" />
-        <div className="text-xl font-extralight">{title}</div>
+    <div className="sticky top-0 z-50 bg-background border-b">
+      <div className="flex items-center justify-between h-16 px-6">
+        <div className="flex items-center gap-3">
+          {showBackButton && onBackClick && (
+            <Button variant="ghost" size="icon" onClick={onBackClick} className="h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          {showFlowIcon && <FlowIcon className="h-6 w-6 text-purple-500" />}
+          <div>
+            <div className="text-xl font-extralight">{title}</div>
+            {description && <p className="text-sm text-muted-foreground">{description}</p>}
+          </div>
         <div className="flex gap-1">
           {onSettingsClick && (
             <Button variant="ghost" size="sm" onClick={onSettingsClick}>
@@ -357,6 +376,12 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
       
+      {/* Right content slot for page-specific controls */}
+      {rightContent && (
+        <div className="flex-1 flex justify-end px-4">
+          {rightContent}
+        </div>
+      )}
       
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
@@ -416,9 +441,10 @@ export const Header: React.FC<HeaderProps> = ({
           </DropdownMenu>
         </div>
       </div>
+      </div>
 
       {/* Global Search */}
-      <GlobalSearch 
+      <GlobalSearch
         open={showGlobalSearch} 
         onOpenChange={setShowGlobalSearch} 
       />

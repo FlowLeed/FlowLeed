@@ -447,7 +447,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Header 
-        title={flow.name} 
+        title={flow.name}
+        showFlowIcon={true}
         onAddClick={() => {
           setCurrentStageId(flow.stages[0].id);
           setCurrentContact(null);

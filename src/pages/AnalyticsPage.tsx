@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Header } from "@/components/layout/Header";
 import { DateRangeFilter } from "@/components/analytics/DateRangeFilter";
 import { OverviewSection } from "@/components/analytics/OverviewSection";
 import { FlowsSection } from "@/components/analytics/FlowsSection";
@@ -10,18 +11,24 @@ const AnalyticsPage = () => {
   const [preset, setPreset] = useState<DateRangePreset>("month");
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const dateRange = preset === "custom" && customRange ? customRange : getDateRangeFromPreset(preset);
-  return <div className="container mx-auto py-6 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-3xl tracking-tight font-extralight">Analytics</h1>
-          <p className="text-muted-foreground">
-            Track performance, analyze trends, and optimize your flows
-          </p>
-        </div>
-        <DateRangeFilter preset={preset} customRange={customRange} onPresetChange={setPreset} onCustomRangeChange={setCustomRange} />
-      </div>
+  return <div className="flex flex-col h-full">
+      <Header 
+        title="Analytics" 
+        description="Track performance, analyze trends, and optimize your flows"
+        showFlowIcon={false}
+        showAddButton={false}
+        rightContent={
+          <DateRangeFilter 
+            preset={preset} 
+            customRange={customRange} 
+            onPresetChange={setPreset} 
+            onCustomRangeChange={setCustomRange} 
+          />
+        }
+      />
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <div className="flex-1 overflow-auto p-6">
+        <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="flows">Flows</TabsTrigger>
@@ -45,6 +52,7 @@ const AnalyticsPage = () => {
           <PeopleSection />
         </TabsContent>
       </Tabs>
+      </div>
     </div>;
 };
 export default AnalyticsPage;

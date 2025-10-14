@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Zap } from "lucide-react";
+import { CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -260,19 +261,15 @@ const IntegrationsPage = () => {
     }
     return <Badge variant="outline">Not Connected</Badge>;
   };
-  return <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">Integrations</h1>
-          <p className="text-muted-foreground">Connect and manage your external tools and services</p>
-        </div>
-      </div>
+  return <div className="flex flex-col h-full">
+      <Header 
+        title="Integrations" 
+        description="Connect and manage your external tools and services"
+        showFlowIcon={false}
+        showAddButton={false}
+      />
 
-      <div className="space-y-6">
+      <div className="flex-1 overflow-auto p-6 max-w-6xl mx-auto space-y-6 pb-12">
         {/* Planning Center Integration */}
         <Card>
           <CardHeader>

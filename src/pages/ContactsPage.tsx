@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/layout/Header";
 import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { ContactFilters } from "@/components/contacts/ContactFilters";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
@@ -44,32 +45,35 @@ const ContactsPage = () => {
     filters.lastInteractionDays !== "all";
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-extralight mb-2">People</h1>
-          <p className="text-muted-foreground font-light">
-            Manage all your people in one place
-          </p>
-        </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Person
-        </Button>
+    <div className="flex flex-col h-full">
+      <Header 
+        title="People"
+        description="Manage all your people in one place"
+        showFlowIcon={false}
+        showAddButton={false}
+        rightContent={
+          <div className="flex items-center gap-4">
+            <ContactFilters
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleClearFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
+            <Button onClick={() => setShowAddDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Person
+            </Button>
+          </div>
+        }
+      />
+
+      <div className="flex-1 overflow-auto p-6">
+        <ContactsTable
+          contacts={contacts}
+          isLoading={isLoading}
+          hasActiveFilters={hasActiveFilters}
+        />
       </div>
-
-      <ContactFilters
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onClearFilters={handleClearFilters}
-        hasActiveFilters={hasActiveFilters}
-      />
-
-      <ContactsTable
-        contacts={contacts}
-        isLoading={isLoading}
-        hasActiveFilters={hasActiveFilters}
-      />
 
       <ContactFormDialog
         open={showAddDialog}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Bell, Shield, Palette, Globe, Mail, Phone, MapPin, Upload, CheckCircle } from "lucide-react";
+import { User, Bell, Shield, Palette, Globe, Mail, Phone, MapPin, Upload, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -191,27 +192,33 @@ const ProfilePage = () => {
     fileInputRef.current?.click();
   };
   if (loading) {
-    return <div className="min-h-screen p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    return <div className="flex flex-col h-full">
+        <Header 
+          title="My Profile" 
+          description={`${organization?.name || ''} • Manage your account settings and preferences`}
+          showBackButton={true}
+          onBackClick={() => navigate(-1)}
+          showFlowIcon={false}
+          showAddButton={false}
+        />
+        <div className="flex-1 overflow-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         </div>
       </div>;
   }
-  return <div className="min-h-screen p-6 space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-light">My Profile</h1>
-          <p className="text-muted-foreground">
-            {organization ? `${organization.name} • ` : ''}Manage your account settings and preferences
-          </p>
-        </div>
-      </div>
+  return <div className="flex flex-col h-full">
+      <Header 
+        title="My Profile" 
+        description={`${organization?.name || ''} • Manage your account settings and preferences`}
+        showBackButton={true}
+        onBackClick={() => navigate(-1)}
+        showFlowIcon={false}
+        showAddButton={false}
+      />
 
-      <div className="space-y-6">
+      <div className="flex-1 overflow-auto p-6 space-y-6 pb-12">
         {/* Personal Information Card */}
         <Card>
           <CardHeader>
