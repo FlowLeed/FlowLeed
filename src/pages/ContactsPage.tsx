@@ -24,6 +24,9 @@ const ContactsPage = () => {
   });
 
   const { contacts, isLoading } = useContacts(filters);
+  
+  console.log('ContactsPage - contacts:', contacts);
+  console.log('ContactsPage - isLoading:', isLoading);
 
   const handleFilterChange = (key: keyof ContactFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
