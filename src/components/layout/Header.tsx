@@ -295,7 +295,7 @@ export const Header: React.FC<HeaderProps> = ({
     ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
   return (
-    <div className="sticky top-0 z-50 bg-background border-b">
+    <div className="sticky top-0 z-50 bg-sidebar border-b">
       <div className="flex items-center justify-between h-16 px-6">
         <div className="flex items-center gap-3">
           {showBackButton && onBackClick && (
