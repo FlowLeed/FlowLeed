@@ -541,9 +541,10 @@ const UserProfilePage = () => {
   const { contact, tags, demographics, addresses, familyMembers, flows, interactions, notes, prayerRequests } = contactData;
 
   return (
-    <div className="w-full p-6 space-y-6">
-      {/* Enhanced Header */}
-      <div className="space-y-4">
+    <div className="flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 overflow-auto w-full p-6 space-y-6">
+        {/* Enhanced Header */}
+        <div className="space-y-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate(-1)} size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -921,6 +922,7 @@ const UserProfilePage = () => {
         </Dialog>
       )}
 
+      </div>
     </div>
   );
 };
