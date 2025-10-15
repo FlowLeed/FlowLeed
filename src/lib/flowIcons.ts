@@ -138,3 +138,8 @@ export const iconOptions = [
   { name: 'Home', icon: Home },
   { name: 'Smile', icon: Smile }
 ];
+
+export const getFlowIcon = (iconName?: string): LucideIcon => {
+  if (!iconName) return Users;
+  return iconMap[iconName] || Users;
+};
