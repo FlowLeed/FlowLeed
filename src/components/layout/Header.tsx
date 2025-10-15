@@ -297,7 +297,6 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: 'hsl(233.33deg 100% 98.24%)' }}>
       <div className="flex items-center justify-between h-16 px-6">
-        {/* Left side: Back button, icon, title/description, settings */}
         <div className="flex items-center gap-3">
           {showBackButton && onBackClick && (
             <Button variant="ghost" size="icon" onClick={onBackClick} className="h-8 w-8">
@@ -305,23 +304,20 @@ export const Header: React.FC<HeaderProps> = ({
             </Button>
           )}
           {showFlowIcon && <FlowIcon className="h-6 w-6 text-purple-500" />}
-          <div className="flex items-center gap-2">
-            <div>
-              <div className="text-xl font-extralight">{title}</div>
-              {description && <p className="text-sm text-muted-foreground">{description}</p>}
-            </div>
-            {onSettingsClick && (
-              <Button variant="ghost" size="sm" onClick={onSettingsClick}>
-                <Settings2 className="h-4 w-4" />
-              </Button>
-            )}
+          <div>
+            <div className="text-xl font-extralight">{title}</div>
+            {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
+        <div className="flex gap-1">
+          {onSettingsClick && (
+            <Button variant="ghost" size="sm" onClick={onSettingsClick}>
+              <Settings2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
         
-        {/* Right side: View toggles, filters, actions, user menu */}
-        <div className="flex items-center gap-4">
-          {/* View Toggle and Select Mode */}
-          <div className="flex items-center gap-2">
+        {/* View Toggle and Select Mode */}
+        <div className="flex items-center gap-2">
           {viewMode && onViewModeChange && (
             <div className="flex items-center gap-1 border rounded-md p-1">
               <Button
@@ -367,23 +363,28 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
           )}
-          </div>
-          
-          {/* Assignee Filters */}
-          {teamMembers.length > 0 && contactCounts && onFilterChange && (
-            <FlowHeaderFilters
-              teamMembers={teamMembers}
-              selectedFilter={selectedFilter}
-              onFilterChange={onFilterChange}
-              contactCounts={contactCounts}
-            />
-          )}
-          
-          {/* Right content slot for page-specific controls */}
+        </div>
+        
+        {/* Assignee Filters */}
+        {teamMembers.length > 0 && contactCounts && onFilterChange && (
+          <FlowHeaderFilters
+            teamMembers={teamMembers}
+            selectedFilter={selectedFilter}
+            onFilterChange={onFilterChange}
+            contactCounts={contactCounts}
+          />
+        )}
+      </div>
+      
+      {/* Right content slot for page-specific controls */}
+      {rightContent && (
+        <div className="flex-1 flex justify-end px-4">
           {rightContent}
-          
-          {/* Notifications, Search, User Menu */}
-          <div className="flex items-center gap-2">
+        </div>
+      )}
+      
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <button className="p-2 rounded-full hover:bg-slate-100">
             <Bell className="h-5 w-5 text-slate-500" />
           </button>
@@ -432,8 +433,8 @@ export const Header: React.FC<HeaderProps> = ({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          </div>
         </div>
+      </div>
       </div>
 
       {/* Global Search */}
