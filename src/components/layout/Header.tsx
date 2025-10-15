@@ -306,7 +306,6 @@ export const Header: React.FC<HeaderProps> = ({
           {showFlowIcon && <FlowIcon className="h-6 w-6 text-purple-500" />}
           <div>
             <div className="text-xl font-extralight">{title}</div>
-            {description && <p className="text-sm text-muted-foreground">{description}</p>}
           </div>
         <div className="flex gap-1">
           {onSettingsClick && (
