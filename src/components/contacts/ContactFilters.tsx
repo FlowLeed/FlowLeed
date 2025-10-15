@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -78,8 +84,15 @@ export const ContactFilters = ({
     enabled: !!user,
   });
 
+  // Count active filters (excluding search term)
+  const activeFilterCount = [
+    filters.assignedToUserId !== "all",
+    filters.flowId !== "all",
+    filters.lastInteractionDays !== "all",
+  ].filter(Boolean).length;
+
   return (
-    <div className="flex flex-wrap gap-4 items-center">
+    <div className="flex gap-4 items-center">
       <div className="relative flex-1 min-w-[200px] max-w-xs">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -90,64 +103,90 @@ export const ContactFilters = ({
         />
       </div>
 
-      <Select
-        value={filters.assignedToUserId}
-        onValueChange={(value) => onFilterChange("assignedToUserId", value)}
-      >
-        <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Assigned to" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Assigned</SelectItem>
-          <SelectItem value="unassigned">Unassigned</SelectItem>
-          {members?.map((member: any) => (
-            <SelectItem key={member.user_id} value={member.user_id}>
-              {member.profiles?.full_name || "Unknown"}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-2">
+            <Filter className="h-4 w-4" />
+            Filter
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="ml-1 rounded-full px-2 py-0 text-xs">
+                {activeFilterCount}
+              </Badge>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80" align="end">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Assigned to</label>
+              <Select
+                value={filters.assignedToUserId}
+                onValueChange={(value) => onFilterChange("assignedToUserId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Assigned to" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Assigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {members?.map((member: any) => (
+                    <SelectItem key={member.user_id} value={member.user_id}>
+                      {member.profiles?.full_name || "Unknown"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <Select
-        value={filters.flowId}
-        onValueChange={(value) => onFilterChange("flowId", value)}
-      >
-        <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Flow" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Flows</SelectItem>
-          <SelectItem value="no-flows">No Flows</SelectItem>
-          {flows?.map((flow: any) => (
-            <SelectItem key={flow.id} value={flow.id}>
-              {flow.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Flow</label>
+              <Select
+                value={filters.flowId}
+                onValueChange={(value) => onFilterChange("flowId", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Flow" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Flows</SelectItem>
+                  <SelectItem value="no-flows">No Flows</SelectItem>
+                  {flows?.map((flow: any) => (
+                    <SelectItem key={flow.id} value={flow.id}>
+                      {flow.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <Select
-        value={filters.lastInteractionDays}
-        onValueChange={(value) => onFilterChange("lastInteractionDays", value)}
-      >
-        <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Last interaction" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Time</SelectItem>
-          <SelectItem value="7">Last 7 days</SelectItem>
-          <SelectItem value="30">Last 30 days</SelectItem>
-          <SelectItem value="90">Last 90 days</SelectItem>
-          <SelectItem value="never">Never contacted</SelectItem>
-        </SelectContent>
-      </Select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Last interaction</label>
+              <Select
+                value={filters.lastInteractionDays}
+                onValueChange={(value) => onFilterChange("lastInteractionDays", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Last interaction" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="7">Last 7 days</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
+                  <SelectItem value="90">Last 90 days</SelectItem>
+                  <SelectItem value="never">Never contacted</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={onClearFilters}>
-          <X className="mr-2 h-4 w-4" />
-          Clear Filters
-        </Button>
-      )}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={onClearFilters} className="w-full">
+                <X className="mr-2 h-4 w-4" />
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
