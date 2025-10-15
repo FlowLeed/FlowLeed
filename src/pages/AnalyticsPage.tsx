@@ -17,17 +17,17 @@ const AnalyticsPage = () => {
         description="Track performance, analyze trends, and optimize your flows"
         showFlowIcon={false}
         showAddButton={false}
-        rightContent={
+      />
+
+      <div className="flex-1 overflow-auto p-6">
+        <div className="mb-6">
           <DateRangeFilter 
             preset={preset} 
             customRange={customRange} 
             onPresetChange={setPreset} 
             onCustomRangeChange={setCustomRange} 
           />
-        }
-      />
-
-      <div className="flex-1 overflow-auto p-6">
+        </div>
         <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
