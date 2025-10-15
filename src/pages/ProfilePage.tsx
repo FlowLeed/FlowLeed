@@ -192,7 +192,7 @@ const ProfilePage = () => {
     fileInputRef.current?.click();
   };
   if (loading) {
-    return <div className="flex flex-col h-full">
+    return <div className="flex flex-col h-screen overflow-hidden">
         <Header 
           title="My Profile" 
           description={`${organization?.name || ''} • Manage your account settings and preferences`}
@@ -208,7 +208,7 @@ const ProfilePage = () => {
         </div>
       </div>;
   }
-  return <div className="flex flex-col h-full">
+  return <div className="flex flex-col h-screen overflow-hidden">
       <Header 
         title="My Profile" 
         description={`${organization?.name || ''} • Manage your account settings and preferences`}
