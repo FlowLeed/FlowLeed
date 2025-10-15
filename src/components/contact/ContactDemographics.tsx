@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar, MapPin, User, Users } from 'lucide-react';
 
 interface Demographics {
@@ -24,6 +25,8 @@ interface FamilyMember {
   name: string;
   relationship: string;
   birthday?: string;
+  avatar?: string;
+  is_child?: boolean;
 }
 
 interface ContactDemographicsProps {
@@ -133,16 +136,30 @@ export const ContactDemographics: React.FC<ContactDemographicsProps> = ({
           <CardContent>
             <div className="space-y-3">
               {familyMembers.map((member) => (
-                <div key={member.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">{member.name}</p>
+                <div key={member.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={member.avatar} />
+                    <AvatarFallback>
+                      {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{member.name}</p>
                     <p className="text-xs text-muted-foreground">{member.relationship}</p>
                   </div>
-                  {member.birthday && (
-                    <p className="text-xs text-muted-foreground">
-                      {formatAge(member.birthday) && `${formatAge(member.birthday)} years old`}
-                    </p>
-                  )}
+                  <div className="text-right flex flex-col items-end gap-1">
+                    {member.birthday && formatAge(member.birthday) !== null && (
+                      <p className="text-xs text-muted-foreground">
+                        {formatAge(member.birthday)} yrs
+                      </p>
+                    )}
+                    <Badge 
+                      variant={member.is_child ? "default" : "secondary"} 
+                      className="text-xs"
+                    >
+                      {member.is_child ? "Child" : "Adult"}
+                    </Badge>
+                  </div>
                 </div>
               ))}
             </div>

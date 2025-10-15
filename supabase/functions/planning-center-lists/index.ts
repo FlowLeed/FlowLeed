@@ -662,31 +662,95 @@ async function syncDemographicData(contactId: string, person: any) {
     
     // 3. Sync family/household data  
     if (includedData.households && includedData.households.length > 0) {
-      console.log('Syncing household data for contact:', contactId);
+      console.log(`Found ${includedData.households.length} households for person ${person.id}`);
       
-      // For now, we'll extract basic family info from household data
-      // This could be enhanced to sync actual family member relationships
+      // First, clear existing Planning Center-sourced family members
+      const { error: deleteError } = await supabase
+        .from('contact_family_members')
+        .delete()
+        .eq('contact_id', contactId)
+        .not('pc_person_id', 'is', null);
+      
+      if (deleteError) {
+        console.error('Error clearing existing family members:', deleteError);
+      }
+      
+      const familyMembers = [];
+      const seenPersonIds = new Set<string>(); // Prevent duplicates across households
+      
       for (const household of includedData.households) {
-        const householdAttrs = household.attributes;
-        if (householdAttrs.name && householdAttrs.name !== attrs.name) {
-          // Check if this family member already exists
-          const { data: existingFamily } = await supabase
-            .from('contact_family_members')
-            .select('id')
-            .eq('contact_id', contactId)
-            .eq('name', householdAttrs.name)
-            .maybeSingle();
+        const householdName = household.attributes?.name || 'Unknown Household';
+        console.log(`Fetching household members for household ${household.id}`);
+        
+        try {
+          // Fetch household memberships with person details
+          const householdResponse = await fetch(
+            `https://api.planningcenteronline.com/people/v2/households/${household.id}/household_memberships?include=person`,
+            {
+              headers: {
+                'Authorization': `Basic ${btoa(`${appId}:${secret}`)}`,
+              },
+            }
+          );
           
-          if (!existingFamily) {
-            await supabase
-              .from('contact_family_members')
-              .insert({
-                contact_id: contactId,
-                name: householdAttrs.name,
-                relationship: 'household_member',
-                notes: `Household: ${household.id}`
-              });
+          if (!householdResponse.ok) {
+            console.error(`Failed to fetch household memberships: ${householdResponse.status}`);
+            continue;
           }
+          
+          const householdData = await householdResponse.json();
+          const memberships = householdData.data || [];
+          const includedPeople = householdData.included?.filter((i: any) => i.type === 'Person') || [];
+          
+          console.log(`Found ${memberships.length} members in household ${household.id}`);
+          
+          for (const membership of memberships) {
+            const personId = membership.relationships?.person?.data?.id;
+            
+            // Skip if this is the primary contact or already processed
+            if (personId === person.id || seenPersonIds.has(personId)) continue;
+            
+            // Find the person data in included
+            const memberPerson = includedPeople.find((p: any) => p.id === personId);
+            
+            if (memberPerson) {
+              const memberAttrs = memberPerson.attributes;
+              const birthdate = memberAttrs.birthdate;
+              let isChild = memberAttrs.child || false;
+              
+              // Calculate if child based on age if birthdate available and child flag not set
+              if (birthdate && !isChild) {
+                const age = new Date().getFullYear() - new Date(birthdate).getFullYear();
+                isChild = age < 18;
+              }
+              
+              seenPersonIds.add(personId);
+              
+              familyMembers.push({
+                contact_id: contactId,
+                name: `${memberAttrs.first_name || ''} ${memberAttrs.last_name || ''}`.trim(),
+                relationship: isChild ? 'Child' : (memberAttrs.marital_status === 'Married' ? 'Spouse' : 'Household Member'),
+                birthday: birthdate,
+                avatar: memberAttrs.avatar || memberAttrs.demographic_avatar_url,
+                is_child: isChild,
+                pc_person_id: personId,
+                notes: `Household: ${householdName}`
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Error fetching household ${household.id}:`, error);
+        }
+      }
+      
+      if (familyMembers.length > 0) {
+        console.log(`Inserting ${familyMembers.length} family members`);
+        const { error: familyError } = await supabase
+          .from('contact_family_members')
+          .insert(familyMembers);
+        
+        if (familyError) {
+          console.error('Error syncing family members:', familyError);
         }
       }
     }

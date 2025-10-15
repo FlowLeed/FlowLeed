@@ -91,32 +91,41 @@ export type Database = {
       }
       contact_family_members: {
         Row: {
+          avatar: string | null
           birthday: string | null
           contact_id: string
           created_at: string
           id: string
+          is_child: boolean | null
           name: string
           notes: string | null
+          pc_person_id: string | null
           relationship: string
           updated_at: string
         }
         Insert: {
+          avatar?: string | null
           birthday?: string | null
           contact_id: string
           created_at?: string
           id?: string
+          is_child?: boolean | null
           name: string
           notes?: string | null
+          pc_person_id?: string | null
           relationship: string
           updated_at?: string
         }
         Update: {
+          avatar?: string | null
           birthday?: string | null
           contact_id?: string
           created_at?: string
           id?: string
+          is_child?: boolean | null
           name?: string
           notes?: string | null
+          pc_person_id?: string | null
           relationship?: string
           updated_at?: string
         }
