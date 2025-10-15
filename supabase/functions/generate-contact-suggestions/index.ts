@@ -93,7 +93,7 @@ serve(async (req) => {
     const pipelineIds = [...new Set(pipelineContacts?.map(pc => pc.pipelines.id) || [])];
     const { data: allStages } = await supabase
       .from('pipeline_stages')
-      .select('pipeline_id, name, stage_order, is_start_step, is_end_step')
+      .select('id, pipeline_id, name, stage_order, is_start_step, is_end_step')
       .in('pipeline_id', pipelineIds)
       .order('stage_order', { ascending: true });
 
@@ -143,6 +143,15 @@ MESSAGE CAPABILITY:
   * "Schedule Call" → requiresMessage: false (no message content needed)
   * "Update stage" → requiresMessage: false (action-based, not message-based)
 
+STAGE PROGRESSION:
+- When suggesting stage progression (type: 'stage_action'):
+  * ALWAYS include suggestedStageId (the exact stage.id from the database)
+  * ALWAYS include suggestedStageName (the human-readable stage name)
+  * ALWAYS include pipelineId (the pipeline.id this stage belongs to)
+  * Set actionText to describe the action (e.g., "Move to Thank You Text")
+  * Explain why this progression makes sense in the description
+  * Use the stage IDs provided in the Stage Progression section
+
 Return 3-5 prioritized, actionable suggestions.`;
 
     // Build enriched pipeline context
@@ -157,14 +166,14 @@ Return 3-5 prioritized, actionable suggestions.`;
         .map(s => {
           const marker = s.is_start_step ? '→ START' : s.is_end_step ? '→ END' : '';
           const current = s.stage_order === currentStage?.stage_order ? '**[CURRENT]**' : '';
-          return `  ${s.stage_order + 1}. ${s.name} ${marker} ${current}`.trim();
+          return `  ${s.stage_order + 1}. ${s.name} (ID: ${s.id}) ${marker} ${current}`.trim();
         })
         .join('\n');
       
       const daysInStage = Math.floor((Date.now() - new Date(contact.created_at).getTime()) / (1000 * 60 * 60 * 24));
       
       return `
-Flow: ${contact.pipelines.name}
+Flow: ${contact.pipelines.name} (Pipeline ID: ${contact.pipelines.id})
 ${contact.pipelines.description ? `Purpose: ${contact.pipelines.description}` : 'Purpose: Not specified'}
 Current Stage: ${currentStage.name} (${daysInStage} days in this stage)
 Stage Progression:
@@ -231,7 +240,10 @@ ${pipelineContexts || 'Not in any pipeline'}`;
                         messageType: { 
                           type: 'string',
                           enum: ['text', 'email']
-                        }
+                        },
+                        suggestedStageId: { type: 'string' },
+                        suggestedStageName: { type: 'string' },
+                        pipelineId: { type: 'string' }
                       },
                       required: ['type', 'title', 'description', 'priority'],
                       additionalProperties: false

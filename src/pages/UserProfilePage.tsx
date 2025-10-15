@@ -790,6 +790,7 @@ const UserProfilePage = () => {
         contactEmail={contact?.email}
         currentPipelineId={pipelineId || undefined}
         currentPipelineName={contactData?.flows?.find((f: any) => f.pipeline.id === pipelineId)?.pipeline?.name}
+        flows={contactData?.flows}
       />
 
       {/* Vertical Content Blocks */}

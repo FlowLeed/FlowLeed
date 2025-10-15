@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, RefreshCw, AlertCircle, MessageSquare } from 'lucide-react';
+import { Lightbulb, RefreshCw, AlertCircle, MessageSquare, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { MessageComposerDialog } from './MessageComposerDialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Suggestion {
   type: 'follow_up' | 'prayer_check' | 'birthday' | 'next_step' | 'engagement' | 'milestone' | 'stage_action';
@@ -16,6 +17,9 @@ interface Suggestion {
   actionText?: string;
   requiresMessage?: boolean;
   messageType?: 'text' | 'email';
+  suggestedStageId?: string;
+  suggestedStageName?: string;
+  pipelineId?: string;
 }
 
 interface AISuggestionsProps {
@@ -25,6 +29,7 @@ interface AISuggestionsProps {
   contactEmail?: string;
   currentPipelineId?: string;
   currentPipelineName?: string;
+  flows?: Array<{ id: string; pipeline: { id: string } }>;
 }
 
 const typeColors = {
@@ -49,13 +54,38 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
   contactPhone,
   contactEmail,
   currentPipelineId,
-  currentPipelineName
+  currentPipelineName,
+  flows
 }) => {
+  const queryClient = useQueryClient();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
+
+  const updateStageMutation = useMutation({
+    mutationFn: async ({ pipelineContactId, newStageId }: { pipelineContactId: string; newStageId: string }) => {
+      const { error } = await supabase
+        .from('pipeline_contacts')
+        .update({ stage_id: newStageId })
+        .eq('id', pipelineContactId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contact-comprehensive', contactId] });
+      toast({ title: 'Stage updated successfully' });
+      fetchSuggestions();
+    },
+    onError: (error) => {
+      toast({ 
+        title: 'Error updating stage', 
+        description: error.message,
+        variant: 'destructive' 
+      });
+    }
+  });
 
   const fetchSuggestions = async () => {
     setIsLoading(true);
@@ -89,6 +119,33 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
   const handleGenerateMessage = (suggestion: Suggestion) => {
     setSelectedSuggestion(suggestion);
     setMessageDialogOpen(true);
+  };
+
+  const handleStageUpdate = (suggestion: Suggestion) => {
+    if (!suggestion.pipelineId || !suggestion.suggestedStageId || !flows) {
+      toast({ 
+        title: 'Error', 
+        description: 'Missing stage information',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    const flow = flows.find(f => f.pipeline.id === suggestion.pipelineId);
+    
+    if (!flow) {
+      toast({ 
+        title: 'Error', 
+        description: 'Contact is not in this flow',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    updateStageMutation.mutate({
+      pipelineContactId: flow.id,
+      newStageId: suggestion.suggestedStageId
+    });
   };
 
   if (isLoading) {
@@ -189,6 +246,21 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
                   </div>
                   <p className={`text-sm ${colors.subtext}`}>{suggestion.description}</p>
                   
+                  {suggestion.type === 'stage_action' && suggestion.suggestedStageId && suggestion.pipelineId && (
+                    <div className="mt-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleStageUpdate(suggestion)}
+                        className="w-full"
+                        disabled={updateStageMutation.isPending}
+                      >
+                        <ArrowRight className="h-4 w-4 mr-2" />
+                        {suggestion.actionText || `Move to ${suggestion.suggestedStageName}`}
+                      </Button>
+                    </div>
+                  )}
+
                   {suggestion.requiresMessage && (
                     <div className="mt-3">
                       <Button
