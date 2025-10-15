@@ -782,6 +782,15 @@ const UserProfilePage = () => {
         </Card>
       </div>
 
+      {/* AI Suggestions Block */}
+      <AISuggestions 
+        contactId={contactId!}
+        contactName={contact?.name}
+        contactPhone={contact?.phone}
+        contactEmail={contact?.email}
+        currentPipelineId={pipelineId || undefined}
+        currentPipelineName={contactData?.flows?.find((f: any) => f.pipeline.id === pipelineId)?.pipeline?.name}
+      />
 
       {/* Vertical Content Blocks */}
       <div className="space-y-6">
@@ -846,16 +855,6 @@ const UserProfilePage = () => {
           onMarkAnswered={(id, answerDescription) => 
             markPrayerAnsweredMutation.mutate({ id, answerDescription })
           }
-        />
-
-        {/* AI Suggestions Block */}
-        <AISuggestions 
-          contactId={contactId!}
-          contactName={contact?.name}
-          contactPhone={contact?.phone}
-          contactEmail={contact?.email}
-          currentPipelineId={pipelineId || undefined}
-          currentPipelineName={contactData?.flows?.find((f: any) => f.pipeline.id === pipelineId)?.pipeline?.name}
         />
       </div>
 
