@@ -58,26 +58,25 @@ const ContactsPage = () => {
     <div className="flex flex-col h-full">
       <Header 
         title="People"
-        description="Manage all your people in one place"
         showFlowIcon={false}
         showAddButton={false}
         rightContent={
-          <div className="flex items-center gap-4">
-            <ContactFilters
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              onClearFilters={handleClearFilters}
-              hasActiveFilters={hasActiveFilters}
-            />
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Person
-            </Button>
-          </div>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Person
+          </Button>
         }
       />
 
       <div className="flex-1 overflow-auto p-6">
+        <div className="mb-6">
+          <ContactFilters
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onClearFilters={handleClearFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+        </div>
         <ContactsTable
           contacts={contacts}
           isLoading={isLoading}
