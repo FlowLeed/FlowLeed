@@ -29,25 +29,48 @@ export const useOverviewMetrics = (dateRange: DateRange) => {
   return useQuery({
     queryKey: ["overview-metrics", dateRange],
     queryFn: async () => {
-      const { data: orgMember } = await supabase
-        .from("organization_members")
-        .select("organization_id")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id!)
-        .single();
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("User not authenticated");
 
-      if (!orgMember) throw new Error("Organization not found");
+      let organizationId: string | null = null;
+      
+      // Try to get the saved organization from localStorage
+      const savedOrg = localStorage.getItem('active_organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          organizationId = orgData.id;
+        } catch (e) {
+          console.error('Error parsing saved organization:', e);
+        }
+      }
+      
+      // If no saved org, get the first organization membership
+      if (!organizationId) {
+        const { data: orgMembers } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (!orgMembers || orgMembers.length === 0) {
+          throw new Error("Organization not found");
+        }
+
+        organizationId = orgMembers[0].organization_id;
+      }
 
       // Total contacts
       const { count: totalContacts } = await supabase
         .from("contacts")
         .select("*", { count: "exact", head: true })
-        .eq("organization_id", orgMember.organization_id);
+        .eq("organization_id", organizationId);
 
       // Contacts added in range
       const { count: contactsAdded } = await supabase
         .from("contacts")
         .select("*", { count: "exact", head: true })
-        .eq("organization_id", orgMember.organization_id)
+        .eq("organization_id", organizationId)
         .gte("created_at", dateRange.from.toISOString())
         .lte("created_at", dateRange.to.toISOString());
 
@@ -55,7 +78,7 @@ export const useOverviewMetrics = (dateRange: DateRange) => {
       const { data: activeFlows } = await supabase
         .from("pipelines")
         .select("id, pipeline_contacts(count)")
-        .eq("organization_id", orgMember.organization_id);
+        .eq("organization_id", organizationId);
 
       const activeFlowCount = activeFlows?.filter(f => f.pipeline_contacts.length > 0).length || 0;
 
@@ -63,7 +86,7 @@ export const useOverviewMetrics = (dateRange: DateRange) => {
       const { count: totalInteractions } = await supabase
         .from("contact_interactions")
         .select("*, contacts!inner(organization_id)", { count: "exact", head: true })
-        .eq("contacts.organization_id", orgMember.organization_id)
+        .eq("contacts.organization_id", organizationId)
         .gte("created_at", dateRange.from.toISOString())
         .lte("created_at", dateRange.to.toISOString());
 
@@ -71,7 +94,7 @@ export const useOverviewMetrics = (dateRange: DateRange) => {
       const { data: activeMembers } = await supabase
         .from("contact_interactions")
         .select("created_by_user_id, contacts!inner(organization_id)")
-        .eq("contacts.organization_id", orgMember.organization_id)
+        .eq("contacts.organization_id", organizationId)
         .gte("created_at", dateRange.from.toISOString())
         .lte("created_at", dateRange.to.toISOString());
 
@@ -92,13 +115,36 @@ export const useFlowAnalytics = () => {
   return useQuery({
     queryKey: ["flow-analytics"],
     queryFn: async () => {
-      const { data: orgMember } = await supabase
-        .from("organization_members")
-        .select("organization_id")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id!)
-        .single();
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("User not authenticated");
 
-      if (!orgMember) throw new Error("Organization not found");
+      let organizationId: string | null = null;
+      
+      // Try to get the saved organization from localStorage
+      const savedOrg = localStorage.getItem('active_organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          organizationId = orgData.id;
+        } catch (e) {
+          console.error('Error parsing saved organization:', e);
+        }
+      }
+      
+      // If no saved org, get the first organization membership
+      if (!organizationId) {
+        const { data: orgMembers } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (!orgMembers || orgMembers.length === 0) {
+          throw new Error("Organization not found");
+        }
+
+        organizationId = orgMembers[0].organization_id;
+      }
 
       const { data: flows } = await supabase
         .from("pipelines")
@@ -109,7 +155,7 @@ export const useFlowAnalytics = () => {
           pipeline_contacts(count),
           pipeline_stages(id, name, is_start_step, is_end_step)
         `)
-        .eq("organization_id", orgMember.organization_id);
+        .eq("organization_id", organizationId);
 
       const flowAnalytics = await Promise.all(
         (flows || []).map(async (flow) => {
@@ -180,19 +226,42 @@ export const useTeamPerformance = (dateRange: DateRange) => {
   return useQuery({
     queryKey: ["team-performance", dateRange],
     queryFn: async () => {
-      const { data: orgMember } = await supabase
-        .from("organization_members")
-        .select("organization_id")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id!)
-        .single();
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("User not authenticated");
 
-      if (!orgMember) throw new Error("Organization not found");
+      let organizationId: string | null = null;
+      
+      // Try to get the saved organization from localStorage
+      const savedOrg = localStorage.getItem('active_organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          organizationId = orgData.id;
+        } catch (e) {
+          console.error('Error parsing saved organization:', e);
+        }
+      }
+      
+      // If no saved org, get the first organization membership
+      if (!organizationId) {
+        const { data: orgMembers } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (!orgMembers || orgMembers.length === 0) {
+          throw new Error("Organization not found");
+        }
+
+        organizationId = orgMembers[0].organization_id;
+      }
 
       // Get all team members
       const { data: members } = await supabase
         .from("organization_members")
         .select("user_id")
-        .eq("organization_id", orgMember.organization_id);
+        .eq("organization_id", organizationId);
 
       // Get profiles separately
       const userIds = members?.map(m => m.user_id) || [];
@@ -211,14 +280,14 @@ export const useTeamPerformance = (dateRange: DateRange) => {
           const { count: assignedContacts } = await supabase
             .from("pipeline_contacts")
             .select("*, pipelines!inner(organization_id)", { count: "exact", head: true })
-            .eq("pipelines.organization_id", orgMember.organization_id)
+            .eq("pipelines.organization_id", organizationId)
             .eq("assigned_to_user_id", member.user_id);
 
           // Count interactions in date range
           const { data: interactions } = await supabase
             .from("contact_interactions")
             .select("interaction_type, contacts!inner(organization_id)")
-            .eq("contacts.organization_id", orgMember.organization_id)
+            .eq("contacts.organization_id", organizationId)
             .eq("created_by_user_id", member.user_id)
             .gte("created_at", dateRange.from.toISOString())
             .lte("created_at", dateRange.to.toISOString());
@@ -249,13 +318,36 @@ export const useAtRiskContacts = (daysInactive: number = 30) => {
   return useQuery({
     queryKey: ["at-risk-contacts", daysInactive],
     queryFn: async () => {
-      const { data: orgMember } = await supabase
-        .from("organization_members")
-        .select("organization_id")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id!)
-        .single();
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("User not authenticated");
 
-      if (!orgMember) throw new Error("Organization not found");
+      let organizationId: string | null = null;
+      
+      // Try to get the saved organization from localStorage
+      const savedOrg = localStorage.getItem('active_organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          organizationId = orgData.id;
+        } catch (e) {
+          console.error('Error parsing saved organization:', e);
+        }
+      }
+      
+      // If no saved org, get the first organization membership
+      if (!organizationId) {
+        const { data: orgMembers } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (!orgMembers || orgMembers.length === 0) {
+          throw new Error("Organization not found");
+        }
+
+        organizationId = orgMembers[0].organization_id;
+      }
 
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysInactive);
@@ -264,7 +356,7 @@ export const useAtRiskContacts = (daysInactive: number = 30) => {
       const { data: contacts } = await supabase
         .from("contacts")
         .select("id, name, email, avatar")
-        .eq("organization_id", orgMember.organization_id);
+        .eq("organization_id", organizationId);
 
       const atRiskContacts = await Promise.all(
         (contacts || []).map(async (contact) => {
