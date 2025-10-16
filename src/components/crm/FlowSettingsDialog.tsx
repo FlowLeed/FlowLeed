@@ -559,9 +559,9 @@ export const FlowSettingsDialog = ({
                 <Button
                   onClick={handleAddMember}
                   disabled={!selectedUserId || loading}
-                  size="icon"
                 >
-                  <UserPlus className="h-4 w-4" />
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add
                 </Button>
               </div>
             </div>
