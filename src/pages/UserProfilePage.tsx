@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/components/ui/use-toast";
 import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus, Tags } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
 import { InteractionTimeline } from "@/components/contact/InteractionTimeline";
@@ -772,6 +773,41 @@ const UserProfilePage = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Household Members - Compact Inline Avatars */}
+                      {familyMembers && familyMembers.length > 0 && (
+                        <div className="pt-3 border-t border-border/40 mt-3">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">Household:</span>
+                            <div className="flex -space-x-2">
+                              {familyMembers.map((member) => (
+                                <TooltipProvider key={member.id}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Avatar className="h-8 w-8 border-2 border-background hover:scale-110 transition-transform cursor-pointer">
+                                        <AvatarImage src={member.avatar} />
+                                        <AvatarFallback className="text-xs">
+                                          {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="font-medium">{member.name}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {member.is_child ? 'Child' : 'Adult'}
+                                        {member.relationship && ` • ${member.relationship}`}
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ))}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              ({familyMembers.length} member{familyMembers.length > 1 ? 's' : ''})
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       
                     </div>
                   </div>
