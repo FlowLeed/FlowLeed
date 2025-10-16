@@ -296,16 +296,16 @@ export const Header: React.FC<HeaderProps> = ({
     : user?.email?.charAt(0).toUpperCase() || 'U';
   return (
     <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: 'hsl(233.33deg 100% 98.24%)' }}>
-      <div className="flex items-center justify-between h-16 px-6">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center gap-2">
           {showBackButton && onBackClick && (
             <Button variant="ghost" size="icon" onClick={onBackClick} className="h-8 w-8">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-          {showFlowIcon && <FlowIcon className="h-6 w-6 text-purple-500" />}
+          {showFlowIcon && <FlowIcon className="h-5 w-5 text-purple-500" />}
           <div>
-            <div className="text-xl font-extralight">{title}</div>
+            <div className="text-lg font-extralight">{title}</div>
           </div>
         <div className="flex gap-1">
           {onSettingsClick && (
@@ -382,13 +382,13 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
-          <button className="p-2 rounded-full hover:bg-slate-100">
+          <button className="p-1.5 rounded-full hover:bg-slate-100">
             <Bell className="h-5 w-5 text-slate-500" />
           </button>
           <button 
-            className="p-2 rounded-full hover:bg-slate-100"
+            className="p-1.5 rounded-full hover:bg-slate-100"
             onClick={() => setShowGlobalSearch(true)}
             title="Search people (Ctrl+K)"
           >
@@ -397,8 +397,8 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="border-l border-gray-200 h-6 mx-2" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-2">
-                <Avatar className="h-8 w-8">
+              <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5">
+                <Avatar className="h-7 w-7">
                   <AvatarImage src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} alt={displayName} />
                   <AvatarFallback>
                     {initials}
