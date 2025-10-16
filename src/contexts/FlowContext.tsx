@@ -49,30 +49,39 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile
 });
 
 // Convert database pipeline format to frontend format (keeping database names for data compatibility)
-const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[]): Flow => ({
-  id: dbPipeline.id,
-  name: dbPipeline.name,
-  description: dbPipeline.description,
-  icon: dbPipeline.icon,
-  flow_order: dbPipeline.flow_order || 0,
-  stages: stages.map(stage => ({
-    id: stage.id,
-    name: stage.name,
-    color: stage.color,
-    is_start_step: stage.is_start_step,
-    is_end_step: stage.is_end_step,
-    contacts: contacts
-      .filter(pc => pc.stage_id === stage.id)
-      .map(pc => {
-        const contact = pc.contacts;
-        const tags = contactTags.filter(ct => ct.contact_id === contact.id);
-        const assignedProfile = pc.assigned_to_user_id 
-          ? profiles.find(p => p.user_id === pc.assigned_to_user_id)
-          : undefined;
-        return convertDbContactToFrontend(contact, tags, assignedProfile, pc);
-      })
-  }))
-});
+const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[]): Flow => {
+  const safeStages = (stages || []).filter(Boolean);
+  const safeContacts = (contacts || []).filter(Boolean);
+  const safeTags = (contactTags || []).filter(Boolean);
+  const safeProfiles = (profiles || []).filter(Boolean);
+
+  return {
+    id: dbPipeline.id,
+    name: dbPipeline.name,
+    description: dbPipeline.description,
+    icon: dbPipeline.icon,
+    flow_order: dbPipeline.flow_order || 0,
+    stages: safeStages
+      .filter(stage => stage && stage.id)
+      .map(stage => ({
+        id: stage.id,
+        name: stage.name,
+        color: stage.color,
+        is_start_step: stage.is_start_step,
+        is_end_step: stage.is_end_step,
+        contacts: safeContacts
+          .filter(pc => pc && pc.stage_id && pc.stage_id === stage.id && pc.contacts)
+          .map(pc => {
+            const contact = pc.contacts;
+            const tags = safeTags.filter(ct => ct && ct.contact_id && contact && ct.contact_id === contact.id);
+            const assignedProfile = pc.assigned_to_user_id 
+              ? safeProfiles.find(p => p && p.user_id === pc.assigned_to_user_id)
+              : undefined;
+            return convertDbContactToFrontend(contact, tags, assignedProfile, pc);
+          })
+      }))
+  };
+};
 
 export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
   const { user } = useAuth();
@@ -289,7 +298,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       if (contactsError) throw contactsError;
 
       // Load all contact tags for this flow
-      const contactIds = flowContacts?.map(pc => pc.contact_id) || [];
+      const contactIds = (flowContacts?.map(pc => pc.contact_id).filter(Boolean)) || [];
       const { data: contactTags, error: tagsError } = await supabase
         .from('contact_tags')
         .select('*')
