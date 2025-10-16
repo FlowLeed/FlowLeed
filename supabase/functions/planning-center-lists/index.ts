@@ -459,7 +459,7 @@ async function syncSingleList(mapping: any, userId: string) {
 
     if (contactId) {
       // Sync demographic data if available
-      await syncDemographicData(contactId, person);
+      await syncDemographicData(contactId, person, auth);
       
       console.log('Adding contact to pipeline:', contactId, 'pipeline:', mapping.pipeline_id, 'stage:', mapping.stage_id);
       
@@ -507,7 +507,7 @@ async function syncSingleList(mapping: any, userId: string) {
 }
 
 // Sync demographic data to database tables
-async function syncDemographicData(contactId: string, person: any) {
+async function syncDemographicData(contactId: string, person: any, auth: string) {
   const attrs = person.attributes;
   const includedData = person.included_data || {};
   
@@ -688,7 +688,7 @@ async function syncDemographicData(contactId: string, person: any) {
             `https://api.planningcenteronline.com/people/v2/households/${household.id}/household_memberships?include=person`,
             {
               headers: {
-                'Authorization': `Basic ${btoa(`${appId}:${secret}`)}`,
+                'Authorization': `Basic ${auth}`,
               },
             }
           );
