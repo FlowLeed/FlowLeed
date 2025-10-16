@@ -84,11 +84,28 @@ const UserProfilePage = () => {
         .order("is_primary", { ascending: false });
 
       // Fetch family members
-      const { data: familyMembers } = await supabase
-        .from("contact_family_members")
-        .select("*")
-        .eq("contact_id", contactId)
-        .order("created_at");
+    // Fetch family members
+    const { data: rawFamilyMembers } = await supabase
+      .from("contact_family_members")
+      .select("*")
+      .eq("contact_id", contactId)
+      .order("created_at");
+
+    // Check if each family member exists as a contact
+    const familyMembers = await Promise.all(
+      (rawFamilyMembers || []).map(async (member) => {
+        if (member.pc_person_id) {
+          const { data: linkedContact } = await supabase
+            .from("contacts")
+            .select("id")
+            .eq("pc_person_id", member.pc_person_id)
+            .maybeSingle();
+          
+          return { ...member, linked_contact_id: linkedContact?.id || null };
+        }
+        return { ...member, linked_contact_id: null };
+      })
+    );
 
       // Fetch pipeline involvement with stage counts
       const { data: pipelineContacts } = await supabase
@@ -780,16 +797,27 @@ const UserProfilePage = () => {
                           <div className="flex items-center gap-3">
                             <span className="text-sm text-muted-foreground">Household:</span>
                             <div className="flex -space-x-2">
-                              {familyMembers.map((member) => (
+                              {familyMembers.map((member: any) => (
                                 <TooltipProvider key={member.id}>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Avatar className="h-8 w-8 border-2 border-background hover:scale-110 transition-transform cursor-pointer">
-                                        <AvatarImage src={member.avatar} />
-                                        <AvatarFallback className="text-xs">
-                                          {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                        </AvatarFallback>
-                                      </Avatar>
+                                      <div
+                                        onClick={() => {
+                                          if (member.linked_contact_id) {
+                                            navigate(`/contacts/${member.linked_contact_id}`);
+                                          }
+                                        }}
+                                        className={member.linked_contact_id ? "cursor-pointer" : "cursor-default"}
+                                      >
+                                        <Avatar className={`h-8 w-8 border-2 border-background transition-transform ${
+                                          member.linked_contact_id ? 'hover:scale-110 hover:border-primary' : ''
+                                        }`}>
+                                          <AvatarImage src={member.avatar} />
+                                          <AvatarFallback className="text-xs">
+                                            {member.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      </div>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                       <p className="font-medium">{member.name}</p>
@@ -797,6 +825,9 @@ const UserProfilePage = () => {
                                         {member.is_child ? 'Child' : 'Adult'}
                                         {member.relationship && ` • ${member.relationship}`}
                                       </p>
+                                      {member.linked_contact_id && (
+                                        <p className="text-xs text-primary mt-1">Click to view profile</p>
+                                      )}
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
