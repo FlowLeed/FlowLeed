@@ -19,22 +19,42 @@ export const useContacts = (filters: ContactFilters) => {
         return [];
       }
 
-      // Get user's organization
+      // Get user's active organization (from localStorage or first available)
       console.log('🔍 Fetching organization for user:', user.id);
-      const { data: orgMember, error: orgError } = await supabase
-        .from("organization_members")
-        .select("organization_id")
-        .eq("user_id", user.id)
-        .single();
+      
+      let organizationId: string | null = null;
+      
+      // Try to get the saved organization from localStorage
+      const savedOrg = localStorage.getItem('active_organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          organizationId = orgData.id;
+          console.log('Using saved organization:', organizationId);
+        } catch (e) {
+          console.error('Error parsing saved organization:', e);
+        }
+      }
+      
+      // If no saved org, get the first organization membership
+      if (!organizationId) {
+        const { data: orgMembers, error: orgError } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .limit(1);
 
-      console.log('Organization member data:', orgMember, 'error:', orgError);
+        console.log('Organization member data:', orgMembers, 'error:', orgError);
 
-      if (!orgMember) {
-        console.log('❌ No organization found for user');
-        return [];
+        if (!orgMembers || orgMembers.length === 0) {
+          console.log('❌ No organization found for user');
+          return [];
+        }
+
+        organizationId = orgMembers[0].organization_id;
       }
 
-      console.log('✅ Organization ID:', orgMember.organization_id);
+      console.log('✅ Organization ID:', organizationId);
 
       // Build base query
       let query = supabase
@@ -47,7 +67,7 @@ export const useContacts = (filters: ContactFilters) => {
             pipelines(id, name, icon)
           )
         `)
-        .eq("organization_id", orgMember.organization_id)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false });
 
       // Apply search filter
