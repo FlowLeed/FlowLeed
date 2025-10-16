@@ -34,16 +34,11 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Dashboard" showAddButton={false} showFlowIcon={false} />
+      <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Personal Greeting */}
-          <div className="space-y-1">
-            <h1 className="text-3xl font-light">
-              Welcome back, {profile?.full_name || "there"}!
-            </h1>
-            <p className="text-sm text-muted-foreground">{currentDate}</p>
-          </div>
+          {/* Date */}
+          <p className="text-sm text-muted-foreground">{currentDate}</p>
 
           {/* Personal Metrics */}
           <PersonalMetrics
