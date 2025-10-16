@@ -399,8 +399,10 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
       </div>
     </div>;
 };
+import flowleedLogo from "@/assets/flowleed_logo.png";
+
 const Logo = () => <div className="px-8 py-6 flex items-center">
-    <img src="/lovable-uploads/55fbe855-f2cf-4756-8840-95900f9d4fbf.png" alt="Flowleed" className="h-8 w-auto" />
+    <img src={flowleedLogo} alt="Flowleed" className="h-8 w-auto" />
   </div>;
 export const Sidebar = () => {
   const {
