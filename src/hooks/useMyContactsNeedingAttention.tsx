@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const useMyContactsNeedingAttention = (
   userId: string | undefined,
-  daysThreshold: number = 14,
+  daysThreshold: number = 5,
   limit: number = 5
 ) => {
   return useQuery({

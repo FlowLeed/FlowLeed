@@ -40,7 +40,7 @@ export const PersonalMetrics = ({ metrics, loading }: PersonalMetricsProps) => {
         value={metrics.peopleNeedingAttention}
         icon={AlertCircle}
         loading={loading}
-        description="14+ days inactive"
+        description="5+ days inactive"
       />
     </div>
   );
