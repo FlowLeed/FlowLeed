@@ -24,6 +24,8 @@ import ContactsPage from "./pages/ContactsPage";
 import SuperAdminAuthPage from "./pages/admin/SuperAdminAuthPage";
 import OrganizationsListPage from "./pages/admin/OrganizationsListPage";
 import OrganizationDetailPage from "./pages/admin/OrganizationDetailPage";
+import OnboardingFlowsPage from "./pages/admin/OnboardingFlowsPage";
+import OngoingSupportFlowsPage from "./pages/admin/OngoingSupportFlowsPage";
 
 
 const queryClient = new QueryClient();
@@ -58,6 +60,8 @@ const App = () => (
                 <Route path="/fl-admin" element={<SuperAdminLayout />}>
                   <Route index element={<OrganizationsListPage />} />
                   <Route path="organizations/:id" element={<OrganizationDetailPage />} />
+                  <Route path="flows/onboarding" element={<OnboardingFlowsPage />} />
+                  <Route path="flows/ongoing-support" element={<OngoingSupportFlowsPage />} />
                 </Route>
               </Route>
 

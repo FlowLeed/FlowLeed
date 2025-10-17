@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Building2, Users, DollarSign, Settings } from "lucide-react";
+import { Building2, Users, DollarSign, Settings, GitBranch, MessageCircle } from "lucide-react";
 import flowleedLogo from "@/assets/flowleed_logo.png";
 import type { LucideIcon } from "lucide-react";
 
@@ -11,12 +11,28 @@ interface NavItem {
   disabled?: boolean;
 }
 
-const navItems: NavItem[] = [
+const pagesItems: NavItem[] = [
   {
     title: "Organizations",
     icon: Building2,
     path: "/fl-admin",
   },
+];
+
+const flowsItems: NavItem[] = [
+  {
+    title: "Onboarding",
+    icon: GitBranch,
+    path: "/fl-admin/flows/onboarding",
+  },
+  {
+    title: "Ongoing Support",
+    icon: MessageCircle,
+    path: "/fl-admin/flows/ongoing-support",
+  },
+];
+
+const systemItems: NavItem[] = [
   {
     title: "Users",
     icon: Users,
@@ -75,14 +91,47 @@ export const SuperAdminSidebar = () => {
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 px-4">
+      <div className="flex-1 px-4 space-y-6">
+        {/* Pages Section */}
         <div className="space-y-1">
           <div className="px-4 py-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
               Pages
             </div>
           </div>
-          {navItems.map((item) => (
+          {pagesItems.map((item) => (
+            <NavLink
+              key={item.title}
+              item={item}
+              isActive={location.pathname === item.path}
+            />
+          ))}
+        </div>
+
+        {/* Flows Section */}
+        <div className="space-y-1">
+          <div className="px-4 py-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+              Flows
+            </div>
+          </div>
+          {flowsItems.map((item) => (
+            <NavLink
+              key={item.title}
+              item={item}
+              isActive={location.pathname === item.path}
+            />
+          ))}
+        </div>
+
+        {/* System Section */}
+        <div className="space-y-1">
+          <div className="px-4 py-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+              System
+            </div>
+          </div>
+          {systemItems.map((item) => (
             <NavLink
               key={item.title}
               item={item}
