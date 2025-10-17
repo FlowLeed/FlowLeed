@@ -75,20 +75,20 @@ const stages: OnboardingStage[] = [
 
 const getStageColor = (color: string) => {
   const colors: Record<string, string> = {
-    blue: 'border-blue-500',
-    orange: 'border-orange-500',
-    green: 'border-green-500',
-    red: 'border-red-500',
+    blue: 'border-blue-400',
+    orange: 'border-orange-400',
+    green: 'border-green-400',
+    red: 'border-red-400',
   };
   return colors[color] || 'border-border';
 };
 
 const getColorDot = (color: string) => {
   const colors: Record<string, string> = {
-    blue: 'bg-blue-500',
-    orange: 'bg-orange-500',
-    green: 'bg-green-500',
-    red: 'bg-red-500',
+    blue: 'bg-blue-400',
+    orange: 'bg-orange-400',
+    green: 'bg-green-400',
+    red: 'bg-red-400',
   };
   return colors[color] || 'bg-muted';
 };
@@ -100,81 +100,78 @@ export default function OnboardingFlowsPage() {
       <div className="flex-1 overflow-auto">
         <div className="h-full p-6">
           {/* Kanban Board */}
-          <div className="flex gap-4 h-full overflow-x-auto pb-4">
+          <div className="flex gap-3 h-full overflow-x-auto pb-4">
             {stages.map((stage) => (
-              <div key={stage.id} className="flex-shrink-0 w-[360px]">
-                <Card className={`border-t-4 ${getStageColor(stage.color)} h-full flex flex-col`}>
+              <div key={stage.id} className="flex-shrink-0 w-[320px]">
+                <Card className={`border-l-4 ${getStageColor(stage.color)} h-full flex flex-col shadow-sm`}>
                   {/* Stage Header */}
-                  <div className="p-4 border-b flex items-center justify-between">
+                  <div className="p-3 border-b flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${getColorDot(stage.color)}`} />
-                      <h3 className="font-medium">{stage.name}</h3>
-                      <Badge variant="secondary" className="ml-2">
+                      <div className={`w-2 h-2 rounded-full ${getColorDot(stage.color)}`} />
+                      <h3 className="font-semibold text-sm">{stage.name}</h3>
+                      <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
                         {stage.organizations.length}
                       </Badge>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <Plus className="h-4 w-4" />
-                    </Button>
                   </div>
 
                   {/* Organizations Cards */}
-                  <CardContent className="flex-1 overflow-y-auto p-3 space-y-3">
+                  <CardContent className="flex-1 overflow-y-auto p-2 space-y-2">
                     {stage.organizations.map((org) => (
-                      <Card key={org.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                        <CardContent className="p-4 space-y-3">
+                      <Card key={org.id} className="border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                        <CardContent className="p-3 space-y-2">
                           {/* Org Name and Menu */}
                           <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarFallback className="bg-purple-100 text-purple-600 font-semibold">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className="bg-purple-100 text-purple-600 font-semibold text-xs">
                                   {org.name.charAt(0)}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <div className="font-medium text-sm">{org.adminName}</div>
-                                <div className="text-xs text-muted-foreground">
+                                <div className="font-semibold text-sm">{org.adminName}</div>
+                                <div className="text-[11px] text-muted-foreground">
                                   In stage: {org.daysInStage} days
                                 </div>
                               </div>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </div>
 
                           {/* Assigned To */}
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between pt-1 border-t">
                             {org.assignedTo ? (
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback className="text-xs">
+                              <div className="flex items-center gap-1">
+                                <Avatar className="h-4 w-4">
+                                  <AvatarFallback className="text-[9px]">
                                     {org.assignedTo.name.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-[11px] text-muted-foreground">
                                   {org.assignedTo.name}
                                 </span>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6 bg-muted">
-                                  <AvatarFallback className="text-xs">?</AvatarFallback>
+                              <div className="flex items-center gap-1">
+                                <Avatar className="h-4 w-4 bg-muted">
+                                  <AvatarFallback className="text-[9px]">?</AvatarFallback>
                                 </Avatar>
-                                <span className="text-xs text-muted-foreground">Unassigned</span>
+                                <span className="text-[11px] text-muted-foreground">Unassigned</span>
                               </div>
                             )}
 
                             {/* Action Icons */}
                             <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="icon" className="h-6 w-6">
-                                <MessageCircle className="h-3 w-3" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
+                                <MessageCircle className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-6 w-6">
-                                <Mail className="h-3 w-3" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
+                                <Mail className="h-3.5 w-3.5" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-6 w-6">
-                                <Phone className="h-3 w-3" />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
+                                <Phone className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
