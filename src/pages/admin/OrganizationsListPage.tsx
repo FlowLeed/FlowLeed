@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOrganizationsData } from '@/hooks/useOrganizationsData';
 import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
 import {
@@ -17,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 
 export default function OrganizationsListPage() {
+  const navigate = useNavigate();
   const { data: organizations, isLoading } = useOrganizationsData();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -158,7 +160,11 @@ export default function OrganizationsListPage() {
             </TableHeader>
             <TableBody>
               {filteredOrgs?.map((org) => (
-                <TableRow key={org.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow 
+                  key={org.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => navigate(`/fl-admin/organizations/${org.id}`)}
+                >
                   <TableCell className="font-mono text-xs">
                     {org.id.substring(0, 8)}
                   </TableCell>

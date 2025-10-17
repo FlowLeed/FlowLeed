@@ -23,6 +23,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import ContactsPage from "./pages/ContactsPage";
 import SuperAdminAuthPage from "./pages/admin/SuperAdminAuthPage";
 import OrganizationsListPage from "./pages/admin/OrganizationsListPage";
+import OrganizationDetailPage from "./pages/admin/OrganizationDetailPage";
 
 
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App = () => (
               <Route element={<SuperAdminProtectedRoute />}>
                 <Route path="/fl-admin" element={<SuperAdminLayout />}>
                   <Route index element={<OrganizationsListPage />} />
+                  <Route path="organizations/:id" element={<OrganizationDetailPage />} />
                 </Route>
               </Route>
 
