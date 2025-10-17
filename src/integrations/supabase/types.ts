@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      auth_verification_tokens: {
+        Row: {
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          token_hash: string
+          token_type: string
+          used_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          token_type: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          token_type?: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       contact_addresses: {
         Row: {
           address_type: string
