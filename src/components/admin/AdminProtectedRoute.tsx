@@ -1,8 +1,8 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useSystemAdminCheck } from '@/hooks/useSystemAdminCheck';
 import { useAuth } from '@/hooks/useAuth';
 
-export const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+export const AdminProtectedRoute = () => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: adminLoading } = useSystemAdminCheck();
 
@@ -18,5 +18,5 @@ export const AdminProtectedRoute = ({ children }: { children: React.ReactNode })
     return <Navigate to="/" replace />;
   }
 
-  return <>{children}</>;
+  return <Outlet />;
 };
