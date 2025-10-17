@@ -1,18 +1,21 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrganizationsData } from '@/hooks/useOrganizationsData';
 import { useHealthScore } from '@/hooks/useHealthScore';
 import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
 import { HealthScoreCard } from '@/components/admin/HealthScoreCard';
+import { EditOrganizationDialog } from '@/components/admin/EditOrganizationDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw, Pencil } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function OrganizationDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: organizations, isLoading } = useOrganizationsData();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const { data: organizations, isLoading, refetch } = useOrganizationsData();
   const { data: healthScoreData, isLoading: healthScoreLoading, recalculate, isRecalculating } = useHealthScore(id);
 
   const org = organizations?.find(o => o.id === id);
@@ -85,8 +88,18 @@ export default function OrganizationDetailPage() {
           <Card>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <CardTitle className="text-2xl">{org.name}</CardTitle>
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-3">
+                    <CardTitle className="text-2xl">{org.name}</CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditDialogOpen(true)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">Admin:</span>
@@ -105,6 +118,19 @@ export default function OrganizationDetailPage() {
               </div>
             </CardHeader>
           </Card>
+
+          <EditOrganizationDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            organizationId={org.id}
+            currentData={{
+              name: org.name,
+              primary_contact_name: org.admin_name,
+              primary_contact_email: org.admin_email,
+              primary_contact_phone: null,
+            }}
+            onSuccess={refetch}
+          />
 
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
