@@ -20,6 +20,10 @@ export interface OrganizationData {
   avg_weekly_activity: number | null;
   ai_uses_30d: number | null;
   health_score: number | null;
+  primary_contact_name?: string | null;
+  primary_contact_email?: string | null;
+  onboarding_step?: string | null;
+  onboarding_completed?: boolean | null;
 }
 
 export const useOrganizationsData = () => {

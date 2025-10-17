@@ -888,6 +888,8 @@ export type Database = {
         Row: {
           billing_email: string | null
           created_at: string
+          fl_admin_assigned_to: string | null
+          fl_admin_notes: string | null
           health_score: number | null
           id: string
           last_activity_at: string | null
@@ -897,6 +899,7 @@ export type Database = {
           notes: string | null
           onboarding_completed: boolean | null
           onboarding_progress: Json | null
+          onboarding_stage_entered_at: string | null
           onboarding_step: string | null
           plan_price: number | null
           plan_tier: string | null
@@ -915,6 +918,8 @@ export type Database = {
         Insert: {
           billing_email?: string | null
           created_at?: string
+          fl_admin_assigned_to?: string | null
+          fl_admin_notes?: string | null
           health_score?: number | null
           id?: string
           last_activity_at?: string | null
@@ -924,6 +929,7 @@ export type Database = {
           notes?: string | null
           onboarding_completed?: boolean | null
           onboarding_progress?: Json | null
+          onboarding_stage_entered_at?: string | null
           onboarding_step?: string | null
           plan_price?: number | null
           plan_tier?: string | null
@@ -942,6 +948,8 @@ export type Database = {
         Update: {
           billing_email?: string | null
           created_at?: string
+          fl_admin_assigned_to?: string | null
+          fl_admin_notes?: string | null
           health_score?: number | null
           id?: string
           last_activity_at?: string | null
@@ -951,6 +959,7 @@ export type Database = {
           notes?: string | null
           onboarding_completed?: boolean | null
           onboarding_progress?: Json | null
+          onboarding_stage_entered_at?: string | null
           onboarding_step?: string | null
           plan_price?: number | null
           plan_tier?: string | null
@@ -966,7 +975,15 @@ export type Database = {
           trial_ends_at?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_fl_admin_assigned_to_fkey"
+            columns: ["fl_admin_assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       pipeline_contacts: {
         Row: {

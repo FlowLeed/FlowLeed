@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
 import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { AdminFlowStage } from '@/components/admin/AdminFlowStage';
 import { AdminOrganizationCard } from '@/components/admin/AdminOrganizationCard';
+import { useOrganizationsData, OrganizationData } from '@/hooks/useOrganizationsData';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 interface OnboardingOrganization {
   id: string;
@@ -26,75 +30,60 @@ interface OnboardingStage {
   organizations: OnboardingOrganization[];
 }
 
-const initialStages: OnboardingStage[] = [
-  {
-    id: 'new-signup',
-    name: 'New Signup',
-    color: 'blue',
-    organizations: [
-      {
-        id: '1',
-        name: 'Grace Community Church',
-        admin: { name: 'John Smith', email: 'john@gcc.org' },
-        daysInStage: 2,
-        assignedTo: { name: 'Sarah Johnson' }
-      },
-      {
-        id: '2',
-        name: 'Riverside Fellowship',
-        admin: { name: 'Emily Davis', email: 'emily@riverside.org' },
-        daysInStage: 1,
-      }
-    ]
-  },
-  {
-    id: 'initial-contact',
-    name: 'Initial Contact Made',
-    color: 'orange',
-    organizations: [
-      {
-        id: '3',
-        name: 'Hope Church',
-        admin: { name: 'Michael Brown', email: 'michael@hopechurch.org' },
-        daysInStage: 5,
-        assignedTo: { name: 'Sarah Johnson' }
-      }
-    ]
-  },
-  {
-    id: 'training-scheduled',
-    name: 'Training Scheduled',
-    color: 'yellow',
-    organizations: [
-      {
-        id: '4',
-        name: 'Faith Baptist',
-        admin: { name: 'Lisa Anderson', email: 'lisa@faithbaptist.org' },
-        daysInStage: 3,
-        assignedTo: { name: 'Mike Wilson' }
-      }
-    ]
-  },
-  {
-    id: 'active',
-    name: 'Active & Onboarded',
-    color: 'green',
-    organizations: [
-      {
-        id: '5',
-        name: 'Victory Church',
-        admin: { name: 'David Lee', email: 'david@victory.org' },
-        daysInStage: 45,
-        assignedTo: { name: 'Sarah Johnson' }
-      }
-    ]
-  }
+// Helper function to calculate days in stage
+const calculateDaysInStage = (stageEnteredAt: string | null, createdAt: string): number => {
+  const referenceDate = stageEnteredAt || createdAt;
+  const days = Math.floor((Date.now() - new Date(referenceDate).getTime()) / (1000 * 60 * 60 * 24));
+  return days;
+};
+
+// Map organization data to card format
+const mapOrgToCard = (org: OrganizationData): OnboardingOrganization => {
+  return {
+    id: org.id,
+    name: org.name,
+    admin: {
+      name: org.admin_name || org.primary_contact_name || 'Unknown Admin',
+      email: org.admin_email || org.primary_contact_email || '',
+      avatar: undefined
+    },
+    daysInStage: calculateDaysInStage(null, org.created_at),
+    assignedTo: undefined
+  };
+};
+
+const STAGE_CONFIG = [
+  { id: 'signup', name: 'New Signup', color: 'blue' },
+  { id: 'initial-contact', name: 'Initial Contact Made', color: 'orange' },
+  { id: 'training-scheduled', name: 'Training Scheduled', color: 'yellow' },
+  { id: 'active', name: 'Active & Onboarded', color: 'green' }
 ];
 
 export default function OnboardingFlowsPage() {
-  const [stages, setStages] = useState<OnboardingStage[]>(initialStages);
+  const { data: organizations, isLoading, refetch } = useOrganizationsData();
+  const [stages, setStages] = useState<OnboardingStage[]>([]);
+  const { toast } = useToast();
 
-  const handleDragEnd = (result: DropResult) => {
+  // Group organizations by stage when data loads
+  useEffect(() => {
+    if (!organizations) return;
+
+    const grouped = STAGE_CONFIG.map(stageConfig => ({
+      id: stageConfig.id,
+      name: stageConfig.name,
+      color: stageConfig.color,
+      organizations: organizations
+        .filter(org => {
+          const step = org.onboarding_completed ? 'active' : (org.onboarding_step || 'signup');
+          return step === stageConfig.id;
+        })
+        .map(mapOrgToCard)
+    }));
+
+    setStages(grouped);
+  }, [organizations]);
+
+  const handleDragEnd = async (result: DropResult) => {
     const { source, destination } = result;
 
     if (!destination) return;
@@ -113,7 +102,34 @@ export default function OnboardingFlowsPage() {
     
     newStages[destStageIndex].organizations.splice(destination.index, 0, movedOrg);
 
+    // Optimistically update UI
     setStages(newStages);
+
+    // Update database
+    const { error } = await supabase
+      .from('organizations')
+      .update({
+        onboarding_step: destination.droppableId,
+        onboarding_stage_entered_at: new Date().toISOString(),
+        onboarding_completed: destination.droppableId === 'active'
+      })
+      .eq('id', movedOrg.id);
+
+    if (error) {
+      console.error('Failed to update organization stage:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update organization stage',
+        variant: 'destructive'
+      });
+      // Revert UI on error
+      refetch();
+    } else {
+      toast({
+        title: 'Success',
+        description: 'Organization stage updated'
+      });
+    }
   };
 
   const handleUpdateStage = (stageId: string, name: string, color: string) => {
@@ -126,6 +142,17 @@ export default function OnboardingFlowsPage() {
     console.log('Add organization to stage:', stageId);
     // TODO: Open dialog to add new organization
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full overflow-hidden">
+        <SuperAdminHeader title="Onboarding Flows" />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

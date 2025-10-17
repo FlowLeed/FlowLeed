@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MessageSquare, Mail, Phone, MoreVertical } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface OnboardingOrganization {
   id: string;
@@ -34,8 +35,21 @@ export const AdminOrganizationCard: React.FC<AdminOrganizationCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const navigate = useNavigate();
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    navigate(`/fl-admin/organizations/${organization.id}`);
+  };
+
   return (
-    <div className="bg-background p-3 border-2 border-border rounded-xl space-y-2 hover:shadow-md transition-shadow">
+    <div 
+      className="bg-background p-3 border-2 border-border rounded-xl space-y-2 hover:shadow-md transition-shadow cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="flex items-start gap-3">
         <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarImage src={organization.admin.avatar} />
