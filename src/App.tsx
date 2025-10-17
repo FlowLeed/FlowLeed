@@ -46,7 +46,7 @@ const App = () => (
                 <Route path="/invite/:token" element={<InvitePage />} />
                 
                 {/* Admin Routes */}
-                <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
+                <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="organizations" element={<AdminOrganizationsPage />} />
                   <Route path="organizations/:orgId" element={<AdminOrgDetailPage />} />
