@@ -76,6 +76,11 @@ export const useProfile = () => {
 
         if (orgError) {
           console.error('Error fetching organizations:', orgError);
+        } else if (!memberships || memberships.length === 0) {
+          // User has no organization memberships (valid for admin-only users)
+          localStorage.removeItem(SELECTED_ORG_KEY);
+          setOrganization(null);
+          console.log('User has no organization memberships');
         } else if (memberships && memberships.length > 0) {
           // Get previously selected organization from localStorage
           const savedOrgId = localStorage.getItem(SELECTED_ORG_KEY);
@@ -112,8 +117,6 @@ export const useProfile = () => {
             setOrganization(selectedOrg);
             console.log('Organization loaded:', selectedOrg);
           }
-        } else {
-          console.error('No organization memberships found for user');
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
