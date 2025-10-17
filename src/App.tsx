@@ -25,6 +25,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import ContactsPage from "./pages/ContactsPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrganizationsPage from "./pages/admin/AdminOrganizationsPage";
+import AdminOrgDetailPage from "./pages/admin/AdminOrgDetailPage";
 import ImpersonationLogsPage from "./pages/admin/ImpersonationLogsPage";
 
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="organizations" element={<AdminOrganizationsPage />} />
+                  <Route path="organizations/:orgId" element={<AdminOrgDetailPage />} />
                   <Route path="impersonation-logs" element={<ImpersonationLogsPage />} />
                 </Route>
 
