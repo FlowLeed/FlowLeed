@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { GitBranch, MoreVertical, MessageCircle, Mail, Phone, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { DragDropContext, DropResult } from 'react-beautiful-dnd';
+import { AdminFlowStage } from '@/components/admin/AdminFlowStage';
+import { AdminOrganizationCard } from '@/components/admin/AdminOrganizationCard';
 
 interface OnboardingOrganization {
   id: string;
   name: string;
-  adminName: string;
+  admin: {
+    name: string;
+    email: string;
+    avatar?: string;
+  };
   daysInStage: number;
   assignedTo?: {
     name: string;
@@ -23,167 +26,133 @@ interface OnboardingStage {
   organizations: OnboardingOrganization[];
 }
 
-// Mock data - will be replaced with real data later
-const stages: OnboardingStage[] = [
+const initialStages: OnboardingStage[] = [
   {
-    id: 'signup',
-    name: 'Sign Up',
+    id: 'new-signup',
+    name: 'New Signup',
     color: 'blue',
     organizations: [
-      { id: '1', name: 'Grace Community Church', adminName: 'Robert Thomas', daysInStage: 0, assignedTo: { name: 'Noah E.' } },
-      { id: '2', name: 'Valley Fellowship', adminName: 'Tim Lopez', daysInStage: 1 },
-      { id: '3', name: 'Cornerstone Church', adminName: 'Samantha Lopez', daysInStage: 0 },
-      { id: '4', name: 'New Life Center', adminName: 'Ava Green', daysInStage: 2 },
-      { id: '5', name: 'Faith Assembly', adminName: 'Jessica Hernandez', daysInStage: 1 },
-    ],
+      {
+        id: '1',
+        name: 'Grace Community Church',
+        admin: { name: 'John Smith', email: 'john@gcc.org' },
+        daysInStage: 2,
+        assignedTo: { name: 'Sarah Johnson' }
+      },
+      {
+        id: '2',
+        name: 'Riverside Fellowship',
+        admin: { name: 'Emily Davis', email: 'emily@riverside.org' },
+        daysInStage: 1,
+      }
+    ]
   },
   {
-    id: 'team-invite',
-    name: 'Team Invitation',
+    id: 'initial-contact',
+    name: 'Initial Contact Made',
     color: 'orange',
     organizations: [
-      { id: '6', name: 'Hope Church', adminName: 'Joshua White', daysInStage: 0 },
-      { id: '7', name: 'River City Church', adminName: 'Sarah Martinez', daysInStage: 0 },
-      { id: '8', name: 'Harvest Fellowship', adminName: 'Benjamin Clark', daysInStage: 1, assignedTo: { name: 'Great A.' } },
-    ],
+      {
+        id: '3',
+        name: 'Hope Church',
+        admin: { name: 'Michael Brown', email: 'michael@hopechurch.org' },
+        daysInStage: 5,
+        assignedTo: { name: 'Sarah Johnson' }
+      }
+    ]
   },
   {
-    id: 'pco-integration',
-    name: 'PCO Integration',
+    id: 'training-scheduled',
+    name: 'Training Scheduled',
+    color: 'yellow',
+    organizations: [
+      {
+        id: '4',
+        name: 'Faith Baptist',
+        admin: { name: 'Lisa Anderson', email: 'lisa@faithbaptist.org' },
+        daysInStage: 3,
+        assignedTo: { name: 'Mike Wilson' }
+      }
+    ]
+  },
+  {
+    id: 'active',
+    name: 'Active & Onboarded',
     color: 'green',
     organizations: [
-      { id: '9', name: 'City Church', adminName: 'James Lopez', daysInStage: 0, assignedTo: { name: 'Great A.' } },
-      { id: '10', name: 'Bridge Church', adminName: 'Lucy Evans', daysInStage: 0 },
-      { id: '11', name: 'Summit Church', adminName: 'Ella Scott', daysInStage: 2 },
-      { id: '12', name: 'New Hope Chapel', adminName: 'Michael Johnson', daysInStage: 0 },
-      { id: '13', name: 'Living Waters', adminName: 'Emily Davis', daysInStage: 1 },
-    ],
-  },
-  {
-    id: 'first-flow',
-    name: 'First Flow Created',
-    color: 'red',
-    organizations: [
-      { id: '14', name: 'Promise Center', adminName: 'Daniel Taylor', daysInStage: 0 },
-      { id: '15', name: 'Kingdom Church', adminName: 'Mia Turner', daysInStage: 0 },
-      { id: '16', name: 'Victory Chapel', adminName: 'Ashley Moore', daysInStage: 1 },
-      { id: '17', name: 'Elevation Church', adminName: 'John Smith', daysInStage: 0 },
-      { id: '18', name: 'Gateway Fellowship', adminName: 'Ethan Lewis', daysInStage: 2 },
-    ],
-  },
+      {
+        id: '5',
+        name: 'Victory Church',
+        admin: { name: 'David Lee', email: 'david@victory.org' },
+        daysInStage: 45,
+        assignedTo: { name: 'Sarah Johnson' }
+      }
+    ]
+  }
 ];
 
-const getStageColor = (color: string) => {
-  const colors: Record<string, string> = {
-    blue: 'border-blue-400',
-    orange: 'border-orange-400',
-    green: 'border-green-400',
-    red: 'border-red-400',
-  };
-  return colors[color] || 'border-border';
-};
-
-const getColorDot = (color: string) => {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-400',
-    orange: 'bg-orange-400',
-    green: 'bg-green-400',
-    red: 'bg-red-400',
-  };
-  return colors[color] || 'bg-muted';
-};
-
 export default function OnboardingFlowsPage() {
+  const [stages, setStages] = useState<OnboardingStage[]>(initialStages);
+
+  const handleDragEnd = (result: DropResult) => {
+    const { source, destination } = result;
+
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
+      return;
+    }
+
+    const sourceStageIndex = stages.findIndex(s => s.id === source.droppableId);
+    const destStageIndex = stages.findIndex(s => s.id === destination.droppableId);
+
+    const newStages = [...stages];
+    const [movedOrg] = newStages[sourceStageIndex].organizations.splice(source.index, 1);
+    
+    // Reset days in stage when moving
+    movedOrg.daysInStage = 0;
+    
+    newStages[destStageIndex].organizations.splice(destination.index, 0, movedOrg);
+
+    setStages(newStages);
+  };
+
+  const handleUpdateStage = (stageId: string, name: string, color: string) => {
+    setStages(stages.map(stage => 
+      stage.id === stageId ? { ...stage, name, color } : stage
+    ));
+  };
+
+  const handleAddOrganization = (stageId: string) => {
+    console.log('Add organization to stage:', stageId);
+    // TODO: Open dialog to add new organization
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <SuperAdminHeader title="Onboarding Flow" icon={GitBranch} />
-      <div className="flex-1 overflow-auto">
-        <div className="h-full p-6">
-          {/* Kanban Board */}
-          <div className="flex gap-3 h-full overflow-x-auto pb-4">
+      <SuperAdminHeader title="Onboarding Flows" />
+      <div className="flex-1 overflow-x-auto p-6">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="flex gap-3 h-full">
             {stages.map((stage) => (
-              <div key={stage.id} className="flex-shrink-0 w-[320px]">
-                <Card className={`border-l-4 ${getStageColor(stage.color)} h-full flex flex-col shadow-sm`}>
-                  {/* Stage Header */}
-                  <div className="p-3 border-b flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${getColorDot(stage.color)}`} />
-                      <h3 className="font-semibold text-sm">{stage.name}</h3>
-                      <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
-                        {stage.organizations.length}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {/* Organizations Cards */}
-                  <CardContent className="flex-1 overflow-y-auto p-2 space-y-2">
-                    {stage.organizations.map((org) => (
-                      <Card key={org.id} className="border border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                        <CardContent className="p-3 space-y-2">
-                          {/* Org Name and Menu */}
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="bg-purple-100 text-purple-600 font-semibold text-xs">
-                                  {org.name.charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <div className="font-semibold text-sm">{org.adminName}</div>
-                                <div className="text-[11px] text-muted-foreground">
-                                  In stage: {org.daysInStage} days
-                                </div>
-                              </div>
-                            </div>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 -mt-1">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </div>
-
-                          {/* Assigned To */}
-                          <div className="flex items-center justify-between pt-1 border-t">
-                            {org.assignedTo ? (
-                              <div className="flex items-center gap-1">
-                                <Avatar className="h-4 w-4">
-                                  <AvatarFallback className="text-[9px]">
-                                    {org.assignedTo.name.charAt(0)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="text-[11px] text-muted-foreground">
-                                  {org.assignedTo.name}
-                                </span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1">
-                                <Avatar className="h-4 w-4 bg-muted">
-                                  <AvatarFallback className="text-[9px]">?</AvatarFallback>
-                                </Avatar>
-                                <span className="text-[11px] text-muted-foreground">Unassigned</span>
-                              </div>
-                            )}
-
-                            {/* Action Icons */}
-                            <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
-                                <MessageCircle className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
-                                <Mail className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-60 hover:opacity-100">
-                                <Phone className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </CardContent>
-                </Card>
-              </div>
+              <AdminFlowStage
+                key={stage.id}
+                stage={{
+                  id: stage.id,
+                  name: stage.name,
+                  color: stage.color,
+                  items: stage.organizations
+                }}
+                onUpdateStage={handleUpdateStage}
+                onAddItem={handleAddOrganization}
+                renderCard={(organization) => (
+                  <AdminOrganizationCard
+                    organization={organization}
+                  />
+                )}
+              />
             ))}
           </div>
-        </div>
+        </DragDropContext>
       </div>
     </div>
   );
