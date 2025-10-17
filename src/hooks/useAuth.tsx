@@ -57,20 +57,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string, fullName: string, organizationName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
+    // Create user without auto-confirming email
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName,
           organization_name: organizationName,
         },
+        emailRedirectTo: `${window.location.origin}/`,
       },
     });
-    return { error };
+
+    if (error) {
+      return { error };
+    }
+
+    // Send custom verification email via edge function
+    if (data.user) {
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-signup-confirmation', {
+          body: {
+            email,
+            userId: data.user.id,
+            fullName,
+            organizationName,
+          },
+        });
+
+        if (emailError) {
+          console.error('Error sending verification email:', emailError);
+        }
+      } catch (err) {
+        console.error('Failed to send verification email:', err);
+      }
+    }
+
+    return { error: null };
   };
 
   const signOut = async () => {
@@ -78,12 +102,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/auth`;
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectUrl
-    });
-    return { error };
+    // Send custom password reset email via edge function
+    try {
+      const { error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email },
+      });
+      return { error };
+    } catch (err: any) {
+      return { error: err };
+    }
   };
 
   const updatePassword = async (password: string) => {

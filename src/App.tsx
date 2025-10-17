@@ -18,6 +18,7 @@ import ProfilePage from "./pages/ProfilePage";
 import TeamPage from "./pages/TeamPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import AuthPage from "./pages/AuthPage";
+import AuthVerifyPage from "./pages/AuthVerifyPage";
 import InvitePage from "./pages/InvitePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ContactsPage from "./pages/ContactsPage";
@@ -40,6 +41,7 @@ const App = () => (
           <FlowProvider>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/auth/verify" element={<AuthVerifyPage />} />
               <Route path="/invite/:token" element={<InvitePage />} />
               
               {/* Regular app routes */}
