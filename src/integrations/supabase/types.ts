@@ -794,6 +794,57 @@ export type Database = {
           },
         ]
       }
+      organization_health_history: {
+        Row: {
+          calculated_at: string
+          created_at: string
+          id: string
+          metrics: Json
+          organization_id: string
+          previous_score: number | null
+          score_breakdown: Json
+          score_change: number | null
+          total_score: number
+        }
+        Insert: {
+          calculated_at?: string
+          created_at?: string
+          id?: string
+          metrics: Json
+          organization_id: string
+          previous_score?: number | null
+          score_breakdown: Json
+          score_change?: number | null
+          total_score: number
+        }
+        Update: {
+          calculated_at?: string
+          created_at?: string
+          id?: string
+          metrics?: Json
+          organization_id?: string
+          previous_score?: number | null
+          score_breakdown?: Json
+          score_change?: number | null
+          total_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_health_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_health_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -845,6 +896,7 @@ export type Database = {
           next_billing_date: string | null
           notes: string | null
           onboarding_completed: boolean | null
+          onboarding_progress: Json | null
           onboarding_step: string | null
           plan_price: number | null
           plan_tier: string | null
@@ -871,6 +923,7 @@ export type Database = {
           next_billing_date?: string | null
           notes?: string | null
           onboarding_completed?: boolean | null
+          onboarding_progress?: Json | null
           onboarding_step?: string | null
           plan_price?: number | null
           plan_tier?: string | null
@@ -897,6 +950,7 @@ export type Database = {
           next_billing_date?: string | null
           notes?: string | null
           onboarding_completed?: boolean | null
+          onboarding_progress?: Json | null
           onboarding_step?: string | null
           plan_price?: number | null
           plan_tier?: string | null
@@ -1231,6 +1285,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_health_score_v2: {
+        Args: { org_id: string }
+        Returns: Json
+      }
       calculate_organization_health_score: {
         Args: { org_id: string }
         Returns: number

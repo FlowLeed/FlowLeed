@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOrganizationsData } from '@/hooks/useOrganizationsData';
 import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
+import { HealthScoreBadge } from '@/components/admin/HealthScoreBadge';
 import {
   Table,
   TableBody,
@@ -15,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users, TrendingUp, DollarSign, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
 
 export default function OrganizationsListPage() {
   const navigate = useNavigate();
@@ -188,15 +188,7 @@ export default function OrganizationsListPage() {
                   <TableCell>{org.active_users || 0}</TableCell>
                   <TableCell>{org.ai_uses_30d || 0}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Progress 
-                        value={org.health_score || 0} 
-                        className="w-16 h-2"
-                      />
-                      <span className="text-xs text-muted-foreground w-8">
-                        {org.health_score || 0}
-                      </span>
-                    </div>
+                    <HealthScoreBadge score={org.health_score} />
                   </TableCell>
                 </TableRow>
               ))}

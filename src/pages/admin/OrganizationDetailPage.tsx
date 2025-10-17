@@ -1,16 +1,19 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrganizationsData } from '@/hooks/useOrganizationsData';
+import { useHealthScore } from '@/hooks/useHealthScore';
 import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
+import { HealthScoreCard } from '@/components/admin/HealthScoreCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function OrganizationDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: organizations, isLoading } = useOrganizationsData();
+  const { data: healthScoreData, isLoading: healthScoreLoading, recalculate, isRecalculating } = useHealthScore(id);
 
   const org = organizations?.find(o => o.id === id);
 
@@ -192,26 +195,37 @@ export default function OrganizationDetailPage() {
             </Card>
           </div>
 
-          {/* Coming Soon Sections */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="opacity-60">
-              <CardHeader>
-                <CardTitle>Health Score</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Coming soon</p>
-              </CardContent>
-            </Card>
-
-            <Card className="opacity-60">
-              <CardHeader>
-                <CardTitle>Onboarding Funnel</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Coming soon</p>
-              </CardContent>
-            </Card>
+          {/* Health Score */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Health Score Analysis</h3>
+                <p className="text-sm text-muted-foreground">
+                  Comprehensive breakdown of organization health
+                </p>
+              </div>
+              <Button
+                onClick={() => id && recalculate(id)}
+                disabled={isRecalculating}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
+                {isRecalculating ? 'Calculating...' : 'Recalculate'}
+              </Button>
+            </div>
+            <HealthScoreCard data={healthScoreData} loading={healthScoreLoading} />
           </div>
+
+          {/* Coming Soon Sections */}
+          <Card className="opacity-60">
+            <CardHeader>
+              <CardTitle>Onboarding Funnel</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">Coming soon</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
