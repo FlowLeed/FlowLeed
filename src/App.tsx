@@ -8,6 +8,8 @@ import { MainLayout } from "./components/layout/MainLayout";
 import { FlowProvider } from "./contexts/FlowContext";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { SuperAdminProtectedRoute } from "./components/admin/SuperAdminProtectedRoute";
+import { SuperAdminLayout } from "./components/admin/SuperAdminLayout";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import FlowPage from "./pages/FlowPage";
@@ -19,6 +21,8 @@ import AuthPage from "./pages/AuthPage";
 import InvitePage from "./pages/InvitePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ContactsPage from "./pages/ContactsPage";
+import SuperAdminAuthPage from "./pages/admin/SuperAdminAuthPage";
+import OrganizationsListPage from "./pages/admin/OrganizationsListPage";
 
 
 const queryClient = new QueryClient();
@@ -34,6 +38,8 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/invite/:token" element={<InvitePage />} />
+              
+              {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/flows/:flowId" element={<FlowPage />} />
@@ -44,6 +50,15 @@ const App = () => (
                 <Route path="/integrations" element={<IntegrationsPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
               </Route>
+
+              {/* FL-Admin super admin routes */}
+              <Route path="/fl-admin/login" element={<SuperAdminAuthPage />} />
+              <Route element={<SuperAdminProtectedRoute />}>
+                <Route path="/fl-admin" element={<SuperAdminLayout />}>
+                  <Route index element={<OrganizationsListPage />} />
+                </Route>
+              </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </FlowProvider>
