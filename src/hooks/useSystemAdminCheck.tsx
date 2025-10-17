@@ -26,25 +26,31 @@ export const useSystemAdminCheck = (): SystemAdminCheck => {
       }
 
       try {
-        const { data, error } = await supabase.rpc('is_system_admin', {
-          _user_id: user.id
-        });
+        // Call is_system_admin function
+        const { data: isAdminData, error: isAdminError } = await supabase
+          .rpc('is_system_admin' as any, {
+            _user_id: user.id
+          });
 
-        if (error) {
-          console.error('Error checking admin status:', error);
+        if (isAdminError) {
+          console.error('Error checking admin status:', isAdminError);
           setIsAdmin(false);
           setRole(null);
-        } else {
-          setIsAdmin(data || false);
-          // If they are an admin, we need to get their specific role
-          if (data) {
-            const { data: roleData } = await supabase
-              .rpc('get_user_system_role', { _user_id: user.id })
-              .single();
-            setRole((roleData as SystemRole) || 'super_admin');
+        } else if (isAdminData === true) {
+          setIsAdmin(true);
+          
+          // Get the specific role
+          const { data: roleData, error: roleError } = await supabase
+            .rpc('get_user_system_role' as any, { _user_id: user.id });
+          
+          if (!roleError && roleData) {
+            setRole(roleData as SystemRole);
           } else {
-            setRole(null);
+            setRole('super_admin'); // Default fallback
           }
+        } else {
+          setIsAdmin(false);
+          setRole(null);
         }
       } catch (error) {
         console.error('Error checking admin status:', error);

@@ -343,6 +343,129 @@ export type Database = {
         }
         Relationships: []
       }
+      impersonation_actions: {
+        Row: {
+          action_description: string
+          action_type: string
+          affected_record_id: string | null
+          affected_table: string | null
+          after_value: Json | null
+          before_value: Json | null
+          id: string
+          impersonation_session_id: string
+          metadata: Json | null
+          page_url: string | null
+          timestamp: string
+        }
+        Insert: {
+          action_description: string
+          action_type: string
+          affected_record_id?: string | null
+          affected_table?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          id?: string
+          impersonation_session_id: string
+          metadata?: Json | null
+          page_url?: string | null
+          timestamp?: string
+        }
+        Update: {
+          action_description?: string
+          action_type?: string
+          affected_record_id?: string | null
+          affected_table?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          id?: string
+          impersonation_session_id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impersonation_actions_impersonation_session_id_fkey"
+            columns: ["impersonation_session_id"]
+            isOneToOne: false
+            referencedRelation: "impersonation_audit_log"
+            referencedColumns: ["session_id"]
+          },
+          {
+            foreignKeyName: "impersonation_actions_impersonation_session_id_fkey"
+            columns: ["impersonation_session_id"]
+            isOneToOne: false
+            referencedRelation: "impersonation_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      impersonation_sessions: {
+        Row: {
+          actions_performed: Json | null
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          ip_address: string | null
+          is_active: boolean | null
+          pages_visited: string[] | null
+          reason: string
+          started_at: string
+          system_admin_user_id: string
+          target_organization_id: string
+          target_user_id: string
+          updated_at: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          actions_performed?: Json | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          pages_visited?: string[] | null
+          reason: string
+          started_at?: string
+          system_admin_user_id: string
+          target_organization_id: string
+          target_user_id: string
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          actions_performed?: Json | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean | null
+          pages_visited?: string[] | null
+          reason?: string
+          started_at?: string
+          system_admin_user_id?: string
+          target_organization_id?: string
+          target_user_id?: string
+          updated_at?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impersonation_sessions_target_organization_id_fkey"
+            columns: ["target_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impersonation_sessions_target_organization_id_fkey"
+            columns: ["target_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_list_mappings: {
         Row: {
           auto_sync: boolean
@@ -578,6 +701,94 @@ export type Database = {
             foreignKeyName: "invitations_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_activity_stats: {
+        Row: {
+          ai_descriptions_generated: number | null
+          ai_messages_generated: number | null
+          ai_suggestions_used: number | null
+          contacts_count: number | null
+          created_at: string | null
+          daily_activity_score: number | null
+          date: string
+          flows_count: number | null
+          id: string
+          interactions_count: number | null
+          last_login_at: string | null
+          last_pco_sync: string | null
+          notes_created: number | null
+          organization_id: string
+          pco_sync_count: number | null
+          total_ai_uses: number | null
+          total_logins: number | null
+          unique_active_users: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_descriptions_generated?: number | null
+          ai_messages_generated?: number | null
+          ai_suggestions_used?: number | null
+          contacts_count?: number | null
+          created_at?: string | null
+          daily_activity_score?: number | null
+          date?: string
+          flows_count?: number | null
+          id?: string
+          interactions_count?: number | null
+          last_login_at?: string | null
+          last_pco_sync?: string | null
+          notes_created?: number | null
+          organization_id: string
+          pco_sync_count?: number | null
+          total_ai_uses?: number | null
+          total_logins?: number | null
+          unique_active_users?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_descriptions_generated?: number | null
+          ai_messages_generated?: number | null
+          ai_suggestions_used?: number | null
+          contacts_count?: number | null
+          created_at?: string | null
+          daily_activity_score?: number | null
+          date?: string
+          flows_count?: number | null
+          id?: string
+          interactions_count?: number | null
+          last_login_at?: string | null
+          last_pco_sync?: string | null
+          notes_created?: number | null
+          organization_id?: string
+          pco_sync_count?: number | null
+          total_ai_uses?: number | null
+          total_logins?: number | null
+          unique_active_users?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_activity_stats_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_activity_stats_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -610,6 +821,13 @@ export type Database = {
             foreignKeyName: "organization_members_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -617,24 +835,81 @@ export type Database = {
       }
       organizations: {
         Row: {
+          billing_email: string | null
           created_at: string
+          health_score: number | null
           id: string
+          last_activity_at: string | null
+          last_payment_date: string | null
           name: string
+          next_billing_date: string | null
+          notes: string | null
+          onboarding_completed: boolean | null
+          onboarding_step: string | null
+          plan_price: number | null
+          plan_tier: string | null
+          primary_contact_email: string | null
+          primary_contact_name: string | null
+          primary_contact_phone: string | null
           slug: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          tags: string[] | null
+          total_revenue: number | null
+          trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
+          billing_email?: string | null
           created_at?: string
+          health_score?: number | null
           id?: string
+          last_activity_at?: string | null
+          last_payment_date?: string | null
           name: string
+          next_billing_date?: string | null
+          notes?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_step?: string | null
+          plan_price?: number | null
+          plan_tier?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
           slug: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          tags?: string[] | null
+          total_revenue?: number | null
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
+          billing_email?: string | null
           created_at?: string
+          health_score?: number | null
           id?: string
+          last_activity_at?: string | null
+          last_payment_date?: string | null
           name?: string
+          next_billing_date?: string | null
+          notes?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_step?: string | null
+          plan_price?: number | null
+          plan_tier?: string | null
+          primary_contact_email?: string | null
+          primary_contact_name?: string | null
+          primary_contact_phone?: string | null
           slug?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          tags?: string[] | null
+          total_revenue?: number | null
+          trial_ends_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -848,30 +1123,191 @@ export type Database = {
         }
         Relationships: []
       }
+      system_user_roles: {
+        Row: {
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          notes: string | null
+          role: Database["public"]["Enums"]["system_role"]
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          role: Database["public"]["Enums"]["system_role"]
+          user_id: string
+        }
+        Update: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          notes?: string | null
+          role?: Database["public"]["Enums"]["system_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_login_events: {
+        Row: {
+          id: string
+          logged_in_at: string | null
+          organization_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          logged_in_at?: string | null
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          logged_in_at?: string | null
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_login_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_login_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      impersonation_audit_log: {
+        Row: {
+          actions_count: number | null
+          admin_email: string | null
+          admin_name: string | null
+          duration_minutes: number | null
+          ended_at: string | null
+          ip_address: string | null
+          is_active: boolean | null
+          organization_name: string | null
+          reason: string | null
+          session_id: string | null
+          started_at: string | null
+          target_user_email: string | null
+          target_user_name: string | null
+        }
+        Relationships: []
+      }
+      organization_health_view: {
+        Row: {
+          active_users: number | null
+          admin_email: string | null
+          admin_name: string | null
+          admin_user_id: string | null
+          ai_uses_30d: number | null
+          avg_weekly_activity: number | null
+          contacts_count: number | null
+          created_at: string | null
+          flows_count: number | null
+          health_score: number | null
+          id: string | null
+          last_login: string | null
+          last_pco_sync: string | null
+          name: string | null
+          plan_tier: string | null
+          slug: string | null
+          subscription_status: string | null
+          total_logins_30d: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      calculate_organization_health_score: {
+        Args: { org_id: string }
+        Returns: number
+      }
+      end_impersonation_session: {
+        Args: { _session_id: string }
+        Returns: boolean
+      }
       get_flow_role: {
         Args: { _pipeline_id: string; _user_id: string }
         Returns: string
       }
+      get_organizations_health_data: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_users: number
+          admin_email: string
+          admin_name: string
+          admin_user_id: string
+          ai_uses_30d: number
+          avg_weekly_activity: number
+          contacts_count: number
+          created_at: string
+          flows_count: number
+          health_score: number
+          id: string
+          last_login: string
+          last_pco_sync: string
+          name: string
+          plan_tier: string
+          slug: string
+          subscription_status: string
+          total_logins_30d: number
+        }[]
+      }
       get_user_organization_role: {
         Args: { _organization_id: string; _user_id: string }
+        Returns: string
+      }
+      get_user_system_role: {
+        Args: { _user_id: string }
         Returns: string
       }
       is_flow_team_member: {
         Args: { _pipeline_id: string; _user_id: string }
         Returns: boolean
       }
+      is_system_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_user_in_organization: {
         Args: { _organization_id: string; _user_id: string }
         Returns: boolean
       }
+      log_impersonation_action: {
+        Args: {
+          _action_description: string
+          _action_type: string
+          _metadata?: Json
+          _page_url?: string
+          _session_id: string
+        }
+        Returns: string
+      }
+      start_impersonation_session: {
+        Args: {
+          _ip_address?: string
+          _reason: string
+          _target_org_id: string
+          _user_agent?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      system_role: "super_admin" | "support_admin" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -998,6 +1434,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      system_role: ["super_admin", "support_admin", "viewer"],
+    },
   },
 } as const

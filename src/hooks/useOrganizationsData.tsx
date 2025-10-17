@@ -27,7 +27,7 @@ export const useOrganizationsData = () => {
     queryKey: ['admin-organizations'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .rpc('get_organizations_health_data');
+        .rpc('get_organizations_health_data' as any);
 
       if (error) throw error;
       return (data || []) as OrganizationData[];
