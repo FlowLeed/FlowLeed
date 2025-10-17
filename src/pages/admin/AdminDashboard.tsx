@@ -1,7 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users, DollarSign, TrendingUp } from 'lucide-react';
+import { useAdminDashboardMetrics } from '@/hooks/useAdminDashboardMetrics';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AdminDashboard() {
+  const { data: metrics, isLoading } = useAdminDashboardMetrics();
+
   return (
     <div className="space-y-8">
       <div>
@@ -21,10 +25,16 @@ export default function AdminDashboard() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Coming soon
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{metrics?.totalOrganizations || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  All registered organizations
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -36,10 +46,16 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Coming soon
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{metrics?.activeSubscriptions || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Currently paying customers
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -51,10 +67,18 @@ export default function AdminDashboard() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0</div>
-            <p className="text-xs text-muted-foreground">
-              Coming soon
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  ${metrics?.monthlyRevenue.toLocaleString() || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recurring monthly revenue
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -66,10 +90,16 @@ export default function AdminDashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Coming soon
-            </p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{metrics?.avgHealthScore || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Average organization health
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -80,7 +110,7 @@ export default function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Phase 2 infrastructure is ready. Navigate to Organizations to begin managing accounts.
+            System administration dashboard is ready. Navigate to Organizations to manage accounts and start impersonation sessions.
           </p>
         </CardContent>
       </Card>
