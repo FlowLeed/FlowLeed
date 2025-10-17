@@ -32,6 +32,7 @@ additional_redirect_urls = ["https://lghamvpolwebtjwaxned.lovableproject.com"]
 jwt_expiry = 3600
 enable_signup = true
 enable_confirmations = false
+enable_email_confirmations = false
 
 [functions.planning-center-lists]
 verify_jwt = false

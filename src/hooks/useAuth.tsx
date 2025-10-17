@@ -77,7 +77,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Send custom verification email via edge function
     if (data.user) {
       try {
-        const { error: emailError } = await supabase.functions.invoke('send-signup-confirmation', {
+        console.log('Sending signup confirmation email to:', email);
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-signup-confirmation', {
           body: {
             email,
             userId: data.user.id,
@@ -88,6 +89,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (emailError) {
           console.error('Error sending verification email:', emailError);
+        } else {
+          console.log('Confirmation email sent successfully:', emailData);
         }
       } catch (err) {
         console.error('Failed to send verification email:', err);
@@ -104,11 +107,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const resetPassword = async (email: string) => {
     // Send custom password reset email via edge function
     try {
-      const { error } = await supabase.functions.invoke('send-password-reset', {
+      console.log('Sending password reset email to:', email);
+      const { data: emailData, error } = await supabase.functions.invoke('send-password-reset', {
         body: { email },
       });
+      
+      if (!error) {
+        console.log('Password reset email sent successfully:', emailData);
+      }
+      
       return { error };
     } catch (err: any) {
+      console.error('Failed to send password reset email:', err);
       return { error: err };
     }
   };
