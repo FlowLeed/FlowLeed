@@ -26,7 +26,7 @@ const flowsItems: NavItem[] = [
     path: "/fl-admin/flows/onboarding",
   },
   {
-    title: "Ongoing Support",
+    title: "Care Flow",
     icon: MessageCircle,
     path: "/fl-admin/flows/ongoing-support",
   },
