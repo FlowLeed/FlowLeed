@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useOrganizationsData } from '@/hooks/useOrganizationsData';
+import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
 import {
   Table,
   TableBody,
@@ -53,32 +54,35 @@ export default function OrganizationsListPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardHeader className="pb-3">
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16" />
-              </CardContent>
-            </Card>
-          ))}
+      <div className="flex flex-col h-full overflow-hidden">
+        <SuperAdminHeader title="Organizations" icon={Building2} />
+        <div className="flex-1 overflow-auto">
+          <div className="container mx-auto px-4 py-6 space-y-6">
+            <div className="grid gap-4 md:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i}>
+                  <CardHeader className="pb-3">
+                    <Skeleton className="h-4 w-24" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-8 w-16" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <Skeleton className="h-96 w-full" />
+          </div>
         </div>
-        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Organizations</h1>
-        <p className="text-muted-foreground">Manage all organizations using Flowleed</p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-4">
+    <div className="flex flex-col h-full overflow-hidden">
+      <SuperAdminHeader title="Organizations" icon={Building2} />
+      <div className="flex-1 overflow-auto">
+        <div className="container mx-auto px-4 py-6 space-y-6">
+          <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Organizations</CardTitle>
@@ -194,6 +198,8 @@ export default function OrganizationsListPage() {
           </Table>
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 }
