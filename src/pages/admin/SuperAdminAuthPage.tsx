@@ -49,8 +49,8 @@ export default function SuperAdminAuthPage() {
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'hsl(233.33deg 100% 98.24%)' }}>
       <div className="w-full max-w-2xl space-y-8 p-8">
         <div className="text-center space-y-4">
-          <img src={flowleedLogo} alt="Flowleed" className="h-16 mx-auto mb-6" />
-          <h1 className="text-4xl font-bold text-foreground mb-2">ControlTower</h1>
+          <img src={flowleedLogo} alt="Flowleed" className="h-6 mx-auto mb-4" />
+          <h1 className="text-4xl font-bold text-purple-500 mb-2">ControlTower</h1>
           <p className="text-sm text-muted-foreground max-w-xl mx-auto italic">
             "To create a world where every church leads with clarity, every person feels known, and every step in a faith flows naturally — from guest to disciple to leader"
           </p>
