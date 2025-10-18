@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import flowleedLogo from '@/assets/flowleed_logo.png';
 
 export default function SuperAdminAuthPage() {
   const [email, setEmail] = useState('');
@@ -45,11 +46,14 @@ export default function SuperAdminAuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-md space-y-8 p-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-2">FL-Admin</h1>
-          <p className="text-muted-foreground">Super Admin Portal</p>
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'hsl(233.33deg 100% 98.24%)' }}>
+      <div className="w-full max-w-2xl space-y-8 p-8">
+        <div className="text-center space-y-4">
+          <img src={flowleedLogo} alt="Flowleed" className="h-16 mx-auto mb-6" />
+          <h1 className="text-4xl font-bold text-foreground mb-2">ControlTower</h1>
+          <p className="text-sm text-muted-foreground max-w-xl mx-auto italic">
+            "To create a world where every church leads with clarity, every person feels known, and every step in a faith flows naturally — from guest to disciple to leader"
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
