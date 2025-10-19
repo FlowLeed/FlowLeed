@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,11 +13,18 @@ serve(async (req) => {
   }
 
   try {
-    const { flowName, flowStages = [], currentDescription = "" } = await req.json();
+    const { flowName, flowStages = [], currentDescription = "", organizationId } = await req.json();
 
     if (!flowName) {
       return new Response(
         JSON.stringify({ error: "Flow name is required" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!organizationId) {
+      return new Response(
+        JSON.stringify({ error: "Organization ID is required" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -29,6 +37,10 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Build stage progression string
     const stageProgression = flowStages.length > 0 
@@ -151,6 +163,17 @@ Provide options with different tones:
 
     const suggestions = JSON.parse(toolCall.function.arguments);
     
+    // Track AI usage
+    try {
+      await supabase.rpc('increment_ai_stat', {
+        org_id: organizationId,
+        stat_column: 'ai_descriptions_generated'
+      });
+    } catch (trackError) {
+      console.error('Failed to track AI usage:', trackError);
+      // Don't fail the request, just log
+    }
+
     return new Response(
       JSON.stringify(suggestions),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

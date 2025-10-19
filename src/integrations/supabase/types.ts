@@ -1382,6 +1382,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      increment_ai_stat: {
+        Args: { org_id: string; stat_column: string }
+        Returns: undefined
+      }
       is_flow_team_member: {
         Args: { _pipeline_id: string; _user_id: string }
         Returns: boolean

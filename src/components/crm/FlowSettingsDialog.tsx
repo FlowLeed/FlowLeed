@@ -521,6 +521,7 @@ export const FlowSettingsDialog = ({
               flowName={flowName}
               stages={flowSteps}
               currentDescription={flowDescription}
+              organizationId={organizationId}
               onSelect={setFlowDescription}
             />
           </div>

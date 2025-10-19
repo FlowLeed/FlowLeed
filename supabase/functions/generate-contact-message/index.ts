@@ -34,7 +34,7 @@ serve(async (req) => {
     // Fetch contact details
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
-      .select('name, status, created_at, phone, email')
+      .select('name, status, created_at, phone, email, organization_id')
       .eq('id', contactId)
       .single();
 
@@ -153,6 +153,17 @@ Context: ${suggestionContext.description}`;
     }
 
     const { message, tone } = JSON.parse(toolCall.function.arguments);
+
+    // Track AI usage
+    try {
+      await supabase.rpc('increment_ai_stat', {
+        org_id: contact.organization_id,
+        stat_column: 'ai_messages_generated'
+      });
+    } catch (trackError) {
+      console.error('Failed to track AI usage:', trackError);
+      // Don't fail the request, just log
+    }
 
     return new Response(
       JSON.stringify({ message, tone }), 

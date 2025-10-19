@@ -16,6 +16,7 @@ interface AIDescriptionSuggestionsProps {
   flowName: string;
   stages: Array<{ name: string }>;
   currentDescription?: string;
+  organizationId: string;
   onSelect: (description: string) => void;
 }
 
@@ -29,6 +30,7 @@ export const AIDescriptionSuggestions = ({
   flowName, 
   stages, 
   currentDescription,
+  organizationId,
   onSelect 
 }: AIDescriptionSuggestionsProps) => {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -44,7 +46,8 @@ export const AIDescriptionSuggestions = ({
         body: { 
           flowName,
           flowStages: stages,
-          currentDescription: currentDescription || ""
+          currentDescription: currentDescription || "",
+          organizationId
         }
       });
 
