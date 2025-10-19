@@ -135,7 +135,7 @@ export default function OngoingSupportFlowsPage() {
   };
 
   const handleDeleteOrganization = (orgId: string) => {
-    setStages(stages.map(stage => ({
+    setStages(prev => prev.map(stage => ({
       ...stage,
       organizations: stage.organizations.filter(org => org.id !== orgId)
     })));

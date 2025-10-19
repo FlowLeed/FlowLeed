@@ -70,10 +70,10 @@ export const AdminOrganizationCard: React.FC<AdminOrganizationCardProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit?.(organization.id)}>
+                <DropdownMenuItem onSelect={() => onEdit?.(organization.id)}>
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete?.(organization.id)}>
+                <DropdownMenuItem onSelect={() => onDelete?.(organization.id)}>
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
