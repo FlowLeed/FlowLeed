@@ -134,6 +134,13 @@ export default function OngoingSupportFlowsPage() {
     console.log('Add organization to stage:', stageId);
   };
 
+  const handleDeleteOrganization = (orgId: string) => {
+    setStages(stages.map(stage => ({
+      ...stage,
+      organizations: stage.organizations.filter(org => org.id !== orgId)
+    })));
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col h-full overflow-hidden">
@@ -165,6 +172,7 @@ export default function OngoingSupportFlowsPage() {
                 renderCard={(organization) => (
                   <AdminOrganizationCard
                     organization={organization}
+                    onDelete={handleDeleteOrganization}
                   />
                 )}
               />
