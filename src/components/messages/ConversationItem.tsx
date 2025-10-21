@@ -15,7 +15,7 @@ export const ConversationItem = ({
   isSelected,
   onClick,
 }: ConversationItemProps) => {
-  const timeAgo = formatDistanceToNow(conversation.lastMessageTime, { addSuffix: false });
+  const timeAgo = formatDistanceToNow(conversation.lastMessageTime, { addSuffix: true });
   
   const getInitials = (name: string) => {
     const parts = name.split(' ');
