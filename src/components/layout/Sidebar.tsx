@@ -421,6 +421,10 @@ export const Sidebar = () => {
     title: "Analytics",
     icon: BarChart3,
     path: "/analytics"
+  }, {
+    title: "Tasks",
+    icon: CheckSquare,
+    path: "/tasks"
   }];
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
@@ -470,10 +474,6 @@ export const Sidebar = () => {
     title: "Calendar",
     icon: Calendar,
     path: "/calendar"
-  }, {
-    title: "Tasks",
-    icon: CheckSquare,
-    path: "/tasks"
   }];
 
   const settingsItems: SidebarItem[] = [{
