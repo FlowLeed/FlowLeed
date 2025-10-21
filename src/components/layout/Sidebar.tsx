@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { calculateFlowContactCount } from "@/lib/utils";
 import { useFlowContext } from "@/contexts/FlowContext";
 import { FlowsManagementDialog } from "@/components/flows/FlowsManagementDialog";
+import { mockConversations } from "@/data/mockMessages";
 import type { LucideIcon } from "lucide-react";
 interface SidebarItem {
   title: string;
@@ -456,10 +457,15 @@ export const Sidebar = () => {
       badge: calculateFlowContactCount(flow)
     };
   });
+  
+  // Calculate total unread messages
+  const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
+  
   const connectItems: SidebarItem[] = [{
     title: "Messages",
     icon: MessageSquare,
-    path: "/messages"
+    path: "/messages",
+    badge: totalUnreadMessages
   }, {
     title: "Calendar",
     icon: Calendar,
