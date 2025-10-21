@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Users, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Users, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -456,6 +456,20 @@ export const Sidebar = () => {
       badge: calculateFlowContactCount(flow)
     };
   });
+  const connectItems: SidebarItem[] = [{
+    title: "Messages",
+    icon: MessageSquare,
+    path: "/messages"
+  }, {
+    title: "Calendar",
+    icon: Calendar,
+    path: "/calendar"
+  }, {
+    title: "Tasks",
+    icon: CheckSquare,
+    path: "/tasks"
+  }];
+
   const settingsItems: SidebarItem[] = [{
     title: "My Profile",
     icon: Settings,
@@ -475,6 +489,7 @@ export const Sidebar = () => {
         <div className="flex-1 overflow-auto py-2 px-4 space-y-6">
           <SidebarSection title="HUB" items={pageItems} />
           <SidebarSection title="Flows" items={flowItems} onSettingsClick={() => setShowFlowsManagement(true)} />
+          <SidebarSection title="Connect" items={connectItems} />
           <SidebarSection title="Settings" items={settingsItems} />
         </div>
       </div>

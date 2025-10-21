@@ -22,6 +22,9 @@ import AuthVerifyPage from "./pages/AuthVerifyPage";
 import InvitePage from "./pages/InvitePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ContactsPage from "./pages/ContactsPage";
+import MessagesPage from "./pages/MessagesPage";
+import CalendarPage from "./pages/CalendarPage";
+import TasksPage from "./pages/TasksPage";
 import SuperAdminAuthPage from "./pages/admin/SuperAdminAuthPage";
 import OrganizationsListPage from "./pages/admin/OrganizationsListPage";
 import OrganizationDetailPage from "./pages/admin/OrganizationDetailPage";
@@ -54,6 +57,9 @@ const App = () => (
                 <Route path="/team" element={<TeamPage />} />
                 <Route path="/integrations" element={<IntegrationsPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/messages" element={<MessagesPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
+                <Route path="/tasks" element={<TasksPage />} />
               </Route>
 
               {/* FL-Admin super admin routes */}
