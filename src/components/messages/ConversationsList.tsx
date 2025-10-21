@@ -18,9 +18,13 @@ export const ConversationsList = ({
 }: ConversationsListProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.contactName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations.filter((conv) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      conv.contactName.toLowerCase().includes(query) ||
+      conv.lastMessage.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className="flex flex-col h-full border-r bg-background">
