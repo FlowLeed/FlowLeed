@@ -41,13 +41,6 @@ export const ConversationsList = ({
         </div>
       </div>
 
-      {/* Direct Messages Section */}
-      <div className="px-4 py-2 border-b">
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Direct Messages
-        </h3>
-      </div>
-
       {/* Conversations List */}
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
