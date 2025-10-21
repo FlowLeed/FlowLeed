@@ -46,7 +46,7 @@ export const ConversationItem = ({
       </div>
 
       {conversation.unreadCount > 0 && (
-        <Badge variant="default" className="ml-auto flex-shrink-0 h-5 min-w-5 flex items-center justify-center rounded-full px-1.5">
+        <Badge className="ml-auto flex-shrink-0 h-5 min-w-5 flex items-center justify-center rounded-full px-1.5 bg-purple-500 text-white">
           {conversation.unreadCount}
         </Badge>
       )}
