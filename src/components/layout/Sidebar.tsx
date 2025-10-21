@@ -473,7 +473,7 @@ export const Sidebar = () => {
       <div className="h-screen w-80 flex flex-col">
         <Logo />
         <div className="flex-1 overflow-auto py-2 px-4 space-y-6">
-          <SidebarSection title="Pages" items={pageItems} />
+          <SidebarSection title="HUB" items={pageItems} />
           <SidebarSection title="Flows" items={flowItems} onSettingsClick={() => setShowFlowsManagement(true)} />
           <SidebarSection title="Settings" items={settingsItems} />
         </div>
