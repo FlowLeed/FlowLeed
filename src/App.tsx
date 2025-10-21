@@ -23,6 +23,7 @@ import InvitePage from "./pages/InvitePage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import ContactsPage from "./pages/ContactsPage";
 import MessagesPage from "./pages/MessagesPage";
+import CallsPage from "./pages/CallsPage";
 import CalendarPage from "./pages/CalendarPage";
 import TasksPage from "./pages/TasksPage";
 import SuperAdminAuthPage from "./pages/admin/SuperAdminAuthPage";
@@ -58,6 +59,7 @@ const App = () => (
                 <Route path="/integrations" element={<IntegrationsPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/messages" element={<MessagesPage />} />
+                <Route path="/calls" element={<CallsPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
               </Route>
