@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Conversation } from "@/types/messages";
 import { ConversationItem } from "./ConversationItem";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -23,8 +22,6 @@ export const ConversationsList = ({
     conv.contactName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalUnreadCount = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
-
   return (
     <div className="flex flex-col h-full border-r bg-background">
       {/* Search Bar */}
@@ -42,16 +39,9 @@ export const ConversationsList = ({
 
       {/* Direct Messages Section */}
       <div className="px-4 py-2 border-b">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Direct Messages
-          </h3>
-          {totalUnreadCount > 0 && (
-            <span className="text-xs font-semibold text-primary">
-              {totalUnreadCount} unread
-            </span>
-          )}
-        </div>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+          Direct Messages
+        </h3>
       </div>
 
       {/* Conversations List */}
