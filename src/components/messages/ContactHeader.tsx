@@ -8,12 +8,19 @@ interface ContactHeaderProps {
 }
 
 export const ContactHeader = ({ conversation }: ContactHeaderProps) => {
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="flex items-center justify-between p-4 border-b bg-background">
       <div className="flex items-center gap-3">
         <Avatar className="h-10 w-10">
-          <AvatarImage src={conversation.contactAvatar} alt={conversation.contactName} />
-          <AvatarFallback>{conversation.contactName[0]}</AvatarFallback>
+          <AvatarFallback>{getInitials(conversation.contactName)}</AvatarFallback>
         </Avatar>
         <div>
           <h2 className="font-semibold text-lg">{conversation.contactName}</h2>

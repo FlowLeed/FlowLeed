@@ -16,6 +16,14 @@ export const ConversationItem = ({
   onClick,
 }: ConversationItemProps) => {
   const timeAgo = formatDistanceToNow(conversation.lastMessageTime, { addSuffix: true });
+  
+  const getInitials = (name: string) => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
 
   return (
     <div
@@ -26,8 +34,7 @@ export const ConversationItem = ({
       )}
     >
       <Avatar className="h-10 w-10 flex-shrink-0">
-        <AvatarImage src={conversation.contactAvatar} alt={conversation.contactName} />
-        <AvatarFallback>{conversation.contactName[0]}</AvatarFallback>
+        <AvatarFallback>{getInitials(conversation.contactName)}</AvatarFallback>
       </Avatar>
       
       <div className="flex-1 min-w-0">
@@ -39,7 +46,7 @@ export const ConversationItem = ({
       </div>
 
       {conversation.unreadCount > 0 && (
-        <Badge className="bg-primary text-primary-foreground ml-auto flex-shrink-0">
+        <Badge variant="default" className="ml-auto flex-shrink-0 h-5 min-w-5 flex items-center justify-center rounded-full px-1.5">
           {conversation.unreadCount}
         </Badge>
       )}
