@@ -57,14 +57,6 @@ export const ConversationsList = ({
           ))}
         </div>
       </ScrollArea>
-
-      {/* Channels Section (Placeholder) */}
-      <div className="px-4 py-3 border-t">
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Channels
-        </h3>
-        <p className="text-xs text-muted-foreground mt-1">Coming soon...</p>
-      </div>
     </div>
   );
 };
