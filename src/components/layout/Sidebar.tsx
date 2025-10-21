@@ -42,9 +42,9 @@ const NavItem = ({
   item: SidebarItem;
   isActive: boolean;
 }) => {
-  return <Link to={item.path} className={`flex items-center px-8 py-2.5 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}>
-      <item.icon className={`mr-3 h-5 w-5 ${isActive ? "text-white" : "text-purple-500"}`} />
-      <span className="font-extralight">{item.title}</span>
+  return <Link to={item.path} className={`flex items-center px-8 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}>
+      <item.icon className={`mr-3 h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-purple-500"}`} />
+      <span className="font-extralight truncate">{item.title}</span>
       {item.badge != null && item.badge > 0 && <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${isActive ? "bg-white text-purple-500" : "bg-purple-500 text-white"}`}>
           {item.badge}
         </span>}
