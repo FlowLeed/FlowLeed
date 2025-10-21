@@ -24,7 +24,7 @@ const MessagesPage = () => {
   return (
     <div className="flex h-[calc(100vh-4rem)]">
       {/* Conversations List - Left Panel */}
-      <div className="w-96 flex-shrink-0">
+      <div className="w-72 flex-shrink-0">
         <ConversationsList
           conversations={conversations}
           selectedConversationId={selectedConversationId}
