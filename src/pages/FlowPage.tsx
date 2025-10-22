@@ -43,37 +43,15 @@ const FlowPage = () => {
     }
   }, [error, navigate, loading, flows]);
 
-  // Show loading spinner while flows are being fetched
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading flow...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Find the flow by its actual ID
+  // Compute current flow and counts BEFORE any early returns to keep hooks order stable
   const currentFlow = flowId ? Object.values(flows).find(f => f.id === flowId) : null;
-
-  const handleFlowChange = (updatedFlow: Flow) => {
-    if (flowId) {
-      updateFlow(flowId, updatedFlow);
-    }
-  };
-
-  if (!currentFlow) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <p>Flow not found</p>
-      </div>
-    );
-  }
 
   // Get contact counts for filters
   const contactCounts = React.useMemo(() => {
+    if (!currentFlow) {
+      return { all: 0, unassigned: 0, byMember: {} as Record<string, number> };
+    }
+
     const counts: Record<string, number> = {
       all: Object.values(currentFlow.stages).reduce(
         (acc, stage) => acc + stage.contacts.length,
@@ -103,6 +81,32 @@ const FlowPage = () => {
       byMember: counts,
     };
   }, [currentFlow, teamMembers]);
+
+  const handleFlowChange = (updatedFlow: Flow) => {
+    if (flowId) {
+      updateFlow(flowId, updatedFlow);
+    }
+  };
+
+  // Show loading spinner while flows are being fetched
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading flow...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentFlow) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Flow not found</p>
+      </div>
+    );
+  }
 
   const FlowIcon = currentFlow.icon ? iconMap[currentFlow.icon] : null;
 
