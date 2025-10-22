@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Header } from "@/components/layout/Header";
 import { ConversationsList } from "@/components/messages/ConversationsList";
 import { MessageThread } from "@/components/messages/MessageThread";
 import { getConversations, getMessages, getConversation } from "@/data/mockMessages";
@@ -22,9 +23,15 @@ const MessagesPage = () => {
   };
 
   return (
-    <div className="flex h-full">
-      {/* Conversations List - Left Panel */}
-      <div className="w-72 flex-shrink-0">
+    <div className="flex flex-col h-full">
+      <Header 
+        title="Messages" 
+        showFlowIcon={false}
+        showAddButton={false}
+      />
+      <div className="flex flex-1 overflow-auto">
+        {/* Conversations List - Left Panel */}
+        <div className="w-72 flex-shrink-0">
         <ConversationsList
           conversations={conversations}
           selectedConversationId={selectedConversationId}
@@ -47,6 +54,7 @@ const MessagesPage = () => {
             <p className="text-sm mt-2">Choose from your direct messages on the left</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

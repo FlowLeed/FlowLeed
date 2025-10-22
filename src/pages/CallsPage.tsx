@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Header } from "@/components/layout/Header";
 import { CallsList } from "@/components/calls/CallsList";
 import { CallDetails } from "@/components/calls/CallDetails";
 import { getCalls, getCallById } from "@/data/mockCalls";
@@ -11,9 +12,15 @@ const CallsPage = () => {
   const selectedCall = selectedCallId ? getCallById(selectedCallId) : null;
 
   return (
-    <div className="flex h-full">
-      {/* Calls List - Left Panel */}
-      <div className="w-72 flex-shrink-0">
+    <div className="flex flex-col h-full">
+      <Header 
+        title="Calls" 
+        showFlowIcon={false}
+        showAddButton={false}
+      />
+      <div className="flex flex-1 overflow-auto">
+        {/* Calls List - Left Panel */}
+        <div className="w-72 flex-shrink-0">
         <CallsList
           calls={calls}
           selectedCallId={selectedCallId}
@@ -32,6 +39,7 @@ const CallsPage = () => {
             <p className="text-sm mt-2">Choose from your call history on the left</p>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
