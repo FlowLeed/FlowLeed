@@ -16,11 +16,9 @@ export const BaseSidebar: React.FC<BaseSidebarProps> = ({
   children,
 }) => {
   return (
-    <div className={`${width} bg-sidebar border-r border-border flex flex-col h-screen sticky top-0 flex-shrink-0`}>
+    <div className={`${width} bg-sidebar border-r border-border flex flex-col`}>
       {/* Logo Section */}
-      <div className="flex-shrink-0">
-        {logo}
-      </div>
+      {logo}
 
       {/* Navigation Sections */}
       <div className="flex-1 px-4 space-y-6 overflow-y-auto">

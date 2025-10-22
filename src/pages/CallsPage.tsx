@@ -3,7 +3,6 @@ import { CallsList } from "@/components/calls/CallsList";
 import { CallDetails } from "@/components/calls/CallDetails";
 import { getCalls, getCallById } from "@/data/mockCalls";
 import { Phone } from "lucide-react";
-import { BaseHeader } from "@/components/layout/header";
 
 const CallsPage = () => {
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null);
@@ -12,15 +11,9 @@ const CallsPage = () => {
   const selectedCall = selectedCallId ? getCallById(selectedCallId) : null;
 
   return (
-    <div className="flex flex-col h-full">
-      <BaseHeader 
-        title="Calls" 
-        icon={Phone}
-      />
-      
-      <div className="flex flex-1 overflow-hidden">
-        {/* Calls List - Left Panel */}
-        <div className="w-72 flex-shrink-0">
+    <div className="flex h-full">
+      {/* Calls List - Left Panel */}
+      <div className="w-72 flex-shrink-0">
         <CallsList
           calls={calls}
           selectedCallId={selectedCallId}
@@ -28,18 +21,17 @@ const CallsPage = () => {
         />
       </div>
 
-        {/* Call Details - Right Panel */}
-        <div className="flex-1">
-          {selectedCall ? (
-            <CallDetails call={selectedCall} />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-              <Phone className="h-16 w-16 mb-4 opacity-50" />
-              <p className="text-lg font-medium">Select a call to view details</p>
-              <p className="text-sm mt-2">Choose from your call history on the left</p>
-            </div>
-          )}
-        </div>
+      {/* Call Details - Right Panel */}
+      <div className="flex-1">
+        {selectedCall ? (
+          <CallDetails call={selectedCall} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+            <Phone className="h-16 w-16 mb-4 opacity-50" />
+            <p className="text-lg font-medium">Select a call to view details</p>
+            <p className="text-sm mt-2">Choose from your call history on the left</p>
+          </div>
+        )}
       </div>
     </div>
   );

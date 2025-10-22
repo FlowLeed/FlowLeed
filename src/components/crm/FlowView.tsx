@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
 import { FlowTableView } from "./FlowTableView";
 import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
+import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,33 +24,30 @@ interface TeamMember {
 interface FlowViewProps {
   flow: Flow;
   onFlowChange?: (flow: Flow) => void;
-  viewMode: 'kanban' | 'table';
-  isSelectMode: boolean;
-  setIsSelectMode: (value: boolean) => void;
-  selectedFilter: string | null;
-  isSettingsOpen: boolean;
-  setIsSettingsOpen: (value: boolean) => void;
-  isAddContactOpen: boolean;
-  setIsAddContactOpen: (value: boolean) => void;
 }
 
 export const FlowView: React.FC<FlowViewProps> = ({ 
   flow, 
-  onFlowChange,
-  viewMode,
-  isSelectMode,
-  setIsSelectMode,
-  selectedFilter,
-  isSettingsOpen,
-  setIsSettingsOpen,
-  isAddContactOpen,
-  setIsAddContactOpen
+  onFlowChange 
 }) => {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
+    const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
+    return (saved === 'table' || saved === 'kanban') ? saved : 'kanban';
+  });
+  const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+
+  // Save view mode preference
+  useEffect(() => {
+    localStorage.setItem(`flow-view-mode-${flow.id}`, viewMode);
+  }, [viewMode, flow.id]);
   
   // Use flow team members instead of organization members
   const { teamMembers: flowTeamMembers, loading: teamMembersLoading } = useFlowTeamMembers(flow.id);
@@ -111,12 +109,12 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const handleAddContact = (stageId: string) => {
     setCurrentContact(null);
     setCurrentStageId(stageId);
-    setIsAddContactOpen(true);
+    setIsFormOpen(true);
   };
 
   const handleEditContact = (contact: Contact) => {
     setCurrentContact(contact);
-    setIsAddContactOpen(true);
+    setIsFormOpen(true);
   };
 
   const handleDeleteContact = async (contactId: string, stageId: string) => {
@@ -294,7 +292,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
         window.location.reload();
       }
       
-      setIsAddContactOpen(false);
+      setIsFormOpen(false);
     } catch (error) {
       console.error("Error saving contact:", error);
       toast.error(`Failed to save contact: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -448,7 +446,26 @@ export const FlowView: React.FC<FlowViewProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex-1 overflow-auto p-6">
+      <Header 
+        title={flow.name}
+        showFlowIcon={true}
+        onAddClick={() => {
+          setCurrentStageId(flow.stages[0].id);
+          setCurrentContact(null);
+          setIsFormOpen(true);
+        }}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+        teamMembers={teamMembers}
+        selectedFilter={selectedFilter}
+        onFilterChange={setSelectedFilter}
+        contactCounts={contactCounts}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        isSelectMode={isSelectMode}
+        onToggleSelectMode={handleToggleSelectMode}
+        onSelectAll={handleSelectAll}
+      />
+      <div className="flex-1 overflow-x-auto p-6">
         {viewMode === 'kanban' ? (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4">
@@ -498,10 +515,10 @@ export const FlowView: React.FC<FlowViewProps> = ({
           isLoading={bulkLoading}
         />
       )}
-      {isAddContactOpen && (
+      {isFormOpen && (
         <ContactFormDialog
-          open={isAddContactOpen}
-          onOpenChange={setIsAddContactOpen}
+          open={isFormOpen}
+          onOpenChange={setIsFormOpen}
           contact={currentContact}
           onSave={handleSaveContact}
           flowId={flow.id}

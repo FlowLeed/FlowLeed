@@ -1,37 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { FlowView } from "@/components/crm/FlowView";
 import { Flow } from "@/types/crm";
 import { useFlowContext } from "@/contexts/FlowContext";
-import { Loader2, Settings2, UserPlus, LayoutGrid, Table2, SquareCheck, CheckSquare } from "lucide-react";
-import { BaseHeader } from "@/components/layout/header";
-import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
-import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { iconMap } from "@/lib/flowIcons";
+import { Loader2 } from "lucide-react";
 
 const FlowPage = () => {
   const { flowId } = useParams<{ flowId: string }>();
   const navigate = useNavigate();
   const { flows, updateFlow, loading, error } = useFlowContext();
-  
-  // Must call hooks before any conditional returns
-  const { teamMembers } = useFlowTeamMembers(flowId);
-
-  // Header state
-  const [viewMode, setViewMode] = useState<"kanban" | "table">(() => {
-    const saved = localStorage.getItem("flowViewMode");
-    return (saved as "kanban" | "table") || "kanban";
-  });
-  const [isSelectMode, setIsSelectMode] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isAddContactOpen, setIsAddContactOpen] = useState(false);
-
-  useEffect(() => {
-    localStorage.setItem("flowViewMode", viewMode);
-  }, [viewMode]);
 
   // Redirect to dashboard if there's an organization error or no flows available
   useEffect(() => {
@@ -42,51 +19,6 @@ const FlowPage = () => {
       navigate("/");
     }
   }, [error, navigate, loading, flows]);
-
-  // Compute current flow and counts BEFORE any early returns to keep hooks order stable
-  const currentFlow = flowId ? Object.values(flows).find(f => f.id === flowId) : null;
-
-  // Get contact counts for filters
-  const contactCounts = React.useMemo(() => {
-    if (!currentFlow) {
-      return { all: 0, unassigned: 0, byMember: {} as Record<string, number> };
-    }
-
-    const counts: Record<string, number> = {
-      all: Object.values(currentFlow.stages).reduce(
-        (acc, stage) => acc + stage.contacts.length,
-        0
-      ),
-      unassigned: 0,
-    };
-
-    Object.values(currentFlow.stages).forEach((stage) => {
-      stage.contacts.forEach((contact) => {
-        if (!contact.assignedTo) {
-          counts.unassigned++;
-        } else {
-          const teamMember = teamMembers.find(
-            (m) => m.full_name === contact.assignedTo?.name || m.email === contact.assignedTo?.name
-          );
-          if (teamMember) {
-            counts[teamMember.user_id] = (counts[teamMember.user_id] || 0) + 1;
-          }
-        }
-      });
-    });
-
-    return {
-      all: counts.all,
-      unassigned: counts.unassigned,
-      byMember: counts,
-    };
-  }, [currentFlow, teamMembers]);
-
-  const handleFlowChange = (updatedFlow: Flow) => {
-    if (flowId) {
-      updateFlow(flowId, updatedFlow);
-    }
-  };
 
   // Show loading spinner while flows are being fetched
   if (loading) {
@@ -100,6 +32,15 @@ const FlowPage = () => {
     );
   }
 
+  // Find the flow by its actual ID
+  const currentFlow = flowId ? Object.values(flows).find(f => f.id === flowId) : null;
+
+  const handleFlowChange = (updatedFlow: Flow) => {
+    if (flowId) {
+      updateFlow(flowId, updatedFlow);
+    }
+  };
+
   if (!currentFlow) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -108,93 +49,7 @@ const FlowPage = () => {
     );
   }
 
-  const FlowIcon = currentFlow.icon ? iconMap[currentFlow.icon] : null;
-
-  return (
-    <div className="flex flex-col h-full">
-      <BaseHeader
-        title={currentFlow.name}
-        icon={FlowIcon || undefined}
-        position="fixed"
-        centerContent={
-          <div className="flex items-center gap-4">
-            <FlowHeaderFilters
-              teamMembers={teamMembers.map((m) => ({
-                id: m.user_id,
-                name: m.full_name || m.email,
-                email: m.email,
-                avatar: m.avatar_url || undefined,
-              }))}
-              selectedFilter={selectedFilter}
-              onFilterChange={setSelectedFilter}
-              contactCounts={contactCounts}
-            />
-            <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-1">
-              <Button
-                variant={viewMode === "kanban" ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("kanban")}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "table" ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("table")}
-              >
-                <Table2 className="h-4 w-4" />
-              </Button>
-            </div>
-            <Separator orientation="vertical" className="h-6" />
-            <Button
-              variant={isSelectMode ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setIsSelectMode(!isSelectMode)}
-            >
-              {isSelectMode ? (
-                <CheckSquare className="h-4 w-4" />
-              ) : (
-                <SquareCheck className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        }
-        customActions={
-          <>
-            <Button
-              onClick={() => setIsAddContactOpen(true)}
-              size="sm"
-            >
-              <UserPlus className="h-4 w-4" />
-              New Person
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSettingsOpen(true)}
-            >
-              <Settings2 className="h-4 w-4" />
-            </Button>
-          </>
-        }
-      />
-      <div className="flex-1 overflow-hidden pt-16">
-        <FlowView 
-          flow={currentFlow} 
-          onFlowChange={handleFlowChange}
-          viewMode={viewMode}
-          isSelectMode={isSelectMode}
-          setIsSelectMode={setIsSelectMode}
-          selectedFilter={selectedFilter}
-          isSettingsOpen={isSettingsOpen}
-          setIsSettingsOpen={setIsSettingsOpen}
-          isAddContactOpen={isAddContactOpen}
-          setIsAddContactOpen={setIsAddContactOpen}
-        />
-      </div>
-    </div>
-  );
+  return <FlowView flow={currentFlow} onFlowChange={handleFlowChange} />;
 };
 
 export default FlowPage;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BaseHeader } from "@/components/layout/header";
+import { Header } from "@/components/layout/Header";
 import { DateRangeFilter } from "@/components/analytics/DateRangeFilter";
 import { OverviewSection } from "@/components/analytics/OverviewSection";
 import { FlowsSection } from "@/components/analytics/FlowsSection";
@@ -12,9 +12,11 @@ const AnalyticsPage = () => {
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
   const dateRange = preset === "custom" && customRange ? customRange : getDateRangeFromPreset(preset);
   return <div className="flex flex-col h-full">
-      <BaseHeader 
+      <Header 
         title="Analytics" 
         description="Track performance, analyze trends, and optimize your flows"
+        showFlowIcon={false}
+        showAddButton={false}
       />
 
       <div className="flex-1 overflow-auto p-6">

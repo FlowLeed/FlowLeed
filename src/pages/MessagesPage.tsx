@@ -3,7 +3,6 @@ import { ConversationsList } from "@/components/messages/ConversationsList";
 import { MessageThread } from "@/components/messages/MessageThread";
 import { getConversations, getMessages, getConversation } from "@/data/mockMessages";
 import { MessageSquare } from "lucide-react";
-import { BaseHeader } from "@/components/layout/header";
 
 const MessagesPage = () => {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -23,15 +22,9 @@ const MessagesPage = () => {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <BaseHeader
-        title="Messages"
-        icon={MessageSquare}
-      />
-      
-      <div className="flex flex-1">
-        {/* Conversations List - Left Panel */}
-        <div className="w-72 flex-shrink-0">
+    <div className="flex h-full">
+      {/* Conversations List - Left Panel */}
+      <div className="w-72 flex-shrink-0">
         <ConversationsList
           conversations={conversations}
           selectedConversationId={selectedConversationId}
@@ -54,7 +47,6 @@ const MessagesPage = () => {
             <p className="text-sm mt-2">Choose from your direct messages on the left</p>
           </div>
         )}
-        </div>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { BaseHeader } from "@/components/layout/header";
+import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -262,10 +262,11 @@ const IntegrationsPage = () => {
     return <Badge variant="outline">Not Connected</Badge>;
   };
   return <div className="flex flex-col h-full">
-      <BaseHeader 
+      <Header 
         title="Integrations" 
         description="Connect and manage your external tools and services"
-        icon={Database}
+        showFlowIcon={false}
+        showAddButton={false}
       />
 
       <div className="flex-1 overflow-auto p-6 max-w-6xl mx-auto space-y-6 pb-12">
