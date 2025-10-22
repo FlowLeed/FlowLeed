@@ -16,6 +16,9 @@ const FlowPage = () => {
   const navigate = useNavigate();
   const { flows, updateFlow, loading, error } = useFlowContext();
   
+  // Must call hooks before any conditional returns
+  const { teamMembers } = useFlowTeamMembers(flowId);
+
   // Header state
   const [viewMode, setViewMode] = useState<"kanban" | "table">(() => {
     const saved = localStorage.getItem("flowViewMode");
@@ -54,8 +57,6 @@ const FlowPage = () => {
 
   // Find the flow by its actual ID
   const currentFlow = flowId ? Object.values(flows).find(f => f.id === flowId) : null;
-  
-  const { teamMembers } = useFlowTeamMembers(flowId);
 
   const handleFlowChange = (updatedFlow: Flow) => {
     if (flowId) {
