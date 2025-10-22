@@ -1335,10 +1335,7 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_health_score_v2: {
-        Args: { org_id: string }
-        Returns: Json
-      }
+      calculate_health_score_v2: { Args: { org_id: string }; Returns: Json }
       calculate_organization_health_score: {
         Args: { org_id: string }
         Returns: number
@@ -1352,7 +1349,7 @@ export type Database = {
         Returns: string
       }
       get_organizations_health_data: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           active_users: number
           admin_email: string
@@ -1378,10 +1375,7 @@ export type Database = {
         Args: { _organization_id: string; _user_id: string }
         Returns: string
       }
-      get_user_system_role: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_user_system_role: { Args: { _user_id: string }; Returns: string }
       increment_ai_stat: {
         Args: { org_id: string; stat_column: string }
         Returns: undefined
@@ -1390,10 +1384,7 @@ export type Database = {
         Args: { _pipeline_id: string; _user_id: string }
         Returns: boolean
       }
-      is_system_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_system_admin: { Args: { _user_id: string }; Returns: boolean }
       is_user_in_organization: {
         Args: { _organization_id: string; _user_id: string }
         Returns: boolean
