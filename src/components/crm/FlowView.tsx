@@ -1,15 +1,10 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
 import { FlowTableView } from "./FlowTableView";
 import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
-import { BaseHeader } from "../layout/header";
-import { FlowHeaderFilters } from "./FlowHeaderFilters";
-import { Button } from "@/components/ui/button";
-import { Settings2, LayoutGrid, Table2, SquareCheck, CheckSquare } from "lucide-react";
-import { iconMap } from "@/lib/flowIcons";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,30 +23,33 @@ interface TeamMember {
 interface FlowViewProps {
   flow: Flow;
   onFlowChange?: (flow: Flow) => void;
+  viewMode: 'kanban' | 'table';
+  isSelectMode: boolean;
+  setIsSelectMode: (value: boolean) => void;
+  selectedFilter: string | null;
+  isSettingsOpen: boolean;
+  setIsSettingsOpen: (value: boolean) => void;
+  isAddContactOpen: boolean;
+  setIsAddContactOpen: (value: boolean) => void;
 }
 
 export const FlowView: React.FC<FlowViewProps> = ({ 
   flow, 
-  onFlowChange 
+  onFlowChange,
+  viewMode,
+  isSelectMode,
+  setIsSelectMode,
+  selectedFilter,
+  isSettingsOpen,
+  setIsSettingsOpen,
+  isAddContactOpen,
+  setIsAddContactOpen
 }) => {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
-    const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
-    return (saved === 'table' || saved === 'kanban') ? saved : 'kanban';
-  });
-  const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const { organization } = useProfile();
   const queryClient = useQueryClient();
-
-  // Save view mode preference
-  useEffect(() => {
-    localStorage.setItem(`flow-view-mode-${flow.id}`, viewMode);
-  }, [viewMode, flow.id]);
   
   // Use flow team members instead of organization members
   const { teamMembers: flowTeamMembers, loading: teamMembersLoading } = useFlowTeamMembers(flow.id);
@@ -113,12 +111,12 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const handleAddContact = (stageId: string) => {
     setCurrentContact(null);
     setCurrentStageId(stageId);
-    setIsFormOpen(true);
+    setIsAddContactOpen(true);
   };
 
   const handleEditContact = (contact: Contact) => {
     setCurrentContact(contact);
-    setIsFormOpen(true);
+    setIsAddContactOpen(true);
   };
 
   const handleDeleteContact = async (contactId: string, stageId: string) => {
@@ -296,7 +294,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
         window.location.reload();
       }
       
-      setIsFormOpen(false);
+      setIsAddContactOpen(false);
     } catch (error) {
       console.error("Error saving contact:", error);
       toast.error(`Failed to save contact: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -448,90 +446,9 @@ export const FlowView: React.FC<FlowViewProps> = ({
     }
   };
 
-  // Get flow icon
-  const FlowIcon = flow.icon && iconMap[flow.icon] ? iconMap[flow.icon] : undefined;
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <BaseHeader 
-        title={flow.name}
-        icon={FlowIcon}
-        centerContent={
-          <div className="flex items-center gap-4">
-            <FlowHeaderFilters
-              teamMembers={teamMembers}
-              selectedFilter={selectedFilter}
-              onFilterChange={setSelectedFilter}
-              contactCounts={contactCounts}
-            />
-            <div className="flex items-center gap-1 border rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('kanban')}
-                className={`p-1.5 rounded transition-colors ${
-                  viewMode === 'kanban' 
-                    ? 'bg-accent text-accent-foreground' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                aria-label="Kanban view"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`p-1.5 rounded transition-colors ${
-                  viewMode === 'table' 
-                    ? 'bg-accent text-accent-foreground' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                aria-label="Table view"
-              >
-                <Table2 className="h-4 w-4" />
-              </button>
-            </div>
-            <button
-              onClick={handleToggleSelectMode}
-              className={`p-1.5 rounded-lg transition-colors ${
-                isSelectMode 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'text-muted-foreground hover:bg-accent'
-              }`}
-              aria-label="Toggle select mode"
-            >
-              {isSelectMode ? <CheckSquare className="h-4 w-4" /> : <SquareCheck className="h-4 w-4" />}
-            </button>
-            {isSelectMode && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-              >
-                Select All
-              </Button>
-            )}
-          </div>
-        }
-        customActions={
-          <>
-            <Button
-              onClick={() => {
-                setCurrentStageId(flow.stages[0].id);
-                setCurrentContact(null);
-                setIsFormOpen(true);
-              }}
-            >
-              New Person
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSettingsOpen(true)}
-            >
-              <Settings2 className="h-4 w-4" />
-            </Button>
-          </>
-        }
-      />
-      <div className="flex-1 overflow-x-auto p-6">
+      <div className="flex-1 overflow-auto p-6">
         {viewMode === 'kanban' ? (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4">
@@ -581,10 +498,10 @@ export const FlowView: React.FC<FlowViewProps> = ({
           isLoading={bulkLoading}
         />
       )}
-      {isFormOpen && (
+      {isAddContactOpen && (
         <ContactFormDialog
-          open={isFormOpen}
-          onOpenChange={setIsFormOpen}
+          open={isAddContactOpen}
+          onOpenChange={setIsAddContactOpen}
           contact={currentContact}
           onSave={handleSaveContact}
           flowId={flow.id}
