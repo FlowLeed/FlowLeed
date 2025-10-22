@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Header } from "@/components/layout/Header";
+import { BaseHeader } from "@/components/layout/header";
 import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { ContactFilters } from "@/components/contacts/ContactFilters";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
@@ -56,11 +56,9 @@ const ContactsPage = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <Header 
+      <BaseHeader 
         title="People"
-        showFlowIcon={false}
-        showAddButton={false}
-        rightContent={
+        customActions={
           <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Person

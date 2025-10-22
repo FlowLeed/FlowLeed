@@ -1,5 +1,5 @@
 import React from "react";
-import { Header } from "@/components/layout/Header";
+import { BaseHeader } from "@/components/layout/header";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
@@ -34,11 +34,12 @@ const Dashboard = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
+      <BaseHeader 
+        title={`Welcome back, ${profile?.full_name || "there"}!`}
+        description={currentDate}
+      />
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Date */}
-          <p className="text-sm text-muted-foreground">{currentDate}</p>
 
           {/* Personal Metrics */}
           <PersonalMetrics

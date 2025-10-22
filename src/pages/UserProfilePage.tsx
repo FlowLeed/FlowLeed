@@ -10,7 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus, Tags } from "lucide-react";
+import { Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus, Tags } from "lucide-react";
+import { BaseHeader } from "@/components/layout/header";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -560,15 +561,13 @@ const UserProfilePage = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
+      <BaseHeader
+        title={contact?.name || "Loading..."}
+        icon={User}
+      />
       <div className="flex-1 overflow-auto w-full p-6 space-y-6">
         {/* Enhanced Header */}
         <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </div>
         
         <Card>
           <CardContent className="p-6">

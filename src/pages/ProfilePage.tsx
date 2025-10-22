@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Bell, Shield, Palette, Globe, Mail, Phone, MapPin, Upload, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Header } from "@/components/layout/Header";
+import { BaseHeader } from "@/components/layout/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -193,13 +193,9 @@ const ProfilePage = () => {
   };
   if (loading) {
     return <div className="flex flex-col h-screen overflow-hidden">
-        <Header 
+        <BaseHeader 
           title="My Profile" 
           description={`${organization?.name || ''} • Manage your account settings and preferences`}
-          showBackButton={true}
-          onBackClick={() => navigate(-1)}
-          showFlowIcon={false}
-          showAddButton={false}
         />
         <div className="flex-1 overflow-auto p-6">
           <div className="flex items-center justify-center h-64">
@@ -209,13 +205,9 @@ const ProfilePage = () => {
       </div>;
   }
   return <div className="flex flex-col h-screen overflow-hidden">
-      <Header 
+      <BaseHeader 
         title="My Profile" 
         description={`${organization?.name || ''} • Manage your account settings and preferences`}
-        showBackButton={true}
-        onBackClick={() => navigate(-1)}
-        showFlowIcon={false}
-        showAddButton={false}
       />
 
       <div className="flex-1 overflow-auto p-6 space-y-6 pb-12">

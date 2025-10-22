@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Header } from "@/components/layout/Header";
+import { BaseHeader } from "@/components/layout/header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -326,7 +326,7 @@ const TeamPage = () => {
       </div>;
   }
   return <div className="flex flex-col h-full">
-      <Header title="My Organization" showFlowIcon={false} showAddButton={false} />
+      <BaseHeader title="My Organization" />
       
       <div className="flex-1 overflow-auto p-6">
         <Tabs defaultValue="settings" className="w-full">
