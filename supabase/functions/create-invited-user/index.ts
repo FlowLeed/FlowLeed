@@ -70,7 +70,9 @@ serve(async (req) => {
       password,
       email_confirm: true, // Skip email confirmation
       user_metadata: {
-        full_name: fullName || email.split('@')[0]
+        full_name: fullName || email.split('@')[0],
+        skip_org_creation: true, // Signal to not create org for invited users
+        invited_to_org: invitation.organization_id // Reference to the org they're joining
       }
     });
 
