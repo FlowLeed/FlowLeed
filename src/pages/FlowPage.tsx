@@ -115,6 +115,7 @@ const FlowPage = () => {
       <BaseHeader
         title={currentFlow.name}
         icon={FlowIcon || undefined}
+        position="fixed"
         centerContent={
           <div className="flex items-center gap-4">
             <FlowHeaderFilters
@@ -178,7 +179,7 @@ const FlowPage = () => {
           </>
         }
       />
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden pt-16">
         <FlowView 
           flow={currentFlow} 
           onFlowChange={handleFlowChange}

@@ -16,6 +16,9 @@ export interface BaseHeaderProps {
   rightContent?: React.ReactNode; // Replaces default actions
   customActions?: React.ReactNode; // Adds to default actions
   
+  // Positioning behavior
+  position?: 'sticky' | 'fixed';
+  
   // Always show these (default: true)
   showNotifications?: boolean;
   showSearch?: boolean;

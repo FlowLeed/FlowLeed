@@ -14,10 +14,12 @@ export const BaseHeader = ({
   showNotifications = true,
   showSearch = true,
   showUserMenu = true,
+  position = 'sticky',
 }: BaseHeaderProps) => {
+  const positionClasses = position === 'fixed' ? 'fixed inset-x-0 top-0' : 'sticky top-0';
   return (
-    <div className="sticky top-0 z-50 w-screen border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center justify-between h-16 px-6">
+    <div className={`${positionClasses} z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}>
+      <div className="flex items-center justify-between h-16 px-6 w-full">
         <HeaderLeft
           title={title}
           description={description}
