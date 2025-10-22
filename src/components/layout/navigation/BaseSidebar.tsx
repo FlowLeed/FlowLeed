@@ -18,7 +18,9 @@ export const BaseSidebar: React.FC<BaseSidebarProps> = ({
   return (
     <div className={`${width} bg-sidebar border-r border-border flex flex-col h-screen sticky top-0 flex-shrink-0`}>
       {/* Logo Section */}
-      {logo}
+      <div className="flex-shrink-0">
+        {logo}
+      </div>
 
       {/* Navigation Sections */}
       <div className="flex-1 px-4 space-y-6 overflow-y-auto">
