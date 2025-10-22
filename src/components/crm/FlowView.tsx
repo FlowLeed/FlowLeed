@@ -5,7 +5,11 @@ import { FlowTableView } from "./FlowTableView";
 import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
-import { Header } from "../layout/Header";
+import { BaseHeader } from "../layout/header";
+import { FlowHeaderFilters } from "./FlowHeaderFilters";
+import { Button } from "@/components/ui/button";
+import { Settings2, LayoutGrid, Table2, SquareCheck, CheckSquare } from "lucide-react";
+import { iconMap } from "@/lib/flowIcons";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
@@ -444,26 +448,88 @@ export const FlowView: React.FC<FlowViewProps> = ({
     }
   };
 
+  // Get flow icon
+  const FlowIcon = flow.icon && iconMap[flow.icon] ? iconMap[flow.icon] : undefined;
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <Header 
+      <BaseHeader 
         title={flow.name}
-        showFlowIcon={true}
-        onAddClick={() => {
-          setCurrentStageId(flow.stages[0].id);
-          setCurrentContact(null);
-          setIsFormOpen(true);
-        }}
-        onSettingsClick={() => setIsSettingsOpen(true)}
-        teamMembers={teamMembers}
-        selectedFilter={selectedFilter}
-        onFilterChange={setSelectedFilter}
-        contactCounts={contactCounts}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        isSelectMode={isSelectMode}
-        onToggleSelectMode={handleToggleSelectMode}
-        onSelectAll={handleSelectAll}
+        icon={FlowIcon}
+        centerContent={
+          <div className="flex items-center gap-4">
+            <FlowHeaderFilters
+              teamMembers={teamMembers}
+              selectedFilter={selectedFilter}
+              onFilterChange={setSelectedFilter}
+              contactCounts={contactCounts}
+            />
+            <div className="flex items-center gap-1 border rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === 'kanban' 
+                    ? 'bg-accent text-accent-foreground' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-label="Kanban view"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded transition-colors ${
+                  viewMode === 'table' 
+                    ? 'bg-accent text-accent-foreground' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+                aria-label="Table view"
+              >
+                <Table2 className="h-4 w-4" />
+              </button>
+            </div>
+            <button
+              onClick={handleToggleSelectMode}
+              className={`p-1.5 rounded-lg transition-colors ${
+                isSelectMode 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'text-muted-foreground hover:bg-accent'
+              }`}
+              aria-label="Toggle select mode"
+            >
+              {isSelectMode ? <CheckSquare className="h-4 w-4" /> : <SquareCheck className="h-4 w-4" />}
+            </button>
+            {isSelectMode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+              >
+                Select All
+              </Button>
+            )}
+          </div>
+        }
+        customActions={
+          <>
+            <Button
+              onClick={() => {
+                setCurrentStageId(flow.stages[0].id);
+                setCurrentContact(null);
+                setIsFormOpen(true);
+              }}
+            >
+              New Person
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <Settings2 className="h-4 w-4" />
+            </Button>
+          </>
+        }
       />
       <div className="flex-1 overflow-x-auto p-6">
         {viewMode === 'kanban' ? (
