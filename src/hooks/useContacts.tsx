@@ -64,6 +64,7 @@ export const useContacts = (filters: ContactFilters) => {
           contact_tags(tag),
           pipeline_contacts(
             pipeline_id,
+            assigned_to_user_id,
             pipelines(id, name, icon)
           )
         `)
@@ -78,13 +79,10 @@ export const useContacts = (filters: ContactFilters) => {
       }
 
       // Apply assigned filter
-      if (filters.assignedToUserId !== "all") {
-        if (filters.assignedToUserId === "unassigned") {
-          query = query.is("assigned_to_user_id", null);
-        } else {
-          query = query.eq("assigned_to_user_id", filters.assignedToUserId);
-        }
+      if (filters.assignedToUserId === "unassigned") {
+        query = query.is("assigned_to_user_id", null);
       }
+      // Specific user filtering is applied client-side to include pipeline-level assignments
 
       const { data, error } = await query;
       
@@ -113,6 +111,13 @@ export const useContacts = (filters: ContactFilters) => {
             contact.pipeline_contacts?.some((pc: any) => pc.pipeline_id === filters.flowId)
           );
         }
+      }
+      // Apply assigned-to filter for a specific user (includes pipeline-level assignments)
+      if (filters.assignedToUserId !== "all" && filters.assignedToUserId !== "unassigned") {
+        filteredData = filteredData.filter((contact: any) =>
+          contact.assigned_to_user_id === filters.assignedToUserId ||
+          contact.pipeline_contacts?.some((pc: any) => pc.assigned_to_user_id === filters.assignedToUserId)
+        );
       }
 
       // Apply last interaction filter
