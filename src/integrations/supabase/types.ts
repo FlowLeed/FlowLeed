@@ -47,6 +47,110 @@ export type Database = {
         }
         Relationships: []
       }
+      call_records: {
+        Row: {
+          answered_at: string | null
+          call_type: string
+          contact_id: string
+          created_at: string
+          direction: string
+          duration: number | null
+          ended_at: string | null
+          error_code: string | null
+          error_message: string | null
+          from_number: string
+          id: string
+          initiated_by_user_id: string | null
+          metadata: Json | null
+          organization_id: string
+          recording_sid: string | null
+          recording_url: string | null
+          status: string
+          to_number: string
+          transcription: string | null
+          twilio_call_sid: string
+          twilio_phone_number_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          answered_at?: string | null
+          call_type: string
+          contact_id: string
+          created_at?: string
+          direction: string
+          duration?: number | null
+          ended_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          from_number: string
+          id?: string
+          initiated_by_user_id?: string | null
+          metadata?: Json | null
+          organization_id: string
+          recording_sid?: string | null
+          recording_url?: string | null
+          status?: string
+          to_number: string
+          transcription?: string | null
+          twilio_call_sid: string
+          twilio_phone_number_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          answered_at?: string | null
+          call_type?: string
+          contact_id?: string
+          created_at?: string
+          direction?: string
+          duration?: number | null
+          ended_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          from_number?: string
+          id?: string
+          initiated_by_user_id?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          recording_sid?: string | null
+          recording_url?: string | null
+          status?: string
+          to_number?: string
+          transcription?: string | null
+          twilio_call_sid?: string
+          twilio_phone_number_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_records_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_records_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_records_twilio_phone_number_id_fkey"
+            columns: ["twilio_phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "twilio_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_addresses: {
         Row: {
           address_type: string
@@ -1227,6 +1331,95 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_messages: {
+        Row: {
+          body: string
+          contact_id: string
+          created_at: string
+          direction: string
+          error_code: string | null
+          error_message: string | null
+          from_number: string
+          id: string
+          media_urls: Json | null
+          metadata: Json | null
+          organization_id: string
+          sent_by_user_id: string | null
+          status: string
+          to_number: string
+          twilio_message_sid: string
+          twilio_phone_number_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          contact_id: string
+          created_at?: string
+          direction: string
+          error_code?: string | null
+          error_message?: string | null
+          from_number: string
+          id?: string
+          media_urls?: Json | null
+          metadata?: Json | null
+          organization_id: string
+          sent_by_user_id?: string | null
+          status?: string
+          to_number: string
+          twilio_message_sid: string
+          twilio_phone_number_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          contact_id?: string
+          created_at?: string
+          direction?: string
+          error_code?: string | null
+          error_message?: string | null
+          from_number?: string
+          id?: string
+          media_urls?: Json | null
+          metadata?: Json | null
+          organization_id?: string
+          sent_by_user_id?: string | null
+          status?: string
+          to_number?: string
+          twilio_message_sid?: string
+          twilio_phone_number_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_messages_twilio_phone_number_id_fkey"
+            columns: ["twilio_phone_number_id"]
+            isOneToOne: false
+            referencedRelation: "twilio_phone_numbers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_user_roles: {
         Row: {
           granted_at: string | null
@@ -1253,6 +1446,69 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      twilio_phone_numbers: {
+        Row: {
+          assigned_to_user_id: string | null
+          capabilities: Json | null
+          created_at: string
+          friendly_name: string | null
+          id: string
+          is_primary: boolean | null
+          organization_id: string
+          phone_number: string
+          provisioned_at: string
+          released_at: string | null
+          sid: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          capabilities?: Json | null
+          created_at?: string
+          friendly_name?: string | null
+          id?: string
+          is_primary?: boolean | null
+          organization_id: string
+          phone_number: string
+          provisioned_at?: string
+          released_at?: string | null
+          sid: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          capabilities?: Json | null
+          created_at?: string
+          friendly_name?: string | null
+          id?: string
+          is_primary?: boolean | null
+          organization_id?: string
+          phone_number?: string
+          provisioned_at?: string
+          released_at?: string | null
+          sid?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "twilio_phone_numbers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "twilio_phone_numbers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_login_events: {
         Row: {

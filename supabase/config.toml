@@ -63,3 +63,27 @@ verify_jwt = false
 
 [functions.verify-email-token]
 verify_jwt = false
+
+[functions.twilio-provision-number]
+verify_jwt = true
+
+[functions.twilio-send-sms]
+verify_jwt = true
+
+[functions.twilio-initiate-call]
+verify_jwt = true
+
+[functions.twilio-webhook-sms]
+verify_jwt = false
+
+[functions.twilio-webhook-voice]
+verify_jwt = false
+
+[functions.twilio-webhook-status]
+verify_jwt = false
+
+[functions.twilio-release-number]
+verify_jwt = true
+
+[functions.twilio-assign-number]
+verify_jwt = true
