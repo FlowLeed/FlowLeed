@@ -163,7 +163,21 @@ const UserProfilePage = () => {
         .eq("contact_id", contactId)
         .order("created_at", { ascending: false });
 
-      // Combine interactions, notes, and prayer requests into a unified timeline
+      // Fetch call records (with contacts data)
+      const { data: callRecords } = await supabase
+        .from("call_records")
+        .select("*")
+        .eq("contact_id", contactId)
+        .order("created_at", { ascending: false });
+
+      // Fetch SMS messages
+      const { data: smsMessages } = await supabase
+        .from("sms_messages")
+        .select("*")
+        .eq("contact_id", contactId)
+        .order("created_at", { ascending: false });
+
+      // Combine interactions, notes, prayer requests, calls, and SMS into a unified timeline
       const allInteractions = [
         ...(interactions || []),
         ...(notes || []).map(note => ({
@@ -189,6 +203,42 @@ const UserProfilePage = () => {
           completed_at: prayer.answered_at || prayer.created_at,
           created_by_user_id: prayer.created_by_user_id,
           metadata: { status: prayer.status, answered_at: prayer.answered_at }
+        })),
+        ...(callRecords || []).map(call => ({
+          id: call.id,
+          contact_id: call.contact_id,
+          interaction_type: 'call',
+          subject: `${call.direction === 'inbound' ? 'Incoming' : 'Outgoing'} Call`,
+          details: call.status === 'completed' && call.duration 
+            ? `Duration: ${Math.floor(call.duration / 60)}m ${call.duration % 60}s`
+            : call.status,
+          created_at: call.created_at,
+          completed_at: call.ended_at || call.created_at,
+          created_by_user_id: call.initiated_by_user_id,
+          metadata: { 
+            direction: call.direction, 
+            status: call.status,
+            duration: call.duration,
+            from_number: call.from_number,
+            to_number: call.to_number,
+            recording_url: call.recording_url
+          }
+        })),
+        ...(smsMessages || []).map(sms => ({
+          id: sms.id,
+          contact_id: sms.contact_id,
+          interaction_type: 'sms',
+          subject: `${sms.direction === 'inbound' ? 'Incoming' : 'Outgoing'} SMS`,
+          details: sms.body,
+          created_at: sms.created_at,
+          completed_at: sms.created_at,
+          created_by_user_id: sms.sent_by_user_id,
+          metadata: { 
+            direction: sms.direction, 
+            status: sms.status,
+            from_number: sms.from_number,
+            to_number: sms.to_number
+          }
         }))
       ];
 

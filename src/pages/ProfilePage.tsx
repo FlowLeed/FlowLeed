@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -15,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
+import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
 const ProfilePage = () => {
   const navigate = useNavigate();
   const {
@@ -28,8 +30,11 @@ const ProfilePage = () => {
     organization,
     loading
   } = useProfile();
+  const { numbers: twilioNumbers } = useTwilioNumbers();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  
+  const myTwilioNumber = twilioNumbers.find(num => num.assigned_to_user_id === user?.id);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -273,6 +278,37 @@ const ProfilePage = () => {
               <Label htmlFor="email" className="font-light">Email Address</Label>
               <Input id="email" type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} />
             </div>
+
+            {/* Twilio Phone Number Section */}
+            {myTwilioNumber && (
+              <div className="p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">Assigned Phone Number</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-mono">{myTwilioNumber.phone_number}</span>
+                      {myTwilioNumber.friendly_name && (
+                        <Badge variant="secondary" className="text-xs">
+                          {myTwilioNumber.friendly_name}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This is your dedicated phone number for calls and SMS
+                    </p>
+                  </div>
+                  <div className="flex gap-1">
+                    {myTwilioNumber.capabilities.voice && (
+                      <Badge variant="outline" className="text-xs">Voice</Badge>
+                    )}
+                    {myTwilioNumber.capabilities.sms && (
+                      <Badge variant="outline" className="text-xs">SMS</Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

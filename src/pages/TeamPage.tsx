@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, X, Tag, Search, Pencil, Trash2, GitMerge } from "lucide-react";
+import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, X, Tag, Search, Pencil, Trash2, GitMerge, Phone } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InviteTeamMemberDialog } from "@/components/team/InviteTeamMemberDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +18,8 @@ import { useOrgTagManagement } from "@/hooks/useOrgTagManagement";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
+
 interface TeamMember {
   id: string;
   user_id: string;
@@ -27,6 +29,10 @@ interface TeamMember {
     full_name?: string;
     email: string;
     avatar_url?: string;
+  };
+  twilioNumber?: {
+    phone_number: string;
+    friendly_name: string | null;
   };
 }
 interface PendingInvitation {
@@ -64,6 +70,7 @@ const TeamPage = () => {
     deleteTag,
     mergeTags
   } = useOrgTagManagement(organization?.id);
+  const { numbers: twilioNumbers } = useTwilioNumbers();
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
@@ -105,6 +112,7 @@ const TeamPage = () => {
         if (profilesError) throw profilesError;
         const membersWithProfiles: TeamMember[] = memberData.map(member => {
           const memberProfile = profilesData?.find(profile => profile.user_id === member.user_id);
+          const assignedNumber = twilioNumbers.find(num => num.assigned_to_user_id === member.user_id);
           return {
             ...member,
             role: member.role as 'owner' | 'admin' | 'member',
@@ -112,7 +120,11 @@ const TeamPage = () => {
               email: 'Unknown',
               full_name: undefined,
               avatar_url: undefined
-            }
+            },
+            twilioNumber: assignedNumber ? {
+              phone_number: assignedNumber.phone_number,
+              friendly_name: assignedNumber.friendly_name
+            } : undefined
           };
         });
         setTeamMembers(membersWithProfiles);
@@ -426,6 +438,12 @@ const TeamPage = () => {
                           addSuffix: true
                         })}
                       </p>
+                      {member.twilioNumber && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <Phone className="h-3 w-3" />
+                          <span>{member.twilioNumber.phone_number}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
