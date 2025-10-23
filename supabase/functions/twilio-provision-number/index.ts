@@ -135,9 +135,10 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error:', error)
+    // Return 200 so the client can surface the precise error message (Supabase invoke treats non-2xx as transport errors)
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: false, error: (error as any)?.message || 'Unknown error' }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
