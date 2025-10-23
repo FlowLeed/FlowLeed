@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface TeamMember {
   id: string;
@@ -70,7 +71,7 @@ const TeamPage = () => {
     deleteTag,
     mergeTags
   } = useOrgTagManagement(organization?.id);
-  const { numbers: twilioNumbers } = useTwilioNumbers();
+  const { numbers: twilioNumbers, assignNumber } = useTwilioNumbers();
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
@@ -332,6 +333,28 @@ const TeamPage = () => {
       setMergeTargetTag("");
     }
   };
+
+  const handleAssignPhoneNumber = async (userId: string, phoneNumberId: string | null) => {
+    try {
+      await assignNumber.mutateAsync({
+        phoneNumberId: phoneNumberId || '',
+        userId: phoneNumberId ? userId : null,
+      });
+      fetchTeamData();
+    } catch (error) {
+      console.error('Error assigning phone number:', error);
+    }
+  };
+
+  // Get unassigned organization phone numbers
+  const unassignedNumbers = twilioNumbers.filter(
+    num => num.organization_id === organization?.id && !num.assigned_to_user_id
+  );
+
+  // Get organization phone numbers
+  const orgPhoneNumbers = twilioNumbers.filter(
+    num => num.organization_id === organization?.id
+  );
   if (loading) {
     return <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -438,7 +461,46 @@ const TeamPage = () => {
                           addSuffix: true
                         })}
                       </p>
-                      {member.twilioNumber && (
+                      {canManageMembers ? (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <Select
+                            value={member.twilioNumber?.phone_number || 'none'}
+                            onValueChange={(value) => {
+                              if (value === 'none') {
+                                const currentNumber = orgPhoneNumbers.find(
+                                  n => n.assigned_to_user_id === member.user_id
+                                );
+                                if (currentNumber) {
+                                  handleAssignPhoneNumber(member.user_id, null);
+                                }
+                              } else {
+                                const selectedNumber = orgPhoneNumbers.find(n => n.phone_number === value);
+                                if (selectedNumber) {
+                                  handleAssignPhoneNumber(member.user_id, selectedNumber.id);
+                                }
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-7 text-xs w-[180px]">
+                              <SelectValue placeholder="No phone assigned" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No phone assigned</SelectItem>
+                              {orgPhoneNumbers.map((num) => (
+                                <SelectItem 
+                                  key={num.id} 
+                                  value={num.phone_number}
+                                  disabled={num.assigned_to_user_id !== null && num.assigned_to_user_id !== member.user_id}
+                                >
+                                  {num.phone_number} {num.friendly_name ? `(${num.friendly_name})` : ''}
+                                  {num.assigned_to_user_id && num.assigned_to_user_id !== member.user_id && ' (Assigned)'}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : member.twilioNumber && (
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                           <Phone className="h-3 w-3" />
                           <span>{member.twilioNumber.phone_number}</span>
@@ -524,6 +586,39 @@ const TeamPage = () => {
               </div>
             </CardContent>
           </Card>}
+
+            {/* Unassigned Phone Numbers */}
+            {unassignedNumbers.length > 0 && canManageMembers && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Phone className="h-5 w-5" />
+                    Unassigned Phone Numbers ({unassignedNumbers.length})
+                  </CardTitle>
+                  <CardDescription>
+                    These phone numbers are available to assign to team members
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {unassignedNumbers.map((num) => (
+                      <div key={num.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-mono text-sm">{num.phone_number}</span>
+                          {num.friendly_name && (
+                            <span className="text-sm text-muted-foreground">
+                              ({num.friendly_name})
+                            </span>
+                          )}
+                        </div>
+                        <Badge variant="secondary">Available</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="tags" className="space-y-4 mt-6">

@@ -26,6 +26,7 @@ import MessagesPage from "./pages/MessagesPage";
 import CallsPage from "./pages/CallsPage";
 import CalendarPage from "./pages/CalendarPage";
 import TasksPage from "./pages/TasksPage";
+import OrganizationSettingsPage from "./pages/OrganizationSettingsPage";
 import SuperAdminAuthPage from "./pages/admin/SuperAdminAuthPage";
 import OrganizationsListPage from "./pages/admin/OrganizationsListPage";
 import OrganizationDetailPage from "./pages/admin/OrganizationDetailPage";
@@ -51,18 +52,19 @@ const App = () => (
               
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/flows/:flowId" element={<FlowPage />} />
-                <Route path="/contacts" element={<ContactsPage />} />
-                <Route path="/contacts/:contactId" element={<UserProfilePage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/team" element={<TeamPage />} />
-                <Route path="/integrations" element={<IntegrationsPage />} />
-                <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/messages" element={<MessagesPage />} />
-                <Route path="/calls" element={<CallsPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/flows/:flowId" element={<FlowPage />} />
+              <Route path="/contacts" element={<ContactsPage />} />
+              <Route path="/contacts/:contactId" element={<UserProfilePage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/team" element={<TeamPage />} />
+              <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/calls" element={<CallsPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/settings/organization" element={<OrganizationSettingsPage />} />
               </Route>
 
               {/* FL-Admin super admin routes */}

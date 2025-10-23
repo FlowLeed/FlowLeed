@@ -425,6 +425,10 @@ export const Sidebar = () => {
     title: "Tasks",
     icon: CheckSquare,
     path: "/tasks"
+  }, {
+    title: "Settings",
+    icon: Settings,
+    path: "/settings/organization"
   }];
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
