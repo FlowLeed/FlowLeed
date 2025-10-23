@@ -64,10 +64,9 @@ const ContactsPage = () => {
           <Button 
             variant="outline" 
             onClick={() => setShowAddDialog(true)}
-            className="gap-2"
+            size="icon"
           >
             <Plus className="h-5 w-5" />
-            Add Person
           </Button>
         }
       />
