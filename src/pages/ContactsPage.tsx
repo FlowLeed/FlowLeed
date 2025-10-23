@@ -61,8 +61,12 @@ const ContactsPage = () => {
         showFlowIcon={false}
         showAddButton={false}
         rightContent={
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button 
+            variant="outline" 
+            onClick={() => setShowAddDialog(true)}
+            className="gap-2"
+          >
+            <Plus className="h-5 w-5" />
             Add Person
           </Button>
         }
