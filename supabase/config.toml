@@ -87,3 +87,6 @@ verify_jwt = true
 
 [functions.twilio-assign-number]
 verify_jwt = true
+
+[functions.twilio-sync-numbers]
+verify_jwt = true

@@ -122,11 +122,31 @@ export const useTwilioNumbers = () => {
     },
   });
 
+  const syncNumbers = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke(
+        "twilio-sync-numbers"
+      );
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["twilio-numbers"] });
+      toast.success(data.message || "Numbers synced from Twilio");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to sync numbers: ${error.message}`);
+    },
+  });
+
   return {
     numbers,
     isLoading,
     provisionNumber,
     releaseNumber,
     assignNumber,
+    syncNumbers,
   };
 };

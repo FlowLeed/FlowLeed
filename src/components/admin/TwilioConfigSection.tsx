@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Plus, Trash2, UserCircle } from "lucide-react";
+import { Phone, Plus, RefreshCw, Trash2, UserCircle } from "lucide-react";
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
 import {
   Dialog,
@@ -26,7 +26,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 
 export const TwilioConfigSection = () => {
-  const { numbers, isLoading, provisionNumber, releaseNumber, assignNumber } =
+  const { numbers, isLoading, provisionNumber, releaseNumber, assignNumber, syncNumbers } =
     useTwilioNumbers();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [areaCode, setAreaCode] = useState("");
@@ -64,83 +64,93 @@ export const TwilioConfigSection = () => {
               Manage your organization's phone numbers for SMS and calls
             </CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Provision Number
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Provision New Phone Number</DialogTitle>
-                <DialogDescription>
-                  Search for and purchase a new Twilio phone number
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="organizationId">Organization ID</Label>
-                  <Input
-                    id="organizationId"
-                    placeholder="Enter organization UUID"
-                    value={organizationId}
-                    onChange={(e) => setOrganizationId(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Required for super admins - get from Organizations list
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="areaCode">Area Code</Label>
-                  <Input
-                    id="areaCode"
-                    placeholder="e.g., 415"
-                    value={areaCode}
-                    onChange={(e) =>
-                      setAreaCode(e.target.value.replace(/\D/g, "").slice(0, 3))
-                    }
-                    maxLength={3}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    3-digit area code for the phone number
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="friendlyName">Friendly Name (Optional)</Label>
-                  <Input
-                    id="friendlyName"
-                    placeholder="e.g., Main Office Line"
-                    value={friendlyName}
-                    onChange={(e) => setFriendlyName(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="isPrimary"
-                    checked={isPrimary}
-                    onCheckedChange={setIsPrimary}
-                  />
-                  <Label htmlFor="isPrimary">Set as primary number</Label>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  disabled={provisionNumber.isPending}
-                >
-                  Cancel
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => syncNumbers.mutate()}
+              disabled={syncNumbers.isPending}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              {syncNumbers.isPending ? "Syncing..." : "Sync from Twilio"}
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Provision Number
                 </Button>
-                <Button
-                  onClick={handleProvision}
-                  disabled={!organizationId || !areaCode || areaCode.length !== 3 || provisionNumber.isPending}
-                >
-                  {provisionNumber.isPending ? "Provisioning..." : "Provision"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Provision New Phone Number</DialogTitle>
+                  <DialogDescription>
+                    Search for and purchase a new Twilio phone number
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="organizationId">Organization ID</Label>
+                    <Input
+                      id="organizationId"
+                      placeholder="Enter organization UUID"
+                      value={organizationId}
+                      onChange={(e) => setOrganizationId(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Required for super admins - get from Organizations list
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="areaCode">Area Code</Label>
+                    <Input
+                      id="areaCode"
+                      placeholder="e.g., 415"
+                      value={areaCode}
+                      onChange={(e) =>
+                        setAreaCode(e.target.value.replace(/\D/g, "").slice(0, 3))
+                      }
+                      maxLength={3}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      3-digit area code for the phone number
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="friendlyName">Friendly Name (Optional)</Label>
+                    <Input
+                      id="friendlyName"
+                      placeholder="e.g., Main Office Line"
+                      value={friendlyName}
+                      onChange={(e) => setFriendlyName(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="isPrimary"
+                      checked={isPrimary}
+                      onCheckedChange={setIsPrimary}
+                    />
+                    <Label htmlFor="isPrimary">Set as primary number</Label>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                    disabled={provisionNumber.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleProvision}
+                    disabled={!organizationId || !areaCode || areaCode.length !== 3 || provisionNumber.isPending}
+                  >
+                    {provisionNumber.isPending ? "Provisioning..." : "Provision"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
