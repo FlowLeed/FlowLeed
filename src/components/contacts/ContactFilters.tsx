@@ -46,25 +46,50 @@ export const ContactFilters = ({
 
   // Fetch organization members
   const { data: members } = useQuery({
-    queryKey: ["org-members", user?.id],
+    queryKey: ["org-members-filter", user?.id],
     queryFn: async () => {
       if (!user) return [];
 
-      const { data: orgMember } = await supabase
+      // Get user's organization the same way useContacts does
+      let organizationId: string | null = null;
+      
+      const savedOrg = localStorage.getItem('active_organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          organizationId = orgData.id;
+        } catch (e) {
+          console.error('Error parsing saved organization:', e);
+        }
+      }
+      
+      if (!organizationId) {
+        const { data: orgMembers } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .limit(1);
+
+        if (!orgMembers || orgMembers.length === 0) return [];
+        organizationId = orgMembers[0].organization_id;
+      }
+
+      // Get all organization members with profiles
+      const { data: membersData } = await supabase
         .from("organization_members")
-        .select("organization_id")
-        .eq("user_id", user.id)
-        .single();
+        .select(`
+          user_id,
+          profiles!inner (
+            user_id,
+            full_name,
+            email,
+            avatar_url
+          )
+        `)
+        .eq("organization_id", organizationId);
 
-      if (!orgMember) return [];
-
-      const { data } = await supabase
-        .from("organization_members")
-        .select("user_id, profiles(user_id, full_name, email, avatar_url)")
-        .eq("organization_id", orgMember.organization_id);
-
-      // Filter out members without any identifying information
-      const validMembers = (data || []).filter((member: any) => 
+      // Filter valid members
+      const validMembers = (membersData || []).filter((member: any) => 
         member.profiles?.full_name || member.profiles?.email
       );
 
