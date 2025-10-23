@@ -31,6 +31,7 @@ import OrganizationsListPage from "./pages/admin/OrganizationsListPage";
 import OrganizationDetailPage from "./pages/admin/OrganizationDetailPage";
 import OnboardingFlowsPage from "./pages/admin/OnboardingFlowsPage";
 import OngoingSupportFlowsPage from "./pages/admin/OngoingSupportFlowsPage";
+import CommunicationsPage from "./pages/admin/CommunicationsPage";
 
 
 const queryClient = new QueryClient();
@@ -72,6 +73,7 @@ const App = () => (
                   <Route path="organizations/:id" element={<OrganizationDetailPage />} />
                   <Route path="flows/onboarding" element={<OnboardingFlowsPage />} />
                   <Route path="flows/ongoing-support" element={<OngoingSupportFlowsPage />} />
+                  <Route path="communications" element={<CommunicationsPage />} />
                 </Route>
               </Route>
 

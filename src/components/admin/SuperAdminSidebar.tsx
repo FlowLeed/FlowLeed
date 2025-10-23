@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Building2, Users, DollarSign, Settings, GitBranch, MessageCircle } from "lucide-react";
+import { Building2, Users, DollarSign, Settings, GitBranch, MessageCircle, Mail } from "lucide-react";
 import flowleedLogo from "@/assets/flowleed_logo.png";
 import type { LucideIcon } from "lucide-react";
 
@@ -33,6 +33,11 @@ const flowsItems: NavItem[] = [
 ];
 
 const systemItems: NavItem[] = [
+  {
+    title: "Communications",
+    icon: Mail,
+    path: "/fl-admin/communications",
+  },
   {
     title: "Users",
     icon: Users,
