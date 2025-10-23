@@ -50,50 +50,48 @@ export const ContactFilters = ({
     queryFn: async () => {
       if (!user) return [];
 
-      // Get user's organization the same way useContacts does
+      // Resolve active organization (same logic as useContacts)
       let organizationId: string | null = null;
-      
       const savedOrg = localStorage.getItem('active_organization');
       if (savedOrg) {
         try {
           const orgData = JSON.parse(savedOrg);
           organizationId = orgData.id;
-        } catch (e) {
-          console.error('Error parsing saved organization:', e);
+        } catch {
+          // ignore
         }
       }
-      
       if (!organizationId) {
         const { data: orgMembers } = await supabase
           .from("organization_members")
           .select("organization_id")
           .eq("user_id", user.id)
           .limit(1);
-
         if (!orgMembers || orgMembers.length === 0) return [];
         organizationId = orgMembers[0].organization_id;
       }
 
-      // Get all organization members with profiles
-      const { data: membersData } = await supabase
+      // Step 1: fetch member user_ids
+      const { data: orgUsers, error: membersErr } = await supabase
         .from("organization_members")
-        .select(`
-          user_id,
-          profiles!inner (
-            user_id,
-            full_name,
-            email,
-            avatar_url
-          )
-        `)
+        .select("user_id")
         .eq("organization_id", organizationId);
+      if (membersErr || !orgUsers || orgUsers.length === 0) return [];
 
-      // Filter valid members
-      const validMembers = (membersData || []).filter((member: any) => 
-        member.profiles?.full_name || member.profiles?.email
-      );
+      const userIds = orgUsers.map((m: any) => m.user_id).filter(Boolean);
+      if (userIds.length === 0) return [];
 
-      return validMembers;
+      // Step 2: fetch profiles for those user_ids
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, email, avatar_url")
+        .in("user_id", userIds);
+
+      const result = (profiles || [])
+        .filter((p: any) => p.full_name || p.email)
+        .map((p: any) => ({ user_id: p.user_id, profiles: p }));
+
+      return result;
     },
     enabled: !!user,
   });
