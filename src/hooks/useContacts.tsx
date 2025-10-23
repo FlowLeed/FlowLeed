@@ -66,6 +66,10 @@ export const useContacts = (filters: ContactFilters) => {
             pipeline_id,
             assigned_to_user_id,
             pipelines(id, name, icon)
+          ),
+          profiles!contacts_assigned_to_user_id_fkey(
+            full_name,
+            avatar_url
           )
         `)
         .eq("organization_id", organizationId)
@@ -159,25 +163,6 @@ export const useContacts = (filters: ContactFilters) => {
           const daysDiff = (now.getTime() - lastInteraction.getTime()) / (1000 * 60 * 60 * 24);
           return daysDiff <= days;
         });
-      }
-
-      // Fetch assigned user profiles
-      const assignedUserIds = [...new Set(filteredData.map(c => c.assigned_to_user_id).filter(Boolean))];
-      if (assignedUserIds.length > 0) {
-        const { data: assignedProfiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, avatar_url")
-          .in("user_id", assignedUserIds);
-
-        const profileMap = new Map();
-        assignedProfiles?.forEach(profile => {
-          profileMap.set(profile.user_id, profile);
-        });
-
-        filteredData = filteredData.map(contact => ({
-          ...contact,
-          profiles: contact.assigned_to_user_id ? profileMap.get(contact.assigned_to_user_id) : undefined
-        }));
       }
 
       // Get last interaction for each contact
