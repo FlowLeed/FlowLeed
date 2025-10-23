@@ -98,10 +98,11 @@ export const ContactCard: React.FC<ContactCardProps> = ({
       </div>
 
       {tags && tags.length > 0 && <div className="flex gap-1.5 mb-3 flex-wrap">
-          {tags.includes("active") && <span className="tag bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">Active</span>}
-          {tags.includes("partner") && <span className="tag bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">Partner</span>}
-          {tags.includes("florida") && <span className="tag bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full">Florida</span>}
-          {tags.includes("location") && <span className="tag bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full">Location</span>}
+          {tags.map((tag, index) => (
+            <span key={index} className="tag bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full capitalize">
+              {tag}
+            </span>
+          ))}
         </div>}
 
       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
