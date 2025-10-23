@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Mail, MessageSquare, Bell, Send, Settings } from "lucide-react";
+import { Mail, MessageSquare, Bell, Send, Settings, Plug } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -36,6 +36,10 @@ const CommunicationsPage = () => {
           <TabsTrigger value="settings" className="gap-2">
             <Settings className="h-4 w-4" />
             Settings
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="gap-2">
+            <Plug className="h-4 w-4" />
+            Integrations
           </TabsTrigger>
         </TabsList>
 
@@ -359,6 +363,27 @@ const CommunicationsPage = () => {
               </div>
               <div className="pt-4">
                 <Button>Save Preferences</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Integrations Tab */}
+        <TabsContent value="integrations" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Communication Integrations</CardTitle>
+              <CardDescription>
+                Connect third-party communication services and tools
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12 text-muted-foreground">
+                <Plug className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="mb-4">Integration settings will be available soon</p>
+                <Button variant="outline" disabled>
+                  Add Integration
+                </Button>
               </div>
             </CardContent>
           </Card>
