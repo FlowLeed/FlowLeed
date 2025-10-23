@@ -56,7 +56,7 @@ export const useFlowTeamMembers = (flowId: string | undefined) => {
         return;
       }
 
-      // Step 3: Combine the data
+      // Step 3: Combine the data and filter out invalid members
       const members = teamData.map((m) => {
         const profile = profilesData?.find(p => p.user_id === m.user_id);
         return {
@@ -66,7 +66,7 @@ export const useFlowTeamMembers = (flowId: string | undefined) => {
           email: profile?.email || "",
           avatar_url: profile?.avatar_url || null,
         };
-      });
+      }).filter(member => member.full_name || member.email); // Only include members with identifying info
       
       setTeamMembers(members);
       setLoading(false);
