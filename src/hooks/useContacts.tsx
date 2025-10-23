@@ -161,8 +161,15 @@ export const useContacts = (filters: ContactFilters) => {
         });
       }
 
-      // Fetch assigned user profiles
-      const assignedUserIds = [...new Set(filteredData.map(c => c.assigned_to_user_id).filter(Boolean))];
+      // Fetch assigned user profiles for both contact-level and pipeline-level assignments
+      const contactLevelUserIds = filteredData.map(c => c.assigned_to_user_id).filter(Boolean);
+      const pipelineLevelUserIds = filteredData
+        .flatMap(c => c.pipeline_contacts || [])
+        .map((pc: any) => pc.assigned_to_user_id)
+        .filter(Boolean);
+      
+      const assignedUserIds = [...new Set([...contactLevelUserIds, ...pipelineLevelUserIds])];
+      
       if (assignedUserIds.length > 0) {
         const { data: assignedProfiles } = await supabase
           .from("profiles")
@@ -174,10 +181,18 @@ export const useContacts = (filters: ContactFilters) => {
           profileMap.set(profile.user_id, profile);
         });
 
-        filteredData = filteredData.map(contact => ({
-          ...contact,
-          profiles: contact.assigned_to_user_id ? profileMap.get(contact.assigned_to_user_id) : undefined
-        }));
+        filteredData = filteredData.map(contact => {
+          // Prefer contact-level assignment, fallback to first pipeline assignment
+          let assignedUserId = contact.assigned_to_user_id;
+          if (!assignedUserId && contact.pipeline_contacts?.length > 0) {
+            assignedUserId = contact.pipeline_contacts[0].assigned_to_user_id;
+          }
+          
+          return {
+            ...contact,
+            profiles: assignedUserId ? profileMap.get(assignedUserId) : undefined
+          };
+        });
       }
 
       // Get last interaction for each contact
