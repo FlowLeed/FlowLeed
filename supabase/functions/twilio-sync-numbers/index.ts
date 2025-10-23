@@ -20,6 +20,12 @@ Deno.serve(async (req) => {
       }
     )
 
+    // Create a service role client for bypassing RLS on inserts
+    const supabaseServiceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
     if (userError || !user) {
       throw new Error('Unauthorized')
@@ -97,8 +103,8 @@ Deno.serve(async (req) => {
         return null
       }
 
-      // Insert the number
-      const { data, error } = await supabaseClient
+      // Insert the number using service role to bypass RLS
+      const { data, error } = await supabaseServiceClient
         .from('twilio_phone_numbers')
         .insert({
           organization_id: organizationId,
