@@ -122,7 +122,6 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
             >
               Assigned To{getSortIcon('assignedTo')}
             </TableHead>
-            <TableHead>Tags</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -169,20 +168,6 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
                 ) : (
                   <span className="text-muted-foreground text-sm">—</span>
                 )}
-              </TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {contact.contact_tags?.slice(0, 3).map((tagObj: any, idx: number) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
-                      {tagObj.tag}
-                    </Badge>
-                  ))}
-                  {contact.contact_tags?.length > 3 && (
-                    <Badge variant="secondary" className="text-xs">
-                      +{contact.contact_tags.length - 3}
-                    </Badge>
-                  )}
-                </div>
               </TableCell>
             </TableRow>
           ))}
