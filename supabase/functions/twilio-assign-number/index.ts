@@ -22,40 +22,54 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    // Check if user is admin
-    const { data: membership } = await supabaseClient
-      .from('organization_members')
-      .select('role, organization_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only admins can assign phone numbers')
-    }
-
     const { phoneNumberId, userId } = await req.json()
+
+    // Check if user is system admin
+    const { data: systemRole } = await supabaseClient.rpc('get_user_system_role', {
+      _user_id: user.id
+    })
+
+    let orgId = null
+
+    if (systemRole !== 'super_admin' && systemRole !== 'support_admin') {
+      // Check if user is admin in their organization
+      const { data: membership } = await supabaseClient
+        .from('organization_members')
+        .select('role, organization_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!membership || !['owner', 'admin'].includes(membership.role)) {
+        throw new Error('Only admins can assign phone numbers')
+      }
+      orgId = membership.organization_id
+    }
 
     console.log('Assigning phone number:', phoneNumberId, 'to user:', userId)
 
     // Verify phone number belongs to organization
-    const { data: phoneNumber } = await supabaseClient
+    const query = supabaseClient
       .from('twilio_phone_numbers')
       .select('*')
       .eq('id', phoneNumberId)
-      .eq('organization_id', membership.organization_id)
-      .single()
+    
+    if (orgId) {
+      query.eq('organization_id', orgId)
+    }
+    
+    const { data: phoneNumber } = await query.single()
 
     if (!phoneNumber) {
       throw new Error('Phone number not found')
     }
 
-    // Verify user belongs to organization
-    if (userId) {
+    // Verify user belongs to organization (if userId provided and orgId exists)
+    if (userId && orgId) {
       const { data: targetMember } = await supabaseClient
         .from('organization_members')
         .select('user_id')
         .eq('user_id', userId)
-        .eq('organization_id', membership.organization_id)
+        .eq('organization_id', orgId)
         .single()
 
       if (!targetMember) {

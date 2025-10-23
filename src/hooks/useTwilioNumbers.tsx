@@ -45,15 +45,17 @@ export const useTwilioNumbers = () => {
       areaCode,
       friendlyName,
       isPrimary,
+      organizationId,
     }: {
       areaCode: string;
       friendlyName?: string;
       isPrimary?: boolean;
+      organizationId?: string;
     }) => {
       const { data, error } = await supabase.functions.invoke(
         "twilio-provision-number",
         {
-          body: { areaCode, friendlyName, isPrimary },
+          body: { areaCode, friendlyName, isPrimary, organizationId },
         }
       );
 

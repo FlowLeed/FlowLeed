@@ -25,28 +25,42 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    // Check if user is admin
-    const { data: membership } = await supabaseClient
-      .from('organization_members')
-      .select('role, organization_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only admins can release phone numbers')
-    }
-
     const { phoneNumberId } = await req.json()
+
+    // Check if user is system admin
+    const { data: systemRole } = await supabaseClient.rpc('get_user_system_role', {
+      _user_id: user.id
+    })
+
+    let orgId = null
+
+    if (systemRole !== 'super_admin' && systemRole !== 'support_admin') {
+      // Check if user is admin in their organization
+      const { data: membership } = await supabaseClient
+        .from('organization_members')
+        .select('role, organization_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!membership || !['owner', 'admin'].includes(membership.role)) {
+        throw new Error('Only admins can release phone numbers')
+      }
+      orgId = membership.organization_id
+    }
 
     console.log('Releasing phone number:', phoneNumberId)
 
     // Get phone number details
-    const { data: phoneNumber } = await supabaseClient
+    const query = supabaseClient
       .from('twilio_phone_numbers')
       .select('*')
       .eq('id', phoneNumberId)
-      .eq('organization_id', membership.organization_id)
-      .single()
+    
+    if (orgId) {
+      query.eq('organization_id', orgId)
+    }
+    
+    const { data: phoneNumber } = await query.single()
 
     if (!phoneNumber) {
       throw new Error('Phone number not found')

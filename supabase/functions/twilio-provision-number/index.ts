@@ -25,18 +25,33 @@ Deno.serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    // Check if user is admin
-    const { data: membership } = await supabaseClient
-      .from('organization_members')
-      .select('role, organization_id')
-      .eq('user_id', user.id)
-      .single()
+    const { areaCode, friendlyName, isPrimary, organizationId } = await req.json()
 
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      throw new Error('Only admins can provision phone numbers')
+    // Check if user is system admin
+    const { data: systemRole } = await supabaseClient.rpc('get_user_system_role', {
+      _user_id: user.id
+    })
+
+    let orgId = organizationId
+
+    if (systemRole === 'super_admin' || systemRole === 'support_admin') {
+      // System admins must provide organizationId
+      if (!orgId) {
+        throw new Error('Organization ID required for system admins')
+      }
+    } else {
+      // Check if user is admin in their organization
+      const { data: membership } = await supabaseClient
+        .from('organization_members')
+        .select('role, organization_id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!membership || !['owner', 'admin'].includes(membership.role)) {
+        throw new Error('Only admins can provision phone numbers')
+      }
+      orgId = membership.organization_id
     }
-
-    const { areaCode, friendlyName, isPrimary } = await req.json()
 
     console.log('Searching for available numbers in area code:', areaCode)
 
@@ -86,7 +101,7 @@ Deno.serve(async (req) => {
       await supabaseClient
         .from('twilio_phone_numbers')
         .update({ is_primary: false })
-        .eq('organization_id', membership.organization_id)
+        .eq('organization_id', orgId)
         .eq('is_primary', true)
     }
 
@@ -94,7 +109,7 @@ Deno.serve(async (req) => {
     const { data: dbNumber, error: dbError } = await supabaseClient
       .from('twilio_phone_numbers')
       .insert({
-        organization_id: membership.organization_id,
+        organization_id: orgId,
         phone_number: purchaseData.phone_number,
         friendly_name: friendlyName || purchaseData.phone_number,
         sid: purchaseData.sid,

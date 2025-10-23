@@ -32,20 +32,26 @@ export const TwilioConfigSection = () => {
   const [areaCode, setAreaCode] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
   const [isPrimary, setIsPrimary] = useState(false);
+  const [organizationId, setOrganizationId] = useState("");
 
   const handleProvision = async () => {
     if (!areaCode || areaCode.length !== 3) {
+      return;
+    }
+    if (!organizationId) {
       return;
     }
     await provisionNumber.mutateAsync({
       areaCode,
       friendlyName: friendlyName || undefined,
       isPrimary,
+      organizationId,
     });
     setIsDialogOpen(false);
     setAreaCode("");
     setFriendlyName("");
     setIsPrimary(false);
+    setOrganizationId("");
   };
 
   return (
@@ -73,6 +79,18 @@ export const TwilioConfigSection = () => {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="organizationId">Organization ID</Label>
+                  <Input
+                    id="organizationId"
+                    placeholder="Enter organization UUID"
+                    value={organizationId}
+                    onChange={(e) => setOrganizationId(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Required for super admins - get from Organizations list
+                  </p>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="areaCode">Area Code</Label>
                   <Input
@@ -116,7 +134,7 @@ export const TwilioConfigSection = () => {
                 </Button>
                 <Button
                   onClick={handleProvision}
-                  disabled={!areaCode || areaCode.length !== 3 || provisionNumber.isPending}
+                  disabled={!organizationId || !areaCode || areaCode.length !== 3 || provisionNumber.isPending}
                 >
                   {provisionNumber.isPending ? "Provisioning..." : "Provision"}
                 </Button>
