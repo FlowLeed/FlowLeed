@@ -5,6 +5,7 @@ import { useHealthScore } from '@/hooks/useHealthScore';
 import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
 import { HealthScoreCard } from '@/components/admin/HealthScoreCard';
 import { EditOrganizationDialog } from '@/components/admin/EditOrganizationDialog';
+import { OrganizationPhoneNumbers } from '@/components/admin/OrganizationPhoneNumbers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -242,6 +243,9 @@ export default function OrganizationDetailPage() {
             </div>
             <HealthScoreCard data={healthScoreData} loading={healthScoreLoading} />
           </div>
+
+          {/* Phone Numbers */}
+          {org.id && <OrganizationPhoneNumbers organizationId={org.id} />}
 
           {/* Coming Soon Sections */}
           <Card className="opacity-60">
