@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, UserCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FlowIconBadge } from "@/components/search/FlowIconBadge";
 
 interface Contact {
   id: string;
@@ -75,12 +74,6 @@ export const ContactsNeedingAttention = ({
               </Avatar>
               <div className="flex-1">
                 <p className="font-medium">{contact.name}</p>
-                {contact.flow && (
-                  <FlowIconBadge
-                    flow={{ name: contact.flow.name, icon: contact.flow.icon || 'Users' }}
-                    size="sm"
-                  />
-                )}
               </div>
             </div>
             <div className="text-right">
