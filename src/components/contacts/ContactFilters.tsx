@@ -60,10 +60,15 @@ export const ContactFilters = ({
 
       const { data } = await supabase
         .from("organization_members")
-        .select("user_id, profiles(user_id, full_name, avatar_url)")
+        .select("user_id, profiles(user_id, full_name, email, avatar_url)")
         .eq("organization_id", orgMember.organization_id);
 
-      return data || [];
+      // Filter out members without any identifying information
+      const validMembers = (data || []).filter((member: any) => 
+        member.profiles?.full_name || member.profiles?.email
+      );
+
+      return validMembers;
     },
     enabled: !!user,
   });
@@ -131,7 +136,7 @@ export const ContactFilters = ({
                   <SelectItem value="unassigned">Unassigned</SelectItem>
                   {members?.map((member: any) => (
                     <SelectItem key={member.user_id} value={member.user_id}>
-                      {member.profiles?.full_name || "Unknown"}
+                      {member.profiles?.full_name || member.profiles?.email || "Unknown"}
                     </SelectItem>
                   ))}
                 </SelectContent>
