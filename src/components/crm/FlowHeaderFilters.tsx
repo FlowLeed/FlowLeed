@@ -1,7 +1,9 @@
 import React from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { UserX, MoreHorizontal } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Filter, UserX, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TeamMember {
@@ -28,74 +30,82 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
   onFilterChange,
   contactCounts
 }) => {
-  const maxVisibleFilters = 6;
-  const visibleMembers = teamMembers.slice(0, maxVisibleFilters - 1); // Reserve space for unassigned
-  const hasMoreMembers = teamMembers.length > maxVisibleFilters - 1;
+  const hasActiveFilter = selectedFilter !== null;
 
   return (
-    <div className="flex items-center gap-2">
-      {/* Unassigned filter */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => onFilterChange(selectedFilter === "unassigned" ? null : "unassigned")}
-        className={cn(
-          "h-8 w-8 p-0 rounded-full border-2 transition-all",
-          selectedFilter === "unassigned"
-            ? "border-primary bg-primary/10"
-            : "border-muted-foreground/20 hover:border-muted-foreground/40"
-        )}
-        title={`Unassigned (${contactCounts.unassigned})`}
-      >
-        <UserX className="h-4 w-4 text-muted-foreground" />
-      </Button>
-
-      {/* Team member filters */}
-      {visibleMembers.map((member) => {
-        const count = contactCounts.byMember[member.id] || 0;
-        const isSelected = selectedFilter === member.id;
-        const initials = member.name
-          .split(' ')
-          .map(n => n.charAt(0))
-          .join('')
-          .toUpperCase()
-          .slice(0, 2);
-        
-        return (
-          <Button
-            key={member.id}
-            variant="ghost"
-            size="sm"
-            onClick={() => onFilterChange(isSelected ? null : member.id)}
-            className={cn(
-              "h-8 w-8 p-0 rounded-full border-2 transition-all",
-              isSelected
-                ? "border-primary bg-primary/10"
-                : "border-muted-foreground/20 hover:border-muted-foreground/40"
-            )}
-            title={`${member.name} (${count})`}
-          >
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={member.avatar} alt={member.name} />
-              <AvatarFallback className="text-xs bg-muted text-muted-foreground">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </Button>
-        );
-      })}
-
-      {/* More filters indicator */}
-      {hasMoreMembers && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0 rounded-full border-2 border-muted-foreground/20 hover:border-muted-foreground/40"
-          title={`${teamMembers.length - visibleMembers.length} more filters`}
-        >
-          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-2">
+          <Filter className="h-4 w-4" />
+          Filter
+          {hasActiveFilter && (
+            <Badge variant="secondary" className="ml-1 rounded-full px-2 py-0 text-xs">
+              1
+            </Badge>
+          )}
         </Button>
-      )}
-    </div>
+      </PopoverTrigger>
+      <PopoverContent className="w-80" align="end">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Assigned to</label>
+            <div className="space-y-2">
+              {/* Unassigned option */}
+              <Button
+                variant={selectedFilter === "unassigned" ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => onFilterChange(selectedFilter === "unassigned" ? null : "unassigned")}
+                className="w-full justify-start gap-2"
+              >
+                <UserX className="h-4 w-4" />
+                Unassigned ({contactCounts.unassigned})
+              </Button>
+
+              {/* Team member options */}
+              {teamMembers.map((member) => {
+                const count = contactCounts.byMember[member.id] || 0;
+                const isSelected = selectedFilter === member.id;
+                const initials = member.name
+                  .split(' ')
+                  .map(n => n.charAt(0))
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+                
+                return (
+                  <Button
+                    key={member.id}
+                    variant={isSelected ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => onFilterChange(isSelected ? null : member.id)}
+                    className="w-full justify-start gap-2"
+                  >
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={member.avatar} alt={member.name} />
+                      <AvatarFallback className="text-xs">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    {member.name} ({count})
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+
+          {hasActiveFilter && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onFilterChange(null)} 
+              className="w-full"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Clear Filter
+            </Button>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
