@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Phone, Plus, RefreshCw, Trash2, UserCircle } from "lucide-react";
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
+import { useOrganizationsData } from "@/hooks/useOrganizationsData";
 import {
   Dialog,
   DialogContent,
@@ -23,11 +24,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
 export const TwilioConfigSection = () => {
   const { numbers, isLoading, provisionNumber, releaseNumber, assignNumber, syncNumbers } =
     useTwilioNumbers();
+  const { data: organizations, isLoading: orgsLoading } = useOrganizationsData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [areaCode, setAreaCode] = useState("");
   const [friendlyName, setFriendlyName] = useState("");
@@ -89,15 +98,21 @@ export const TwilioConfigSection = () => {
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="organizationId">Organization ID</Label>
-                    <Input
-                      id="organizationId"
-                      placeholder="Enter organization UUID"
-                      value={organizationId}
-                      onChange={(e) => setOrganizationId(e.target.value)}
-                    />
+                    <Label htmlFor="organizationId">Organization</Label>
+                    <Select value={organizationId} onValueChange={setOrganizationId}>
+                      <SelectTrigger id="organizationId">
+                        <SelectValue placeholder={orgsLoading ? "Loading organizations..." : "Select organization..."} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {organizations?.map((org) => (
+                          <SelectItem key={org.id} value={org.id}>
+                            {org.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground">
-                      Required for super admins - get from Organizations list
+                      Select the organization to provision this number for
                     </p>
                   </div>
                   <div className="space-y-2">
@@ -143,7 +158,7 @@ export const TwilioConfigSection = () => {
                   </Button>
                   <Button
                     onClick={handleProvision}
-                    disabled={!organizationId || !areaCode || areaCode.length !== 3 || provisionNumber.isPending}
+                    disabled={orgsLoading || !organizationId || !areaCode || areaCode.length !== 3 || provisionNumber.isPending}
                   >
                     {provisionNumber.isPending ? "Provisioning..." : "Provision"}
                   </Button>
