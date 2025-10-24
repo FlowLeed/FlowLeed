@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { OrganizationPhoneNumbers } from "@/components/admin/OrganizationPhoneNumbers";
 
 interface TeamMember {
   id: string;
@@ -365,7 +366,7 @@ const TeamPage = () => {
       
       <div className="flex-1 overflow-auto p-6">
         <Tabs defaultValue="settings" className="w-full">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="settings">
               <Shield className="h-4 w-4 mr-2" />
               Org Settings
@@ -373,6 +374,10 @@ const TeamPage = () => {
             <TabsTrigger value="members">
               <User className="h-4 w-4 mr-2" />
               Team Members
+            </TabsTrigger>
+            <TabsTrigger value="phone-numbers">
+              <Phone className="h-4 w-4 mr-2" />
+              Phone Numbers
             </TabsTrigger>
             <TabsTrigger value="tags">
               <Tag className="h-4 w-4 mr-2" />
@@ -414,8 +419,36 @@ const TeamPage = () => {
                       Only organization owners can change the organization name.
                     </p>}
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Organization ID</Label>
+                  <Input value={organization?.id || ""} disabled className="font-mono text-xs" />
+                  <p className="text-sm text-muted-foreground">
+                    Use this ID for API integrations and support requests.
+                  </p>
+                </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="phone-numbers" className="space-y-6 mt-6">
+            {canManageMembers ? (
+              <OrganizationPhoneNumbers organizationId={organization?.id || ""} />
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Phone Numbers</CardTitle>
+                  <CardDescription>
+                    Only organization owners and admins can manage phone numbers
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Contact your organization owner or admin to request access to phone number management.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="members" className="space-y-6 mt-6">
