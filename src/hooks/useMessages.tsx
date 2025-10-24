@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Conversation } from "@/types/messages";
 
 export interface SMSMessage {
   id: string;
@@ -22,18 +23,6 @@ export interface SMSMessage {
   updated_at: string;
 }
 
-export interface Conversation {
-  id: string;
-  contactId: string;
-  contactName: string;
-  contactAvatar?: string;
-  contactRole?: string;
-  lastMessage: string;
-  lastMessageTime: Date;
-  unreadCount: number;
-  isActive?: boolean;
-}
-
 export const useMessages = (contactId?: string) => {
   const queryClient = useQueryClient();
 
@@ -51,7 +40,8 @@ export const useMessages = (contactId?: string) => {
           contacts (
             id,
             name,
-            avatar
+            avatar,
+            phone
           )
         `
           )
@@ -73,6 +63,7 @@ export const useMessages = (contactId?: string) => {
               contactId: contact.id,
               contactName: contact.name,
               contactAvatar: contact.avatar,
+              contactPhone: contact.phone,
               lastMessage: msg.body,
               lastMessageTime: new Date(msg.created_at),
               unreadCount: msg.direction === "inbound" ? 1 : 0,

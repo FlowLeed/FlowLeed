@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -12,8 +13,11 @@ import {
   StickyNote,
   Clock
 } from 'lucide-react';
+import { useTwilioIntegration } from '@/hooks/useTwilioIntegration';
+import { useCalls } from '@/hooks/useCalls';
 
 interface Contact {
+  id: string;
   email?: string;
   phone?: string;
 }
@@ -35,8 +39,16 @@ export const QuickActionsSidebar: React.FC<QuickActionsSidebarProps> = ({
   onAddPrayerRequest,
   onScheduleFollowUp
 }) => {
+  const navigate = useNavigate();
+  const { shouldUseTwilio } = useTwilioIntegration();
+  const { initiateCall } = useCalls();
+
   const handleCall = () => {
-    if (contact.phone) {
+    if (!contact.phone) return;
+    
+    if (shouldUseTwilio) {
+      initiateCall.mutate({ contactId: contact.id });
+    } else {
       window.open(`tel:${contact.phone}`);
     }
   };
@@ -48,7 +60,11 @@ export const QuickActionsSidebar: React.FC<QuickActionsSidebarProps> = ({
   };
 
   const handleText = () => {
-    if (contact.phone) {
+    if (!contact.phone) return;
+    
+    if (shouldUseTwilio) {
+      navigate(`/messages?contactId=${contact.id}`);
+    } else {
       window.open(`sms:${contact.phone}`);
     }
   };

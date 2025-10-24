@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { ConversationsList } from "@/components/messages/ConversationsList";
 import { MessageThread } from "@/components/messages/MessageThread";
@@ -8,9 +9,17 @@ import { Message } from "@/types/messages";
 import { useAuth } from "@/hooks/useAuth";
 
 const MessagesPage = () => {
+  const [searchParams] = useSearchParams();
+  const contactIdFromUrl = searchParams.get('contactId');
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const { user } = useAuth();
   const { conversations, messages: smsMessages, conversationsLoading, messagesLoading, sendMessage } = useMessages(selectedConversationId || undefined);
+
+  useEffect(() => {
+    if (contactIdFromUrl) {
+      setSelectedConversationId(contactIdFromUrl);
+    }
+  }, [contactIdFromUrl]);
   
   const selectedConversation = selectedConversationId 
     ? conversations.find(c => c.contactId === selectedConversationId) || null

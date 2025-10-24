@@ -15,6 +15,7 @@ export interface Conversation {
   contactName: string;
   contactAvatar?: string;
   contactRole?: string;
+  contactPhone?: string;
   lastMessage: string;
   lastMessageTime: Date;
   unreadCount: number;

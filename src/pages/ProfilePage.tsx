@@ -45,6 +45,7 @@ const ProfilePage = () => {
     jobTitle: "",
     department: ""
   });
+  const [useTwilioIntegration, setUseTwilioIntegration] = useState(true);
 
   // Update form data when profile loads
   useEffect(() => {
@@ -61,6 +62,7 @@ const ProfilePage = () => {
         jobTitle: '',
         department: ''
       });
+      setUseTwilioIntegration(profile.use_twilio_integration ?? true);
     }
   }, [profile, user]);
   const [notifications, setNotifications] = useState({
@@ -85,7 +87,8 @@ const ProfilePage = () => {
       const {
         error
       } = await supabase.from('profiles').update({
-        full_name: fullName || null
+        full_name: fullName || null,
+        use_twilio_integration: useTwilioIntegration
       }).eq('user_id', user.id);
       if (error) throw error;
       toast({
@@ -281,7 +284,7 @@ const ProfilePage = () => {
 
             {/* Twilio Phone Number Section */}
             {myTwilioNumber && (
-              <div className="p-4 bg-muted/50 rounded-lg border">
+              <div className="p-4 bg-muted/50 rounded-lg border space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-sm font-medium">Assigned Phone Number</Label>
@@ -306,6 +309,22 @@ const ProfilePage = () => {
                       <Badge variant="outline" className="text-xs">SMS</Badge>
                     )}
                   </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">Use for calls & messages</Label>
+                    <p className="text-xs text-muted-foreground">
+                      When enabled, calls and texts will use your assigned Twilio number. 
+                      When disabled, your device's native phone/SMS app will be used.
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={useTwilioIntegration}
+                    onCheckedChange={setUseTwilioIntegration}
+                  />
                 </div>
               </div>
             )}

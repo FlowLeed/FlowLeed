@@ -2,12 +2,16 @@ import { Conversation } from "@/types/messages";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Phone, Video, MoreVertical } from "lucide-react";
+import { useTwilioIntegration } from "@/hooks/useTwilioIntegration";
+import { useCalls } from "@/hooks/useCalls";
 
 interface ContactHeaderProps {
   conversation: Conversation;
 }
 
 export const ContactHeader = ({ conversation }: ContactHeaderProps) => {
+  const { shouldUseTwilio } = useTwilioIntegration();
+  const { initiateCall } = useCalls();
   const getInitials = (name: string) => {
     const parts = name.split(' ');
     if (parts.length >= 2) {
@@ -31,7 +35,18 @@ export const ContactHeader = ({ conversation }: ContactHeaderProps) => {
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" title="Call">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          title="Call"
+          onClick={() => {
+            if (shouldUseTwilio) {
+              initiateCall.mutate({ contactId: conversation.contactId });
+            } else if (conversation.contactPhone) {
+              window.open(`tel:${conversation.contactPhone}`);
+            }
+          }}
+        >
           <Phone className="h-5 w-5" />
         </Button>
         <Button variant="ghost" size="icon" title="Video call">
