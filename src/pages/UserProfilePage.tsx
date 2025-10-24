@@ -27,6 +27,8 @@ import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrgTagSuggestions } from "@/hooks/useContactTags";
 import { useProfile } from "@/hooks/useProfile";
+import { useTwilioIntegration } from "@/hooks/useTwilioIntegration";
+import { useCalls } from "@/hooks/useCalls";
 
 const UserProfilePage = () => {
   const { contactId } = useParams<{ contactId: string }>();
@@ -36,6 +38,8 @@ const UserProfilePage = () => {
   const { user } = useAuth();
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+  const { shouldUseTwilio } = useTwilioIntegration();
+  const { initiateCall } = useCalls();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showReassignDialog, setShowReassignDialog] = useState(false);
   const [assignedUser, setAssignedUser] = useState<any>(null);
@@ -747,7 +751,13 @@ const UserProfilePage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(`tel:${contact.phone}`)}
+                          onClick={() => {
+                            if (shouldUseTwilio) {
+                              initiateCall.mutate({ contactId: contact.id });
+                            } else {
+                              window.open(`tel:${contact.phone}`);
+                            }
+                          }}
                           className="h-8"
                         >
                           <Phone className="h-3.5 w-3.5 mr-1.5" />
@@ -756,7 +766,13 @@ const UserProfilePage = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(`sms:${contact.phone}`)}
+                          onClick={() => {
+                            if (shouldUseTwilio) {
+                              navigate(`/messages?contactId=${contact.id}`);
+                            } else {
+                              window.open(`sms:${contact.phone}`);
+                            }
+                          }}
                           className="h-8"
                         >
                           <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
