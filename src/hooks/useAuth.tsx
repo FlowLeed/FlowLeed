@@ -66,7 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           full_name: fullName,
           organization_name: organizationName,
         },
-        emailRedirectTo: `${window.location.origin}/`,
       },
     });
 
