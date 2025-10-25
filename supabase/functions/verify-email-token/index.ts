@@ -76,7 +76,7 @@ serve(async (req) => {
     if (type === 'signup' && tokenData.user_id) {
       const { error: confirmError } = await supabase.auth.admin.updateUserById(
         tokenData.user_id,
-        { email_confirmed_at: new Date().toISOString() }
+        { email_confirm: true }
       );
 
       if (confirmError) {
