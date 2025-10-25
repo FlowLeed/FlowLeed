@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/layout/Header";
 import { ConversationsList } from "@/components/messages/ConversationsList";
 import { MessageThread } from "@/components/messages/MessageThread";
@@ -7,6 +8,7 @@ import { MessageSquare } from "lucide-react";
 import { useMessages } from "@/hooks/useMessages";
 import { Message } from "@/types/messages";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const MessagesPage = () => {
   const [searchParams] = useSearchParams();
@@ -21,8 +23,37 @@ const MessagesPage = () => {
     }
   }, [contactIdFromUrl]);
   
+  // Fetch contact details if no conversation exists yet
+  const { data: directContact } = useQuery({
+    queryKey: ['contact', contactIdFromUrl],
+    queryFn: async () => {
+      if (!contactIdFromUrl) return null;
+      
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('id, name, email, phone, avatar')
+        .eq('id', contactIdFromUrl)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!contactIdFromUrl && !conversations.find(c => c.contactId === contactIdFromUrl),
+  });
+  
   const selectedConversation = selectedConversationId 
-    ? conversations.find(c => c.contactId === selectedConversationId) || null
+    ? conversations.find(c => c.contactId === selectedConversationId) || 
+      (directContact ? {
+        id: directContact.id,
+        contactId: directContact.id,
+        contactName: directContact.name,
+        contactAvatar: directContact.avatar,
+        contactPhone: directContact.phone,
+        lastMessage: '',
+        lastMessageTime: new Date(),
+        unreadCount: 0,
+        isActive: true,
+      } : null)
     : null;
 
   // Transform SMS messages to Message format
