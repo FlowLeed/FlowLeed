@@ -1599,6 +1599,7 @@ export type Database = {
         Args: { org_id: string }
         Returns: number
       }
+      create_default_pipelines: { Args: { org_id: string }; Returns: undefined }
       end_impersonation_session: {
         Args: { _session_id: string }
         Returns: boolean

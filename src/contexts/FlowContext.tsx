@@ -3,7 +3,6 @@ import { Flow } from "@/types/crm";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { hostTeamPipeline, pastoralCarePipeline, operationsPipeline, givingHubPipeline } from "@/data/mockData";
 
 interface FlowContextType {
   flows: Record<string, Flow>;
@@ -106,10 +105,11 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         console.log("Active organization:", organization?.id || "none yet");
 
         // Fetch pipelines - RLS will filter based on team membership
-        // Don't filter by organization_id here to allow RLS to handle access
+        // Default flows are created automatically by database trigger on organization insert
         const { data: existingPipelines, error: pipelinesError } = await supabase
           .from('pipelines')
-          .select('*');
+          .select('*')
+          .order('flow_order');
 
         if (pipelinesError) {
           console.error("Error fetching pipelines:", pipelinesError);
@@ -118,27 +118,14 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
         console.log("Found existing pipelines:", existingPipelines?.length || 0);
 
-        // If no flows exist and we have an organization, create default ones
-        if ((!existingPipelines || existingPipelines.length === 0) && organization) {
-          console.log("Creating default flows for organization:", organization.id);
-          await createDefaultFlows(organization.id);
-          // Reload after creating defaults
-          const { data: newPipelines, error: newError } = await supabase
-            .from('pipelines')
-            .select('*');
-          
-          if (newError) throw newError;
-          const flowsData = await loadFlowData(newPipelines || []);
-          setFlows(flowsData);
-          console.log("Default flows created and loaded");
-        } else if (existingPipelines && existingPipelines.length > 0) {
+        if (existingPipelines && existingPipelines.length > 0) {
           console.log("Loading existing flows...");
           const flowsData = await loadFlowData(existingPipelines);
           setFlows(flowsData);
           console.log("Existing flows loaded");
         } else {
-          // No pipelines and no organization yet
-          console.log("No pipelines found and organization not loaded yet");
+          // No pipelines yet - they should be created by the database trigger
+          console.log("No pipelines found");
           setFlows({});
         }
       } catch (err) {
@@ -153,92 +140,6 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     loadFlows();
   }, [user, organization, profileLoading]);
 
-  const createDefaultFlows = async (organizationId: string) => {
-    const defaultFlows = [
-      { flow: hostTeamPipeline },
-      { flow: pastoralCarePipeline },
-      { flow: operationsPipeline },
-      { flow: givingHubPipeline }
-    ];
-
-    for (const { flow } of defaultFlows) {
-      // Generate UUID for flow (stored as pipeline in database)
-      const flowId = crypto.randomUUID();
-      
-      // Create flow (stored as pipeline in database)
-      const { data: flowData, error: flowError } = await supabase
-        .from('pipelines')
-        .insert({
-          id: flowId,
-          name: flow.name,
-          icon: flow.icon,
-          organization_id: organizationId
-        })
-        .select()
-        .single();
-
-      if (flowError) throw flowError;
-
-      // Create stages
-      for (let i = 0; i < flow.stages.length; i++) {
-        const stage = flow.stages[i];
-        const { data: stageData, error: stageError } = await supabase
-          .from('pipeline_stages')
-          .insert({
-            id: crypto.randomUUID(),
-            pipeline_id: flowData.id,
-            name: stage.name,
-            color: stage.color,
-            stage_order: i
-          })
-          .select()
-          .single();
-
-        if (stageError) throw stageError;
-
-        // Create contacts for this stage
-        for (let j = 0; j < stage.contacts.length; j++) {
-          const contact = stage.contacts[j];
-          const { data: contactData, error: contactError } = await supabase
-            .from('contacts')
-            .insert({
-              id: crypto.randomUUID(),
-              name: contact.name,
-              email: contact.email,
-              phone: contact.phone,
-              avatar: contact.avatar,
-              notes: contact.notes,
-              status: contact.status,
-              organization_id: organizationId
-            })
-            .select()
-            .single();
-
-          if (contactError) throw contactError;
-
-          // Create contact tags
-          for (const tag of contact.tags) {
-            await supabase
-              .from('contact_tags')
-              .insert({
-                contact_id: contactData.id,
-                tag
-              });
-          }
-
-          // Link contact to flow stage (stored as pipeline_contacts in database)
-          await supabase
-            .from('pipeline_contacts')
-            .insert({
-              pipeline_id: flowData.id,
-              stage_id: stageData.id,
-              contact_id: contactData.id,
-              stage_order: j
-            });
-        }
-      }
-    }
-  };
 
   const refreshFlows = async () => {
     if (!user || profileLoading) {
