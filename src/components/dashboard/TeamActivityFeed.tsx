@@ -1,7 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface Activity {
@@ -18,6 +17,14 @@ interface TeamActivityFeedProps {
   activities: Activity[];
   loading?: boolean;
 }
+
+const getInitials = (name: string) => {
+  const parts = name.split(' ');
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
 
 const getActivityDescription = (activity: Activity) => {
   const contactName = activity.contacts?.name || "Unknown";
@@ -80,7 +87,7 @@ export const TeamActivityFeed = ({ activities, loading }: TeamActivityFeedProps)
             <Avatar className="h-8 w-8">
               <AvatarImage src={activity.profiles?.avatar_url || undefined} />
               <AvatarFallback>
-                <UserCircle className="h-5 w-5" />
+                {getInitials(activity.profiles?.full_name || "?")}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">

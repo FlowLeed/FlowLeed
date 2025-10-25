@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, UserCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Contact {
@@ -18,6 +18,14 @@ interface ContactsNeedingAttentionProps {
   contacts: Contact[];
   loading?: boolean;
 }
+
+const getInitials = (name: string) => {
+  const parts = name.split(' ');
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
 
 export const ContactsNeedingAttention = ({
   contacts,
@@ -69,7 +77,7 @@ export const ContactsNeedingAttention = ({
               <Avatar className="h-10 w-10">
                 <AvatarImage src={contact.avatar || undefined} />
                 <AvatarFallback>
-                  <UserCircle className="h-6 w-6" />
+                  {getInitials(contact.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
