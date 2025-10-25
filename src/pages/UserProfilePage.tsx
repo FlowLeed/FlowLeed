@@ -28,7 +28,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOrgTagSuggestions } from "@/hooks/useContactTags";
 import { useProfile } from "@/hooks/useProfile";
 import { useTwilioIntegration } from "@/hooks/useTwilioIntegration";
-import { useCalls } from "@/hooks/useCalls";
+import { useCalls, CallRecord } from "@/hooks/useCalls";
+import { CallStatusDialog } from "@/components/calls/CallStatusDialog";
 
 const UserProfilePage = () => {
   const { contactId } = useParams<{ contactId: string }>();
@@ -39,7 +40,7 @@ const UserProfilePage = () => {
   const { organization } = useProfile();
   const queryClient = useQueryClient();
   const { shouldUseTwilio } = useTwilioIntegration();
-  const { initiateCall } = useCalls();
+  const { initiateCall, setActiveCallId } = useCalls();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showReassignDialog, setShowReassignDialog] = useState(false);
   const [assignedUser, setAssignedUser] = useState<any>(null);
@@ -48,6 +49,8 @@ const UserProfilePage = () => {
   const [reassigning, setReassigning] = useState(false);
   const [showTagEditor, setShowTagEditor] = useState(false);
   const [editingTags, setEditingTags] = useState<string[]>([]);
+  const [showCallDialog, setShowCallDialog] = useState(false);
+  const [activeCall, setActiveCall] = useState<CallRecord | null>(null);
   
   // Get tag suggestions for the organization
   const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
@@ -753,7 +756,16 @@ const UserProfilePage = () => {
                           size="sm"
                           onClick={() => {
                             if (shouldUseTwilio) {
-                              initiateCall.mutate({ contactId: contact.id });
+                              initiateCall.mutate(
+                                { contactId: contact.id },
+                                {
+                                  onSuccess: (callData) => {
+                                    setActiveCall(callData);
+                                    setActiveCallId(callData.id);
+                                    setShowCallDialog(true);
+                                  }
+                                }
+                              );
                             } else {
                               window.open(`tel:${contact.phone}`);
                             }
@@ -1054,6 +1066,15 @@ const UserProfilePage = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      <CallStatusDialog
+        open={showCallDialog}
+        onOpenChange={setShowCallDialog}
+        callRecord={activeCall}
+        contactName={contactData?.contact.name || 'Unknown'}
+        contactAvatar={contactData?.contact.avatar}
+        contactPhone={contactData?.contact.phone}
+      />
 
       </div>
     </div>

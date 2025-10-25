@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -36,6 +37,7 @@ export interface CallWithContact extends CallRecord {
 
 export const useCalls = () => {
   const queryClient = useQueryClient();
+  const [activeCallId, setActiveCallId] = useState<string | null>(null);
 
   const { data: calls = [], isLoading } = useQuery({
     queryKey: ["calls"],
@@ -95,6 +97,29 @@ export const useCalls = () => {
   });
 
   // Subscribe to call updates
+  const endCall = useMutation({
+    mutationFn: async (callSid: string) => {
+      const { data, error } = await supabase.functions.invoke(
+        "twilio-end-call",
+        {
+          body: { callSid },
+        }
+      );
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["calls"] });
+      toast.success("Call ended");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to end call: ${error.message}`);
+    },
+  });
+
+  // Subscribe to call updates
   const subscribeToCalls = (callback: (call: CallRecord) => void) => {
     const channel = supabase
       .channel("call_records")
@@ -124,5 +149,8 @@ export const useCalls = () => {
     isLoading,
     initiateCall,
     subscribeToCalls,
+    activeCallId,
+    setActiveCallId,
+    endCall,
   };
 };

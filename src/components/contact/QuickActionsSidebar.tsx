@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,13 @@ import {
   Clock
 } from 'lucide-react';
 import { useTwilioIntegration } from '@/hooks/useTwilioIntegration';
-import { useCalls } from '@/hooks/useCalls';
+import { useCalls, CallRecord } from '@/hooks/useCalls';
+import { CallStatusDialog } from '@/components/calls/CallStatusDialog';
 
 interface Contact {
   id: string;
+  name?: string;
+  avatar?: string;
   email?: string;
   phone?: string;
 }
@@ -41,13 +44,24 @@ export const QuickActionsSidebar: React.FC<QuickActionsSidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const { shouldUseTwilio } = useTwilioIntegration();
-  const { initiateCall } = useCalls();
+  const { initiateCall, setActiveCallId } = useCalls();
+  const [showCallDialog, setShowCallDialog] = useState(false);
+  const [activeCall, setActiveCall] = useState<CallRecord | null>(null);
 
   const handleCall = () => {
     if (!contact.phone) return;
     
     if (shouldUseTwilio) {
-      initiateCall.mutate({ contactId: contact.id });
+      initiateCall.mutate(
+        { contactId: contact.id },
+        {
+          onSuccess: (callData) => {
+            setActiveCall(callData);
+            setActiveCallId(callData.id);
+            setShowCallDialog(true);
+          }
+        }
+      );
     } else {
       window.open(`tel:${contact.phone}`);
     }
@@ -178,6 +192,15 @@ export const QuickActionsSidebar: React.FC<QuickActionsSidebarProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      <CallStatusDialog
+        open={showCallDialog}
+        onOpenChange={setShowCallDialog}
+        callRecord={activeCall}
+        contactName={contact.name || 'Unknown'}
+        contactAvatar={contact.avatar}
+        contactPhone={contact.phone}
+      />
     </div>
   );
 };
