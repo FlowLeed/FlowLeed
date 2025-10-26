@@ -380,7 +380,7 @@ const ProfilePage = () => {
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                <Bell className="h-5 w-5 text-orange-600" />
+                <Bell className="h-5 w-5 text-sidebar-foreground" />
               </div>
               <div>
                 <CardTitle>Notification Preferences</CardTitle>
@@ -506,7 +506,7 @@ const ProfilePage = () => {
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-red-600" />
+                <Shield className="h-5 w-5 text-sidebar-foreground" />
               </div>
               <div>
                 <CardTitle>Security Settings</CardTitle>
