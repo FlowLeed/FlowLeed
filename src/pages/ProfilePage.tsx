@@ -375,7 +375,8 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
 
-        {/* Notification Preferences Card */}
+        {/* Notification Preferences Card - Hidden for now */}
+        {/* 
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -438,121 +439,7 @@ const ProfilePage = () => {
             </div>
           </CardContent>
         </Card>
-
-        {/* Application Preferences Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                <Palette className="h-5 w-5 text-sidebar-foreground" />
-              </div>
-              <div>
-                <CardTitle>Application Preferences</CardTitle>
-                <CardDescription>Customize your app experience</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Theme</Label>
-                <Select value={preferences.theme} onValueChange={value => handlePreferenceChange("theme", value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Language</Label>
-                <Select value={preferences.language} onValueChange={value => handlePreferenceChange("language", value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Spanish</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Timezone</Label>
-                <Select value={preferences.timezone} onValueChange={value => handlePreferenceChange("timezone", value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                    <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                    <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                    <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                    <SelectItem value="UTC">UTC</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Settings Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-red-100 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-sidebar-foreground" />
-              </div>
-              <div>
-                <CardTitle>Security Settings</CardTitle>
-                <CardDescription>Manage your account security and privacy</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium mb-2">Password</h4>
-                <Button variant="outline">Change Password</Button>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h4 className="text-sm font-medium mb-2">Two-Factor Authentication</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Add an extra layer of security to your account
-                </p>
-                <Button variant="outline">Enable 2FA</Button>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h4 className="text-sm font-medium mb-2">Active Sessions</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Manage your active sessions across devices
-                </p>
-                <Button variant="outline">View Active Sessions</Button>
-              </div>
-
-              <Separator />
-
-              <div>
-                <h4 className="text-sm font-medium mb-2">Account Deletion</h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Permanently delete your account and all data
-                </p>
-                <Button variant="destructive">Delete Account</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        */}
       </div>
     </div>;
 };
