@@ -232,7 +232,7 @@ const ProfilePage = () => {
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                <User className="h-5 w-5 text-blue-600" />
+                <User className="h-5 w-5 text-sidebar-foreground" />
               </div>
               <div>
                 <CardTitle className="font-light">Personal Information</CardTitle>
@@ -444,7 +444,7 @@ const ProfilePage = () => {
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                <Palette className="h-5 w-5 text-purple-600" />
+                <Palette className="h-5 w-5 text-sidebar-foreground" />
               </div>
               <div>
                 <CardTitle>Application Preferences</CardTitle>
