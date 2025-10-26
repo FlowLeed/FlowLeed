@@ -494,7 +494,7 @@ export const Sidebar = () => {
     path: "/integrations"
   }];
   return <>
-      <div className="h-screen w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] flex-shrink-0 flex flex-col">
+      <div className="h-screen w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] flex-shrink-0 flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
         <Logo />
         <div className="flex-1 overflow-auto py-2 px-4 space-y-6">
           <SidebarSection title="HUB" items={pageItems} />

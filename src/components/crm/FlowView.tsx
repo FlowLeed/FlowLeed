@@ -465,7 +465,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
         onToggleSelectMode={handleToggleSelectMode}
         onSelectAll={handleSelectAll}
       />
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
         {viewMode === 'kanban' ? (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4">
