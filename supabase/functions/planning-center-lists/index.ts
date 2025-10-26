@@ -17,6 +17,15 @@ serve(async (req) => {
   }
 
   try {
+    const { action, integrationId, listMappings } = await req.json();
+
+    // Handle autoSync BEFORE authentication (called by cron with anon key)
+    if (action === 'autoSync') {
+      console.log('Auto-sync triggered by cron job');
+      return await autoSyncAllMappings();
+    }
+
+    // For all other actions, require user authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
@@ -30,17 +39,12 @@ serve(async (req) => {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    const { action, integrationId, listMappings } = await req.json();
-
     if (action === 'testConnection') {
       return await testPlanningCenterConnection(integrationId, userData.user.id);
     } else if (action === 'fetchLists') {
       return await fetchPlanningCenterLists(integrationId, userData.user.id);
     } else if (action === 'syncLists') {
       return await syncPlanningCenterLists(listMappings, userData.user.id);
-    } else if (action === 'autoSync') {
-      // Auto sync all active mappings - no user required for cron jobs
-      return await autoSyncAllMappings();
     }
 
     return new Response('Invalid action', { status: 400, headers: corsHeaders });
@@ -866,10 +870,10 @@ async function autoSyncAllMappings() {
         const syncFrequency = integration.sync_frequency || 'every_15_minutes';
         
         // Check if enough time has passed based on frequency setting
-        // Temporarily bypass frequency check for testing
-        const shouldSync = true; // shouldSyncNow(mapping.last_sync_at, syncFrequency);
+        const shouldSync = shouldSyncNow(mapping.last_sync_at, syncFrequency);
         if (!shouldSync) {
-          console.log(`Skipping sync for mapping ${mapping.id} - frequency not reached (${syncFrequency})`);
+          const lastSyncTime = mapping.last_sync_at ? new Date(mapping.last_sync_at).toLocaleString() : 'never';
+          console.log(`Skipping sync for mapping ${mapping.id} (${mapping.external_list_name}) - frequency ${syncFrequency} not reached. Last synced: ${lastSyncTime}`);
           continue;
         }
         
