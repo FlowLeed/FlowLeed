@@ -31,7 +31,7 @@ export const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({ title, icon:
   const initials = user?.email?.charAt(0).toUpperCase() || 'A';
 
   return (
-    <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: 'hsl(233.33deg 100% 98.24%)' }}>
+    <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#FAFAFA' }}>
       <div className="flex items-center justify-between h-14 px-4">
         <div className="flex items-center gap-2">
           {Icon && <Icon className="h-5 w-5 text-sidebar-foreground" />}

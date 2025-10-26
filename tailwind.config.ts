@@ -71,7 +71,7 @@ export default {
 					secondary: '#A5B4FC',
 					accent: '#C7D2FE',
 					muted: '#E0E7FF',
-					background: '#F5F7FF',
+					background: '#FAFAFA',
 					card: '#FFFFFF',
 					border: '#E5E7EB',
 					tag: {
