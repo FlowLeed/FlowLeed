@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, CheckCircle2 } from "lucide-react";
 import { FlowStage as FlowStageType, Contact } from "@/types/crm";
 import { ContactCard } from "./ContactCard";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
+import { Badge } from "@/components/ui/badge";
 import { Droppable, Draggable } from "react-beautiful-dnd";
 interface FlowStageProps {
   stage: FlowStageType;
@@ -61,6 +62,12 @@ export const FlowStage: React.FC<FlowStageProps> = ({
             backgroundColor: stageColor
           }} onClick={() => setShowSettings(true)} />
             <h3 className="text-gray-700 font-normal">{stage.name}</h3>
+            {stage.is_end_step && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Completes Flow
+              </Badge>
+            )}
           </div>
           <button className="p-1 rounded-full hover:bg-gray-100" onClick={() => onAddContact?.(stage.id)}>
             <Plus className="h-4 w-4" />

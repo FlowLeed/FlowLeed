@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ArrowRight, Target, Plus, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, UserCheck, X, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Target, Plus, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, UserCheck, X, ChevronDown, ChevronRight, CheckCircle2, RotateCcw } from 'lucide-react';
 import { AddToFlowDialog } from './AddToFlowDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -329,19 +329,31 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
     setShowRemoveDialog(true);
   };
 
-  const handleRemoveFromFlow = async () => {
+  const handleRemoveFromFlow = async (type: 'complete' | 'delete') => {
     if (!selectedFlowId) return;
 
     setRemoving(true);
     try {
-      const { error } = await supabase
-        .from('pipeline_contacts')
-        .delete()
-        .eq('id', selectedFlowId);
+      if (type === 'complete') {
+        // Soft delete - mark as completed
+        const { error } = await supabase
+          .from('pipeline_contacts')
+          .update({ completed_end_at: new Date().toISOString() })
+          .eq('id', selectedFlowId);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast({ title: "Contact marked as completed in flow" });
+      } else {
+        // Hard delete - remove completely
+        const { error } = await supabase
+          .from('pipeline_contacts')
+          .delete()
+          .eq('id', selectedFlowId);
 
-      toast({ title: "Contact removed from flow successfully" });
+        if (error) throw error;
+        toast({ title: "Contact removed from flow" });
+      }
+
       setShowRemoveDialog(false);
       setSelectedFlowId(null);
       setSelectedFlowName('');
@@ -353,6 +365,23 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
       toast({ title: "Error removing contact from flow", variant: "destructive" });
     } finally {
       setRemoving(false);
+    }
+  };
+
+  const handleUndoCompletion = async (pipelineContactId: string) => {
+    try {
+      const { error } = await supabase
+        .from('pipeline_contacts')
+        .update({ completed_end_at: null })
+        .eq('id', pipelineContactId);
+        
+      if (error) throw error;
+
+      toast({ title: "Contact reactivated in flow" });
+      window.location.reload();
+    } catch (error) {
+      console.error('Error reactivating contact:', error);
+      toast({ title: "Error reactivating contact", variant: "destructive" });
     }
   };
 
@@ -538,7 +567,7 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
                     <Progress value={flow.progressPercentage} className="h-2" />
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>
                       Completed: {flow.completedAt ? new Date(flow.completedAt).toLocaleDateString('en-US', { 
                         month: 'short', 
@@ -550,6 +579,19 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
                       <span>Duration: {flow.duration} {flow.duration === 1 ? 'day' : 'days'}</span>
                     )}
                   </div>
+
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleUndoCompletion(flow.id);
+                    }}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Reactivate in Flow
+                  </Button>
                 </div>
               ))
             )}
@@ -619,24 +661,50 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
         </DialogContent>
       </Dialog>
 
-      {/* Remove from Flow Confirmation Dialog */}
+      {/* Remove from Flow Choice Dialog */}
       <AlertDialog open={showRemoveDialog} onOpenChange={setShowRemoveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove from Flow</AlertDialogTitle>
+            <AlertDialogTitle>Remove from {selectedFlowName}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove this contact from <strong>{selectedFlowName}</strong>? This action cannot be undone.
+              How would you like to remove this contact from the flow?
             </AlertDialogDescription>
           </AlertDialogHeader>
+          
+          <div className="space-y-3 my-4">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start h-auto py-3"
+              onClick={() => handleRemoveFromFlow('complete')}
+              disabled={removing}
+            >
+              <CheckCircle2 className="mr-2 h-4 w-4 flex-shrink-0" />
+              <div className="text-left flex-1">
+                <div className="font-medium">Mark as Completed</div>
+                <div className="text-sm text-muted-foreground font-normal">
+                  Keep in history as a completed flow
+                </div>
+              </div>
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="w-full justify-start h-auto py-3"
+              onClick={() => handleRemoveFromFlow('delete')}
+              disabled={removing}
+            >
+              <X className="mr-2 h-4 w-4 flex-shrink-0" />
+              <div className="text-left flex-1">
+                <div className="font-medium">Remove Completely</div>
+                <div className="text-sm text-muted-foreground font-normal">
+                  Delete from flow (won't appear in history)
+                </div>
+              </div>
+            </Button>
+          </div>
+          
           <AlertDialogFooter>
             <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRemoveFromFlow}
-              disabled={removing}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {removing ? "Removing..." : "Remove"}
-            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -188,13 +188,15 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       if (stagesError) throw stagesError;
 
       // Load flow contacts with contact details (stored as pipeline_contacts in database)
+      // Only load active contacts (not completed)
       const { data: flowContacts, error: contactsError } = await supabase
         .from('pipeline_contacts')
         .select(`
           *,
           contacts (*)
         `)
-        .eq('pipeline_id', pipeline.id);
+        .eq('pipeline_id', pipeline.id)
+        .is('completed_end_at', null);
 
       if (contactsError) throw contactsError;
 
@@ -311,13 +313,36 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         for (let j = 0; j < stage.contacts.length; j++) {
           const contact = stage.contacts[j];
           
-          // Update the pipeline_contacts entry using the correct stage ID
+          // Check if this stage is an end step
+          const isEndStep = stage.is_end_step === true;
+          
+          // Prepare update data
+          const updateData: any = {
+            stage_id: stageId,
+            stage_order: j
+          };
+          
+          // If moving to end step, mark as completed
+          if (isEndStep) {
+            updateData.completed_end_at = new Date().toISOString();
+            
+            // Record the completion in interactions
+            await supabase.from('contact_interactions').insert({
+              contact_id: contact.id,
+              interaction_type: 'flow_completed',
+              subject: `Completed ${flow.name}`,
+              details: `Contact reached the end step: ${stage.name}`,
+              created_by_user_id: user!.id,
+              pipeline_id: flowId,
+              stage_id: stageId,
+              completed_at: new Date().toISOString()
+            });
+          }
+          
+          // Update the pipeline_contacts entry
           const { error: pcError } = await supabase
             .from('pipeline_contacts')
-            .update({
-              stage_id: stageId, // Use the correct stage ID (either existing or newly created)
-              stage_order: j
-            })
+            .update(updateData)
             .eq('contact_id', contact.id)
             .eq('pipeline_id', flowId);
 
