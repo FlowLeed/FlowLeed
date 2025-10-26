@@ -65,7 +65,7 @@ export const FlowStage: React.FC<FlowStageProps> = ({
             {stage.is_end_step && (
               <Badge variant="secondary" className="text-xs gap-1">
                 <CheckCircle2 className="h-3 w-3" />
-                Completes Flow
+                Completed
               </Badge>
             )}
           </div>
