@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import flowleedLogo from '@/assets/flowleed_logo.png';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -146,6 +147,7 @@ const AuthPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
+          <img src={flowleedLogo} alt="Flowleed" className="h-6 mx-auto mb-4" />
           <CardTitle className="text-2xl font-bold">Flowleed</CardTitle>
           <CardDescription>
             Manage your pipelines and track your leads
