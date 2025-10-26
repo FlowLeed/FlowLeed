@@ -1,7 +1,7 @@
 import React from "react";
 import { Contact } from "@/types/crm";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MoreVertical, MessageSquare, Mail, Phone } from "lucide-react";
+import { MoreVertical, MessageSquare, Mail, Phone, UserX } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Link } from "react-router-dom";
@@ -122,11 +122,9 @@ export const ContactCard: React.FC<ContactCardProps> = ({
           })()}
             </span>
           </div> : <div className="flex gap-2 items-center min-w-0 flex-1">
-            <Avatar className="h-6 w-6 flex-shrink-0">
-              <AvatarFallback className="bg-gray-400 text-white text-xs">
-                ?
-              </AvatarFallback>
-            </Avatar>
+            <div className="h-6 w-6 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center">
+              <UserX className="h-4 w-4 text-gray-400" />
+            </div>
             <span className="text-xs text-gray-500">Unassigned</span>
           </div>}
         <div className="flex gap-1 flex-shrink-0">
