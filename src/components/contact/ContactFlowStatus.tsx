@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Target, Plus, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, UserCheck, X } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ArrowRight, Target, Plus, Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Puzzle, LayoutDashboard, BarChart3, UserCheck, X, ChevronDown, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { AddToFlowDialog } from './AddToFlowDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -45,6 +46,9 @@ interface ContactFlow {
   totalStages: number;
   progressPercentage: number;
   assignedToUserId?: string | null;
+  duration?: number; // Duration in days
+  completedAt?: string;
+  enteredStartAt?: string;
 }
 
 interface OrganizationMember {
@@ -77,6 +81,9 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [reassigning, setReassigning] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [flowHistory, setFlowHistory] = useState<ContactFlow[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const navigate = useNavigate();
   const { organization } = useProfile();
   
@@ -120,6 +127,13 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
     }
   }, [showReassignDialog, organization]);
 
+  // Fetch flow history when history section is expanded
+  useEffect(() => {
+    if (showHistory && flowHistory.length === 0) {
+      fetchFlowHistory();
+    }
+  }, [showHistory]);
+
   const fetchFlowAssignments = async () => {
     if (!flows.length) return;
 
@@ -161,6 +175,82 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
       setFlowAssignments(assignments);
     } catch (error) {
       console.error('Error fetching flow assignments:', error);
+    }
+  };
+
+  const fetchFlowHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('pipeline_contacts')
+        .select(`
+          id,
+          pipeline_id,
+          stage_id,
+          entered_start_at,
+          completed_end_at,
+          assigned_to_user_id,
+          pipelines:pipeline_id (
+            id,
+            name,
+            icon,
+            description
+          ),
+          pipeline_stages:stage_id (
+            id,
+            name,
+            color,
+            stage_order
+          )
+        `)
+        .eq('contact_id', contactId)
+        .not('completed_end_at', 'is', null)
+        .order('completed_end_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get total stages for each pipeline
+      const pipelineIds = [...new Set(data?.map((d: any) => d.pipeline_id) || [])];
+      const { data: stagesData } = await supabase
+        .from('pipeline_stages')
+        .select('pipeline_id, id')
+        .in('pipeline_id', pipelineIds);
+
+      const stageCounts = new Map<string, number>();
+      stagesData?.forEach((s: any) => {
+        stageCounts.set(s.pipeline_id, (stageCounts.get(s.pipeline_id) || 0) + 1);
+      });
+
+      const transformedHistory: ContactFlow[] = (data || []).map((item: any) => {
+        const totalStages = stageCounts.get(item.pipeline_id) || 1;
+        const progressPercentage = ((item.pipeline_stages.stage_order + 1) / totalStages) * 100;
+        
+        // Calculate duration in days
+        let duration = 0;
+        if (item.entered_start_at && item.completed_end_at) {
+          const start = new Date(item.entered_start_at);
+          const end = new Date(item.completed_end_at);
+          duration = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        }
+
+        return {
+          id: item.id,
+          pipeline: item.pipelines,
+          currentStage: item.pipeline_stages,
+          totalStages,
+          progressPercentage,
+          assignedToUserId: item.assigned_to_user_id,
+          completedAt: item.completed_end_at,
+          enteredStartAt: item.entered_start_at,
+          duration
+        };
+      });
+
+      setFlowHistory(transformedHistory);
+    } catch (error) {
+      console.error('Error fetching flow history:', error);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -387,6 +477,84 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
           </div>
           );
         })}
+
+        {/* Flow History Section */}
+        <Collapsible open={showHistory} onOpenChange={setShowHistory}>
+          <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full pt-2 border-t">
+            {showHistory ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+            <span>View Flow History</span>
+            {flowHistory.length > 0 && (
+              <Badge variant="secondary" className="ml-auto">
+                {flowHistory.length}
+              </Badge>
+            )}
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 pt-4">
+            {loadingHistory ? (
+              <p className="text-sm text-muted-foreground">Loading history...</p>
+            ) : flowHistory.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No completed flows yet</p>
+            ) : (
+              flowHistory.map((flow) => (
+                <div 
+                  key={flow.id} 
+                  className="border rounded-lg p-4 space-y-3 cursor-pointer hover:bg-muted/30 transition-colors opacity-75"
+                  onClick={() => handleFlowClick(flow.pipeline.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        if (flow.pipeline.icon && iconMap[flow.pipeline.icon]) {
+                          const IconComponent = iconMap[flow.pipeline.icon];
+                          return <IconComponent className="h-5 w-5 text-muted-foreground" />;
+                        }
+                        return <Workflow className="h-5 w-5 text-muted-foreground" />;
+                      })()}
+                      <h4 className="font-medium">{flow.pipeline.name}</h4>
+                    </div>
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Completed
+                    </Badge>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Final Stage</span>
+                      <Badge 
+                        variant="secondary"
+                        style={{ 
+                          backgroundColor: flow.currentStage.color ? `${flow.currentStage.color}20` : undefined,
+                          color: flow.currentStage.color || undefined 
+                        }}
+                      >
+                        {flow.currentStage.name}
+                      </Badge>
+                    </div>
+                    <Progress value={flow.progressPercentage} className="h-2" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>
+                      Completed: {flow.completedAt ? new Date(flow.completedAt).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      }) : 'N/A'}
+                    </span>
+                    {flow.duration !== undefined && flow.duration > 0 && (
+                      <span>Duration: {flow.duration} {flow.duration === 1 ? 'day' : 'days'}</span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
       
       <AddToFlowDialog
