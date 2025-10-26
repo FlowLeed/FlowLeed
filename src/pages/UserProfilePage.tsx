@@ -464,6 +464,15 @@ const UserProfilePage = () => {
     }
   };
 
+  // Helper function to get initials from name
+  const getInitials = (name: string) => {
+    const parts = name.split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   // Handle contact edit
   const handleEditContact = async (updatedContact: any) => {
     try {
@@ -644,7 +653,7 @@ const UserProfilePage = () => {
               <Avatar className="h-16 w-16">
                 <AvatarImage src={contact.avatar} alt={contact.name} />
                 <AvatarFallback>
-                  <User className="h-8 w-8" />
+                  {getInitials(contact.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
