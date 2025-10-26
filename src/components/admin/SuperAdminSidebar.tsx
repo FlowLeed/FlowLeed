@@ -69,7 +69,7 @@ const NavLink = ({ item, isActive }: { item: NavItem; isActive: boolean }) => {
           : "text-sidebar-foreground hover:bg-sidebar-accent/50 cursor-pointer"
       }`}
     >
-      <item.icon className={`mr-3 h-5 w-5 ${item.disabled ? "text-sidebar-foreground/30" : isActive ? "text-white" : "text-purple-500"}`} />
+      <item.icon className={`mr-3 h-5 w-5 ${item.disabled ? "text-sidebar-foreground/30" : isActive ? "text-white" : "text-sidebar-foreground"}`} />
       <span className="font-extralight">{item.title}</span>
       {item.disabled && (
         <span className="ml-auto text-xs text-sidebar-foreground/30">Soon</span>

@@ -54,7 +54,7 @@ export const MyFlowsQuickAccess = ({ flows, loading }: MyFlowsQuickAccessProps) 
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="p-2 bg-muted rounded-md">
-                      <Icon className="h-4 w-4 text-primary" />
+                      <Icon className="h-4 w-4 text-sidebar-foreground" />
                     </div>
                     {flow.myContactsCount > 0 && (
                       <Badge variant="secondary" className="text-xs">

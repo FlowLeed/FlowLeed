@@ -33,7 +33,7 @@ export const MetricCard = ({
             )}
           </div>
           <div className="p-2 bg-primary/10 rounded-lg">
-            <Icon className="h-5 w-5 text-primary" />
+            <Icon className="h-5 w-5 text-sidebar-foreground" />
           </div>
         </div>
       </CardContent>

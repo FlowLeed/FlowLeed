@@ -303,7 +303,7 @@ export const Header: React.FC<HeaderProps> = ({
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-          {showFlowIcon && <FlowIcon className="h-5 w-5 text-purple-500" />}
+          {showFlowIcon && <FlowIcon className="h-5 w-5 text-sidebar-foreground" />}
           <div>
             <div className="text-lg font-extralight">{title}</div>
           </div>

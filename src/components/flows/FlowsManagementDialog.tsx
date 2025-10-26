@@ -182,7 +182,7 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
                               </div>
 
                               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                                <FlowIcon className="h-5 w-5 text-primary" />
+                                <FlowIcon className="h-5 w-5 text-sidebar-foreground" />
                               </div>
 
                               <div className="flex-1 min-w-0">
