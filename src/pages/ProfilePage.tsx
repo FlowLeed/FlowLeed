@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
+import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
 const ProfilePage = () => {
   const navigate = useNavigate();
   const {
@@ -31,6 +32,7 @@ const ProfilePage = () => {
     loading
   } = useProfile();
   const { numbers: twilioNumbers } = useTwilioNumbers();
+  const { updateProgress } = useMemberOnboarding(user?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   
@@ -91,6 +93,10 @@ const ProfilePage = () => {
         use_twilio_integration: useTwilioIntegration
       }).eq('user_id', user.id);
       if (error) throw error;
+      
+      // Update member onboarding progress
+      await updateProgress('profile_completed', true);
+      
       toast({
         title: "Profile updated",
         description: "Your profile has been saved successfully."
