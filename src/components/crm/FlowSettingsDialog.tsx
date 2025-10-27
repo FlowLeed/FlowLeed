@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, X, Star, Wrench, User, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Users } from "lucide-react";
+import { UserPlus, X, Star, User, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Users } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import type { LucideIcon } from "lucide-react";
 import { AIDescriptionSuggestions } from "@/components/flows/AIDescriptionSuggestions";
@@ -19,7 +19,7 @@ import { iconMap, iconOptions } from "@/lib/flowIcons";
 interface FlowTeamMember {
   id: string;
   user_id: string;
-  role: 'lead' | 'manager' | 'contributor';
+  role: 'lead' | 'member';
   full_name: string | null;
   email: string;
   avatar_url: string | null;
@@ -72,7 +72,6 @@ export const FlowSettingsDialog = ({
   const [teamMembers, setTeamMembers] = useState<FlowTeamMember[]>([]);
   const [orgMembers, setOrgMembers] = useState<OrganizationMember[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedRole, setSelectedRole] = useState<'contributor' | 'manager'>('contributor');
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { toast } = useToast();
@@ -125,7 +124,7 @@ export const FlowSettingsDialog = ({
         return {
           id: m.id,
           user_id: m.user_id,
-          role: m.role as 'lead' | 'manager' | 'contributor',
+          role: m.role as 'lead' | 'member',
           full_name: profile?.full_name || null,
           email: profile?.email || "",
           avatar_url: profile?.avatar_url || null,
@@ -197,7 +196,7 @@ export const FlowSettingsDialog = ({
       .insert({
         pipeline_id: flowId,
         user_id: selectedUserId,
-        role: selectedRole,
+        role: 'member',
       });
 
     if (error) {
@@ -213,7 +212,6 @@ export const FlowSettingsDialog = ({
       });
       fetchTeamMembers();
       setSelectedUserId("");
-      setSelectedRole('contributor');
     }
     setLoading(false);
   };
@@ -450,8 +448,6 @@ export const FlowSettingsDialog = ({
     switch (role) {
       case 'lead':
         return <Star className="h-4 w-4" />;
-      case 'manager':
-        return <Wrench className="h-4 w-4" />;
       default:
         return <User className="h-4 w-4" />;
     }
@@ -533,10 +529,11 @@ export const FlowSettingsDialog = ({
             {/* Add New Member */}
             <div className="space-y-2">
               <Label className="text-sm">Add Team Member</Label>
+              <p className="text-xs text-muted-foreground">Members can work with all contacts in this flow</p>
               <div className="flex gap-2">
                 <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select member" />
+                    <SelectValue placeholder="Select member to add" />
                   </SelectTrigger>
                   <SelectContent>
                     {availableMembers.map((member) => (
@@ -544,16 +541,6 @@ export const FlowSettingsDialog = ({
                         {member.full_name || member.email}
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as 'contributor' | 'manager')}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="contributor">Contributor</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -610,9 +597,8 @@ export const FlowSettingsDialog = ({
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="lead" disabled>Lead</SelectItem>
-                          <SelectItem value="manager">Manager</SelectItem>
-                          <SelectItem value="contributor">Contributor</SelectItem>
+                          <SelectItem value="lead">Lead</SelectItem>
+                          <SelectItem value="member">Member</SelectItem>
                         </SelectContent>
                       </Select>
 
