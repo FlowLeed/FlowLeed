@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,11 +29,11 @@ export function PlanningCenterListBrowser({
   onSelectList, 
   selectedListId 
 }: PlanningCenterListBrowserProps) {
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // First try to get cached lists from database
-  const { data: cachedLists, isLoading: cachedLoading } = useQuery({
+  // Get cached lists from database
+  const { data: cachedLists, isLoading } = useQuery({
     queryKey: ['cached-lists', integrationId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,10 +59,9 @@ export function PlanningCenterListBrowser({
     enabled: !!integrationId,
   });
 
-  // Fallback to fetching from API if no cached data
-  const { data: freshLists, isLoading: freshLoading, refetch } = useQuery({
-    queryKey: ['planning-center-lists', integrationId],
-    queryFn: async () => {
+  // Mutation for refreshing lists
+  const refreshMutation = useMutation({
+    mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke('planning-center-lists', {
         body: {
           action: 'fetchLists',
@@ -71,31 +70,26 @@ export function PlanningCenterListBrowser({
       });
 
       if (error) throw error;
-      return data.lists as PlanningCenterList[];
+      return data;
     },
-    enabled: !!integrationId && (!cachedLists || cachedLists.length === 0),
-  });
-
-  const lists = cachedLists && cachedLists.length > 0 ? cachedLists : freshLists;
-  const isLoading = cachedLoading || freshLoading;
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refetch();
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cached-lists', integrationId] });
       toast({
         title: 'Lists refreshed',
         description: 'Planning Center lists have been updated.',
       });
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: 'Error',
         description: 'Failed to refresh lists. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setIsRefreshing(false);
-    }
+    },
+  });
+
+  const handleRefresh = () => {
+    refreshMutation.mutate();
   };
 
   if (isLoading) {
@@ -107,7 +101,7 @@ export function PlanningCenterListBrowser({
     );
   }
 
-  if (!lists || lists.length === 0) {
+  if (!cachedLists || cachedLists.length === 0) {
     return (
       <div className="text-center p-8">
         <List className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -115,8 +109,8 @@ export function PlanningCenterListBrowser({
         <p className="text-muted-foreground mb-4">
           No Planning Center lists were found for this integration.
         </p>
-        <Button onClick={handleRefresh} disabled={isRefreshing}>
-          {isRefreshing ? (
+        <Button onClick={handleRefresh} disabled={refreshMutation.isPending}>
+          {refreshMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : null}
           Refresh Lists
@@ -133,9 +127,9 @@ export function PlanningCenterListBrowser({
           variant="outline" 
           size="sm" 
           onClick={handleRefresh}
-          disabled={isRefreshing}
+          disabled={refreshMutation.isPending}
         >
-          {isRefreshing ? (
+          {refreshMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
           ) : null}
           Refresh
@@ -143,7 +137,7 @@ export function PlanningCenterListBrowser({
       </div>
 
       <div className="grid gap-3 max-h-96 overflow-y-auto">
-        {lists.map((list) => (
+        {cachedLists.map((list) => (
           <Card
             key={list.id}
             className={`cursor-pointer transition-colors hover:bg-accent ${
