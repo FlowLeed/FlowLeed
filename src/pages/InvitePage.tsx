@@ -35,6 +35,7 @@ export default function InvitePage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [signupComplete, setSignupComplete] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
 
   useEffect(() => {
     if (token && !signupComplete) {
@@ -220,52 +221,65 @@ export default function InvitePage() {
   };
 
   const acceptInvitation = async () => {
-    if (!invitation || !user) return;
+    if (!invitation || !token) return;
 
     try {
       setAccepting(true);
-      setError(null);
+      setAcceptError(null);
 
-      console.log('Accepting invitation:', invitation.id);
+      console.log('Calling accept-invitation edge function');
       
-      // Accept the invitation
-      const { error: inviteError } = await supabase
-        .from('invitations')
-        .update({ accepted_at: new Date().toISOString() })
-        .eq('id', invitation.id);
+      // Call the secure edge function to accept the invitation
+      const { data, error } = await supabase.functions.invoke('accept-invitation', {
+        body: { token }
+      });
 
-      if (inviteError) {
-        console.error('Error updating invitation:', inviteError);
-        throw inviteError;
+      if (error) {
+        console.error('Edge function error:', error);
+        
+        // Check if it's an invalid/expired token error (should show global error)
+        if (error.message?.includes('Invalid') || error.message?.includes('expired')) {
+          setError(error.message);
+          return;
+        }
+        
+        // Otherwise, show inline error
+        setAcceptError(error.message || 'Failed to accept invitation');
+        return;
       }
 
-      console.log('Adding user to organization:', invitation.organization_id);
-      
-      // Add user to organization
-      const { error: memberError } = await supabase
-        .from('organization_members')
-        .insert({
-          organization_id: invitation.organization_id,
-          user_id: user.id,
-          role: invitation.role
-        });
-
-      if (memberError) {
-        console.error('Error adding member:', memberError);
-        throw memberError;
+      if (data?.error) {
+        console.error('Response error:', data.error);
+        
+        // Check for email mismatch or other acceptance errors
+        if (data.error.includes('This invitation is for')) {
+          setAcceptError(data.error);
+          return;
+        }
+        
+        // Check if it's an invalid/expired token error
+        if (data.error.includes('Invalid') || data.error.includes('expired')) {
+          setError(data.error);
+          return;
+        }
+        
+        setAcceptError(data.error);
+        return;
       }
+
+      console.log('Invitation accepted successfully');
 
       toast({
         title: "Invitation accepted!",
-        description: `Welcome to ${invitation.organization_name}!`,
+        description: data?.message || `Welcome to ${invitation.organization_name}!`,
       });
 
       // Redirect to dashboard
       navigate('/dashboard');
 
     } catch (error) {
-      console.error('Error accepting invitation:', error);
-      setError('Failed to accept invitation. Please try again.');
+      console.error('Unexpected error accepting invitation:', error);
+      setAcceptError('An unexpected error occurred. Please try again.');
     } finally {
       setAccepting(false);
     }
@@ -282,6 +296,7 @@ export default function InvitePage() {
     );
   }
 
+  // Only show the global "Invalid Invitation" screen for invalid/expired/already-accepted tokens
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -332,6 +347,12 @@ export default function InvitePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {acceptError && (
+              <Alert variant="destructive">
+                <AlertDescription>{acceptError}</AlertDescription>
+              </Alert>
+            )}
+            
             <div className="text-center space-y-2">
               <p><strong>Organization:</strong> {invitation.organization_name}</p>
               <p><strong>Invited by:</strong> {invitation.inviter_name}</p>
@@ -374,9 +395,9 @@ export default function InvitePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {error && (
+          {acceptError && (
             <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{acceptError}</AlertDescription>
             </Alert>
           )}
 

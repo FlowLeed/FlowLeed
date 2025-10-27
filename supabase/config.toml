@@ -49,6 +49,9 @@ verify_jwt = true
 [functions.create-invited-user]
 verify_jwt = false
 
+[functions.accept-invitation]
+verify_jwt = true
+
 [functions.generate-contact-suggestions]
 verify_jwt = false
 
