@@ -1304,39 +1304,54 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
+          department: string | null
           email: string
           full_name: string | null
           id: string
+          job_title: string | null
+          location: string | null
           onboarding_completed: boolean | null
           onboarding_dismissed: boolean | null
           onboarding_progress: Json | null
+          phone: string | null
           updated_at: string
           use_twilio_integration: boolean | null
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          department?: string | null
           email: string
           full_name?: string | null
           id?: string
+          job_title?: string | null
+          location?: string | null
           onboarding_completed?: boolean | null
           onboarding_dismissed?: boolean | null
           onboarding_progress?: Json | null
+          phone?: string | null
           updated_at?: string
           use_twilio_integration?: boolean | null
           user_id: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          department?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          job_title?: string | null
+          location?: string | null
           onboarding_completed?: boolean | null
           onboarding_dismissed?: boolean | null
           onboarding_progress?: Json | null
+          phone?: string | null
           updated_at?: string
           use_twilio_integration?: boolean | null
           user_id?: string
