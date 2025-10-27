@@ -165,8 +165,8 @@ const Dashboard = () => {
     },
     {
       id: "first_interaction",
-      title: "Explore a Flow",
-      description: "Learn how to interact with contacts in your flows",
+      title: "Explore a People",
+      description: "Click a card to view details and next steps for that person.",
       completed: memberOnboarding.progress.first_interaction,
     },
   ];
