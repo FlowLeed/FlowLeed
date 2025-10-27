@@ -64,7 +64,7 @@ export const OnboardingCelebration = ({
             <div className="space-y-2">
               <h2 className="text-2xl font-bold">{message}</h2>
               <p className="text-muted-foreground">
-                You've completed all the onboarding steps. You're all set to start managing your contacts and flows!
+                Every step is set — now it's time to connect, care, and lead people where God is calling them.
               </p>
             </div>
             <Button onClick={onComplete} size="lg" className="w-full">

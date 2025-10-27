@@ -257,7 +257,7 @@ const Dashboard = () => {
       {/* Celebration */}
       {showCelebration && (
         <OnboardingCelebration
-          message={isOwner ? "Your Organization is Ready to Serve! 🎉" : "You're Ready to Serve! 🎉"}
+          message={isOwner ? "You're ready to flow forward! 🌊" : "You're Ready to Serve! 🎉"}
           ctaLabel={isOwner ? "Start Managing Contacts" : "View My Flows"}
           onComplete={() => {
             setShowCelebration(false);
