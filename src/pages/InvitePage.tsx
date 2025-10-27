@@ -233,7 +233,11 @@ export default function InvitePage() {
           return;
         }
 
-        console.log('Sign in successful, accepting invitation...');
+        console.log('Sign in successful, waiting for session to propagate...');
+        // Small delay to ensure session is fully propagated to the client
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        console.log('Session ready, accepting invitation...');
         // After successful sign in, accept the invitation
         await acceptInvitation();
       }
@@ -254,13 +258,29 @@ export default function InvitePage() {
 
       console.log('Calling accept-invitation edge function with token:', token);
 
+      // Get the current session and manually pass the auth header
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setAcceptError("Authentication session not found. Please try signing in again.");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('accept-invitation', {
-        body: { token }
+        body: { token },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) {
         console.error('Network/auth error accepting invitation:', error);
-        setAcceptError('Failed to connect. Please check your connection and try again.');
+        const errorMessage = error.message || error.toString();
+        
+        if (errorMessage.includes('session') || errorMessage.includes('auth')) {
+          setAcceptError('Authentication session expired. Please try signing in again.');
+        } else {
+          setAcceptError('Failed to connect. Please check your connection and try again.');
+        }
         return;
       }
 
