@@ -98,12 +98,13 @@ serve(async (req) => {
         .single();
 
       if (existingMember) {
-        console.log('User is already a member, returning success');
+        console.log('User is already a member, returning success (idempotent)');
         return new Response(
           JSON.stringify({ 
             success: true,
-            message: 'You are already a member of this organization',
-            organization_name: invitation.organizations?.name
+            message: `You're already a member of ${invitation.organizations?.name}`,
+            organization_name: invitation.organizations?.name,
+            already_member: true
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );

@@ -36,12 +36,13 @@ export default function InvitePage() {
   const [fullName, setFullName] = useState('');
   const [signupComplete, setSignupComplete] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
+  const [acceptedComplete, setAcceptedComplete] = useState(false);
 
   useEffect(() => {
-    if (token && !signupComplete) {
+    if (token && !signupComplete && !acceptedComplete) {
       fetchInvitation();
     }
-  }, [token, signupComplete]);
+  }, [token, signupComplete, acceptedComplete]);
 
   const fetchInvitation = async () => {
     try {
@@ -110,6 +111,21 @@ export default function InvitePage() {
       console.log('Invitation data received:', invitationDataRaw);
 
       if (invitationDataRaw.accepted_at) {
+        console.log('Invitation already accepted');
+        
+        // If user is signed in with the invited email, treat as success
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && user.email?.toLowerCase() === invitationDataRaw.email.toLowerCase()) {
+          toast({
+            title: "Already a Member",
+            description: `You're already part of ${invitationDataRaw.organization_name}`,
+          });
+          setAcceptedComplete(true);
+          setTimeout(() => navigate('/dashboard'), 500);
+          return;
+        }
+        
+        // Otherwise, show error
         setError('This invitation has already been accepted.');
         return;
       }
@@ -205,10 +221,19 @@ export default function InvitePage() {
         const { error } = await signIn(email, password);
         
         if (error) {
-          setError(error.message);
+          console.error('Sign in error:', error);
+          setAcceptError(error.message || "Failed to sign in. Please try again.");
           return;
         }
 
+        // Verify session before accepting
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setAcceptError("Authentication failed. Please try again.");
+          return;
+        }
+
+        console.log('Sign in successful, accepting invitation...');
         // After successful sign in, accept the invitation
         await acceptInvitation();
       }
@@ -227,58 +252,60 @@ export default function InvitePage() {
       setAccepting(true);
       setAcceptError(null);
 
-      console.log('Calling accept-invitation edge function');
-      
-      // Call the secure edge function to accept the invitation
+      console.log('Calling accept-invitation edge function with token:', token);
+
       const { data, error } = await supabase.functions.invoke('accept-invitation', {
         body: { token }
       });
 
       if (error) {
-        console.error('Edge function error:', error);
-        
-        // Check if it's an invalid/expired token error (should show global error)
-        if (error.message?.includes('Invalid') || error.message?.includes('expired')) {
-          setError(error.message);
-          return;
-        }
-        
-        // Otherwise, show inline error
-        setAcceptError(error.message || 'Failed to accept invitation');
+        console.error('Network/auth error accepting invitation:', error);
+        setAcceptError('Failed to connect. Please check your connection and try again.');
         return;
       }
 
       if (data?.error) {
-        console.error('Response error:', data.error);
+        console.error('Server error:', data.error);
+        const errorMsg = data.error.toLowerCase();
         
-        // Check for email mismatch or other acceptance errors
-        if (data.error.includes('This invitation is for')) {
-          setAcceptError(data.error);
-          return;
-        }
-        
-        // Check if it's an invalid/expired token error
-        if (data.error.includes('Invalid') || data.error.includes('expired')) {
+        // Truly invalid cases - show global error
+        if (errorMsg.includes('invalid') || errorMsg.includes('expired')) {
           setError(data.error);
           return;
         }
         
+        // Already a member or already accepted - treat as success
+        if (errorMsg.includes('already a member') || data.success) {
+          console.log('User already a member, treating as success');
+          setAcceptedComplete(true);
+          localStorage.setItem('selectedOrganizationId', invitation.organization_id);
+          toast({
+            title: "Welcome!",
+            description: data.message || "You're already a member of this organization",
+          });
+          setTimeout(() => navigate('/dashboard'), 300);
+          return;
+        }
+        
+        // Email mismatch or other retryable errors - inline
         setAcceptError(data.error);
         return;
       }
 
-      console.log('Invitation accepted successfully');
-
+      // Success
+      console.log('Invitation accepted successfully:', data);
+      setAcceptedComplete(true);
+      localStorage.setItem('selectedOrganizationId', invitation.organization_id);
+      
       toast({
-        title: "Invitation accepted!",
-        description: data?.message || `Welcome to ${invitation.organization_name}!`,
+        title: "Success!",
+        description: data.message || "Welcome to the team!",
       });
 
-      // Redirect to dashboard
-      navigate('/dashboard');
+      setTimeout(() => navigate('/dashboard'), 300);
 
-    } catch (error) {
-      console.error('Unexpected error accepting invitation:', error);
+    } catch (err) {
+      console.error('Unexpected error:', err);
       setAcceptError('An unexpected error occurred. Please try again.');
     } finally {
       setAccepting(false);
