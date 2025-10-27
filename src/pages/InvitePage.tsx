@@ -180,11 +180,13 @@ export default function InvitePage() {
         }
 
         if (data?.requiresSignIn) {
-          toast({
-            title: "Account created",
-            description: "Please sign in to continue.",
-          });
+          // User already exists - switch to sign-in mode
           setAuthMode('signin');
+          toast({
+            title: "Account Already Exists",
+            description: data.message || "Please sign in to accept the invitation.",
+          });
+          setError(null); // Clear any existing errors
           return;
         }
 

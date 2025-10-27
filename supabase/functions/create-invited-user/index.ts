@@ -78,6 +78,19 @@ serve(async (req) => {
 
     if (createError) {
       console.error('Error creating user:', createError);
+      
+      // Check if user already exists
+      if (createError.message?.includes('already') || createError.message?.includes('exists') || createError.status === 422) {
+        console.log('User already exists, returning requiresSignIn flag');
+        return new Response(
+          JSON.stringify({ 
+            requiresSignIn: true,
+            message: 'An account with this email already exists. Please sign in to accept the invitation.'
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ error: createError.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
