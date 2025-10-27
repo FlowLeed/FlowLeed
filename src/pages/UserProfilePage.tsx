@@ -13,6 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus, Tags } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
 
 import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
 import { InteractionTimeline } from "@/components/contact/InteractionTimeline";
@@ -52,9 +53,16 @@ const UserProfilePage = () => {
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [activeCall, setActiveCall] = useState<CallRecord | null>(null);
   
+  // Onboarding: mark "first_interaction" when a contact profile is viewed
+  const { updateProgress, progress } = useMemberOnboarding(user?.id);
+  useEffect(() => {
+    if (user?.id && contactId && !progress.first_interaction) {
+      updateProgress('first_interaction', true);
+    }
+  }, [user?.id, contactId, progress.first_interaction]);
+  
   // Get tag suggestions for the organization
   const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
-
   // Fetch comprehensive contact data
   const { data: contactData, isLoading, error } = useQuery({
     queryKey: ["contact-comprehensive", contactId],
