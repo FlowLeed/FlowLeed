@@ -29,7 +29,7 @@ const FlowPage = () => {
     if (user?.id && flowId && !progress.flows_reviewed) {
       updateProgress('flows_reviewed', true);
     }
-  }, [user?.id, flowId, progress.flows_reviewed]);
+  }, [user?.id, flowId, progress.flows_reviewed, updateProgress]);
 
   // Show loading spinner while flows are being fetched
   if (loading) {

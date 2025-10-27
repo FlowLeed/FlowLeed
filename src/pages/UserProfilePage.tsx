@@ -59,7 +59,7 @@ const UserProfilePage = () => {
     if (user?.id && contactId && !progress.first_interaction) {
       updateProgress('first_interaction', true);
     }
-  }, [user?.id, contactId, progress.first_interaction]);
+  }, [user?.id, contactId, progress.first_interaction, updateProgress]);
   
   // Get tag suggestions for the organization
   const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);

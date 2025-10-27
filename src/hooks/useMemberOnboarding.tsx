@@ -72,6 +72,9 @@ export const useMemberOnboarding = (userId: string | undefined) => {
   const updateProgress = async (step: keyof MemberOnboardingProgress, value: boolean) => {
     if (!userId) return;
 
+    // Don't update if already at this value
+    if (progress[step] === value) return;
+
     const newProgress = { ...progress, [step]: value };
     setProgress(newProgress);
 
@@ -83,7 +86,8 @@ export const useMemberOnboarding = (userId: string | undefined) => {
 
       if (error) throw error;
 
-      if (value) {
+      // Only show toast when completing a step (not if already completed)
+      if (value && !progress[step]) {
         toast({
           title: "Step Completed!",
           description: "Great progress on your onboarding journey.",
