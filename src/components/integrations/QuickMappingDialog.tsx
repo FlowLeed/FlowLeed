@@ -20,6 +20,7 @@ interface QuickMappingDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   integrationId: string;
+  onMappingCreated?: () => void | Promise<void>;
 }
 
 interface CachedList {
@@ -47,6 +48,7 @@ export function QuickMappingDialog({
   isOpen,
   onOpenChange,
   integrationId,
+  onMappingCreated,
 }: QuickMappingDialogProps) {
   const [selectedListId, setSelectedListId] = useState<string>('');
   const [selectedFlowId, setSelectedFlowId] = useState<string>('');
@@ -177,6 +179,15 @@ export function QuickMappingDialog({
         title: isUpdate ? 'Mapping updated successfully' : 'Mapping created successfully',
         description: `"${selectedList.name}" is now ${isUpdate ? 'remapped and' : 'mapped and'} will sync automatically every 15 minutes.`,
       });
+      
+      // Call onboarding callback if provided
+      if (onMappingCreated) {
+        try {
+          await onMappingCreated();
+        } catch (error) {
+          console.warn('Failed to update onboarding progress:', error);
+        }
+      }
       
       // Automatically trigger initial sync
       try {

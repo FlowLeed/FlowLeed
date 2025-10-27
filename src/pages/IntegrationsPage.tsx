@@ -16,12 +16,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
+import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
+
 const IntegrationsPage = () => {
   const navigate = useNavigate();
   const {
     toast
   } = useToast();
   const queryClient = useQueryClient();
+  
+  // Get organization ID for onboarding
+  const { data: userOrgData } = useQuery({
+    queryKey: ['user-organization'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+      
+      return data;
+    }
+  });
+  
+  const { updateProgress } = useOrgOwnerOnboarding(userOrgData?.organization_id);
   const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string>('');
   const [isSyncing, setIsSyncing] = useState(false);
@@ -113,7 +134,7 @@ const IntegrationsPage = () => {
       
       return { ...data, connectionTest: testResult.data };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({
         queryKey: ['integrations']
       });
@@ -125,6 +146,11 @@ const IntegrationsPage = () => {
         title: 'Integration Connected',
         description: `Successfully connected to Planning Center as ${data.connectionTest?.user?.first_name} ${data.connectionTest?.user?.last_name}. Lists have been pre-loaded for quick mapping.`
       });
+      
+      // Update onboarding progress for pco_connected
+      if (userOrgData?.organization_id) {
+        await updateProgress('pco_connected', true);
+      }
     },
     onError: error => {
       toast({
@@ -371,7 +397,15 @@ const IntegrationsPage = () => {
         </Card>
       </div>
 
-      <QuickMappingDialog isOpen={mappingDialogOpen} onOpenChange={setMappingDialogOpen} integrationId={selectedIntegrationId} />
+      <QuickMappingDialog 
+        isOpen={mappingDialogOpen} 
+        onOpenChange={setMappingDialogOpen} 
+        integrationId={selectedIntegrationId}
+        onMappingCreated={async () => {
+          // Update onboarding progress when mapping is created
+          await updateProgress('pco_lists_mapped', true);
+        }}
+      />
     </div>;
 };
 export default IntegrationsPage;
