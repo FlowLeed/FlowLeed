@@ -64,9 +64,8 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
     // Get integration credentials
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('credentials, settings')
+      .select('credentials, settings, organization_id')
       .eq('id', integrationId)
-      .eq('user_id', userId)
       .single();
 
     if (integrationError) {
@@ -181,9 +180,8 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
     // Get integration credentials
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('credentials, settings')
+      .select('credentials, settings, organization_id')
       .eq('id', integrationId)
-      .eq('user_id', userId)
       .single();
 
     if (integrationError || !integration) {
