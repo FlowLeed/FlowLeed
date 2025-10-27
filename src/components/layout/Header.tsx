@@ -399,7 +399,7 @@ export const Header: React.FC<HeaderProps> = ({
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5">
                 <Avatar className="h-7 w-7">
-                  <AvatarImage src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} alt={displayName} />
+                  <AvatarImage src={profile?.avatar_url || ""} alt={displayName} />
                   <AvatarFallback>
                     {initials}
                   </AvatarFallback>

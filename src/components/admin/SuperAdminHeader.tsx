@@ -51,7 +51,7 @@ export const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({ title, icon:
               <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5">
                 <Avatar className="h-7 w-7">
                   <AvatarImage 
-                    src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} 
+                    src="" 
                     alt={displayName} 
                   />
                   <AvatarFallback>{initials}</AvatarFallback>
