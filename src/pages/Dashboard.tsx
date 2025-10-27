@@ -37,6 +37,7 @@ const Dashboard = () => {
 
   // Onboarding state
   const [isOwner, setIsOwner] = useState(false);
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [showOwnerWizard, setShowOwnerWizard] = useState(false);
   const [showMemberWizard, setShowMemberWizard] = useState(false);
@@ -58,6 +59,9 @@ const Dashboard = () => {
 
       const userIsOwner = data?.role === "owner";
       setIsOwner(userIsOwner);
+
+      // Mark initial load as complete
+      setIsInitialLoadComplete(true);
 
       // Show wizard on first visit for incomplete onboarding
       const hasSeenWizard = localStorage.getItem(`wizard-seen-${user.id}`);
@@ -171,9 +175,9 @@ const Dashboard = () => {
     },
   ];
 
-  const shouldShowOnboarding = isOwner 
+  const shouldShowOnboarding = isInitialLoadComplete && (isOwner 
     ? !ownerOnboarding.isCompleted && !ownerOnboarding.isLoading
-    : !memberOnboarding.isCompleted && !memberOnboarding.isDismissed && !memberOnboarding.isLoading;
+    : !memberOnboarding.isCompleted && !memberOnboarding.isDismissed && !memberOnboarding.isLoading);
 
   return (
     <div className="flex flex-col h-full">
