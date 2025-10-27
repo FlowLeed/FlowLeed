@@ -34,12 +34,13 @@ export default function InvitePage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [signupComplete, setSignupComplete] = useState(false);
 
   useEffect(() => {
-    if (token) {
+    if (token && !signupComplete) {
       fetchInvitation();
     }
-  }, [token]);
+  }, [token, signupComplete]);
 
   const fetchInvitation = async () => {
     try {
@@ -188,16 +189,15 @@ export default function InvitePage() {
         }
 
         // Success! User created and invitation accepted
+        setSignupComplete(true);
+        
         toast({
           title: "Welcome!",
           description: "Your account has been created and you've joined the organization.",
         });
         
-        // Refresh the session
-        await supabase.auth.refreshSession();
-        
-        // Redirect to dashboard
-        navigate('/');
+        // Redirect to dashboard immediately without refetching
+        setTimeout(() => navigate('/'), 500);
       } else {
         const { error } = await signIn(email, password);
         
