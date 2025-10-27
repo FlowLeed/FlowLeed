@@ -1308,6 +1308,9 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          onboarding_completed: boolean | null
+          onboarding_dismissed: boolean | null
+          onboarding_progress: Json | null
           updated_at: string
           use_twilio_integration: boolean | null
           user_id: string
@@ -1318,6 +1321,9 @@ export type Database = {
           email: string
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean | null
+          onboarding_dismissed?: boolean | null
+          onboarding_progress?: Json | null
           updated_at?: string
           use_twilio_integration?: boolean | null
           user_id: string
@@ -1328,6 +1334,9 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean | null
+          onboarding_dismissed?: boolean | null
+          onboarding_progress?: Json | null
           updated_at?: string
           use_twilio_integration?: boolean | null
           user_id?: string
