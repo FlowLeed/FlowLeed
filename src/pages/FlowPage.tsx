@@ -12,7 +12,7 @@ const FlowPage = () => {
   const navigate = useNavigate();
   const { flows, updateFlow, loading, error } = useFlowContext();
   const { user } = useAuth();
-  const { updateProgress, progress } = useMemberOnboarding(user?.id);
+  const { updateProgress, progress, isLoading: onboardingLoading } = useMemberOnboarding(user?.id);
 
   // Redirect to dashboard if there's an organization error or no flows available
   useEffect(() => {
@@ -26,10 +26,10 @@ const FlowPage = () => {
 
   // Mark member onboarding step when any flow is viewed
   useEffect(() => {
-    if (user?.id && flowId && !progress.flows_reviewed) {
+    if (user?.id && flowId && !onboardingLoading && !progress.flows_reviewed) {
       updateProgress('flows_reviewed', true);
     }
-  }, [user?.id, flowId, progress.flows_reviewed, updateProgress]);
+  }, [user?.id, flowId, onboardingLoading, progress.flows_reviewed, updateProgress]);
 
   // Show loading spinner while flows are being fetched
   if (loading) {

@@ -72,6 +72,12 @@ export const useMemberOnboarding = (userId: string | undefined) => {
   const updateProgress = async (step: keyof MemberOnboardingProgress, value: boolean) => {
     if (!userId) return;
 
+    // Don't update while loading initial state
+    if (isLoading) return;
+
+    // Don't update if onboarding is completed or dismissed
+    if (isCompleted || isDismissed) return;
+
     // Don't update if already at this value
     if (progress[step] === value) return;
 

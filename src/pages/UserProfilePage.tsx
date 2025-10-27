@@ -54,12 +54,12 @@ const UserProfilePage = () => {
   const [activeCall, setActiveCall] = useState<CallRecord | null>(null);
   
   // Onboarding: mark "first_interaction" when a contact profile is viewed
-  const { updateProgress, progress } = useMemberOnboarding(user?.id);
+  const { updateProgress, progress, isLoading: onboardingLoading } = useMemberOnboarding(user?.id);
   useEffect(() => {
-    if (user?.id && contactId && !progress.first_interaction) {
+    if (user?.id && contactId && !onboardingLoading && !progress.first_interaction) {
       updateProgress('first_interaction', true);
     }
-  }, [user?.id, contactId, progress.first_interaction, updateProgress]);
+  }, [user?.id, contactId, onboardingLoading, progress.first_interaction, updateProgress]);
   
   // Get tag suggestions for the organization
   const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
