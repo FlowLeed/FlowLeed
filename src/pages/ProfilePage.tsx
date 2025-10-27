@@ -58,11 +58,11 @@ const ProfilePage = () => {
         firstName,
         lastName,
         email: user.email || '',
-        phone: '',
-        location: '',
-        bio: '',
-        jobTitle: '',
-        department: ''
+        phone: (profile as any).phone || '',
+        location: (profile as any).location || '',
+        bio: (profile as any).bio || '',
+        jobTitle: (profile as any).job_title || '',
+        department: (profile as any).department || ''
       });
       setUseTwilioIntegration(profile.use_twilio_integration ?? true);
     }
@@ -85,12 +85,17 @@ const ProfilePage = () => {
       // Combine first and last name for full_name
       const fullName = `${formData.firstName} ${formData.lastName}`.trim();
 
-      // Update profile in database
+      // Update profile in database with all form fields
       const {
         error
       } = await supabase.from('profiles').update({
         full_name: fullName || null,
-        use_twilio_integration: useTwilioIntegration
+        use_twilio_integration: useTwilioIntegration,
+        phone: formData.phone || null,
+        location: formData.location || null,
+        bio: formData.bio || null,
+        job_title: formData.jobTitle || null,
+        department: formData.department || null
       }).eq('user_id', user.id);
       if (error) throw error;
       
