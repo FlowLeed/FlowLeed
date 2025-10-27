@@ -131,27 +131,51 @@ export function QuickMappingDialog({
         throw new Error('Selected list not found');
       }
 
-      const { error } = await supabase
+      // Check if mapping already exists for this list
+      const { data: existingMapping } = await supabase
         .from('integration_list_mappings')
-        .insert({
-          integration_id: integrationId,
-          pipeline_id: selectedFlowId,
-          stage_id: selectedStageId,
-          external_list_id: selectedListId,
-          external_list_name: selectedList.name,
-          auto_sync: true, // Smart default - auto-enable sync
-        });
+        .select('id')
+        .eq('integration_id', integrationId)
+        .eq('external_list_id', selectedListId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingMapping) {
+        // Update existing mapping to point to new flow/stage
+        const { error } = await supabase
+          .from('integration_list_mappings')
+          .update({
+            pipeline_id: selectedFlowId,
+            stage_id: selectedStageId,
+            external_list_name: selectedList.name,
+            auto_sync: true,
+          })
+          .eq('id', existingMapping.id);
 
-      return selectedList;
+        if (error) throw error;
+      } else {
+        // Create new mapping
+        const { error } = await supabase
+          .from('integration_list_mappings')
+          .insert({
+            integration_id: integrationId,
+            pipeline_id: selectedFlowId,
+            stage_id: selectedStageId,
+            external_list_id: selectedListId,
+            external_list_name: selectedList.name,
+            auto_sync: true,
+          });
+
+        if (error) throw error;
+      }
+
+      return { selectedList, isUpdate: !!existingMapping };
     },
-    onSuccess: async (selectedList) => {
+    onSuccess: async ({ selectedList, isUpdate }) => {
       queryClient.invalidateQueries({ queryKey: ['integration-list-mappings'] });
       
       toast({
-        title: 'Mapping created successfully',
-        description: `"${selectedList.name}" is now mapped and will sync automatically every 15 minutes.`,
+        title: isUpdate ? 'Mapping updated successfully' : 'Mapping created successfully',
+        description: `"${selectedList.name}" is now ${isUpdate ? 'remapped and' : 'mapped and'} will sync automatically every 15 minutes.`,
       });
       
       // Automatically trigger initial sync
