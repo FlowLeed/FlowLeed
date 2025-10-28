@@ -144,16 +144,16 @@
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: #9333EA; /* Purple color matching the Messages button */
+  background: #A855F7; /* Purple-500 matching highlighted buttons */
   border-radius: 4px;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: #7E22CE; /* Darker purple on hover */
+  background: #9333EA; /* Darker purple on hover */
 }
 
 /* Firefox scrollbar styling */
 .sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #9333EA transparent;
+  scrollbar-color: #A855F7 transparent;
 }
