@@ -56,14 +56,20 @@ const IntegrationsPage = () => {
     data: integrations,
     isLoading: integrationsLoading
   } = useQuery({
-    queryKey: ['integrations'],
+    queryKey: ['integrations', userOrgData?.organization_id],
+    enabled: !!userOrgData?.organization_id,
     queryFn: async () => {
       const {
         data,
         error
-      } = await supabase.from('integrations').select('*').eq('service_name', 'planning_center');
+      } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('service_name', 'planning_center')
+        .eq('organization_id', userOrgData!.organization_id)
+        .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return data ?? [];
     }
   });
   const planningCenterIntegration = integrations?.[0];
@@ -82,9 +88,27 @@ const IntegrationsPage = () => {
         }
       } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
+      
       const {
-        data: orgMember
+        data: orgMember,
+        error: orgError
       } = await supabase.from('organization_members').select('organization_id').eq('user_id', user.id).single();
+      
+      if (orgError || !orgMember?.organization_id) {
+        throw new Error('No organization found for your account. Please join or create an organization first.');
+      }
+
+      // Check for existing integration to prevent duplicates
+      const { data: existing } = await supabase
+        .from('integrations')
+        .select('id')
+        .eq('service_name', 'planning_center')
+        .eq('organization_id', orgMember.organization_id)
+        .maybeSingle();
+
+      if (existing?.id) {
+        throw new Error('Planning Center is already connected for this organization.');
+      }
       
       // Create integration with smart defaults
       const {
@@ -99,7 +123,7 @@ const IntegrationsPage = () => {
         },
         settings: {},
         sync_frequency: 'every_15_minutes', // Smart default
-        organization_id: orgMember?.organization_id || '',
+        organization_id: orgMember.organization_id,
         user_id: user.id
       }).select().single();
       
@@ -136,7 +160,7 @@ const IntegrationsPage = () => {
     },
     onSuccess: async (data) => {
       queryClient.invalidateQueries({
-        queryKey: ['integrations']
+        queryKey: ['integrations', userOrgData?.organization_id]
       });
       setPlanningCenterForm({
         appId: '',
@@ -168,10 +192,10 @@ const IntegrationsPage = () => {
       if (error) throw error;
     },
     onMutate: async (integrationId) => {
-      await queryClient.cancelQueries({ queryKey: ['integrations'] });
-      const previousIntegrations = queryClient.getQueryData(['integrations']);
+      await queryClient.cancelQueries({ queryKey: ['integrations', userOrgData?.organization_id] });
+      const previousIntegrations = queryClient.getQueryData(['integrations', userOrgData?.organization_id]);
       
-      queryClient.setQueryData(['integrations'], (old: any) => 
+      queryClient.setQueryData(['integrations', userOrgData?.organization_id], (old: any) => 
         Array.isArray(old) ? old.filter((i: any) => i.id !== integrationId) : []
       );
       
@@ -179,7 +203,7 @@ const IntegrationsPage = () => {
     },
     onError: (error: Error, integrationId, context) => {
       if (context?.previousIntegrations) {
-        queryClient.setQueryData(['integrations'], context.previousIntegrations);
+        queryClient.setQueryData(['integrations', userOrgData?.organization_id], context.previousIntegrations);
       }
       toast({
         title: 'Failed to disconnect',
@@ -195,7 +219,7 @@ const IntegrationsPage = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ 
-        queryKey: ['integrations'],
+        queryKey: ['integrations', userOrgData?.organization_id],
         refetchType: 'active'
       });
     }
@@ -217,7 +241,7 @@ const IntegrationsPage = () => {
     onSuccess: data => {
       if (data.success) {
         queryClient.invalidateQueries({
-          queryKey: ['integrations']
+          queryKey: ['integrations', userOrgData?.organization_id]
         });
         toast({
           title: 'Connection Successful',
@@ -229,7 +253,7 @@ const IntegrationsPage = () => {
     },
     onError: (error: any) => {
       queryClient.invalidateQueries({
-        queryKey: ['integrations']
+        queryKey: ['integrations', userOrgData?.organization_id]
       });
       toast({
         title: 'Connection Failed',
@@ -269,7 +293,7 @@ const IntegrationsPage = () => {
       if (error) throw error;
       if (data.success) {
         queryClient.invalidateQueries({
-          queryKey: ['integrations']
+          queryKey: ['integrations', userOrgData?.organization_id]
         });
         queryClient.invalidateQueries({
           queryKey: ['list-mappings']
