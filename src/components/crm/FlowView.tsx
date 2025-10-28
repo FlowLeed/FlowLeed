@@ -5,6 +5,7 @@ import { FlowTableView } from "./FlowTableView";
 import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
+import { FlowCompletionConfetti } from "./FlowCompletionConfetti";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
@@ -41,6 +42,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   });
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
+  const [showConfetti, setShowConfetti] = useState(false);
   const { organization } = useProfile();
   const queryClient = useQueryClient();
 
@@ -334,6 +336,11 @@ export const FlowView: React.FC<FlowViewProps> = ({
         status: determineStatus(destination.droppableId)
       };
       toast.success(`Contact moved to ${destStage.name}`);
+      
+      // Trigger confetti if moved to completion stage
+      if (destStage.is_end_step) {
+        setShowConfetti(true);
+      }
     }
     
     // Insert the contact in the destination
@@ -545,6 +552,9 @@ export const FlowView: React.FC<FlowViewProps> = ({
             window.location.reload();
           }}
         />
+      )}
+      {showConfetti && (
+        <FlowCompletionConfetti onComplete={() => setShowConfetti(false)} />
       )}
     </div>
   );
