@@ -144,16 +144,16 @@
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background: #ec4899; /* Pink color (Tailwind pink-500) */
+  background: #9333EA; /* Purple color matching the Messages button */
   border-radius: 4px;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background: #db2777; /* Darker pink on hover (Tailwind pink-600) */
+  background: #7E22CE; /* Darker purple on hover */
 }
 
 /* Firefox scrollbar styling */
 .sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #ec4899 transparent;
+  scrollbar-color: #9333EA transparent;
 }
