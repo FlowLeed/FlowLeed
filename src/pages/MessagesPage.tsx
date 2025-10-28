@@ -8,6 +8,7 @@ import { MessageSquare } from "lucide-react";
 import { useMessages } from "@/hooks/useMessages";
 import { Message } from "@/types/messages";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 
 const MessagesPage = () => {
@@ -15,7 +16,8 @@ const MessagesPage = () => {
   const contactIdFromUrl = searchParams.get('contactId');
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const { user } = useAuth();
-  const { conversations, messages: smsMessages, conversationsLoading, messagesLoading, sendMessage } = useMessages(selectedConversationId || undefined);
+  const { organization } = useProfile();
+  const { conversations, messages: smsMessages, conversationsLoading, messagesLoading, sendMessage } = useMessages(selectedConversationId || undefined, organization?.id);
 
   useEffect(() => {
     if (contactIdFromUrl) {

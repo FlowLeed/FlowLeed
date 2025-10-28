@@ -23,28 +23,32 @@ export interface SMSMessage {
   updated_at: string;
 }
 
-export const useMessages = (contactId?: string) => {
+export const useMessages = (contactId?: string, organizationId?: string) => {
   const queryClient = useQueryClient();
 
   // Get all conversations
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery(
     {
-      queryKey: ["conversations"],
+      queryKey: ["conversations", organizationId],
       queryFn: async () => {
+        if (!organizationId) return [];
+        
         // Get all contacts with messages
         const { data: messages, error } = await supabase
           .from("sms_messages")
           .select(
             `
           *,
-          contacts (
+          contacts!inner (
             id,
             name,
             avatar,
-            phone
+            phone,
+            organization_id
           )
         `
           )
+          .eq('contacts.organization_id', organizationId)
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -75,6 +79,7 @@ export const useMessages = (contactId?: string) => {
           (a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime()
         );
       },
+      enabled: !!organizationId,
     }
   );
 
