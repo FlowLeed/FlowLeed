@@ -167,14 +167,36 @@ const IntegrationsPage = () => {
       } = await supabase.from('integrations').delete().eq('id', integrationId);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['integrations']
+    onMutate: async (integrationId) => {
+      await queryClient.cancelQueries({ queryKey: ['integrations'] });
+      const previousIntegrations = queryClient.getQueryData(['integrations']);
+      
+      queryClient.setQueryData(['integrations'], (old: any) => 
+        Array.isArray(old) ? old.filter((i: any) => i.id !== integrationId) : []
+      );
+      
+      return { previousIntegrations };
+    },
+    onError: (error: Error, integrationId, context) => {
+      if (context?.previousIntegrations) {
+        queryClient.setQueryData(['integrations'], context.previousIntegrations);
+      }
+      toast({
+        title: 'Failed to disconnect',
+        description: error.message,
+        variant: 'destructive'
       });
+    },
+    onSuccess: () => {
       toast({
         title: 'Integration Disconnected',
-        description: 'Successfully disconnected from Planning Center',
-        variant: 'destructive'
+        description: 'Successfully disconnected from Planning Center'
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['integrations'],
+        refetchType: 'active'
       });
     }
   });
@@ -269,7 +291,10 @@ const IntegrationsPage = () => {
       setIsSyncing(false);
     }
   };
-  const getStatusBadge = (integration: any, isLoading: boolean = false) => {
+  const getStatusBadge = (integration: any, isLoading: boolean = false, isDeleting: boolean = false) => {
+    if (isDeleting) {
+      return <Badge variant="secondary">Disconnecting...</Badge>;
+    }
     if (isLoading) {
       return <Badge variant="secondary">Loading...</Badge>;
     }
@@ -309,7 +334,7 @@ const IntegrationsPage = () => {
                   <CardDescription>Assign people to the right Flow</CardDescription>
                 </div>
               </div>
-              {getStatusBadge(planningCenterIntegration, integrationsLoading)}
+              {getStatusBadge(planningCenterIntegration, integrationsLoading, deleteIntegrationMutation.isPending)}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
