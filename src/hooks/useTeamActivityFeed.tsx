@@ -3,19 +3,33 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const useTeamActivityFeed = (
   organizationId: string | undefined,
+  userId: string | undefined,
   limit: number = 5
 ) => {
   return useQuery({
-    queryKey: ["team-activity-feed", organizationId, limit],
+    queryKey: ["team-activity-feed", organizationId, userId, limit],
     queryFn: async () => {
       if (!organizationId) throw new Error("Organization ID is required");
+      if (!userId) throw new Error("User ID is required");
 
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+      // Step 1: Get user's flow IDs
+      const { data: userFlows } = await supabase
+        .from("pipeline_team_members")
+        .select("pipeline_id")
+        .eq("user_id", userId);
+
+      const userFlowIds = userFlows?.map(f => f.pipeline_id) || [];
+
+      if (userFlowIds.length === 0) return []; // User has no flows
+
+      // Step 2: Fetch interactions only for user's flows
       const { data: interactions } = await supabase
         .from("contact_interactions")
-        .select("id, interaction_type, subject, created_at, created_by_user_id, metadata, contact_id")
+        .select("id, interaction_type, subject, created_at, created_by_user_id, metadata, contact_id, pipeline_id")
+        .in("pipeline_id", userFlowIds)
         .gte("created_at", sevenDaysAgo.toISOString())
         .order("created_at", { ascending: false })
         .limit(limit);
@@ -44,6 +58,6 @@ export const useTeamActivityFeed = (
         profiles: profileMap.get(activity.created_by_user_id) || null,
       }));
     },
-    enabled: !!organizationId,
+    enabled: !!organizationId && !!userId,
   });
 };

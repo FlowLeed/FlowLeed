@@ -31,8 +31,8 @@ const Dashboard = () => {
   const { data: contactsNeedingAttention, isLoading: contactsLoading } = 
     useMyContactsNeedingAttention(user?.id);
   const { data: upcomingTasks, isLoading: tasksLoading } = useMyUpcomingTasks(user?.id);
-  const { data: teamActivity, isLoading: activityLoading } = 
-    useTeamActivityFeed(organization?.id);
+  const { data: teamActivity, isLoading: activityLoading } =
+    useTeamActivityFeed(organization?.id, user?.id);
   const { data: myFlows, isLoading: flowsLoading } = useMyFlows(user?.id);
 
   // Onboarding state
