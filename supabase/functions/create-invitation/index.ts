@@ -204,7 +204,7 @@ serve(async (req) => {
     // Send invitation email
     console.log('Sending invitation email to:', emailLower)
     const emailResponse = await resend.emails.send({
-      from: 'Flowleed <onboarding@resend.dev>',
+      from: 'Team Invitations <noreply@flowleed.com>',
       to: [emailLower],
       subject: `You're invited to join ${organization.name}`,
       html: `
