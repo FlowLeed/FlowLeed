@@ -48,8 +48,8 @@ export const ConversationsList = ({
             <ConversationItem
               key={conversation.id}
               conversation={conversation}
-              isSelected={selectedConversationId === conversation.id}
-              onClick={() => onSelectConversation(conversation.id)}
+              isSelected={selectedConversationId === conversation.contactId}
+              onClick={() => onSelectConversation(conversation.contactId)}
             />
           ))}
         </div>
