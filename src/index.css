@@ -133,3 +133,27 @@
 .action-button {
   @apply flex items-center justify-center p-1.5 rounded-full text-gray-500 hover:bg-gray-100 transition-colors;
 }
+
+/* Custom scrollbar for sidebar */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #ec4899; /* Pink color (Tailwind pink-500) */
+  border-radius: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #db2777; /* Darker pink on hover (Tailwind pink-600) */
+}
+
+/* Firefox scrollbar styling */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #ec4899 transparent;
+}
