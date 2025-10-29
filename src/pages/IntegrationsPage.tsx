@@ -302,6 +302,9 @@ const IntegrationsPage = () => {
           title: 'Sync completed',
           description: data.message || 'Successfully synced all active mappings'
         });
+        
+        // Dispatch event to refresh flow data
+        window.dispatchEvent(new CustomEvent('pco-sync-complete'));
       } else {
         throw new Error(data.error);
       }
