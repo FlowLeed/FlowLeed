@@ -36,41 +36,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[useAuth] Auth state changed:', event);
+        
         // Check for impersonation session
         const impersonationData = sessionStorage.getItem('impersonation_session');
         
         if (impersonationData && session?.user) {
           try {
             const impSession = JSON.parse(impersonationData);
+            console.log('[useAuth] Loading impersonation session:', impSession.targetOrgName);
             
             // Override with target user context
             setIsImpersonating(true);
             setImpersonatedUserId(impSession.targetUserId);
             
-            // Create a synthetic user object for the target user
-            const { data: targetProfile } = await supabase
+            // Create a synthetic user object for the target user with timeout
+            const profilePromise = supabase
               .from('profiles')
               .select('*')
               .eq('user_id', impSession.targetUserId)
               .single();
             
-            if (targetProfile) {
-              // Override user with target user data but keep the session
-              const syntheticUser = {
-                ...session.user,
-                id: impSession.targetUserId,
-                email: targetProfile.email,
-              };
-              setUser(syntheticUser as User);
-              setSession(session);
-            } else {
-              // If target user not found, end impersonation
-              sessionStorage.removeItem('impersonation_session');
-              setIsImpersonating(false);
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Profile load timeout')), 5000)
+            );
+            
+            try {
+              const { data: targetProfile } = await Promise.race([
+                profilePromise,
+                timeoutPromise
+              ]) as any;
+              
+              if (targetProfile) {
+                // Override user with target user data but keep the session
+                const syntheticUser = {
+                  ...session.user,
+                  id: impSession.targetUserId,
+                  email: targetProfile.email,
+                };
+                setUser(syntheticUser as User);
+                setSession(session);
+                console.log('[useAuth] Impersonation loaded successfully');
+              } else {
+                throw new Error('Target profile not found');
+              }
+            } catch (profileError) {
+              console.error('[useAuth] Failed to load target profile:', profileError);
+              // Fallback: use admin user but keep impersonation flag
               setUser(session?.user ?? null);
+              setSession(session);
             }
           } catch (error) {
-            console.error('Error loading impersonation session:', error);
+            console.error('[useAuth] Error loading impersonation session:', error);
             sessionStorage.removeItem('impersonation_session');
             setIsImpersonating(false);
             setUser(session?.user ?? null);
@@ -101,36 +118,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Get initial session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log('[useAuth] Getting initial session');
+      
       // Check for impersonation on mount
       const impersonationData = sessionStorage.getItem('impersonation_session');
       
       if (impersonationData && session?.user) {
         try {
           const impSession = JSON.parse(impersonationData);
+          console.log('[useAuth] Initial impersonation load:', impSession.targetOrgName);
+          
           setIsImpersonating(true);
           setImpersonatedUserId(impSession.targetUserId);
           
-          const { data: targetProfile } = await supabase
+          const profilePromise = supabase
             .from('profiles')
             .select('*')
             .eq('user_id', impSession.targetUserId)
             .single();
           
-          if (targetProfile) {
-            const syntheticUser = {
-              ...session.user,
-              id: impSession.targetUserId,
-              email: targetProfile.email,
-            };
-            setUser(syntheticUser as User);
-            setSession(session);
-          } else {
-            sessionStorage.removeItem('impersonation_session');
-            setIsImpersonating(false);
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Initial profile load timeout')), 5000)
+          );
+          
+          try {
+            const { data: targetProfile } = await Promise.race([
+              profilePromise,
+              timeoutPromise
+            ]) as any;
+            
+            if (targetProfile) {
+              const syntheticUser = {
+                ...session.user,
+                id: impSession.targetUserId,
+                email: targetProfile.email,
+              };
+              setUser(syntheticUser as User);
+              setSession(session);
+              console.log('[useAuth] Initial impersonation loaded successfully');
+            } else {
+              throw new Error('Target profile not found');
+            }
+          } catch (profileError) {
+            console.error('[useAuth] Failed to load initial target profile:', profileError);
+            // Fallback: use admin user but keep impersonation flag
             setUser(session?.user ?? null);
+            setSession(session);
           }
         } catch (error) {
-          console.error('Error loading impersonation session:', error);
+          console.error('[useAuth] Error loading initial impersonation session:', error);
           sessionStorage.removeItem('impersonation_session');
           setIsImpersonating(false);
           setUser(session?.user ?? null);

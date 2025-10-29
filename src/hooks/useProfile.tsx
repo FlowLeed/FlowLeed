@@ -44,6 +44,8 @@ export const useProfile = () => {
 
     const fetchProfileAndOrganization = async () => {
       try {
+        console.log('[useProfile] Fetching profile for user:', user.id);
+        
         // Check for impersonation session
         const impersonationData = sessionStorage.getItem('impersonation_session');
         
@@ -55,7 +57,7 @@ export const useProfile = () => {
           .maybeSingle();
 
         if (profileError) {
-          console.error('Error fetching profile:', profileError);
+          console.error('[useProfile] Error fetching profile:', profileError);
         } else {
           setProfile(profileData);
         }
@@ -64,6 +66,8 @@ export const useProfile = () => {
         if (impersonationData) {
           try {
             const impSession = JSON.parse(impersonationData);
+            console.log('[useProfile] Impersonation mode - loading target org:', impSession.targetOrgName);
+            
             const { data: targetOrg, error: targetOrgError } = await supabase
               .from('organizations')
               .select('id, name, slug')
@@ -71,16 +75,20 @@ export const useProfile = () => {
               .single();
             
             if (targetOrgError) {
-              console.error('Error fetching target organization:', targetOrgError);
+              console.error('[useProfile] Error fetching target organization:', targetOrgError);
+              // Continue anyway - don't block the UI
             } else if (targetOrg) {
               setOrganization(targetOrg as Organization);
               localStorage.setItem(SELECTED_ORG_KEY, targetOrg.id);
-              console.log('Impersonating organization:', targetOrg);
-              setLoading(false);
-              return;
+              console.log('[useProfile] Impersonation org loaded:', targetOrg.name);
             }
+            
+            // Always finish loading, even if org fetch failed
+            setLoading(false);
+            return;
           } catch (error) {
-            console.error('Error parsing impersonation session:', error);
+            console.error('[useProfile] Error parsing impersonation session:', error);
+            // Continue to normal flow
           }
         }
 

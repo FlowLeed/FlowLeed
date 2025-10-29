@@ -67,6 +67,8 @@ export const useImpersonation = () => {
     adminUserId: string
   ) => {
     try {
+      console.log('[useImpersonation] Starting impersonation for:', targetOrgName);
+      
       // Call database function to create session
       const { data: sessionId, error } = await supabase.rpc(
         'start_impersonation_session' as any,
@@ -78,7 +80,10 @@ export const useImpersonation = () => {
         }
       );
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useImpersonation] Failed to start session:', error);
+        throw error;
+      }
 
       const sessionData: ImpersonationSession = {
         sessionId: sessionId as string,
@@ -94,32 +99,36 @@ export const useImpersonation = () => {
       setSession(sessionData);
       setIsImpersonating(true);
 
+      console.log('[useImpersonation] Session started successfully:', sessionId);
       return { success: true, sessionId };
     } catch (error: any) {
-      console.error('Failed to start impersonation:', error);
+      console.error('[useImpersonation] Failed to start impersonation:', error);
       return { success: false, error: error.message };
     }
   };
 
   const endImpersonation = async () => {
-    if (!session) return;
+    console.log('[useImpersonation] Ending impersonation session');
+    
+    // Always clear local state first (bulletproof)
+    sessionStorage.removeItem(SESSION_KEY);
+    setSession(null);
+    setIsImpersonating(false);
 
-    try {
-      // Call database function to end session
-      await supabase.rpc('end_impersonation_session' as any, {
-        _session_id: session.sessionId,
-      });
-    } catch (error) {
-      console.error('Failed to end impersonation session:', error);
-    } finally {
-      // Always clear local state
-      sessionStorage.removeItem(SESSION_KEY);
-      setSession(null);
-      setIsImpersonating(false);
-      
-      // Navigate back to admin
-      window.location.href = '/fl-admin/organizations';
+    // Try to end session in DB, but don't block navigation if it fails
+    if (session) {
+      try {
+        await supabase.rpc('end_impersonation_session' as any, {
+          _session_id: session.sessionId,
+        });
+        console.log('[useImpersonation] Session ended successfully in DB');
+      } catch (error) {
+        console.error('[useImpersonation] Failed to end session in DB (continuing anyway):', error);
+      }
     }
+    
+    // Always navigate back to admin regardless of DB call result
+    window.location.href = '/fl-admin/organizations';
   };
 
   const logAction = async (

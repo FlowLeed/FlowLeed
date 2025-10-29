@@ -10,6 +10,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { SuperAdminProtectedRoute } from "./components/admin/SuperAdminProtectedRoute";
 import { SuperAdminLayout } from "./components/admin/SuperAdminLayout";
+import { ImpersonationEscapeHandler } from "./components/ImpersonationEscapeHandler";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import FlowPage from "./pages/FlowPage";
@@ -43,6 +44,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <ImpersonationEscapeHandler />
           <FlowProvider>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />

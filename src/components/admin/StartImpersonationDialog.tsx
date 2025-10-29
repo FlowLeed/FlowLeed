@@ -51,6 +51,8 @@ export const StartImpersonationDialog = ({
     setIsStarting(true);
 
     try {
+      console.log('[StartImpersonationDialog] Starting impersonation for:', organizationName);
+      
       const result = await startImpersonation(
         organizationId,
         organizationName,
@@ -60,9 +62,10 @@ export const StartImpersonationDialog = ({
       );
 
       if (result.success) {
+        console.log('[StartImpersonationDialog] Impersonation started, redirecting...');
         toast.success('Impersonation session started');
-        // Force page reload to trigger auth context update
-        window.location.href = '/';
+        // Force page reload to trigger auth context update with impersonation marker
+        window.location.href = '/?imp=1';
       } else {
         toast.error(`Failed to start impersonation: ${result.error}`);
       }
