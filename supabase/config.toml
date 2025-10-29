@@ -93,3 +93,6 @@ verify_jwt = true
 
 [functions.twilio-sync-numbers]
 verify_jwt = true
+
+[functions.pco-sync-processor]
+verify_jwt = false

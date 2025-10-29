@@ -1122,6 +1122,130 @@ export type Database = {
           },
         ]
       }
+      pco_sync_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          integration_id: string
+          list_mapping_id: string
+          metadata: Json | null
+          organization_id: string
+          processed_contacts: number
+          started_at: string
+          status: string
+          total_contacts: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          integration_id: string
+          list_mapping_id: string
+          metadata?: Json | null
+          organization_id: string
+          processed_contacts?: number
+          started_at?: string
+          status?: string
+          total_contacts?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          integration_id?: string
+          list_mapping_id?: string
+          metadata?: Json | null
+          organization_id?: string
+          processed_contacts?: number
+          started_at?: string
+          status?: string
+          total_contacts?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pco_sync_jobs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_sync_jobs_list_mapping_id_fkey"
+            columns: ["list_mapping_id"]
+            isOneToOne: false
+            referencedRelation: "integration_list_mappings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_sync_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_sync_jobs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pco_sync_queue: {
+        Row: {
+          chunk_data: Json
+          chunk_number: number
+          created_at: string
+          error_message: string | null
+          id: string
+          processed_at: string | null
+          retry_count: number
+          status: string
+          sync_job_id: string
+          updated_at: string
+        }
+        Insert: {
+          chunk_data: Json
+          chunk_number: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          retry_count?: number
+          status?: string
+          sync_job_id: string
+          updated_at?: string
+        }
+        Update: {
+          chunk_data?: Json
+          chunk_number?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          processed_at?: string | null
+          retry_count?: number
+          status?: string
+          sync_job_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pco_sync_queue_sync_job_id_fkey"
+            columns: ["sync_job_id"]
+            isOneToOne: false
+            referencedRelation: "pco_sync_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_contacts: {
         Row: {
           assigned_to_user_id: string | null

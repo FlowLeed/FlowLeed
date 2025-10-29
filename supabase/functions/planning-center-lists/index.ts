@@ -298,7 +298,7 @@ async function syncPlanningCenterLists(listMappings: any[], userId: string) {
 }
 
 async function syncSingleList(mapping: any, userId: string) {
-  console.log('Syncing single list:', mapping);
+  console.log('Starting queue-based sync for list mapping:', mapping.id);
   
   // Get integration credentials and user_id
   const { data: integration } = await supabase
@@ -324,8 +324,7 @@ async function syncSingleList(mapping: any, userId: string) {
   
   console.log('Fetching PC list members for list:', mapping.external_list_id);
 
-  // Fetch list members from Planning Center with pagination
-  let allListResults: any[] = [];
+  // Fetch all list members from Planning Center with pagination
   let allPeople: any[] = [];
   let nextUrl: string | null = `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/list_results?include=person&per_page=100`;
   let pageCount = 0;
@@ -348,11 +347,6 @@ async function syncSingleList(mapping: any, userId: string) {
 
     const data = await response.json();
     
-    // Collect list results
-    if (data.data) {
-      allListResults.push(...data.data);
-    }
-    
     // Collect people from included data
     const pagePeople = data.included?.filter((item: any) => item.type === 'Person') || [];
     if (pagePeople.length > 0) {
@@ -362,195 +356,89 @@ async function syncSingleList(mapping: any, userId: string) {
     // Get next page URL from links
     nextUrl = data.links?.next || null;
     
-    console.log(`Page ${pageCount}: Found ${data.data?.length || 0} list results, ${pagePeople.length} people`);
+    console.log(`Page ${pageCount}: Found ${pagePeople.length} people`);
   }
 
-  console.log(`Total pages fetched: ${pageCount}`);
-  console.log('PC API complete - Total results:', {
-    totalListResults: allListResults.length,
-    totalPeople: allPeople.length,
-  });
-  
-  // Get people from included data if available, otherwise fetch them individually
-  let people = allPeople;
-  console.log('Found people in included:', people.length);
-  
-  // If no people found in included, fetch them individually from list results
-  if (people.length === 0 && allListResults.length > 0) {
-    console.log('No people found in included, fetching individual people...');
-    console.log('List results sample:', JSON.stringify(allListResults[0], null, 2));
-    
-    for (const [index, result] of allListResults.entries()) {
-      console.log(`Processing list result ${index + 1}:`, JSON.stringify(result, null, 2));
-      
-      if (result.relationships?.person?.data?.id) {
-        const personId = result.relationships.person.data.id;
-        console.log('Fetching person details for:', personId);
-        
-        try {
-          const personResponse = await fetch(
-            `https://api.planningcenteronline.com/people/v2/people/${personId}?include=emails,phone_numbers,addresses,households,field_data,marital_status`,
-            {
-              headers: {
-                'Authorization': `Basic ${auth}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          
-          if (personResponse.ok) {
-            const personData = await personResponse.json();
-            console.log('Person data received:', JSON.stringify(personData, null, 2));
-            if (personData.data) {
-              // Merge person data with contact info and demographic data from included
-              const person = personData.data;
-              const emails = personData.included?.filter((item: any) => item.type === 'Email') || [];
-              const phoneNumbers = personData.included?.filter((item: any) => item.type === 'PhoneNumber') || [];
-              const addresses = personData.included?.filter((item: any) => item.type === 'Address') || [];
-              const households = personData.included?.filter((item: any) => item.type === 'Household') || [];
-              const fieldData = personData.included?.filter((item: any) => item.type === 'FieldDatum') || [];
-              const maritalStatus = personData.included?.find((item: any) => item.type === 'MaritalStatus') || null;
-              
-              // Add email and phone data to person attributes
-              const primaryEmail = emails.find((email: any) => email.attributes.primary)?.attributes.address;
-              const primaryPhone = phoneNumbers.find((phone: any) => phone.attributes.primary)?.attributes.number;
-              
-              person.attributes.primary_email = primaryEmail || person.attributes.primary_email;
-              person.attributes.primary_phone_number = primaryPhone || person.attributes.primary_phone_number;
-              
-              // Add demographic and address data
-              person.included_data = {
-                emails,
-                phoneNumbers,
-                addresses,
-                households,
-                fieldData,
-                maritalStatus
-              };
-              
-              console.log('Enhanced person with contact info:', JSON.stringify(person.attributes, null, 2));
-              people.push(person);
-            }
-          } else {
-            console.error(`Failed to fetch person ${personId}:`, personResponse.status);
-          }
-        } catch (error) {
-          console.error(`Error fetching person ${personId}:`, error);
-        }
-      } else {
-        console.log('No person ID found in result:', JSON.stringify(result, null, 2));
-      }
-    }
-  }
-  
-  console.log('Total people found:', people.length);
+  console.log(`Total pages fetched: ${pageCount}, Total people: ${allPeople.length}`);
 
-  let contactsAdded = 0;
-  let contactsUpdated = 0;
-
-  for (const person of people) {
-    const personId = person.id;
-    const attrs = person.attributes;
-    
-    console.log('Processing person:', personId, attrs.first_name, attrs.last_name);
-    console.log('Person attributes:', JSON.stringify(attrs, null, 2));
-
-    const contactData = {
-      name: `${attrs.first_name || ''} ${attrs.last_name || ''}`.trim() || 'Unknown',
-      email: attrs.primary_email || attrs.email || null,
-      phone: attrs.primary_phone_number || attrs.phone_number || attrs.phone || null,
-      avatar: attrs.avatar || attrs.demographic_avatar_url || null,
-      pc_person_id: personId,
-      source_type: 'planning_center',
-      last_synced_at: new Date().toISOString(),
+  // Create sync job
+  const { data: job, error: jobError } = await supabase
+    .from('pco_sync_jobs')
+    .insert({
       organization_id: integration.organization_id,
-    };
-
-    console.log('Contact data to save:', JSON.stringify(contactData, null, 2));
-
-    // Use upsert to handle both insert and update in one operation
-    // This leverages the unique constraint on (pc_person_id, organization_id)
-    const { data: contact, error: contactError } = await supabase
-      .from('contacts')
-      .upsert(contactData, {
-        onConflict: 'pc_person_id,organization_id',
-        ignoreDuplicates: false
-      })
-      .select('id, created_at')
-      .single();
-
-    if (contactError) {
-      console.error('Error upserting contact:', contactError);
-      continue; // Skip this person and continue with others
-    }
-
-    const contactId = contact?.id;
-    
-    // Track whether this was a new contact or update based on created_at
-    const isNew = new Date(contact.created_at).getTime() > Date.now() - 5000; // Within last 5 seconds
-    if (isNew) {
-      contactsAdded++;
-      console.log('Created new contact:', contactId);
-    } else {
-      contactsUpdated++;
-      console.log('Updated existing contact:', contactId);
-    }
-
-    if (contactId) {
-      // Sync demographic data if available
-      await syncDemographicData(contactId, person, auth);
-      
-      console.log('Adding contact to pipeline:', contactId, 'pipeline:', mapping.pipeline_id, 'stage:', mapping.stage_id);
-      
-      // Use upsert to handle adding contact to pipeline
-      // This leverages the unique constraint on (contact_id, pipeline_id)
-      const { error: pipelineError } = await supabase
-        .from('pipeline_contacts')
-        .upsert({
-          contact_id: contactId,
-          pipeline_id: mapping.pipeline_id,
-          stage_id: mapping.stage_id,
-          assigned_to_user_id: integration.user_id,
-          source_type: 'planning_center',
-          source_id: mapping.external_list_id,
-        }, {
-          onConflict: 'contact_id,pipeline_id',
-          ignoreDuplicates: false // Update stage if changed
-        });
-        
-      if (pipelineError) {
-        console.error('Error adding to pipeline:', pipelineError);
-      } else {
-        console.log('Successfully added/updated contact in pipeline');
+      integration_id: mapping.integration_id,
+      list_mapping_id: mapping.id,
+      status: 'pending',
+      total_contacts: allPeople.length,
+      processed_contacts: 0,
+      metadata: {
+        list_name: mapping.external_list_name,
+        list_id: mapping.external_list_id,
+        pages_fetched: pageCount
       }
-    }
+    })
+    .select()
+    .single();
+
+  if (jobError || !job) {
+    console.error('Failed to create sync job:', jobError);
+    throw new Error('Failed to create sync job');
   }
 
-  console.log('Sync completed:', { contactsAdded, contactsUpdated, totalPeople: people.length });
+  console.log(`Created sync job: ${job.id}`);
 
-  // Track PCO sync in activity stats
-  try {
-    const { error: trackError } = await supabase.rpc('track_pco_sync', {
-      p_org_id: integration.organization_id,
-      p_sync_type: 'list_sync'
-    });
-    
-    if (trackError) {
-      console.error('Failed to track PCO sync (non-fatal):', trackError);
-    } else {
-      console.log('Successfully tracked PCO sync for org:', integration.organization_id);
-    }
-  } catch (error) {
-    // Don't fail the sync if tracking fails
-    console.error('Error tracking PCO sync:', error);
+  // Chunk contacts into batches of 50
+  const CHUNK_SIZE = 50;
+  const chunks = [];
+  for (let i = 0; i < allPeople.length; i += CHUNK_SIZE) {
+    chunks.push(allPeople.slice(i, i + CHUNK_SIZE));
   }
+
+  console.log(`Chunked ${allPeople.length} contacts into ${chunks.length} chunks`);
+
+  // Insert chunks into queue
+  const queueItems = chunks.map((chunk, index) => ({
+    sync_job_id: job.id,
+    status: 'pending',
+    chunk_data: chunk,
+    chunk_number: index + 1
+  }));
+
+  const { error: queueError } = await supabase
+    .from('pco_sync_queue')
+    .insert(queueItems);
+
+  if (queueError) {
+    console.error('Failed to create queue items:', queueError);
+    // Update job status to failed
+    await supabase
+      .from('pco_sync_jobs')
+      .update({ status: 'failed', error_message: 'Failed to create queue items' })
+      .eq('id', job.id);
+    throw new Error('Failed to create queue items');
+  }
+
+  console.log(`Created ${chunks.length} queue items for processing`);
+  
+  // Update list mapping last sync time
+  await supabase
+    .from('integration_list_mappings')
+    .update({ last_sync_at: new Date().toISOString() })
+    .eq('id', mapping.id);
+
+  // Track PCO sync
+  await supabase.rpc('track_pco_sync', {
+    p_org_id: integration.organization_id,
+    p_sync_type: 'list_sync'
+  });
+
+  console.log(`Sync job ${job.id} created successfully with ${chunks.length} chunks queued`);
 
   return {
     listId: mapping.external_list_id,
     success: true,
-    contactsAdded,
-    contactsUpdated,
-    totalPeople: people.length,
+    contactsCount: allPeople.length,
+    jobId: job.id
   };
 }
 

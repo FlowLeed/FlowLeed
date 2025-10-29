@@ -1,30 +1,37 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Header } from "@/components/layout/Header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-
-import { Badge } from "@/components/ui/badge";
-
-import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, AlertCircle, ExternalLink, Key, Database, Calendar, Mail, Zap } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ListMappingManager } from "@/components/integrations/ListMappingManager";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
+import { Header } from "@/components/layout/Header";
+import { ExternalLink, Loader2, CheckCircle, AlertCircle, Key, Database, Calendar, Mail, Zap } from "lucide-react";
 import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog";
+import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
+import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
 
 const IntegrationsPage = () => {
-  const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
   const queryClient = useQueryClient();
+  const [planningCenterForm, setPlanningCenterForm] = useState({
+    appId: '',
+    secret: ''
+  });
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [currentSyncJobId, setCurrentSyncJobId] = useState<string | null>(null);
+  const [showQuickMapping, setShowQuickMapping] = useState(false);
+  const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
+  const [selectedIntegrationId, setSelectedIntegrationId] = useState<string>('');
   
+  const { data: syncJob } = usePcoSyncJob(currentSyncJobId);
+  const isSyncing = syncJob?.status === 'processing' || syncJob?.status === 'pending';
+
   // Get organization ID for onboarding
   const { data: userOrgData } = useQuery({
     queryKey: ['user-organization'],
@@ -43,13 +50,6 @@ const IntegrationsPage = () => {
   });
   
   const { updateProgress } = useOrgOwnerOnboarding(userOrgData?.organization_id);
-  const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
-  const [selectedIntegrationId, setSelectedIntegrationId] = useState<string>('');
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [planningCenterForm, setPlanningCenterForm] = useState({
-    appId: '',
-    secret: ''
-  });
 
   // Fetch existing integrations
   const {
@@ -166,8 +166,7 @@ const IntegrationsPage = () => {
         appId: '',
         secret: ''
       });
-      toast({
-        title: 'Integration Connected',
+      toast.success('Integration Connected', {
         description: `Successfully connected to Planning Center as ${data.connectionTest?.user?.first_name} ${data.connectionTest?.user?.last_name}. Lists have been pre-loaded for quick mapping.`
       });
       
@@ -177,10 +176,8 @@ const IntegrationsPage = () => {
       }
     },
     onError: error => {
-      toast({
-        title: 'Connection Failed',
-        description: `Failed to connect to Planning Center: ${error.message}`,
-        variant: 'destructive'
+      toast.error('Connection Failed', {
+        description: `Failed to connect to Planning Center: ${error.message}`
       });
     }
   });
@@ -205,15 +202,12 @@ const IntegrationsPage = () => {
       if (context?.previousIntegrations) {
         queryClient.setQueryData(['integrations', userOrgData?.organization_id], context.previousIntegrations);
       }
-      toast({
-        title: 'Failed to disconnect',
-        description: error.message,
-        variant: 'destructive'
+      toast.error('Failed to disconnect', {
+        description: error.message
       });
     },
     onSuccess: () => {
-      toast({
-        title: 'Integration Disconnected',
+      toast.success('Integration Disconnected', {
         description: 'Successfully disconnected from Planning Center'
       });
     },
@@ -243,8 +237,7 @@ const IntegrationsPage = () => {
         queryClient.invalidateQueries({
           queryKey: ['integrations', userOrgData?.organization_id]
         });
-        toast({
-          title: 'Connection Successful',
+        toast.success('Connection Successful', {
           description: `Connected as ${data.user?.first_name} ${data.user?.last_name}`
         });
       } else {
@@ -255,10 +248,8 @@ const IntegrationsPage = () => {
       queryClient.invalidateQueries({
         queryKey: ['integrations', userOrgData?.organization_id]
       });
-      toast({
-        title: 'Connection Failed',
-        description: error.message || 'Failed to connect to Planning Center. Please check your credentials.',
-        variant: 'destructive'
+      toast.error('Connection Failed', {
+        description: error.message || 'Failed to connect to Planning Center. Please check your credentials.'
       });
     }
   });
@@ -446,7 +437,39 @@ const IntegrationsPage = () => {
                     <Separator />
                     
                     <div className="space-y-6">
-                      <SyncSettingsSection integrationId={planningCenterIntegration.id} currentFrequency={planningCenterIntegration.sync_frequency || 'every_15_minutes'} lastSyncAt={planningCenterIntegration.last_sync_at} onSyncNow={handleSyncNow} isSyncing={isSyncing} />
+                      {syncJob && syncJob.status !== 'completed' && syncJob.status !== 'failed' ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              Syncing {syncJob.metadata?.list_name || 'contacts'}...
+                            </span>
+                            <span className="font-medium">
+                              {syncJob.processed_contacts}/{syncJob.total_contacts}
+                            </span>
+                          </div>
+                          <Progress 
+                            value={(syncJob.processed_contacts / syncJob.total_contacts) * 100} 
+                          />
+                          <p className="text-xs text-muted-foreground text-center">
+                            {Math.round((syncJob.processed_contacts / syncJob.total_contacts) * 100)}% complete
+                          </p>
+                        </div>
+                      ) : (
+                        <Button
+                          onClick={handleSyncNow}
+                          disabled={isSyncing}
+                          className="w-full"
+                        >
+                          {isSyncing ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Syncing...
+                            </>
+                          ) : (
+                            'Sync Now'
+                          )}
+                        </Button>
+                      )}
                       
                       <ListMappingManager integrationId={planningCenterIntegration.id} onCreateMapping={() => {
                   setSelectedIntegrationId(planningCenterIntegration.id);
