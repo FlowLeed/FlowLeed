@@ -249,11 +249,23 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
 
 async function syncPlanningCenterLists(listMappings: any[], userId: string) {
   const results = [];
+  const orgIds = new Set<string>();
 
   for (const mapping of listMappings) {
     try {
       const result = await syncSingleList(mapping, userId);
       results.push(result);
+      
+      // Collect organization IDs for tracking
+      const { data: integration } = await supabase
+        .from('integrations')
+        .select('organization_id')
+        .eq('id', mapping.integration_id)
+        .single();
+      
+      if (integration?.organization_id) {
+        orgIds.add(integration.organization_id);
+      }
     } catch (error) {
       console.error(`Error syncing list ${mapping.external_list_id}:`, error);
       results.push({
@@ -261,6 +273,22 @@ async function syncPlanningCenterLists(listMappings: any[], userId: string) {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       });
+    }
+  }
+
+  // Track PCO sync for each organization that had successful syncs
+  for (const orgId of orgIds) {
+    try {
+      const { error: trackError } = await supabase.rpc('track_pco_sync', {
+        p_org_id: orgId,
+        p_sync_type: 'list_sync'
+      });
+      
+      if (trackError) {
+        console.error('Failed to track PCO sync (non-fatal):', trackError);
+      }
+    } catch (error) {
+      console.error('Error tracking PCO sync:', error);
     }
   }
 
@@ -478,6 +506,23 @@ async function syncSingleList(mapping: any, userId: string) {
   }
 
   console.log('Sync completed:', { contactsAdded, contactsUpdated, totalPeople: people.length });
+
+  // Track PCO sync in activity stats
+  try {
+    const { error: trackError } = await supabase.rpc('track_pco_sync', {
+      p_org_id: integration.organization_id,
+      p_sync_type: 'list_sync'
+    });
+    
+    if (trackError) {
+      console.error('Failed to track PCO sync (non-fatal):', trackError);
+    } else {
+      console.log('Successfully tracked PCO sync for org:', integration.organization_id);
+    }
+  } catch (error) {
+    // Don't fail the sync if tracking fails
+    console.error('Error tracking PCO sync:', error);
+  }
 
   return {
     listId: mapping.external_list_id,
@@ -864,6 +909,24 @@ async function autoSyncAllMappings() {
           .from('integration_list_mappings')
           .update({ last_sync_at: new Date().toISOString() })
           .eq('id', mapping.id);
+        
+        // Track PCO sync (note: syncSingleList already tracks, but this is extra safety for auto-sync)
+        try {
+          const { data: integrationData } = await supabase
+            .from('integrations')
+            .select('organization_id')
+            .eq('id', mapping.integration_id)
+            .single();
+          
+          if (integrationData?.organization_id) {
+            await supabase.rpc('track_pco_sync', {
+              p_org_id: integrationData.organization_id,
+              p_sync_type: 'list_sync'
+            });
+          }
+        } catch (trackError) {
+          console.error('Error tracking auto-sync (non-fatal):', trackError);
+        }
           
       } catch (error) {
         console.error(`Error auto-syncing mapping ${mapping.id}:`, error);

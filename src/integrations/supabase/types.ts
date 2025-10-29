@@ -1731,6 +1731,10 @@ export type Database = {
         }
         Returns: string
       }
+      track_pco_sync: {
+        Args: { p_org_id: string; p_sync_type?: string }
+        Returns: undefined
+      }
       track_user_login: {
         Args: { p_org_id: string; p_user_id: string }
         Returns: undefined
