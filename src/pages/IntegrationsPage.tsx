@@ -368,17 +368,42 @@ const IntegrationsPage = () => {
             <p className="text-sm text-muted-foreground">Automatically sync your Planning Center people into the right Flows — mapping lists to spiritual steps that drive real connection, discipleship, and next steps.</p>
             
             {!planningCenterIntegration && (
-              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                 <h4 className="font-medium text-sm flex items-center gap-2">
                   <Key className="h-4 w-4" />
                   Quick Setup Guide
                 </h4>
-                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Get your API credentials from Planning Center</li>
-                  <li>Enter them below and we'll automatically test the connection</li>
-                  <li>Your lists will be pre-loaded for instant mapping</li>
-                  <li>Auto-sync is enabled by default every 15 minutes</li>
-                </ol>
+                <div className="text-sm text-muted-foreground space-y-3">
+                  <div>
+                    <p className="font-medium text-foreground mb-1">1. Log in to Planning Center</p>
+                    <p>Go to planningcenteronline.com and sign in to your account.</p>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium text-foreground mb-1">2. Open API Settings</p>
+                    <p className="mb-2">Visit <a href="https://api.planningcenteronline.com/personal_access_tokens" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://api.planningcenteronline.com/personal_access_tokens</a></p>
+                    <ul className="list-disc list-inside ml-2 space-y-1">
+                      <li>Create a New Personal Access Token</li>
+                      <li>Click "New Personal Access Token"</li>
+                      <li>Give it a clear name, like "FlowLeed Integration"</li>
+                    </ul>
+                    <p className="mt-2">The system will generate your Client ID and Secret</p>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium text-foreground mb-1">3. Enter Your Credentials Below</p>
+                    <p>We'll automatically test your connection to make sure everything works.</p>
+                  </div>
+                  
+                  <div>
+                    <p className="font-medium text-foreground mb-1">4. Pre-Load Your Lists</p>
+                    <p>Your lists will be instantly available for mapping.</p>
+                  </div>
+                  
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded p-2 mt-2">
+                    <p className="text-xs"><span className="font-semibold text-foreground">Important:</span> Copy both your Client ID and Secret right away. The secret is only shown once and cannot be retrieved later.</p>
+                  </div>
+                </div>
               </div>
             )}
             
