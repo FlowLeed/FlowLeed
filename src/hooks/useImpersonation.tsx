@@ -118,14 +118,27 @@ export const useImpersonation = () => {
 
       // Step 4: Sign in as target user using the generated token
       console.log('[useImpersonation] Signing in as target user');
-      const { error: setSessionError } = await supabase.auth.setSession({
-        access_token: tokenData.accessToken,
-        refresh_token: tokenData.refreshToken,
-      });
-
-      if (setSessionError) {
-        console.error('[useImpersonation] Failed to set session:', setSessionError);
-        throw setSessionError;
+      if (tokenData.accessToken) {
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: tokenData.accessToken,
+          refresh_token: tokenData.refreshToken,
+        });
+        if (setSessionError) {
+          console.error('[useImpersonation] Failed to set session:', setSessionError);
+          throw setSessionError;
+        }
+      } else if (tokenData.email && tokenData.emailOtp) {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          email: tokenData.email,
+          token: tokenData.emailOtp,
+          type: 'email',
+        } as any);
+        if (verifyError) {
+          console.error('[useImpersonation] Failed to verify OTP:', verifyError);
+          throw verifyError;
+        }
+      } else {
+        throw new Error('No valid impersonation token returned');
       }
 
       // Step 5: Reload to apply new session

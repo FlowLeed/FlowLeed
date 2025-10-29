@@ -1,7 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 import { corsHeaders } from '../_shared/cors.ts';
-import { create, getNumericDate } from 'https://deno.land/x/djwt@v2.8/mod.ts';
-import { encode } from 'https://deno.land/std@0.168.0/encoding/base64.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -79,56 +77,39 @@ Deno.serve(async (req) => {
 
     console.log('[generate-impersonation-token] Created session:', sessionId);
 
-    // Get JWT secret (try both common names)
-    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('JWT_SECRET');
-    if (!jwtSecret) {
-      throw new Error('SUPABASE_JWT_SECRET is not configured');
+    // Fetch target user email
+    const { data: targetUserRes, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
+    if (getUserError || !targetUserRes?.user?.email) {
+      console.error('[generate-impersonation-token] Failed to get target user email:', getUserError);
+      throw new Error('Failed to resolve target user email');
+    }
+    const targetEmail = targetUserRes.user.email as string;
+
+    // Generate a magic link/OTP for the user and return the OTP (no email sent needed)
+    const redirectTo = Deno.env.get('SITE_URL') || supabaseUrl;
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'magiclink',
+      email: targetEmail,
+      options: { redirectTo },
+    });
+
+    if (linkError || !linkData) {
+      console.error('[generate-impersonation-token] Failed to generate magiclink:', linkError);
+      throw new Error('Failed to generate impersonation verification token');
     }
 
-    // Generate custom JWT token for the target user
-    const now = Math.floor(Date.now() / 1000);
-    const expiresAt = now + (4 * 60 * 60); // 4 hours from now
-    
-    const payload = {
-      iss: supabaseUrl + '/auth/v1',
-      sub: targetUserId,
-      aud: 'authenticated',
-      exp: expiresAt,
-      iat: now,
-      email: '', // We don't include email for security
-      phone: '',
-      app_metadata: {
-        provider: 'impersonation',
-        providers: ['impersonation'],
-      },
-      user_metadata: {},
-      role: 'authenticated',
-      aal: 'aal1',
-      amr: [{ method: 'impersonation', timestamp: now }],
-      session_id: sessionId,
-      is_anonymous: false,
-    };
+    const emailOtp = (linkData as any).email_otp as string | undefined;
+    if (!emailOtp) {
+      throw new Error('No OTP generated for impersonation');
+    }
 
-    // Create signing key from secret
-    const key = await crypto.subtle.importKey(
-      'raw',
-      new TextEncoder().encode(jwtSecret),
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-
-    // Sign the JWT
-    const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, payload, key);
-
-    console.log('[generate-impersonation-token] Custom JWT token generated successfully');
+    console.log('[generate-impersonation-token] Magiclink OTP generated successfully');
 
     return new Response(
       JSON.stringify({
         sessionId,
-        accessToken,
-        refreshToken: null, // No refresh token for impersonation
-        expiresAt,
+        email: targetEmail,
+        emailOtp,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
