@@ -44,7 +44,19 @@ serve(async (req) => {
     } else if (action === 'fetchLists') {
       return await fetchPlanningCenterLists(integrationId, userData.user.id);
     } else if (action === 'syncLists') {
-      // Fetch list mappings for this integration
+      // If mappings were provided directly, use them
+      if (Array.isArray(listMappings) && listMappings.length > 0) {
+        return await syncPlanningCenterLists(listMappings, userData.user.id);
+      }
+
+      // Otherwise, fetch list mappings for this integration
+      if (!integrationId) {
+        return new Response(JSON.stringify({ error: 'integrationId is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       const { data: mappings, error: mappingsError } = await supabase
         .from('integration_list_mappings')
         .select(`
@@ -278,11 +290,19 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
   }
 }
 
-async function syncPlanningCenterLists(listMappings: any[], userId: string) {
+async function syncPlanningCenterLists(input: any, userId: string) {
+  // Normalize to array to avoid "is not iterable" errors
+  const mappings = Array.isArray(input) ? input : (input ? [input] : []);
+  if (mappings.length === 0) {
+    return new Response(JSON.stringify({ results: [], message: 'No list mappings to sync' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   const results = [];
   const orgIds = new Set<string>();
 
-  for (const mapping of listMappings) {
+  for (const mapping of mappings) {
     try {
       const result = await syncSingleList(mapping, userId);
       results.push(result);
