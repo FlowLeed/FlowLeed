@@ -1,5 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 import { corsHeaders } from '../_shared/cors.ts';
+import { create, getNumericDate } from 'https://deno.land/x/djwt@v2.8/mod.ts';
+import { encode } from 'https://deno.land/std@0.168.0/encoding/base64.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -77,25 +79,56 @@ Deno.serve(async (req) => {
 
     console.log('[generate-impersonation-token] Created session:', sessionId);
 
-    // Generate a short-lived access token for the target user (4 hours)
-    const { data: sessionData, error: tokenError } = await supabaseAdmin.auth.admin.createSession({
-      user_id: targetUserId,
-      // Token expires in 4 hours
-    });
-
-    if (tokenError || !sessionData) {
-      console.error('[generate-impersonation-token] Failed to create session:', tokenError);
-      throw new Error('Failed to generate impersonation token');
+    // Get JWT secret
+    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET');
+    if (!jwtSecret) {
+      throw new Error('SUPABASE_JWT_SECRET is not configured');
     }
 
-    console.log('[generate-impersonation-token] Token generated successfully');
+    // Generate custom JWT token for the target user
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = now + (4 * 60 * 60); // 4 hours from now
+    
+    const payload = {
+      iss: supabaseUrl + '/auth/v1',
+      sub: targetUserId,
+      aud: 'authenticated',
+      exp: expiresAt,
+      iat: now,
+      email: '', // We don't include email for security
+      phone: '',
+      app_metadata: {
+        provider: 'impersonation',
+        providers: ['impersonation'],
+      },
+      user_metadata: {},
+      role: 'authenticated',
+      aal: 'aal1',
+      amr: [{ method: 'impersonation', timestamp: now }],
+      session_id: sessionId,
+      is_anonymous: false,
+    };
+
+    // Create signing key from secret
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(jwtSecret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    // Sign the JWT
+    const accessToken = await create({ alg: 'HS256', typ: 'JWT' }, payload, key);
+
+    console.log('[generate-impersonation-token] Custom JWT token generated successfully');
 
     return new Response(
       JSON.stringify({
         sessionId,
-        accessToken: sessionData.access_token,
-        refreshToken: sessionData.refresh_token,
-        expiresAt: sessionData.expires_at,
+        accessToken,
+        refreshToken: null, // No refresh token for impersonation
+        expiresAt,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
