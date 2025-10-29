@@ -11,8 +11,6 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (password: string) => Promise<{ error: any }>;
-  isImpersonating: boolean;
-  impersonatedUserId: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,8 +27,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isImpersonating, setIsImpersonating] = useState(false);
-  const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     // Set up auth state listener
@@ -38,144 +34,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       async (event, session) => {
         console.log('[useAuth] Auth state changed:', event);
         
-        // Check for impersonation session
-        const impersonationData = sessionStorage.getItem('impersonation_session');
-        
-        if (impersonationData && session?.user) {
-          try {
-            const impSession = JSON.parse(impersonationData);
-            console.log('[useAuth] Loading impersonation session:', impSession.targetOrgName);
-            
-            // Override with target user context
-            setIsImpersonating(true);
-            setImpersonatedUserId(impSession.targetUserId);
-            
-            // Create a synthetic user object for the target user with timeout
-            const profilePromise = supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', impSession.targetUserId)
-              .single();
-            
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Profile load timeout')), 5000)
-            );
-            
-            try {
-              const { data: targetProfile } = await Promise.race([
-                profilePromise,
-                timeoutPromise
-              ]) as any;
-              
-              if (targetProfile) {
-                // Override user with target user data but keep the session
-                const syntheticUser = {
-                  ...session.user,
-                  id: impSession.targetUserId,
-                  email: targetProfile.email,
-                };
-                setUser(syntheticUser as User);
-                setSession(session);
-                console.log('[useAuth] Impersonation loaded successfully');
-              } else {
-                throw new Error('Target profile not found');
-              }
-            } catch (profileError) {
-              console.error('[useAuth] Failed to load target profile:', profileError);
-              // Fallback: use admin user but keep impersonation flag
-              setUser(session?.user ?? null);
-              setSession(session);
-            }
-          } catch (error) {
-            console.error('[useAuth] Error loading impersonation session:', error);
-            sessionStorage.removeItem('impersonation_session');
-            setIsImpersonating(false);
-            setUser(session?.user ?? null);
-          }
-        } else {
-          setIsImpersonating(false);
-          setImpersonatedUserId(null);
-          setSession(session);
-          setUser(session?.user ?? null);
-        }
-        
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
         
-        // Track login when user signs in (skip for impersonation)
-        if (event === 'SIGNED_IN' && session?.user && !impersonationData) {
-          setTimeout(() => {
-            supabase.functions.invoke('track-login', {
-              headers: {
-                Authorization: `Bearer ${session.access_token}`
-              }
-            }).catch(err => {
-              console.error('Failed to track login:', err);
-            });
-          }, 0);
+        // Track login when user signs in
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Check if this is an impersonation session (skip tracking for impersonation)
+          const isImpersonation = sessionStorage.getItem('impersonation_session');
+          
+          if (!isImpersonation) {
+            setTimeout(() => {
+              supabase.functions.invoke('track-login', {
+                headers: {
+                  Authorization: `Bearer ${session.access_token}`
+                }
+              }).catch(err => {
+                console.error('Failed to track login:', err);
+              });
+            }, 0);
+          }
         }
       }
     );
 
     // Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('[useAuth] Getting initial session');
-      
-      // Check for impersonation on mount
-      const impersonationData = sessionStorage.getItem('impersonation_session');
-      
-      if (impersonationData && session?.user) {
-        try {
-          const impSession = JSON.parse(impersonationData);
-          console.log('[useAuth] Initial impersonation load:', impSession.targetOrgName);
-          
-          setIsImpersonating(true);
-          setImpersonatedUserId(impSession.targetUserId);
-          
-          const profilePromise = supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', impSession.targetUserId)
-            .single();
-          
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Initial profile load timeout')), 5000)
-          );
-          
-          try {
-            const { data: targetProfile } = await Promise.race([
-              profilePromise,
-              timeoutPromise
-            ]) as any;
-            
-            if (targetProfile) {
-              const syntheticUser = {
-                ...session.user,
-                id: impSession.targetUserId,
-                email: targetProfile.email,
-              };
-              setUser(syntheticUser as User);
-              setSession(session);
-              console.log('[useAuth] Initial impersonation loaded successfully');
-            } else {
-              throw new Error('Target profile not found');
-            }
-          } catch (profileError) {
-            console.error('[useAuth] Failed to load initial target profile:', profileError);
-            // Fallback: use admin user but keep impersonation flag
-            setUser(session?.user ?? null);
-            setSession(session);
-          }
-        } catch (error) {
-          console.error('[useAuth] Error loading initial impersonation session:', error);
-          sessionStorage.removeItem('impersonation_session');
-          setIsImpersonating(false);
-          setUser(session?.user ?? null);
-        }
-      } else {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-      
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
@@ -272,8 +159,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signOut,
     resetPassword,
     updatePassword,
-    isImpersonating,
-    impersonatedUserId,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

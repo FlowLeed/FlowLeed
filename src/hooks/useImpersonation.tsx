@@ -69,24 +69,43 @@ export const useImpersonation = () => {
     try {
       console.log('[useImpersonation] Starting impersonation for:', targetOrgName);
       
-      // Call database function to create session
-      const { data: sessionId, error } = await supabase.rpc(
-        'start_impersonation_session' as any,
+      // Step 1: Get current admin session and store it
+      const { data: { session: adminSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !adminSession) {
+        throw new Error('Failed to get admin session');
+      }
+
+      console.log('[useImpersonation] Storing admin session backup');
+      sessionStorage.setItem('admin_session_backup', JSON.stringify({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+        expires_at: adminSession.expires_at,
+      }));
+
+      // Step 2: Call edge function to generate impersonation token
+      console.log('[useImpersonation] Generating impersonation token');
+      const { data: tokenData, error: tokenError } = await supabase.functions.invoke(
+        'generate-impersonation-token',
         {
-          _target_org_id: targetOrgId,
-          _reason: reason,
-          _ip_address: null, // Browser doesn't have direct access to IP
-          _user_agent: navigator.userAgent,
+          body: {
+            targetUserId,
+            targetOrgId,
+            reason,
+          },
         }
       );
 
-      if (error) {
-        console.error('[useImpersonation] Failed to start session:', error);
-        throw error;
+      if (tokenError || !tokenData) {
+        console.error('[useImpersonation] Failed to generate token:', tokenError);
+        throw new Error(tokenError?.message || 'Failed to generate impersonation token');
       }
 
+      console.log('[useImpersonation] Token generated, session ID:', tokenData.sessionId);
+
+      // Step 3: Store impersonation metadata
       const sessionData: ImpersonationSession = {
-        sessionId: sessionId as string,
+        sessionId: tokenData.sessionId,
         targetOrgId,
         targetOrgName,
         targetUserId,
@@ -96,13 +115,29 @@ export const useImpersonation = () => {
       };
 
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-      setSession(sessionData);
-      setIsImpersonating(true);
 
-      console.log('[useImpersonation] Session started successfully:', sessionId);
-      return { success: true, sessionId };
+      // Step 4: Sign in as target user using the generated token
+      console.log('[useImpersonation] Signing in as target user');
+      const { error: setSessionError } = await supabase.auth.setSession({
+        access_token: tokenData.accessToken,
+        refresh_token: tokenData.refreshToken,
+      });
+
+      if (setSessionError) {
+        console.error('[useImpersonation] Failed to set session:', setSessionError);
+        throw setSessionError;
+      }
+
+      // Step 5: Reload to apply new session
+      console.log('[useImpersonation] Session swap complete, reloading...');
+      window.location.reload();
+      
+      return { success: true, sessionId: tokenData.sessionId };
     } catch (error: any) {
       console.error('[useImpersonation] Failed to start impersonation:', error);
+      // Clean up on failure
+      sessionStorage.removeItem('admin_session_backup');
+      sessionStorage.removeItem(SESSION_KEY);
       return { success: false, error: error.message };
     }
   };
@@ -110,25 +145,63 @@ export const useImpersonation = () => {
   const endImpersonation = async () => {
     console.log('[useImpersonation] Ending impersonation session');
     
-    // Always clear local state first (bulletproof)
-    sessionStorage.removeItem(SESSION_KEY);
-    setSession(null);
-    setIsImpersonating(false);
-
-    // Try to end session in DB, but don't block navigation if it fails
-    if (session) {
-      try {
-        await supabase.rpc('end_impersonation_session' as any, {
-          _session_id: session.sessionId,
-        });
-        console.log('[useImpersonation] Session ended successfully in DB');
-      } catch (error) {
-        console.error('[useImpersonation] Failed to end session in DB (continuing anyway):', error);
+    try {
+      // Step 1: End session in DB
+      if (session) {
+        try {
+          await supabase.rpc('end_impersonation_session' as any, {
+            _session_id: session.sessionId,
+          });
+          console.log('[useImpersonation] Session ended in DB');
+        } catch (error) {
+          console.error('[useImpersonation] Failed to end session in DB:', error);
+        }
       }
+
+      // Step 2: Retrieve admin session backup
+      const adminSessionStr = sessionStorage.getItem('admin_session_backup');
+      
+      if (!adminSessionStr) {
+        console.warn('[useImpersonation] No admin session backup found, signing out');
+        await supabase.auth.signOut();
+        window.location.href = '/fl-admin/auth';
+        return;
+      }
+
+      const adminSession = JSON.parse(adminSessionStr);
+      console.log('[useImpersonation] Restoring admin session');
+
+      // Step 3: Restore admin session
+      const { error: restoreError } = await supabase.auth.setSession({
+        access_token: adminSession.access_token,
+        refresh_token: adminSession.refresh_token,
+      });
+
+      if (restoreError) {
+        console.error('[useImpersonation] Failed to restore admin session:', restoreError);
+        await supabase.auth.signOut();
+        window.location.href = '/fl-admin/auth';
+        return;
+      }
+
+      // Step 4: Clean up
+      sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem('admin_session_backup');
+      setSession(null);
+      setIsImpersonating(false);
+
+      console.log('[useImpersonation] Admin session restored, navigating to admin panel');
+      
+      // Step 5: Navigate back to admin
+      window.location.href = '/fl-admin/organizations';
+    } catch (error) {
+      console.error('[useImpersonation] Error ending impersonation:', error);
+      // Fallback: clear everything and go to admin auth
+      sessionStorage.removeItem(SESSION_KEY);
+      sessionStorage.removeItem('admin_session_backup');
+      await supabase.auth.signOut();
+      window.location.href = '/fl-admin/auth';
     }
-    
-    // Always navigate back to admin regardless of DB call result
-    window.location.href = '/fl-admin/organizations';
   };
 
   const logAction = async (

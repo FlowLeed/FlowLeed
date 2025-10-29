@@ -46,9 +46,6 @@ export const useProfile = () => {
       try {
         console.log('[useProfile] Fetching profile for user:', user.id);
         
-        // Check for impersonation session
-        const impersonationData = sessionStorage.getItem('impersonation_session');
-        
         // Fetch user profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -62,37 +59,7 @@ export const useProfile = () => {
           setProfile(profileData);
         }
 
-        // If impersonating, force-select the target organization
-        if (impersonationData) {
-          try {
-            const impSession = JSON.parse(impersonationData);
-            console.log('[useProfile] Impersonation mode - loading target org:', impSession.targetOrgName);
-            
-            const { data: targetOrg, error: targetOrgError } = await supabase
-              .from('organizations')
-              .select('id, name, slug')
-              .eq('id', impSession.targetOrgId)
-              .single();
-            
-            if (targetOrgError) {
-              console.error('[useProfile] Error fetching target organization:', targetOrgError);
-              // Continue anyway - don't block the UI
-            } else if (targetOrg) {
-              setOrganization(targetOrg as Organization);
-              localStorage.setItem(SELECTED_ORG_KEY, targetOrg.id);
-              console.log('[useProfile] Impersonation org loaded:', targetOrg.name);
-            }
-            
-            // Always finish loading, even if org fetch failed
-            setLoading(false);
-            return;
-          } catch (error) {
-            console.error('[useProfile] Error parsing impersonation session:', error);
-            // Continue to normal flow
-          }
-        }
-
-        // Normal flow: Fetch ALL user's organizations
+        // Fetch ALL user's organizations
         const { data: memberships, error: orgError } = await supabase
           .from('organization_members')
           .select(`
