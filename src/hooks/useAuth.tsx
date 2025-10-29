@@ -11,6 +11,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (password: string) => Promise<{ error: any }>;
+  isImpersonating: boolean;
+  impersonatedUserId: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,18 +29,63 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [impersonatedUserId, setImpersonatedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      async (event, session) => {
+        // Check for impersonation session
+        const impersonationData = sessionStorage.getItem('impersonation_session');
+        
+        if (impersonationData && session?.user) {
+          try {
+            const impSession = JSON.parse(impersonationData);
+            
+            // Override with target user context
+            setIsImpersonating(true);
+            setImpersonatedUserId(impSession.targetUserId);
+            
+            // Create a synthetic user object for the target user
+            const { data: targetProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', impSession.targetUserId)
+              .single();
+            
+            if (targetProfile) {
+              // Override user with target user data but keep the session
+              const syntheticUser = {
+                ...session.user,
+                id: impSession.targetUserId,
+                email: targetProfile.email,
+              };
+              setUser(syntheticUser as User);
+              setSession(session);
+            } else {
+              // If target user not found, end impersonation
+              sessionStorage.removeItem('impersonation_session');
+              setIsImpersonating(false);
+              setUser(session?.user ?? null);
+            }
+          } catch (error) {
+            console.error('Error loading impersonation session:', error);
+            sessionStorage.removeItem('impersonation_session');
+            setIsImpersonating(false);
+            setUser(session?.user ?? null);
+          }
+        } else {
+          setIsImpersonating(false);
+          setImpersonatedUserId(null);
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        
         setLoading(false);
         
-        // Track login when user signs in
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Defer the tracking call to avoid blocking auth flow
+        // Track login when user signs in (skip for impersonation)
+        if (event === 'SIGNED_IN' && session?.user && !impersonationData) {
           setTimeout(() => {
             supabase.functions.invoke('track-login', {
               headers: {
@@ -53,9 +100,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // Check for impersonation on mount
+      const impersonationData = sessionStorage.getItem('impersonation_session');
+      
+      if (impersonationData && session?.user) {
+        try {
+          const impSession = JSON.parse(impersonationData);
+          setIsImpersonating(true);
+          setImpersonatedUserId(impSession.targetUserId);
+          
+          const { data: targetProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', impSession.targetUserId)
+            .single();
+          
+          if (targetProfile) {
+            const syntheticUser = {
+              ...session.user,
+              id: impSession.targetUserId,
+              email: targetProfile.email,
+            };
+            setUser(syntheticUser as User);
+            setSession(session);
+          } else {
+            sessionStorage.removeItem('impersonation_session');
+            setIsImpersonating(false);
+            setUser(session?.user ?? null);
+          }
+        } catch (error) {
+          console.error('Error loading impersonation session:', error);
+          sessionStorage.removeItem('impersonation_session');
+          setIsImpersonating(false);
+          setUser(session?.user ?? null);
+        }
+      } else {
+        setSession(session);
+        setUser(session?.user ?? null);
+      }
+      
       setLoading(false);
     });
 
@@ -152,6 +236,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signOut,
     resetPassword,
     updatePassword,
+    isImpersonating,
+    impersonatedUserId,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

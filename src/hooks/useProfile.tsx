@@ -44,6 +44,9 @@ export const useProfile = () => {
 
     const fetchProfileAndOrganization = async () => {
       try {
+        // Check for impersonation session
+        const impersonationData = sessionStorage.getItem('impersonation_session');
+        
         // Fetch user profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -57,7 +60,31 @@ export const useProfile = () => {
           setProfile(profileData);
         }
 
-        // Fetch ALL user's organizations
+        // If impersonating, force-select the target organization
+        if (impersonationData) {
+          try {
+            const impSession = JSON.parse(impersonationData);
+            const { data: targetOrg, error: targetOrgError } = await supabase
+              .from('organizations')
+              .select('id, name, slug')
+              .eq('id', impSession.targetOrgId)
+              .single();
+            
+            if (targetOrgError) {
+              console.error('Error fetching target organization:', targetOrgError);
+            } else if (targetOrg) {
+              setOrganization(targetOrg as Organization);
+              localStorage.setItem(SELECTED_ORG_KEY, targetOrg.id);
+              console.log('Impersonating organization:', targetOrg);
+              setLoading(false);
+              return;
+            }
+          } catch (error) {
+            console.error('Error parsing impersonation session:', error);
+          }
+        }
+
+        // Normal flow: Fetch ALL user's organizations
         const { data: memberships, error: orgError } = await supabase
           .from('organization_members')
           .select(`

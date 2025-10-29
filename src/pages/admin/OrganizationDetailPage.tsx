@@ -6,20 +6,44 @@ import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
 import { HealthScoreCard } from '@/components/admin/HealthScoreCard';
 import { EditOrganizationDialog } from '@/components/admin/EditOrganizationDialog';
 import { OrganizationPhoneNumbers } from '@/components/admin/OrganizationPhoneNumbers';
+import { StartImpersonationDialog } from '@/components/admin/StartImpersonationDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw, Pencil } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw, Pencil, UserCog } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function OrganizationDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [impersonateDialogOpen, setImpersonateDialogOpen] = useState(false);
+  const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
   const { data: organizations, isLoading, refetch } = useOrganizationsData();
   const { data: healthScoreData, isLoading: healthScoreLoading, recalculate, isRecalculating } = useHealthScore(id);
 
   const org = organizations?.find(o => o.id === id);
+
+  // Fetch owner user ID when opening impersonate dialog
+  const handleImpersonateClick = async () => {
+    if (!org?.id) return;
+    
+    const { data, error } = await supabase
+      .from('organization_members')
+      .select('user_id')
+      .eq('organization_id', org.id)
+      .eq('role', 'owner')
+      .single();
+    
+    if (error || !data) {
+      console.error('Failed to fetch organization owner:', error);
+      return;
+    }
+    
+    setOwnerUserId(data.user_id);
+    setImpersonateDialogOpen(true);
+  };
 
   const getStatusBadge = (status: string | null) => {
     if (!status) return <Badge variant="secondary">Unknown</Badge>;
@@ -100,6 +124,15 @@ export default function OrganizationDetailPage() {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleImpersonateClick}
+                      className="gap-2"
+                    >
+                      <UserCog className="h-4 w-4" />
+                      Impersonate
+                    </Button>
                   </div>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
@@ -132,6 +165,16 @@ export default function OrganizationDetailPage() {
             }}
             onSuccess={refetch}
           />
+
+          {ownerUserId && (
+            <StartImpersonationDialog
+              open={impersonateDialogOpen}
+              onOpenChange={setImpersonateDialogOpen}
+              organizationId={org.id}
+              organizationName={org.name}
+              targetUserId={ownerUserId}
+            />
+          )}
 
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
