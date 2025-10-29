@@ -63,6 +63,7 @@ Deno.serve(async (req) => {
     // Create impersonation session in DB
     const { data: sessionId, error: sessionError } = await supabaseAdmin
       .rpc('start_impersonation_session', {
+        _admin_user_id: adminUser.id,
         _target_org_id: targetOrgId,
         _reason: reason,
         _ip_address: req.headers.get('x-forwarded-for') || null,

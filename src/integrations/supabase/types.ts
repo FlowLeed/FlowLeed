@@ -1730,15 +1730,26 @@ export type Database = {
         }
         Returns: string
       }
-      start_impersonation_session: {
-        Args: {
-          _ip_address?: string
-          _reason: string
-          _target_org_id: string
-          _user_agent?: string
-        }
-        Returns: string
-      }
+      start_impersonation_session:
+        | {
+            Args: {
+              _admin_user_id: string
+              _ip_address?: string
+              _reason: string
+              _target_org_id: string
+              _user_agent?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _ip_address?: string
+              _reason: string
+              _target_org_id: string
+              _user_agent?: string
+            }
+            Returns: string
+          }
       track_pco_sync: {
         Args: { p_org_id: string; p_sync_type?: string }
         Returns: undefined
