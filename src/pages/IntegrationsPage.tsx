@@ -271,42 +271,36 @@ const IntegrationsPage = () => {
   };
   const handleSyncNow = async () => {
     if (!planningCenterIntegration) return;
-    setIsSyncing(true);
+    
     try {
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('planning-center-lists', {
-        body: {
-          action: 'autoSync'
+      const { data, error } = await supabase.functions.invoke('planning-center-lists', {
+        body: { 
+          action: 'syncLists',
+          integrationId: planningCenterIntegration.id 
         }
       });
+
       if (error) throw error;
-      if (data.success) {
-        queryClient.invalidateQueries({
-          queryKey: ['integrations', userOrgData?.organization_id]
+      
+      // Set the job ID to start polling
+      if (data?.results?.[0]?.jobId) {
+        setCurrentSyncJobId(data.results[0].jobId);
+        toast.success("Sync started", {
+          description: `Queued ${data.results[0].contactsCount || 0} contacts for processing`
         });
-        queryClient.invalidateQueries({
-          queryKey: ['list-mappings']
-        });
-        toast({
-          title: 'Sync completed',
-          description: data.message || 'Successfully synced all active mappings'
-        });
-        
-        // Dispatch event to refresh flow data
-        window.dispatchEvent(new CustomEvent('pco-sync-complete'));
       } else {
-        throw new Error(data.error);
+        toast.success("Sync completed", {
+          description: `Synced ${data?.results?.length || 0} list(s)`
+        });
       }
+      
+      await queryClient.invalidateQueries({ queryKey: ['integrations', userOrgData?.organization_id] });
+      window.dispatchEvent(new CustomEvent('pco-sync-complete'));
     } catch (error: any) {
-      toast({
-        title: 'Sync failed',
-        description: error.message || 'Failed to sync data',
-        variant: 'destructive'
+      console.error('Sync error:', error);
+      toast.error("Sync failed", {
+        description: error.message || 'Failed to sync data from Planning Center'
       });
-    } finally {
-      setIsSyncing(false);
     }
   };
   const getStatusBadge = (integration: any, isLoading: boolean = false, isDeleting: boolean = false) => {
