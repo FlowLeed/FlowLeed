@@ -35,6 +35,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Track login when user signs in
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Defer the tracking call to avoid blocking auth flow
+          setTimeout(() => {
+            supabase.functions.invoke('track-login', {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`
+              }
+            }).catch(err => {
+              console.error('Failed to track login:', err);
+            });
+          }, 0);
+        }
       }
     );
 
