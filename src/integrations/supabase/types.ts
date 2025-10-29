@@ -1703,6 +1703,10 @@ export type Database = {
         Args: { org_id: string; stat_column: string }
         Returns: undefined
       }
+      is_currently_impersonating: {
+        Args: { _admin_user_id: string }
+        Returns: boolean
+      }
       is_flow_team_member: {
         Args: { _pipeline_id: string; _user_id: string }
         Returns: boolean
