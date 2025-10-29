@@ -409,8 +409,8 @@ const IntegrationsPage = () => {
             
             {!planningCenterIntegration ? <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label htmlFor="pc-app-id">Application ID</Label>
-                  <Input id="pc-app-id" placeholder="Enter your Planning Center App ID" value={planningCenterForm.appId} onChange={e => setPlanningCenterForm(prev => ({
+                  <Label htmlFor="pc-app-id">Client ID</Label>
+                  <Input id="pc-app-id" placeholder="Enter your Planning Center Client ID" value={planningCenterForm.appId} onChange={e => setPlanningCenterForm(prev => ({
                 ...prev,
                 appId: e.target.value
               }))} />
