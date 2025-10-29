@@ -324,42 +324,63 @@ async function syncSingleList(mapping: any, userId: string) {
   
   console.log('Fetching PC list members for list:', mapping.external_list_id);
 
-  // Fetch list members from Planning Center
-  const response = await fetch(
-    `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/list_results?include=person`,
-    {
+  // Fetch list members from Planning Center with pagination
+  let allListResults: any[] = [];
+  let allPeople: any[] = [];
+  let nextUrl: string | null = `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/list_results?include=person&per_page=100`;
+  let pageCount = 0;
+
+  while (nextUrl) {
+    pageCount++;
+    console.log(`Fetching page ${pageCount} from Planning Center...`);
+    
+    const response = await fetch(nextUrl, {
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json',
       },
-    }
-  );
+    });
 
-  if (!response.ok) {
-    console.error('PC API error:', response.status, response.statusText);
-    throw new Error(`PC API error: ${response.status}`);
+    if (!response.ok) {
+      console.error('PC API error:', response.status, response.statusText);
+      throw new Error(`PC API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Collect list results
+    if (data.data) {
+      allListResults.push(...data.data);
+    }
+    
+    // Collect people from included data
+    const pagePeople = data.included?.filter((item: any) => item.type === 'Person') || [];
+    if (pagePeople.length > 0) {
+      allPeople.push(...pagePeople);
+    }
+    
+    // Get next page URL from links
+    nextUrl = data.links?.next || null;
+    
+    console.log(`Page ${pageCount}: Found ${data.data?.length || 0} list results, ${pagePeople.length} people`);
   }
 
-  const data = await response.json();
-  console.log('PC API response structure:', {
-    hasData: !!data.data,
-    dataLength: data.data?.length || 0,
-    hasIncluded: !!data.included,
-    includedLength: data.included?.length || 0,
-    sampleData: data.data?.[0],
-    sampleIncluded: data.included?.[0]
+  console.log(`Total pages fetched: ${pageCount}`);
+  console.log('PC API complete - Total results:', {
+    totalListResults: allListResults.length,
+    totalPeople: allPeople.length,
   });
   
   // Get people from included data if available, otherwise fetch them individually
-  let people = data.included?.filter((item: any) => item.type === 'Person') || [];
+  let people = allPeople;
   console.log('Found people in included:', people.length);
   
   // If no people found in included, fetch them individually from list results
-  if (people.length === 0 && data.data?.length > 0) {
+  if (people.length === 0 && allListResults.length > 0) {
     console.log('No people found in included, fetching individual people...');
-    console.log('List results sample:', JSON.stringify(data.data[0], null, 2));
+    console.log('List results sample:', JSON.stringify(allListResults[0], null, 2));
     
-    for (const [index, result] of data.data.entries()) {
+    for (const [index, result] of allListResults.entries()) {
       console.log(`Processing list result ${index + 1}:`, JSON.stringify(result, null, 2));
       
       if (result.relationships?.person?.data?.id) {
