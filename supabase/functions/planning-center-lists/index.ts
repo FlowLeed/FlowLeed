@@ -406,14 +406,6 @@ async function syncSingleList(mapping: any, userId: string) {
     console.log('Processing person:', personId, attrs.first_name, attrs.last_name);
     console.log('Person attributes:', JSON.stringify(attrs, null, 2));
 
-    // Check if contact already exists using maybeSingle to avoid errors
-    const { data: existingContact } = await supabase
-      .from('contacts')
-      .select('id')
-      .eq('pc_person_id', personId)
-      .eq('organization_id', integration.organization_id)
-      .maybeSingle();
-
     const contactData = {
       name: `${attrs.first_name || ''} ${attrs.last_name || ''}`.trim() || 'Unknown',
       email: attrs.primary_email || attrs.email || null,
@@ -427,36 +419,32 @@ async function syncSingleList(mapping: any, userId: string) {
 
     console.log('Contact data to save:', JSON.stringify(contactData, null, 2));
 
-    let contactId;
+    // Use upsert to handle both insert and update in one operation
+    // This leverages the unique constraint on (pc_person_id, organization_id)
+    const { data: contact, error: contactError } = await supabase
+      .from('contacts')
+      .upsert(contactData, {
+        onConflict: 'pc_person_id,organization_id',
+        ignoreDuplicates: false
+      })
+      .select('id, created_at')
+      .single();
 
-    if (existingContact) {
-      // Update existing contact
-      console.log('Updating existing contact:', existingContact.id);
-      const { data: updatedContact } = await supabase
-        .from('contacts')
-        .update(contactData)
-        .eq('id', existingContact.id)
-        .select('id')
-        .single();
-      
-      contactId = updatedContact?.id;
-      contactsUpdated++;
-    } else {
-      // Create new contact
-      console.log('Creating new contact for person:', personId);
-      const { data: newContact, error: contactError } = await supabase
-        .from('contacts')
-        .insert(contactData)
-        .select('id')
-        .single();
-      
-      if (contactError) {
-        console.error('Error creating contact:', contactError);
-        continue; // Skip this person and continue with others
-      }
-      
-      contactId = newContact?.id;
+    if (contactError) {
+      console.error('Error upserting contact:', contactError);
+      continue; // Skip this person and continue with others
+    }
+
+    const contactId = contact?.id;
+    
+    // Track whether this was a new contact or update based on created_at
+    const isNew = new Date(contact.created_at).getTime() > Date.now() - 5000; // Within last 5 seconds
+    if (isNew) {
       contactsAdded++;
+      console.log('Created new contact:', contactId);
+    } else {
+      contactsUpdated++;
+      console.log('Updated existing contact:', contactId);
     }
 
     if (contactId) {
@@ -465,34 +453,26 @@ async function syncSingleList(mapping: any, userId: string) {
       
       console.log('Adding contact to pipeline:', contactId, 'pipeline:', mapping.pipeline_id, 'stage:', mapping.stage_id);
       
-      // Add to pipeline stage if not already there using maybeSingle
-      const { data: existingPipelineContact } = await supabase
+      // Use upsert to handle adding contact to pipeline
+      // This leverages the unique constraint on (contact_id, pipeline_id)
+      const { error: pipelineError } = await supabase
         .from('pipeline_contacts')
-        .select('id')
-        .eq('contact_id', contactId)
-        .eq('pipeline_id', mapping.pipeline_id)
-        .eq('stage_id', mapping.stage_id)
-        .maybeSingle();
-
-      if (!existingPipelineContact) {
-        const { error: pipelineError } = await supabase
-          .from('pipeline_contacts')
-          .insert({
-            contact_id: contactId,
-            pipeline_id: mapping.pipeline_id,
-            stage_id: mapping.stage_id,
-            assigned_to_user_id: integration.user_id,
-            source_type: 'planning_center',
-            source_id: mapping.external_list_id,
-          });
-          
-        if (pipelineError) {
-          console.error('Error adding to pipeline:', pipelineError);
-        } else {
-          console.log('Successfully added contact to pipeline');
-        }
+        .upsert({
+          contact_id: contactId,
+          pipeline_id: mapping.pipeline_id,
+          stage_id: mapping.stage_id,
+          assigned_to_user_id: integration.user_id,
+          source_type: 'planning_center',
+          source_id: mapping.external_list_id,
+        }, {
+          onConflict: 'contact_id,pipeline_id',
+          ignoreDuplicates: false // Update stage if changed
+        });
+        
+      if (pipelineError) {
+        console.error('Error adding to pipeline:', pipelineError);
       } else {
-        console.log('Contact already in pipeline stage');
+        console.log('Successfully added/updated contact in pipeline');
       }
     }
   }
