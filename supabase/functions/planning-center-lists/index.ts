@@ -44,7 +44,38 @@ serve(async (req) => {
     } else if (action === 'fetchLists') {
       return await fetchPlanningCenterLists(integrationId, userData.user.id);
     } else if (action === 'syncLists') {
-      return await syncPlanningCenterLists(listMappings, userData.user.id);
+      // Fetch list mappings for this integration
+      const { data: mappings, error: mappingsError } = await supabase
+        .from('integration_list_mappings')
+        .select(`
+          *,
+          pipelines (name, icon),
+          pipeline_stages (name, color),
+          integrations (user_id, sync_frequency)
+        `)
+        .eq('integration_id', integrationId)
+        .eq('auto_sync', true);
+
+      if (mappingsError) {
+        console.error('Error fetching list mappings:', mappingsError);
+        return new Response(JSON.stringify({ error: 'Failed to fetch list mappings' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!mappings || mappings.length === 0) {
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: 'No list mappings configured for sync',
+          results: []
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return await syncPlanningCenterLists(mappings, userData.user.id);
     }
 
     return new Response('Invalid action', { status: 400, headers: corsHeaders });
