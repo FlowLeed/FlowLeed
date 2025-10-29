@@ -427,7 +427,7 @@ const IntegrationsPage = () => {
                     {createIntegrationMutation.isPending ? 'Connecting...' : 'Connect Planning Center'}
                   </Button>
                   <Button variant="outline" asChild>
-                    <a href="https://api.planningcenteronline.com/" target="_blank" rel="noopener noreferrer">
+                    <a href="https://api.planningcenteronline.com/personal_access_tokens" target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Get API Keys
                     </a>
