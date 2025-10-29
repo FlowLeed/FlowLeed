@@ -1671,6 +1671,10 @@ export type Database = {
         Args: { _pipeline_id: string; _user_id: string }
         Returns: string
       }
+      get_impersonation_org_id: {
+        Args: { _admin_user_id: string }
+        Returns: string
+      }
       get_organizations_health_data: {
         Args: never
         Returns: {
