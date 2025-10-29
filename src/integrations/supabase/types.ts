@@ -1573,6 +1573,45 @@ export type Database = {
           },
         ]
       }
+      user_logins: {
+        Row: {
+          date: string
+          id: string
+          logged_in_at: string
+          organization_id: string
+          user_id: string
+        }
+        Insert: {
+          date?: string
+          id?: string
+          logged_in_at?: string
+          organization_id: string
+          user_id: string
+        }
+        Update: {
+          date?: string
+          id?: string
+          logged_in_at?: string
+          organization_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_logins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_logins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       impersonation_audit_log: {
@@ -1691,6 +1730,10 @@ export type Database = {
           _user_agent?: string
         }
         Returns: string
+      }
+      track_user_login: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
