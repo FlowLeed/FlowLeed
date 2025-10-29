@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw, Pencil, UserCog } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
 
 export default function OrganizationDetailPage() {
   const { id } = useParams();
@@ -25,23 +24,14 @@ export default function OrganizationDetailPage() {
 
   const org = organizations?.find(o => o.id === id);
 
-  // Fetch owner user ID when opening impersonate dialog
-  const handleImpersonateClick = async () => {
-    if (!org?.id) return;
-    
-    const { data, error } = await supabase
-      .from('organization_members')
-      .select('user_id')
-      .eq('organization_id', org.id)
-      .eq('role', 'owner')
-      .single();
-    
-    if (error || !data) {
-      console.error('Failed to fetch organization owner:', error);
+  // Use admin_user_id from organization data
+  const handleImpersonateClick = () => {
+    if (!org?.admin_user_id) {
+      console.error('Organization has no admin user ID');
       return;
     }
     
-    setOwnerUserId(data.user_id);
+    setOwnerUserId(org.admin_user_id);
     setImpersonateDialogOpen(true);
   };
 
