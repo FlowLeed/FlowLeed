@@ -79,8 +79,8 @@ Deno.serve(async (req) => {
 
     console.log('[generate-impersonation-token] Created session:', sessionId);
 
-    // Get JWT secret
-    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET');
+    // Get JWT secret (try both common names)
+    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET') || Deno.env.get('JWT_SECRET');
     if (!jwtSecret) {
       throw new Error('SUPABASE_JWT_SECRET is not configured');
     }
