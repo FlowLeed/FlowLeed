@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
+import { useFlowContext } from "@/contexts/FlowContext";
 
 interface SyncProgressDisplayProps {
   jobId: string;
@@ -26,6 +27,7 @@ export function SyncProgressDisplay({
   stageId,
 }: SyncProgressDisplayProps) {
   const { toast } = useToast();
+  const { refreshFlows } = useFlowContext();
   const [hasShownCompletion, setHasShownCompletion] = useState(false);
 
   // Fetch chunk processing status
@@ -81,16 +83,17 @@ export function SyncProgressDisplay({
     refetchInterval: 2000,
   });
 
-  // Show completion toast
+  // Show completion toast and refresh flows
   useEffect(() => {
     if (jobStatus === 'completed' && !hasShownCompletion && contactsInFlow !== undefined) {
       setHasShownCompletion(true);
+      refreshFlows();
       toast({
         title: "Sync Complete!",
         description: `${contactsInFlow} contacts added to the flow`,
       });
     }
-  }, [jobStatus, contactsInFlow, hasShownCompletion, toast]);
+  }, [jobStatus, contactsInFlow, hasShownCompletion, toast, refreshFlows]);
 
   const progressPercentage = totalContacts > 0 
     ? Math.round((processedContacts / totalContacts) * 100) 
