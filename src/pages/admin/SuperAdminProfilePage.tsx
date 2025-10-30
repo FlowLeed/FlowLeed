@@ -262,18 +262,6 @@ const SuperAdminProfilePage = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="font-light">Email Address</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={formData.email} 
-                onChange={e => handleInputChange("email", e.target.value)} 
-                disabled
-              />
-              <p className="text-xs text-muted-foreground">Email cannot be changed</p>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
