@@ -241,21 +241,36 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
       return new Response('Missing Planning Center credentials', { status: 400, headers: corsHeaders });
     }
 
-    // Fetch lists from Planning Center API
+    // Fetch ALL lists from Planning Center API with pagination
     const auth = btoa(`${application_id}:${secret}`);
-    const response = await fetch('https://api.planningcenteronline.com/people/v2/lists', {
-      headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    let allLists: any[] = [];
+    let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/lists?per_page=100';
 
-    if (!response.ok) {
-      throw new Error(`PC API error: ${response.status}`);
+    while (nextUrl) {
+      console.log(`Fetching lists from: ${nextUrl}`);
+      
+      const response = await fetch(nextUrl, {
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`PC API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const lists = data.data || [];
+      allLists = allLists.concat(lists);
+      
+      // Check for next page
+      nextUrl = data.links?.next || null;
+      
+      console.log(`Fetched ${lists.length} lists, total so far: ${allLists.length}`);
     }
 
-    const data = await response.json();
-    const lists = data.data || [];
+    console.log(`Total lists fetched: ${allLists.length}`);
 
     // First, delete old cached metadata for this integration to avoid duplicates
     await supabase
@@ -264,7 +279,7 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
       .eq('integration_id', integrationId);
 
     // Cache fresh list metadata
-    for (const list of lists) {
+    for (const list of allLists) {
       await supabase
         .from('integration_list_metadata')
         .insert({
@@ -278,7 +293,7 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
         });
     }
 
-    return new Response(JSON.stringify({ lists }), {
+    return new Response(JSON.stringify({ lists: allLists }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
