@@ -24,6 +24,8 @@ import {
   ArrowRight 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { usePcoSyncJob } from '@/hooks/usePcoSyncJob';
+import { SyncProgressDisplay } from './SyncProgressDisplay';
 
 interface ListMapping {
   id: string;
@@ -51,6 +53,7 @@ interface ListMappingManagerProps {
 
 export function ListMappingManager({ integrationId, onCreateMapping }: ListMappingManagerProps) {
   const [syncingMappings, setSyncingMappings] = useState<Set<string>>(new Set());
+  const [activeSyncJobs, setActiveSyncJobs] = useState<Map<string, string>>(new Map());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -112,7 +115,10 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
       if (error) throw error;
 
       const result = data.results[0];
-      if (result.success) {
+      if (result.success && result.jobId) {
+        // Store the job ID for this mapping to show progress
+        setActiveSyncJobs(prev => new Map(prev).set(mapping.id, result.jobId));
+        
         // Update last sync time
         await supabase
           .from('integration_list_mappings')
@@ -121,15 +127,12 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
 
         queryClient.invalidateQueries({ queryKey: ['integration-list-mappings'] });
         
-        // Dispatch event to refresh flow data
-        window.dispatchEvent(new CustomEvent('pco-sync-complete'));
-        
         toast({
           title: 'Sync started',
           description: `Queued ${result.contactsCount} contacts for processing.`,
         });
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || 'Sync failed');
       }
     } catch (error) {
       console.error('Sync error:', error);
@@ -253,10 +256,75 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
                   Last synced: {new Date(mapping.last_sync_at).toLocaleString()}
                 </div>
               )}
+              
+              {/* Show progress display for active syncs */}
+              {activeSyncJobs.has(mapping.id) && (
+                <MappingSyncProgress
+                  mappingId={mapping.id}
+                  jobId={activeSyncJobs.get(mapping.id)!}
+                  pipelineId={mapping.pipeline_id}
+                  stageId={mapping.stage_id}
+                  onComplete={() => {
+                    setActiveSyncJobs(prev => {
+                      const next = new Map(prev);
+                      next.delete(mapping.id);
+                      return next;
+                    });
+                    setSyncingMappings(prev => {
+                      const newSet = new Set(prev);
+                      newSet.delete(mapping.id);
+                      return newSet;
+                    });
+                  }}
+                />
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Component to show progress for individual mapping sync
+function MappingSyncProgress({ 
+  mappingId, 
+  jobId, 
+  pipelineId, 
+  stageId,
+  onComplete 
+}: { 
+  mappingId: string;
+  jobId: string;
+  pipelineId: string;
+  stageId: string;
+  onComplete: () => void;
+}) {
+  const { data: syncJob } = usePcoSyncJob(jobId);
+  
+  if (!syncJob) {
+    return (
+      <div className="mt-4 p-4 border rounded-lg bg-muted/50">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Loading sync status...</span>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="mt-4">
+      <SyncProgressDisplay
+        jobId={jobId}
+        jobStatus={syncJob.status}
+        totalContacts={syncJob.total_contacts}
+        processedContacts={syncJob.processed_contacts}
+        listMappingId={mappingId}
+        pipelineId={pipelineId}
+        stageId={stageId}
+        onComplete={onComplete}
+      />
     </div>
   );
 }

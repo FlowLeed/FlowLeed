@@ -15,6 +15,7 @@ interface SyncProgressDisplayProps {
   listMappingId: string;
   pipelineId: string;
   stageId: string;
+  onComplete?: () => void;
 }
 
 export function SyncProgressDisplay({
@@ -25,6 +26,7 @@ export function SyncProgressDisplay({
   listMappingId,
   pipelineId,
   stageId,
+  onComplete,
 }: SyncProgressDisplayProps) {
   const { toast } = useToast();
   const { refreshFlows } = useFlowContext();
@@ -92,8 +94,11 @@ export function SyncProgressDisplay({
         title: "Sync Complete!",
         description: `${contactsInFlow} contacts added to the flow`,
       });
+      
+      // Call completion callback if provided
+      onComplete?.();
     }
-  }, [jobStatus, contactsInFlow, hasShownCompletion, toast, refreshFlows]);
+  }, [jobStatus, contactsInFlow, hasShownCompletion, toast, refreshFlows, onComplete]);
 
   const progressPercentage = totalContacts > 0 
     ? Math.round((processedContacts / totalContacts) * 100) 
