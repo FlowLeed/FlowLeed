@@ -104,12 +104,16 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         console.log("Loading flows for user:", user.id);
         console.log("Active organization:", organization?.id || "none yet");
 
-        // Fetch pipelines - RLS will filter based on team membership
-        // Default flows are created automatically by database trigger on organization insert
-        const { data: existingPipelines, error: pipelinesError } = await supabase
-          .from('pipelines')
-          .select('*')
-          .order('flow_order');
+        // Fetch only pipelines where user is a team member
+        const { data: teamMemberships, error: pipelinesError } = await supabase
+          .from('pipeline_team_members')
+          .select('pipeline_id, pipelines(*)')
+          .eq('user_id', user.id);
+
+        const existingPipelines = teamMemberships
+          ?.map((tm: any) => tm.pipelines)
+          .filter(Boolean)
+          .sort((a: any, b: any) => (a.flow_order || 0) - (b.flow_order || 0)) || [];
 
         if (pipelinesError) {
           console.error("Error fetching pipelines:", pipelinesError);
@@ -150,10 +154,16 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       setError(null);
       console.log("Refreshing flows...");
       
-      // Rely on RLS to filter pipelines by user access
-      const { data: existingPipelines, error: pipelinesError } = await supabase
-        .from('pipelines')
-        .select('*');
+      // Fetch only pipelines where user is a team member
+      const { data: teamMemberships, error: pipelinesError } = await supabase
+        .from('pipeline_team_members')
+        .select('pipeline_id, pipelines(*)')
+        .eq('user_id', user.id);
+
+      const existingPipelines = teamMemberships
+        ?.map((tm: any) => tm.pipelines)
+        .filter(Boolean)
+        .sort((a: any, b: any) => (a.flow_order || 0) - (b.flow_order || 0)) || [];
 
       if (pipelinesError) {
         console.error("Error fetching pipelines:", pipelinesError);
