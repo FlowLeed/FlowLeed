@@ -104,20 +104,47 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         console.log("Loading flows for user:", user.id);
         console.log("Active organization:", organization?.id || "none yet");
 
-        // Fetch only pipelines where user is a team member
-        const { data: teamMemberships, error: pipelinesError } = await supabase
-          .from('pipeline_team_members')
-          .select('pipeline_id, pipelines(*)')
-          .eq('user_id', user.id);
+        // Check if user is org admin/owner
+        const { data: membershipData } = await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('organization_id', organization.id)
+          .single();
 
-        const existingPipelines = teamMemberships
-          ?.map((tm: any) => tm.pipelines)
-          .filter(Boolean)
-          .sort((a: any, b: any) => (a.flow_order || 0) - (b.flow_order || 0)) || [];
+        const isOrgAdmin = membershipData?.role === 'owner' || membershipData?.role === 'admin';
 
-        if (pipelinesError) {
-          console.error("Error fetching pipelines:", pipelinesError);
-          throw pipelinesError;
+        let existingPipelines;
+        if (isOrgAdmin) {
+          // Admins see ALL flows in their organization
+          const { data: allPipelines, error: pipelinesError } = await supabase
+            .from('pipelines')
+            .select('*')
+            .eq('organization_id', organization.id)
+            .order('flow_order');
+          
+          existingPipelines = allPipelines || [];
+          
+          if (pipelinesError) {
+            console.error("Error fetching pipelines:", pipelinesError);
+            throw pipelinesError;
+          }
+        } else {
+          // Regular members only see flows they're team members of
+          const { data: teamMemberships, error: pipelinesError } = await supabase
+            .from('pipeline_team_members')
+            .select('pipeline_id, pipelines(*)')
+            .eq('user_id', user.id);
+
+          existingPipelines = teamMemberships
+            ?.map((tm: any) => tm.pipelines)
+            .filter(Boolean)
+            .sort((a: any, b: any) => (a.flow_order || 0) - (b.flow_order || 0)) || [];
+          
+          if (pipelinesError) {
+            console.error("Error fetching pipelines:", pipelinesError);
+            throw pipelinesError;
+          }
         }
 
         console.log("Found existing pipelines:", existingPipelines?.length || 0);
@@ -154,21 +181,54 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       setError(null);
       console.log("Refreshing flows...");
       
-      // Fetch only pipelines where user is a team member
-      const { data: teamMemberships, error: pipelinesError } = await supabase
-        .from('pipeline_team_members')
-        .select('pipeline_id, pipelines(*)')
-        .eq('user_id', user.id);
-
-      const existingPipelines = teamMemberships
-        ?.map((tm: any) => tm.pipelines)
-        .filter(Boolean)
-        .sort((a: any, b: any) => (a.flow_order || 0) - (b.flow_order || 0)) || [];
-
-      if (pipelinesError) {
-        console.error("Error fetching pipelines:", pipelinesError);
-        throw pipelinesError;
+      if (!organization) {
+        console.error("No organization found for user");
+        return;
       }
+
+      // Check if user is org admin/owner
+      const { data: membershipData } = await supabase
+        .from('organization_members')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('organization_id', organization.id)
+        .single();
+
+      const isOrgAdmin = membershipData?.role === 'owner' || membershipData?.role === 'admin';
+
+      let existingPipelines;
+      if (isOrgAdmin) {
+        // Admins see ALL flows in their organization
+        const { data: allPipelines, error: pipelinesError } = await supabase
+          .from('pipelines')
+          .select('*')
+          .eq('organization_id', organization.id)
+          .order('flow_order');
+        
+        existingPipelines = allPipelines || [];
+        
+        if (pipelinesError) {
+          console.error("Error fetching pipelines:", pipelinesError);
+          throw pipelinesError;
+        }
+      } else {
+        // Regular members only see flows they're team members of
+        const { data: teamMemberships, error: pipelinesError } = await supabase
+          .from('pipeline_team_members')
+          .select('pipeline_id, pipelines(*)')
+          .eq('user_id', user.id);
+
+        existingPipelines = teamMemberships
+          ?.map((tm: any) => tm.pipelines)
+          .filter(Boolean)
+          .sort((a: any, b: any) => (a.flow_order || 0) - (b.flow_order || 0)) || [];
+        
+        if (pipelinesError) {
+          console.error("Error fetching pipelines:", pipelinesError);
+          throw pipelinesError;
+        }
+      }
+
 
       if (existingPipelines && existingPipelines.length > 0) {
         const flowsData = await loadFlowData(existingPipelines);
