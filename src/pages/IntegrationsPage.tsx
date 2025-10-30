@@ -183,35 +183,31 @@ const IntegrationsPage = () => {
   });
   const deleteIntegrationMutation = useMutation({
     mutationFn: async (integrationId: string) => {
-      const {
-        error
-      } = await supabase.from('integrations').delete().eq('id', integrationId);
+      const { error } = await supabase
+        .from('integrations')
+        .delete()
+        .eq('id', integrationId);
       if (error) throw error;
     },
-    onMutate: async (integrationId) => {
-      await queryClient.cancelQueries({ queryKey: ['integrations', userOrgData?.organization_id] });
-      const previousIntegrations = queryClient.getQueryData(['integrations', userOrgData?.organization_id]);
-      
-      queryClient.setQueryData(['integrations', userOrgData?.organization_id], (old: any) => 
-        Array.isArray(old) ? old.filter((i: any) => i.id !== integrationId) : []
-      );
-      
-      return { previousIntegrations };
-    },
-    onError: (error: Error, integrationId, context) => {
-      if (context?.previousIntegrations) {
-        queryClient.setQueryData(['integrations', userOrgData?.organization_id], context.previousIntegrations);
-      }
+    onError: (error: Error) => {
       toast.error('Failed to disconnect', {
         description: error.message
       });
     },
     onSuccess: () => {
+      // Clear form state for fresh reconnection
+      setPlanningCenterForm({
+        appId: '',
+        secret: ''
+      });
+      setCurrentSyncJobId(null);
+      
       toast.success('Integration Disconnected', {
         description: 'Successfully disconnected from Planning Center'
       });
     },
     onSettled: () => {
+      // Refetch to update UI naturally
       queryClient.invalidateQueries({ 
         queryKey: ['integrations', userOrgData?.organization_id],
         refetchType: 'active'
