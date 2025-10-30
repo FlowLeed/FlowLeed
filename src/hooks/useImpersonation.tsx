@@ -116,29 +116,16 @@ export const useImpersonation = () => {
 
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
 
-      // Step 4: Sign in as target user using the generated token
-      console.log('[useImpersonation] Signing in as target user');
-      if (tokenData.accessToken) {
-        const { error: setSessionError } = await supabase.auth.setSession({
-          access_token: tokenData.accessToken,
-          refresh_token: tokenData.refreshToken,
-        });
-        if (setSessionError) {
-          console.error('[useImpersonation] Failed to set session:', setSessionError);
-          throw setSessionError;
-        }
-      } else if (tokenData.email && tokenData.emailOtp) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          email: tokenData.email,
-          token: tokenData.emailOtp,
-          type: 'email',
-        } as any);
-        if (verifyError) {
-          console.error('[useImpersonation] Failed to verify OTP:', verifyError);
-          throw verifyError;
-        }
-      } else {
-        throw new Error('No valid impersonation token returned');
+      // Step 4: Sign in as target user using the magic link token
+      console.log('[useImpersonation] Signing in as target user with magic link token');
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: tokenData.token,
+        type: 'magiclink',
+      });
+      
+      if (verifyError) {
+        console.error('[useImpersonation] Failed to verify magic link token:', verifyError);
+        throw verifyError;
       }
 
       // Step 5: Reload to apply new session

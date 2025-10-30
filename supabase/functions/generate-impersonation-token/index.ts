@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     }
     const targetEmail = targetUserRes.user.email as string;
 
-    // Generate a magic link/OTP for the user and return the OTP (no email sent needed)
+    // Generate a magic link and extract the token from the URL
     const redirectTo = Deno.env.get('SITE_URL') || supabaseUrl;
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'magiclink',
@@ -98,18 +98,30 @@ Deno.serve(async (req) => {
       throw new Error('Failed to generate impersonation verification token');
     }
 
-    const emailOtp = (linkData as any).email_otp as string | undefined;
-    if (!emailOtp) {
-      throw new Error('No OTP generated for impersonation');
+    // Extract token from the action_link URL
+    const actionLink = linkData.properties?.action_link;
+    if (!actionLink) {
+      throw new Error('No action link generated for impersonation');
     }
 
-    console.log('[generate-impersonation-token] Magiclink OTP generated successfully');
+    // Parse the URL to extract the token hash
+    const url = new URL(actionLink);
+    const token = url.searchParams.get('token');
+    const tokenHash = url.hash.replace('#', '').split('&').find(p => p.startsWith('access_token='))?.split('=')[1];
+    
+    const impersonationToken = token || tokenHash;
+    if (!impersonationToken) {
+      throw new Error('No token found in magic link');
+    }
+
+    console.log('[generate-impersonation-token] Magic link token generated successfully');
 
     return new Response(
       JSON.stringify({
         sessionId,
         email: targetEmail,
-        emailOtp,
+        token: impersonationToken,
+        tokenType: 'magiclink',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
