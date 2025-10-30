@@ -19,8 +19,8 @@ Deno.serve(async (req) => {
       throw new Error('No authorization header');
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user: adminUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    const adminToken = authHeader.replace('Bearer ', '');
+    const { data: { user: adminUser }, error: authError } = await supabaseAdmin.auth.getUser(adminToken);
     
     if (authError || !adminUser) {
       console.error('[generate-impersonation-token] Auth error:', authError);
