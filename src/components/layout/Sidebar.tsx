@@ -435,7 +435,8 @@ export const Sidebar = () => {
   }, {
     title: "Tasks",
     icon: CheckSquare,
-    path: "/tasks"
+    path: "/tasks",
+    comingSoon: true
   }];
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
@@ -484,11 +485,13 @@ export const Sidebar = () => {
   }, {
     title: "Calls",
     icon: Phone,
-    path: "/calls"
+    path: "/calls",
+    comingSoon: true
   }, {
     title: "Calendar",
     icon: Calendar,
-    path: "/calendar"
+    path: "/calendar",
+    comingSoon: true
   }];
 
   const settingsItems: SidebarItem[] = [{
