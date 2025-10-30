@@ -29,7 +29,9 @@ serve(async (req) => {
     const siteUrl = Deno.env.get('SITE_URL') || supabaseUrl;
     const tokenSalt = Deno.env.get('TOKEN_SALT') || 'default-salt-change-in-production';
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      db: { schema: 'public' },
+    });
     const resend = new Resend(resendApiKey);
 
     // Get the authenticated user from the request
