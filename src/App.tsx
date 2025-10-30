@@ -33,6 +33,7 @@ import OrganizationDetailPage from "./pages/admin/OrganizationDetailPage";
 import OnboardingFlowsPage from "./pages/admin/OnboardingFlowsPage";
 import OngoingSupportFlowsPage from "./pages/admin/OngoingSupportFlowsPage";
 import CommunicationsPage from "./pages/admin/CommunicationsPage";
+import SuperAdminProfilePage from "./pages/admin/SuperAdminProfilePage";
 
 
 const queryClient = new QueryClient();
@@ -70,13 +71,14 @@ const App = () => (
               {/* FL-Admin super admin routes */}
               <Route path="/fl-admin/login" element={<SuperAdminAuthPage />} />
               <Route element={<SuperAdminProtectedRoute />}>
-                <Route path="/fl-admin" element={<SuperAdminLayout />}>
-                  <Route index element={<OrganizationsListPage />} />
-                  <Route path="organizations/:id" element={<OrganizationDetailPage />} />
-                  <Route path="flows/onboarding" element={<OnboardingFlowsPage />} />
-                  <Route path="flows/ongoing-support" element={<OngoingSupportFlowsPage />} />
-                  <Route path="communications" element={<CommunicationsPage />} />
-                </Route>
+              <Route path="/fl-admin" element={<SuperAdminLayout />}>
+                <Route index element={<OrganizationsListPage />} />
+                <Route path="organizations/:id" element={<OrganizationDetailPage />} />
+                <Route path="flows/onboarding" element={<OnboardingFlowsPage />} />
+                <Route path="flows/ongoing-support" element={<OngoingSupportFlowsPage />} />
+                <Route path="communications" element={<CommunicationsPage />} />
+                <Route path="profile" element={<SuperAdminProfilePage />} />
+              </Route>
               </Route>
 
               <Route path="*" element={<NotFound />} />
