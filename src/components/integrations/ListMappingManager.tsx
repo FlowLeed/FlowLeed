@@ -125,8 +125,8 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
         window.dispatchEvent(new CustomEvent('pco-sync-complete'));
         
         toast({
-          title: 'Sync completed',
-          description: `Added ${result.contactsAdded} new contacts, updated ${result.contactsUpdated} existing contacts.`,
+          title: 'Sync started',
+          description: `Queued ${result.contactsCount} contacts for processing.`,
         });
       } else {
         throw new Error(result.error);
