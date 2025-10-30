@@ -377,7 +377,7 @@ async function syncSingleList(mapping: any, userId: string) {
 
   // Fetch all list members from Planning Center with pagination
   let allPeople: any[] = [];
-  let nextUrl: string | null = `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/list_results?include=people&per_page=100`;
+  let nextUrl: string | null = `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/people?per_page=100`;
   let pageCount = 0;
 
   while (nextUrl) {
@@ -398,9 +398,9 @@ async function syncSingleList(mapping: any, userId: string) {
 
     const data = await response.json();
     
-    // Collect people from included data
-    const includedCount = data.included?.length || 0;
-    const pagePeople = data.included?.filter((item: any) => item.type === 'Person') || [];
+    // Collect people from data array (direct endpoint returns people in data)
+    const dataCount = data.data?.length || 0;
+    const pagePeople = data.data || [];
     if (pagePeople.length > 0) {
       allPeople.push(...pagePeople);
     }
@@ -408,7 +408,7 @@ async function syncSingleList(mapping: any, userId: string) {
     // Get next page URL from links
     nextUrl = data.links?.next || null;
     
-    console.log(`Page ${pageCount}: included length: ${includedCount}, people: ${pagePeople.length}`);
+    console.log(`Page ${pageCount}: data length: ${dataCount}, people: ${pagePeople.length}`);
   }
 
   console.log(`Total pages fetched: ${pageCount}, Total people: ${allPeople.length}`);
