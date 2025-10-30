@@ -14,6 +14,7 @@ import { ExternalLink, Loader2, CheckCircle, AlertCircle, Key, Database, Calenda
 import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog";
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
+import { SyncProgressDisplay } from "@/components/integrations/SyncProgressDisplay";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
 import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
 
@@ -427,23 +428,16 @@ const IntegrationsPage = () => {
                     <Separator />
                     
                     <div className="space-y-6">
-                      {syncJob && syncJob.status !== 'completed' && syncJob.status !== 'failed' && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              Syncing {syncJob.metadata?.list_name || 'contacts'}...
-                            </span>
-                            <span className="font-medium">
-                              {syncJob.processed_contacts}/{syncJob.total_contacts}
-                            </span>
-                          </div>
-                          <Progress 
-                            value={(syncJob.processed_contacts / syncJob.total_contacts) * 100} 
-                          />
-                          <p className="text-xs text-muted-foreground text-center">
-                            {Math.round((syncJob.processed_contacts / syncJob.total_contacts) * 100)}% complete
-                          </p>
-                        </div>
+                      {syncJob && (
+                        <SyncProgressDisplay
+                          jobId={syncJob.id}
+                          jobStatus={syncJob.status}
+                          totalContacts={syncJob.total_contacts}
+                          processedContacts={syncJob.processed_contacts}
+                          listMappingId={syncJob.list_mapping_id}
+                          pipelineId={syncJob.metadata?.pipeline_id || ''}
+                          stageId={syncJob.metadata?.stage_id || ''}
+                        />
                       )}
                       
                       <Separator />

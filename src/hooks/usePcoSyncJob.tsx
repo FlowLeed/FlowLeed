@@ -10,6 +10,7 @@ export interface PcoSyncJob {
   started_at: string;
   completed_at?: string | null;
   metadata: any;
+  list_mapping_id: string;
 }
 
 export function usePcoSyncJob(jobId: string | null) {
