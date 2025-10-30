@@ -29,7 +29,11 @@ export const NotificationBell = () => {
 
     // Navigate to relevant page
     if (notification.contact_id) {
-      navigate(`/people/${notification.contact_id}`);
+      // Include pipeline ID if available for context
+      const path = notification.pipeline_id 
+        ? `/contacts/${notification.contact_id}?pipelineId=${notification.pipeline_id}`
+        : `/contacts/${notification.contact_id}`;
+      navigate(path);
     } else if (notification.pipeline_id) {
       navigate(`/flows/${notification.pipeline_id}`);
     }
