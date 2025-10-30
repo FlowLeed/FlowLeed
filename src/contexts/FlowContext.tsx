@@ -3,6 +3,7 @@ import { Flow } from "@/types/crm";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { toast } from "sonner";
 
 interface FlowContextType {
   flows: Record<string, Flow>;
@@ -329,6 +330,16 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
   const updateFlow = async (flowId: string, flow: Flow) => {
     if (!organization) return;
 
+    // Store previous flow for potential rollback
+    const previousFlow = flows[flowId];
+
+    // Optimistic update - update UI immediately
+    setFlows(prev => ({
+      ...prev,
+      [flowId]: flow
+    }));
+
+    // Update database in background
     try {
       // Update flow in database (stored as pipeline)
       const { error: flowError } = await supabase
@@ -420,15 +431,23 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         }
       }
 
-      // Update local state
-      setFlows(prev => ({
-        ...prev,
-        [flowId]: flow
-      }));
-
     } catch (err) {
       console.error("Error updating flow:", err);
       setError(err instanceof Error ? err.message : "Failed to update flow");
+      
+      // Revert optimistic update
+      if (previousFlow) {
+        setFlows(prev => ({
+          ...prev,
+          [flowId]: previousFlow
+        }));
+      }
+      
+      // Show error to user
+      toast.error("Failed to save changes. Reverting...");
+      
+      // Optionally refetch to ensure consistency
+      await refreshFlows();
     }
   };
 
