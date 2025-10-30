@@ -427,7 +427,7 @@ const IntegrationsPage = () => {
                     <Separator />
                     
                     <div className="space-y-6">
-                      {syncJob && syncJob.status !== 'completed' && syncJob.status !== 'failed' ? (
+                      {syncJob && syncJob.status !== 'completed' && syncJob.status !== 'failed' && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground">
@@ -444,21 +444,6 @@ const IntegrationsPage = () => {
                             {Math.round((syncJob.processed_contacts / syncJob.total_contacts) * 100)}% complete
                           </p>
                         </div>
-                      ) : (
-                        <Button
-                          onClick={handleSyncNow}
-                          disabled={isSyncing}
-                          className="w-full"
-                        >
-                          {isSyncing ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Syncing...
-                            </>
-                          ) : (
-                            'Sync Now'
-                          )}
-                        </Button>
                       )}
                       
                       <Separator />
