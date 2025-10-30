@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
+import { SecuritySettings } from "@/components/profile/SecuritySettings";
 
 const SuperAdminProfilePage = () => {
   const navigate = useNavigate();
@@ -339,6 +340,8 @@ const SuperAdminProfilePage = () => {
             </div>
           </CardContent>
         </Card>
+
+        <SecuritySettings />
       </div>
     </div>
   );
