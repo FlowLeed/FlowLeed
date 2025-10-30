@@ -31,10 +31,9 @@ serve(async (req) => {
 
     // Find the token in database
     const { data: tokenData, error: tokenError } = await supabase
-      .from('auth_verification_tokens')
+      .from('email_verification_tokens')
       .select('*')
       .eq('token_hash', tokenHash)
-      .eq('token_type', type)
       .is('used_at', null)
       .single();
 
@@ -63,7 +62,7 @@ serve(async (req) => {
 
     // Mark token as used
     const { error: updateError } = await supabase
-      .from('auth_verification_tokens')
+      .from('email_verification_tokens')
       .update({ used_at: new Date().toISOString() })
       .eq('id', tokenData.id);
 
@@ -86,13 +85,12 @@ serve(async (req) => {
     }
 
     // If this is an email change verification, update the user's email
-    if (type === 'email_change' && tokenData.user_id) {
+    if (type === 'email_change' && tokenData.user_id && tokenData.new_email) {
       console.log('Updating user email...');
-      const newEmail = tokenData.metadata?.new_email || tokenData.email;
       
       const { error: emailUpdateError } = await supabase.auth.admin.updateUserById(
         tokenData.user_id,
-        { email: newEmail, email_confirm: true }
+        { email: tokenData.new_email, email_confirm: true }
       );
 
       if (emailUpdateError) {
@@ -100,7 +98,7 @@ serve(async (req) => {
         throw emailUpdateError;
       }
 
-      console.log(`Email updated successfully to ${newEmail}`);
+      console.log(`Email updated successfully to ${tokenData.new_email}`);
     }
 
     console.log('Token verified successfully');
@@ -109,8 +107,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         userId: tokenData.user_id,
-        email: tokenData.email,
-        type: tokenData.token_type
+        email: tokenData.new_email || tokenData.metadata?.current_email,
+        type: type
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

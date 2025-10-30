@@ -480,6 +480,42 @@ export type Database = {
         }
         Relationships: []
       }
+      email_verification_tokens: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          metadata: Json | null
+          new_email: string
+          token: string
+          token_hash: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          metadata?: Json | null
+          new_email: string
+          token: string
+          token_hash: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          new_email?: string
+          token?: string
+          token_hash?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       impersonation_actions: {
         Row: {
           action_description: string

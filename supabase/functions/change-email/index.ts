@@ -68,16 +68,15 @@ serve(async (req) => {
     expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour expiration
 
     const { error: insertError } = await supabase
-      .from('auth_verification_tokens')
+      .from('email_verification_tokens')
       .insert({
         user_id: user.id,
-        email: newEmail,
+        token: rawToken,
         token_hash: tokenHash,
-        token_type: 'email_change',
+        new_email: newEmail,
         expires_at: expiresAt.toISOString(),
         metadata: {
           current_email: user.email,
-          new_email: newEmail,
         },
       });
 
