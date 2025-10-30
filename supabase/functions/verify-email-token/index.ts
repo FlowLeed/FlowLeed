@@ -85,6 +85,24 @@ serve(async (req) => {
       }
     }
 
+    // If this is an email change verification, update the user's email
+    if (type === 'email_change' && tokenData.user_id) {
+      console.log('Updating user email...');
+      const newEmail = tokenData.metadata?.new_email || tokenData.email;
+      
+      const { error: emailUpdateError } = await supabase.auth.admin.updateUserById(
+        tokenData.user_id,
+        { email: newEmail, email_confirm: true }
+      );
+
+      if (emailUpdateError) {
+        console.error('Error updating email:', emailUpdateError);
+        throw emailUpdateError;
+      }
+
+      console.log(`Email updated successfully to ${newEmail}`);
+    }
+
     console.log('Token verified successfully');
 
     return new Response(

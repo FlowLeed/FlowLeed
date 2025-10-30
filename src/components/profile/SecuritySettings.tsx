@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Mail } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export const SecuritySettings = () => {
   const [newEmail, setNewEmail] = useState('');
@@ -24,23 +25,27 @@ export const SecuritySettings = () => {
     e.preventDefault();
     setEmailLoading(true);
     
-    const { error } = await changeEmail(newEmail);
-    
-    if (error) {
-      toast({
-        title: 'Failed to change email',
-        description: error.message,
-        variant: 'destructive',
+    try {
+      const { data, error } = await supabase.functions.invoke('change-email', {
+        body: { newEmail },
       });
-    } else {
+
+      if (error) throw error;
+
       toast({
         title: 'Verification email sent',
         description: 'Please check your new email address to confirm the change.',
       });
       setNewEmail('');
+    } catch (error: any) {
+      toast({
+        title: 'Failed to change email',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setEmailLoading(false);
     }
-    
-    setEmailLoading(false);
   };
   
   const handlePasswordChange = async (e: React.FormEvent) => {

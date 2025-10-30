@@ -67,6 +67,9 @@ verify_jwt = false
 [functions.verify-email-token]
 verify_jwt = false
 
+[functions.change-email]
+verify_jwt = true
+
 [functions.twilio-provision-number]
 verify_jwt = true
 
