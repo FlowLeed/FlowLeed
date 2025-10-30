@@ -22,6 +22,7 @@ interface SidebarItem {
   icon: LucideIcon;
   path: string;
   badge?: number;
+  comingSoon?: boolean;
 }
 interface FlowStep {
   name: string;
@@ -42,6 +43,16 @@ const NavItem = ({
   item: SidebarItem;
   isActive: boolean;
 }) => {
+  if (item.comingSoon) {
+    return (
+      <div className="flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium opacity-50 cursor-not-allowed min-w-0">
+        <item.icon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+        <span className="font-extralight truncate whitespace-nowrap min-w-0">{item.title}</span>
+        <Badge variant="secondary" className="ml-auto text-xs">Coming Soon</Badge>
+      </div>
+    );
+  }
+  
   return <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
       <item.icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
       <span className="font-extralight truncate whitespace-nowrap min-w-0">{item.title}</span>
@@ -469,7 +480,7 @@ export const Sidebar = () => {
     title: "Messages",
     icon: MessageSquare,
     path: "/messages",
-    badge: totalUnreadMessages
+    comingSoon: true
   }, {
     title: "Calls",
     icon: Phone,
