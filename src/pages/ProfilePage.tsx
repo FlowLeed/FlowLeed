@@ -289,11 +289,6 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="font-light">Email Address</Label>
-              <Input id="email" type="email" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} />
-            </div>
-
             {/* Twilio Phone Number Section */}
             {myTwilioNumber && (
               <div className="p-4 bg-muted/50 rounded-lg border space-y-4">
