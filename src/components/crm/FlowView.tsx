@@ -321,11 +321,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
     
     if (!sourceStage || !destStage) return;
     
-    // Create a new contact list
-    const updatedStages = flow.stages.map(stage => ({ ...stage }));
-    
-    // Find the moved contact
-    const [movedContact] = sourceStage.contacts.splice(source.index, 1);
+    // Get the moved contact without mutating the original array
+    const movedContact = sourceStage.contacts[source.index];
     
     // Update contact with new stage info if needed
     let updatedContact = { ...movedContact };
@@ -343,21 +340,26 @@ export const FlowView: React.FC<FlowViewProps> = ({
       }
     }
     
-    // Insert the contact in the destination
-    const updatedDestStage = updatedStages.find(stage => stage.id === destination.droppableId);
-    if (updatedDestStage) {
-      const newContacts = Array.from(updatedDestStage.contacts);
-      newContacts.splice(destination.index, 0, updatedContact);
-      updatedDestStage.contacts = newContacts;
-    }
-    
-    // Update source stage contacts
-    const updatedSourceStage = updatedStages.find(stage => stage.id === source.droppableId);
-    if (updatedSourceStage && source.droppableId !== destination.droppableId) {
-      updatedSourceStage.contacts = sourceStage.contacts.filter(
-        contact => contact.id !== movedContact.id
-      );
-    }
+    // Create updated stages with immutable operations
+    const updatedStages = flow.stages.map(stage => {
+      if (stage.id === source.droppableId) {
+        // Remove contact from source stage
+        return {
+          ...stage,
+          contacts: stage.contacts.filter((_, index) => index !== source.index)
+        };
+      }
+      if (stage.id === destination.droppableId) {
+        // Add contact to destination stage at the correct position
+        const newContacts = [...stage.contacts];
+        newContacts.splice(destination.index, 0, updatedContact);
+        return {
+          ...stage,
+          contacts: newContacts
+        };
+      }
+      return { ...stage };
+    });
     
     // Update the flow
     const updatedFlow = {
@@ -365,7 +367,10 @@ export const FlowView: React.FC<FlowViewProps> = ({
       stages: updatedStages
     };
     
-    onFlowChange?.(updatedFlow);
+    // Delay state update to let react-beautiful-dnd finish its animation
+    requestAnimationFrame(() => {
+      onFlowChange?.(updatedFlow);
+    });
   };
   
   // Helper function to determine status based on stage
