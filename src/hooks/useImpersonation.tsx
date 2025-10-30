@@ -193,7 +193,7 @@ export const useImpersonation = () => {
       console.log('[useImpersonation] Admin session restored, navigating to admin panel');
       
       // Step 5: Navigate back to admin
-      window.location.href = '/fl-admin/organizations';
+      window.location.href = '/fl-admin';
     } catch (error) {
       console.error('[useImpersonation] Error ending impersonation:', error);
       // Fallback: clear everything and go to admin auth
