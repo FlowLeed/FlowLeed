@@ -461,6 +461,18 @@ const IntegrationsPage = () => {
                         </Button>
                       )}
                       
+                      <Separator />
+                      
+                      <SyncSettingsSection
+                        integrationId={planningCenterIntegration.id}
+                        currentFrequency={planningCenterIntegration.sync_frequency || 'every_15_minutes'}
+                        lastSyncAt={planningCenterIntegration.last_sync_at}
+                        onSyncNow={handleSyncNow}
+                        isSyncing={isSyncing}
+                      />
+                      
+                      <Separator />
+                      
                       <ListMappingManager integrationId={planningCenterIntegration.id} onCreateMapping={() => {
                   setSelectedIntegrationId(planningCenterIntegration.id);
                   setMappingDialogOpen(true);
