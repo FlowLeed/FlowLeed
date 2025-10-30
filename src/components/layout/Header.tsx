@@ -1,7 +1,8 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Bell, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft } from "lucide-react";
+import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft } from "lucide-react";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
@@ -384,10 +385,8 @@ export const Header: React.FC<HeaderProps> = ({
       
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
-          <button className="p-1.5 rounded-full hover:bg-slate-100">
-            <Bell className="h-5 w-5 text-slate-500" />
-          </button>
-          <button 
+          <NotificationBell />
+          <button
             className="p-1.5 rounded-full hover:bg-slate-100"
             onClick={() => setShowGlobalSearch(true)}
             title="Search people (Ctrl+K)"

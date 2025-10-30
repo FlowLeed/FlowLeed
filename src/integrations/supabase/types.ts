@@ -886,6 +886,93 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          id: string
+          interaction_id: string | null
+          message: string
+          metadata: Json | null
+          organization_id: string
+          pipeline_id: string | null
+          read: boolean | null
+          read_at: string | null
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          interaction_id?: string | null
+          message: string
+          metadata?: Json | null
+          organization_id: string
+          pipeline_id?: string | null
+          read?: boolean | null
+          read_at?: string | null
+          title: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          id?: string
+          interaction_id?: string | null
+          message?: string
+          metadata?: Json | null
+          organization_id?: string
+          pipeline_id?: string | null
+          read?: boolean | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_interaction_id_fkey"
+            columns: ["interaction_id"]
+            isOneToOne: false
+            referencedRelation: "contact_interactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_activity_stats: {
         Row: {
           ai_descriptions_generated: number | null
@@ -1821,6 +1908,20 @@ export type Database = {
       calculate_organization_health_score: {
         Args: { org_id: string }
         Returns: number
+      }
+      create_assignment_notification: {
+        Args: {
+          _contact_id: string
+          _interaction_id?: string
+          _message: string
+          _metadata?: Json
+          _organization_id: string
+          _pipeline_id: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
       }
       create_default_pipelines: { Args: { org_id: string }; Returns: undefined }
       end_impersonation_session: {
