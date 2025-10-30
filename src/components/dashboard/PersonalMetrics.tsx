@@ -12,6 +12,16 @@ interface PersonalMetricsProps {
 }
 
 export const PersonalMetrics = ({ metrics, loading }: PersonalMetricsProps) => {
+  if (!metrics && !loading) {
+    return (
+      <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
+        <p className="text-sm text-amber-800">
+          Unable to load metrics. Please refresh the page.
+        </p>
+      </div>
+    );
+  }
+  
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <MetricCard

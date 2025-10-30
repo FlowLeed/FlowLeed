@@ -27,7 +27,14 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { profile, organization } = useProfile();
   
-  const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics(user?.id);
+  console.log('[Dashboard] user?.id:', user?.id);
+  console.log('[Dashboard] profile:', profile);
+  
+  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useDashboardMetrics(user?.id);
+  
+  console.log('[Dashboard] metrics:', metrics);
+  console.log('[Dashboard] metricsLoading:', metricsLoading);
+  console.log('[Dashboard] metricsError:', metricsError);
   const { data: contactsNeedingAttention, isLoading: contactsLoading } = 
     useMyContactsNeedingAttention(user?.id);
   const { data: upcomingTasks, isLoading: tasksLoading } = useMyUpcomingTasks(user?.id);
