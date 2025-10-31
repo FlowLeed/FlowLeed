@@ -45,7 +45,7 @@ export const NotificationBell = () => {
         <button className="p-1.5 rounded-full hover:bg-slate-100 relative">
           <Bell className="h-5 w-5 text-slate-500" />
           {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">
+            <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-medium">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
