@@ -433,7 +433,7 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
                     <div className="flex items-center gap-2 mt-2">
                       {suggestion.type === 'stage_action' && suggestion.suggestedStageId && suggestion.pipelineId && (
                         <Button
-                          variant="default"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleStageUpdate(suggestion)}
                           className="flex-1 gap-2"
