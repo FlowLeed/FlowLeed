@@ -113,6 +113,56 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
     }
   };
 
+  const mergeWithPreviousBlock = useCallback((index: number) => {
+    if (index === 0) return; // Can't merge if first block
+    
+    const currentBlock = blocks[index];
+    const previousBlock = blocks[index - 1];
+    
+    // Case 1: Current block is empty - just delete it
+    if (!currentBlock.content || currentBlock.content.trim() === '') {
+      deleteBlock(index);
+      return;
+    }
+    
+    // Case 2: Previous block is a divider - delete previous, keep current
+    if (previousBlock.type === 'divider') {
+      deleteBlock(index - 1);
+      return;
+    }
+    
+    // Case 3: Previous block is a toggle - can't merge (complex nested structure)
+    if (previousBlock.type === 'toggle') {
+      // Just move cursor to end of previous block
+      setFocusedBlockIndex(index - 1);
+      return;
+    }
+    
+    // Case 4: Standard merge - append current content to previous
+    const mergedContent = previousBlock.content + currentBlock.content;
+    const cursorPosition = previousBlock.content.length; // Save for cursor placement
+    
+    const newBlocks = [...blocks];
+    newBlocks[index - 1] = {
+      ...previousBlock,
+      content: mergedContent
+    };
+    newBlocks.splice(index, 1); // Remove current block
+    
+    onChange(newBlocks);
+    setFocusedBlockIndex(index - 1);
+    
+    // Store cursor position for the block to use
+    setTimeout(() => {
+      // Focus and set cursor position in the merged block
+      const previousInput = document.querySelector(`[data-block-index="${index - 1}"] input, [data-block-index="${index - 1}"] textarea`) as HTMLInputElement | HTMLTextAreaElement;
+      if (previousInput) {
+        previousInput.focus();
+        previousInput.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    }, 0);
+  }, [blocks, onChange, deleteBlock]);
+
   useKeyboardShortcuts({
     blocks,
     focusedBlockIndex,
@@ -175,7 +225,7 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
                         dragHandleProps={provided.dragHandleProps}
                       />
 
-                      <div className="relative">
+                      <div className="relative" data-block-index={index}>
                         {block.type === 'heading' && (
                           <HeadingBlock
                             block={block}
@@ -183,6 +233,7 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
                             onChange={(content) => updateBlock(index, { content })}
                             onFocus={() => setFocusedBlockIndex(index)}
                             autoFocus={focusedBlockIndex === index}
+                            onBackspaceAtStart={() => mergeWithPreviousBlock(index)}
                           />
                         )}
                         {block.type === 'paragraph' && (
@@ -193,6 +244,7 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
                               onChange={(content) => updateBlock(index, { content })}
                               onFocus={() => setFocusedBlockIndex(index)}
                               autoFocus={focusedBlockIndex === index}
+                              onBackspaceAtStart={() => mergeWithPreviousBlock(index)}
                             />
                             {slashCommandIndex === index && (
                               <div className="relative mt-2">
@@ -215,6 +267,7 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
                             }
                             onFocus={() => setFocusedBlockIndex(index)}
                             autoFocus={focusedBlockIndex === index}
+                            onBackspaceAtStart={() => mergeWithPreviousBlock(index)}
                           />
                         )}
                         {block.type === 'toggle' && (

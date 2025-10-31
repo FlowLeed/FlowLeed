@@ -8,9 +8,10 @@ interface ChecklistBlockProps {
   onChange?: (content: string, checked?: boolean) => void;
   onFocus?: () => void;
   autoFocus?: boolean;
+  onBackspaceAtStart?: () => void;
 }
 
-export const ChecklistBlock = ({ block, isEditing, onChange, onFocus, autoFocus }: ChecklistBlockProps) => {
+export const ChecklistBlock = ({ block, isEditing, onChange, onFocus, autoFocus, onBackspaceAtStart }: ChecklistBlockProps) => {
   return (
     <div 
       className="flex items-start gap-3 cursor-pointer group/checklist"
@@ -33,6 +34,15 @@ export const ChecklistBlock = ({ block, isEditing, onChange, onFocus, autoFocus 
           onChange={(e) => onChange?.(e.target.value, block.checked)}
           onFocus={onFocus}
           autoFocus={autoFocus}
+          onKeyDown={(e) => {
+            if (e.key === 'Backspace') {
+              const target = e.target as HTMLInputElement;
+              if (target.selectionStart === 0 && target.selectionEnd === 0) {
+                e.preventDefault();
+                onBackspaceAtStart?.();
+              }
+            }
+          }}
           className="flex-1 bg-transparent border-none outline-none focus:ring-0 p-0 text-[15px] placeholder:text-muted-foreground/50"
           placeholder="To-do item..."
         />

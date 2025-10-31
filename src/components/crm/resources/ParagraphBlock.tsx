@@ -7,9 +7,10 @@ interface ParagraphBlockProps {
   onChange?: (content: string) => void;
   onFocus?: () => void;
   autoFocus?: boolean;
+  onBackspaceAtStart?: () => void;
 }
 
-export const ParagraphBlock = ({ block, isEditing, onChange, onFocus, autoFocus }: ParagraphBlockProps) => {
+export const ParagraphBlock = ({ block, isEditing, onChange, onFocus, autoFocus, onBackspaceAtStart }: ParagraphBlockProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -24,6 +25,15 @@ export const ParagraphBlock = ({ block, isEditing, onChange, onFocus, autoFocus 
         value={block.content}
         onChange={(e) => onChange?.(e.target.value)}
         onFocus={onFocus}
+        onKeyDown={(e) => {
+          if (e.key === 'Backspace') {
+            const target = e.target as HTMLTextAreaElement;
+            if (target.selectionStart === 0 && target.selectionEnd === 0) {
+              e.preventDefault();
+              onBackspaceAtStart?.();
+            }
+          }
+        }}
         className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 resize-none min-h-[24px] leading-relaxed text-[15px] placeholder:text-muted-foreground/50"
         placeholder="Type '/' for commands, or just start writing..."
         rows={1}

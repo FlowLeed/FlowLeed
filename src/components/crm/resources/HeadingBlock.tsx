@@ -7,9 +7,10 @@ interface HeadingBlockProps {
   onChange?: (content: string) => void;
   onFocus?: () => void;
   autoFocus?: boolean;
+  onBackspaceAtStart?: () => void;
 }
 
-export const HeadingBlock = ({ block, isEditing, onChange, onFocus, autoFocus }: HeadingBlockProps) => {
+export const HeadingBlock = ({ block, isEditing, onChange, onFocus, autoFocus, onBackspaceAtStart }: HeadingBlockProps) => {
   const level = block.level || 1;
   
   const headingClasses = cn(
@@ -27,6 +28,15 @@ export const HeadingBlock = ({ block, isEditing, onChange, onFocus, autoFocus }:
         onChange={(e) => onChange?.(e.target.value)}
         onFocus={onFocus}
         autoFocus={autoFocus}
+        onKeyDown={(e) => {
+          if (e.key === 'Backspace') {
+            const target = e.target as HTMLInputElement;
+            if (target.selectionStart === 0 && target.selectionEnd === 0) {
+              e.preventDefault();
+              onBackspaceAtStart?.();
+            }
+          }
+        }}
         className={cn(
           headingClasses,
           "w-full bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-muted-foreground/50"
