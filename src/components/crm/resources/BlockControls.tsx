@@ -28,7 +28,7 @@ export const BlockControls = ({
   return (
     <div
       className={cn(
-        "absolute left-0 top-0 opacity-0 group-hover:opacity-100 transition-opacity -ml-10",
+        "absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity -ml-10",
         isDragging && "opacity-100"
       )}
     >
