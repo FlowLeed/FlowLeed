@@ -40,8 +40,18 @@ export const ListBlock = ({
     }
 
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      onEnter?.();
+      // Get the current line content
+      const cursorPos = target.selectionStart;
+      const textBeforeCursor = target.value.substring(0, cursorPos);
+      const currentLineStart = textBeforeCursor.lastIndexOf('\n') + 1;
+      const currentLine = target.value.substring(currentLineStart, cursorPos);
+      
+      // Only exit list (create new block) if current line is empty
+      if (currentLine.trim() === '') {
+        e.preventDefault();
+        onEnter?.();
+      }
+      // Otherwise allow default Enter behavior to add new line (new list item)
     }
   };
 
