@@ -40,8 +40,7 @@ interface AISuggestionsProps {
   currentPipelineId?: string;
   currentPipelineName?: string;
   flows?: Array<{ 
-    id?: string;
-    pipelineContactId: string; 
+    id: string;
     pipeline: { id: string; name: string };
     currentStage?: { id: string; name: string };
     assignedToUserId?: string;
@@ -237,7 +236,7 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
       flows: flows?.map(f => ({ 
         pipelineId: f.pipeline.id, 
         pipelineName: f.pipeline.name,
-        pipelineContactId: f.pipelineContactId,
+        flowId: f.id,
         currentStage: f.currentStage?.name
       }))
     });
@@ -263,7 +262,7 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
       foundFlow: flow ? {
         pipelineId: flow.pipeline.id,
         pipelineName: flow.pipeline.name,
-        pipelineContactId: flow.pipelineContactId,
+        flowId: flow.id,
         currentStage: flow.currentStage?.name
       } : null,
       availableFlowIds: flows.map(f => f.pipeline.id)
@@ -279,8 +278,8 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
       return;
     }
 
-    if (!flow.pipelineContactId) {
-      console.error("❌ Missing pipelineContactId", { flow });
+    if (!flow.id) {
+      console.error("❌ Missing flow ID", { flow });
       toast({ 
         title: 'Error', 
         description: 'Invalid flow configuration',
@@ -290,14 +289,14 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
     }
 
     console.log("✅ Calling updateStageMutation", {
-      pipelineContactId: flow.pipelineContactId,
+      pipelineContactId: flow.id,
       newStageId: suggestion.suggestedStageId,
       pipelineName: flow.pipeline.name,
       stageName: suggestion.suggestedStageName
     });
 
     updateStageMutation.mutate({
-      pipelineContactId: flow.pipelineContactId,
+      pipelineContactId: flow.id,
       newStageId: suggestion.suggestedStageId,
       suggestion
     });
