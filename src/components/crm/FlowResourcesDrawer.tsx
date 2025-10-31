@@ -156,16 +156,6 @@ export const FlowResourcesDrawer = ({
                 Edit
               </Button>
             )}
-            {canEdit && isEditing && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(false)}
-                disabled={isLoading}
-              >
-                Done
-              </Button>
-            )}
           </div>
         </SheetHeader>
 
