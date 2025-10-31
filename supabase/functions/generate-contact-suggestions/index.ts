@@ -40,6 +40,24 @@ serve(async (req) => {
 
     if (contactError) throw contactError;
 
+    // Phase 3A: Fetch feedback patterns for this organization (last 30 days)
+    const { data: feedbackStats } = await supabase
+      .from('ai_suggestion_feedback')
+      .select('suggestion_type, feedback_type, action_taken')
+      .eq('organization_id', contact.organization_id)
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+    // Aggregate feedback patterns
+    const feedbackPatterns: Record<string, { positive: number; negative: number; actions: string[] }> = {};
+    feedbackStats?.forEach(fb => {
+      if (!feedbackPatterns[fb.suggestion_type]) {
+        feedbackPatterns[fb.suggestion_type] = { positive: 0, negative: 0, actions: [] };
+      }
+      if (fb.feedback_type === 'positive') feedbackPatterns[fb.suggestion_type].positive++;
+      if (fb.feedback_type === 'negative') feedbackPatterns[fb.suggestion_type].negative++;
+      if (fb.action_taken) feedbackPatterns[fb.suggestion_type].actions.push(fb.action_taken);
+    });
+
     // Fetch tags
     const { data: tags } = await supabase
       .from('contact_tags')
@@ -49,10 +67,19 @@ serve(async (req) => {
     // Fetch recent interactions (last 10)
     const { data: interactions } = await supabase
       .from('contact_interactions')
-      .select('interaction_type, subject, details, completed_at, created_at')
+      .select('interaction_type, subject, details, completed_at, created_at, created_by_user_id')
       .eq('contact_id', contactId)
       .order('created_at', { ascending: false })
       .limit(10);
+
+    // Phase 3A: Fetch recent team activity on this contact (last 7 days, excluding current user)
+    const { data: recentTeamActivity } = await supabase
+      .from('contact_interactions')
+      .select('interaction_type, subject, created_at')
+      .eq('contact_id', contactId)
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(5);
 
     // Fetch active prayer requests
     const { data: prayerRequests } = await supabase
@@ -97,6 +124,37 @@ serve(async (req) => {
       .in('pipeline_id', pipelineIds)
       .order('stage_order', { ascending: true });
 
+    // Phase 3A: Get organization-wide benchmarks (average time in each stage)
+    let orgBenchmarks: Record<string, { avgDays: number; stageName: string }> = {};
+    if (pipelineIds.length > 0) {
+      const { data: benchmarkData } = await supabase
+        .from('pipeline_contacts')
+        .select('stage_id, created_at, updated_at, pipeline_stages!pipeline_contacts_stage_id_fkey(name)')
+        .in('pipeline_id', pipelineIds)
+        .not('stage_id', 'is', null);
+
+      if (benchmarkData && benchmarkData.length > 0) {
+        const stageStats: Record<string, { totalDays: number; count: number; name: string }> = {};
+        benchmarkData.forEach(pc => {
+          const stageId = pc.stage_id;
+          if (stageId && pc.pipeline_stages) {
+            if (!stageStats[stageId]) {
+              stageStats[stageId] = { totalDays: 0, count: 0, name: pc.pipeline_stages.name };
+            }
+            const days = (new Date(pc.updated_at).getTime() - new Date(pc.created_at).getTime()) / (1000 * 60 * 60 * 24);
+            stageStats[stageId].totalDays += days;
+            stageStats[stageId].count++;
+          }
+        });
+        Object.entries(stageStats).forEach(([stageId, stats]) => {
+          orgBenchmarks[stageId] = {
+            avgDays: Math.round(stats.totalDays / stats.count),
+            stageName: stats.name
+          };
+        });
+      }
+    }
+
     // Calculate last interaction date
     const lastInteraction = interactions?.[0];
     const daysSinceLastContact = lastInteraction 
@@ -116,6 +174,52 @@ serve(async (req) => {
       }
     }
 
+    // Build feedback context for AI prompt
+    let feedbackContext = '';
+    if (Object.keys(feedbackPatterns).length > 0) {
+      feedbackContext = '\n\nLEARNED PREFERENCES (based on your team\'s feedback over last 30 days):\n';
+      Object.entries(feedbackPatterns).forEach(([type, stats]) => {
+        const total = stats.positive + stats.negative;
+        const helpfulRate = total > 0 ? Math.round((stats.positive / total) * 100) : 0;
+        const actionRate = stats.actions.length > 0 ? Math.round((stats.actions.length / total) * 100) : 0;
+        feedbackContext += `- ${type}: ${helpfulRate}% helpful (${total} feedback), ${actionRate}% acted upon\n`;
+      });
+      feedbackContext += 'IMPORTANT: Prioritize suggestion types that have been most helpful to this team.\n';
+    }
+
+    // Build team activity context
+    let teamActivityContext = '';
+    if (recentTeamActivity && recentTeamActivity.length > 0) {
+      teamActivityContext = '\n\nRECENT TEAM ACTIVITY (last 7 days):\n';
+      recentTeamActivity.forEach(activity => {
+        const daysAgo = Math.floor((Date.now() - new Date(activity.created_at).getTime()) / (1000 * 60 * 60 * 24));
+        teamActivityContext += `- ${activity.interaction_type}${activity.subject ? `: ${activity.subject}` : ''} (${daysAgo} days ago)\n`;
+      });
+      teamActivityContext += 'IMPORTANT: If a team member just interacted, suggest coordination rather than duplicate outreach.\n';
+    }
+
+    // Build benchmarks context
+    let benchmarksContext = '';
+    const currentPipelineContact = pipelineContacts?.[0];
+    if (Object.keys(orgBenchmarks).length > 0 && currentPipelineContact) {
+      const currentStageId = currentPipelineContact.pipeline_stages?.stage_order;
+      const currentStageBenchmark = currentStageId !== undefined ? orgBenchmarks[currentStageId] : null;
+      
+      if (currentStageBenchmark) {
+        const daysInCurrentStage = Math.floor((Date.now() - new Date(currentPipelineContact.created_at).getTime()) / (1000 * 60 * 60 * 24));
+        const avgDays = currentStageBenchmark.avgDays;
+        benchmarksContext = '\n\nORGANIZATION BENCHMARKS:\n';
+        benchmarksContext += `- Average time in "${currentStageBenchmark.stageName}" stage: ${avgDays} days (this contact: ${daysInCurrentStage} days`;
+        if (daysInCurrentStage > avgDays * 1.5) {
+          benchmarksContext += ' - STALLED!';
+        } else if (daysInCurrentStage <= avgDays) {
+          benchmarksContext += ' - on track';
+        }
+        benchmarksContext += ')\n';
+        benchmarksContext += 'IMPORTANT: Flag contacts that are significantly slower than org averages.\n';
+      }
+    }
+
     // Build AI prompt with enhanced flow context
     const systemPrompt = `You are a pastoral care assistant analyzing contact engagement data to suggest next steps.
 
@@ -126,8 +230,8 @@ Focus on:
 - Pipeline progression issues (stalled contacts)
 - Stage-specific recommendations based on flow purpose
 - Relationship building opportunities
-
-IMPORTANT: 
+${feedbackContext}${teamActivityContext}${benchmarksContext}
+IMPORTANT:
 - Consider the flow description to understand the ministry context
 - Use stage sequence to suggest appropriate next steps
 - Identify if contact is stalled (too long in one stage without progression)

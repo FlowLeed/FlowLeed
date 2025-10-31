@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, RefreshCw, AlertCircle, MessageSquare, ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lightbulb, RefreshCw, AlertCircle, MessageSquare, ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { MessageComposerDialog } from './MessageComposerDialog';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Suggestion {
   type: 'follow_up' | 'prayer_check' | 'birthday' | 'next_step' | 'engagement' | 'milestone' | 'stage_action';
@@ -60,23 +68,43 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
   flows
 }) => {
   const queryClient = useQueryClient();
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
   const [expandedSuggestions, setExpandedSuggestions] = useState<Record<number, boolean>>({});
   const [feedbackGiven, setFeedbackGiven] = useState<Record<number, 'positive' | 'negative'>>({});
+  const [dismissalDialogOpen, setDismissalDialogOpen] = useState(false);
+  const [dismissalReason, setDismissalReason] = useState("");
+  const [dismissingSuggestion, setDismissingSuggestion] = useState<{ suggestion: Suggestion; index: number } | null>(null);
+
+  // Phase 3B: Use React Query with caching
+  const { data: suggestions = [], isLoading, error, dataUpdatedAt, refetch } = useQuery({
+    queryKey: ['ai-suggestions', contactId],
+    queryFn: async () => {
+      const { data, error: functionError } = await supabase.functions.invoke('generate-contact-suggestions', {
+        body: { contactId }
+      });
+
+      if (functionError) throw functionError;
+      
+      return (data.suggestions || []) as Suggestion[];
+    },
+    staleTime: 15 * 60 * 1000, // 15 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
 
   const submitFeedbackMutation = useMutation({
     mutationFn: async ({ 
       suggestion, 
       feedbackType, 
-      actionTaken 
+      actionTaken,
+      notes
     }: { 
       suggestion: Suggestion; 
       feedbackType: 'positive' | 'negative'; 
       actionTaken?: string;
+      notes?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: orgMember } = await supabase
@@ -98,10 +126,15 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
           suggestion_description: suggestion.description,
           feedback_type: feedbackType,
           action_taken: actionTaken,
+          notes: notes,
           metadata: { reasoning: suggestion.reasoning }
         });
 
       if (error) throw error;
+    },
+    onSuccess: () => {
+      // Phase 3B: Invalidate cache after feedback
+      queryClient.invalidateQueries({ queryKey: ['ai-suggestions', contactId] });
     }
   });
 
@@ -126,9 +159,10 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
       });
     },
     onSuccess: () => {
+      // Phase 3B: Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ['contact-comprehensive', contactId] });
+      queryClient.invalidateQueries({ queryKey: ['ai-suggestions', contactId] });
       toast({ title: 'Stage updated successfully' });
-      fetchSuggestions();
     },
     onError: (error) => {
       toast({ 
@@ -138,35 +172,6 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
       });
     }
   });
-
-  const fetchSuggestions = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const { data, error: functionError } = await supabase.functions.invoke('generate-contact-suggestions', {
-        body: { contactId }
-      });
-
-      if (functionError) throw functionError;
-      
-      setSuggestions(data.suggestions || []);
-    } catch (err) {
-      console.error('Error fetching AI suggestions:', err);
-      setError('Unable to generate suggestions');
-      toast({
-        title: 'Error generating suggestions',
-        description: 'Please try again later',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSuggestions();
-  }, [contactId]);
 
   const handleGenerateMessage = async (suggestion: Suggestion) => {
     setSelectedSuggestion(suggestion);
@@ -180,21 +185,42 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
     });
   };
 
+  // Phase 3A: Enhanced feedback handler with dismissal dialog
   const handleFeedback = async (index: number, suggestion: Suggestion, feedbackType: 'positive' | 'negative') => {
-    setFeedbackGiven(prev => ({ ...prev, [index]: feedbackType }));
+    if (feedbackType === 'negative') {
+      setDismissingSuggestion({ suggestion, index });
+      setDismissalDialogOpen(true);
+    } else {
+      setFeedbackGiven(prev => ({ ...prev, [index]: feedbackType }));
+      await submitFeedbackMutation.mutateAsync({ suggestion, feedbackType });
+      toast({
+        title: 'Thanks for the feedback!',
+        description: 'We\'ll suggest more like this.'
+      });
+    }
+  };
+
+  const handleDismissalSubmit = async () => {
+    if (!dismissingSuggestion) return;
+    
+    const { suggestion, index } = dismissingSuggestion;
+    setFeedbackGiven(prev => ({ ...prev, [index]: 'negative' }));
     
     await submitFeedbackMutation.mutateAsync({
       suggestion,
-      feedbackType,
-      actionTaken: feedbackType === 'negative' ? 'dismissed' : undefined
+      feedbackType: 'negative',
+      actionTaken: 'dismissed',
+      notes: dismissalReason
     });
-
+    
     toast({
-      title: feedbackType === 'positive' ? 'Thanks for the feedback!' : 'Feedback noted',
-      description: feedbackType === 'positive' 
-        ? 'We\'ll suggest more like this.' 
-        : 'We\'ll improve future suggestions.'
+      title: 'Feedback noted',
+      description: 'We\'ll improve future suggestions based on this.'
     });
+    
+    setDismissalDialogOpen(false);
+    setDismissalReason("");
+    setDismissingSuggestion(null);
   };
 
   const handleStageUpdate = (suggestion: Suggestion) => {
@@ -224,6 +250,9 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
       suggestion
     });
   };
+
+  const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
+  const minutesAgo = lastUpdated ? Math.floor((Date.now() - lastUpdated.getTime()) / 60000) : null;
 
   if (isLoading) {
     return (
@@ -257,8 +286,8 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
         <CardContent>
           <div className="flex flex-col items-center justify-center py-8 gap-4">
             <AlertCircle className="h-12 w-12 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchSuggestions}>
+            <p className="text-sm text-muted-foreground">Unable to generate suggestions</p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
             </Button>
@@ -277,7 +306,7 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
               <Lightbulb className="h-5 w-5" />
               AI Suggestions
             </span>
-            <Button variant="ghost" size="icon" onClick={fetchSuggestions}>
+            <Button variant="ghost" size="icon" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </CardTitle>
@@ -300,8 +329,14 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
             <span className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5" />
               AI Suggestions
+              {minutesAgo !== null && minutesAgo > 0 && (
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <Clock className="h-3 w-3" />
+                  {minutesAgo < 60 ? `${minutesAgo}m ago` : `${Math.floor(minutesAgo / 60)}h ago`}
+                </Badge>
+              )}
             </span>
-            <Button variant="ghost" size="icon" onClick={fetchSuggestions}>
+            <Button variant="ghost" size="icon" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </CardTitle>
@@ -406,6 +441,62 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Phase 3A: Dismissal Reason Dialog */}
+      <Dialog open={dismissalDialogOpen} onOpenChange={setDismissalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Why wasn't this helpful?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Your feedback helps us improve suggestions for your team.
+            </p>
+            <div className="space-y-2">
+              {['Too soon', 'Not relevant', 'Already handled', 'Wrong tone'].map((reason) => (
+                <Button
+                  key={reason}
+                  variant={dismissalReason === reason ? "default" : "outline"}
+                  className="w-full justify-start"
+                  onClick={() => setDismissalReason(reason)}
+                >
+                  {reason}
+                </Button>
+              ))}
+              <Button
+                variant={dismissalReason.startsWith('Other:') ? "default" : "outline"}
+                className="w-full justify-start"
+                onClick={() => setDismissalReason('Other: ')}
+              >
+                Other
+              </Button>
+            </div>
+            {dismissalReason.startsWith('Other:') && (
+              <Textarea
+                placeholder="Tell us more..."
+                value={dismissalReason.replace('Other: ', '')}
+                onChange={(e) => setDismissalReason(`Other: ${e.target.value}`)}
+                className="mt-2"
+              />
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setDismissalDialogOpen(false);
+              setDismissalReason("");
+              setDismissingSuggestion(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleDismissalSubmit}
+              disabled={!dismissalReason || dismissalReason === 'Other: '}
+            >
+              Submit Feedback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {selectedSuggestion && (
         <MessageComposerDialog
