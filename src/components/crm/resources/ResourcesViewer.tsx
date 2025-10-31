@@ -20,9 +20,9 @@ export const ResourcesViewer = ({ blocks }: ResourcesViewerProps) => {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-1">
       {blocks.map((block) => (
-        <div key={block.id}>
+        <div key={block.id} className="py-0.5">
           {block.type === 'heading' && (
             <HeadingBlock block={block} isEditing={false} />
           )}

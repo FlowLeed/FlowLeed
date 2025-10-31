@@ -1,19 +1,31 @@
 import { Block } from "@/types/resources";
+import { useRef, useEffect } from "react";
 
 interface ParagraphBlockProps {
   block: Block;
   isEditing: boolean;
   onChange?: (content: string) => void;
+  onFocus?: () => void;
+  autoFocus?: boolean;
 }
 
-export const ParagraphBlock = ({ block, isEditing, onChange }: ParagraphBlockProps) => {
+export const ParagraphBlock = ({ block, isEditing, onChange, onFocus, autoFocus }: ParagraphBlockProps) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (autoFocus && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [autoFocus]);
   if (isEditing) {
     return (
       <textarea
+        ref={textareaRef}
         value={block.content}
         onChange={(e) => onChange?.(e.target.value)}
-        className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 resize-none min-h-[24px]"
-        placeholder="Type something..."
+        onFocus={onFocus}
+        className="w-full bg-transparent border-none outline-none focus:ring-0 p-0 resize-none min-h-[24px] leading-relaxed text-[15px] placeholder:text-muted-foreground/50"
+        placeholder="Type '/' for commands, or just start writing..."
         rows={1}
         onInput={(e) => {
           const target = e.target as HTMLTextAreaElement;
@@ -25,7 +37,7 @@ export const ParagraphBlock = ({ block, isEditing, onChange }: ParagraphBlockPro
   }
 
   return (
-    <p className="text-foreground whitespace-pre-wrap">
+    <p className="text-foreground whitespace-pre-wrap leading-relaxed text-[15px]">
       {block.content || "Empty paragraph"}
     </p>
   );

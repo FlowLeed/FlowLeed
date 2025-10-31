@@ -18,12 +18,12 @@ export const ToggleBlock = ({ block, isEditing, onChange }: ToggleBlockProps) =>
     <Collapsible
       open={isOpen}
       onOpenChange={(open) => onChange?.(block.content, !open, block.children)}
-      className="space-y-2"
+      className="space-y-1"
     >
-      <CollapsibleTrigger className="flex items-center gap-2 w-full text-left group">
+      <CollapsibleTrigger className="flex items-center gap-2 w-full text-left group/toggle hover:bg-accent/5 rounded px-1 -mx-1 transition-colors">
         <ChevronRight 
           className={cn(
-            "h-4 w-4 transition-transform text-muted-foreground",
+            "h-4 w-4 transition-all duration-200 text-muted-foreground flex-shrink-0",
             isOpen && "rotate-90"
           )}
         />
@@ -33,14 +33,14 @@ export const ToggleBlock = ({ block, isEditing, onChange }: ToggleBlockProps) =>
             value={block.content}
             onChange={(e) => onChange?.(e.target.value, block.collapsed, block.children)}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 bg-transparent border-none outline-none focus:ring-0 p-0 font-medium"
+            className="flex-1 bg-transparent border-none outline-none focus:ring-0 p-0 font-medium text-[15px] placeholder:text-muted-foreground/50"
             placeholder="Toggle heading..."
           />
         ) : (
-          <span className="flex-1 font-medium">{block.content || "Toggle"}</span>
+          <span className="flex-1 font-medium text-[15px]">{block.content || "Toggle"}</span>
         )}
       </CollapsibleTrigger>
-      <CollapsibleContent className="ml-6 space-y-2">
+      <CollapsibleContent className="ml-6 space-y-1 border-l-2 border-accent/20 pl-3 transition-all duration-200">
         {isEditing ? (
           <ResourcesEditor
             blocks={block.children || []}

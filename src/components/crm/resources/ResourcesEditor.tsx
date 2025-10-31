@@ -1,12 +1,16 @@
-import { Block } from "@/types/resources";
-import { Button } from "@/components/ui/button";
-import { Plus, GripVertical, Trash2 } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Block, BlockType } from "@/types/resources";
 import { HeadingBlock } from "./HeadingBlock";
 import { ParagraphBlock } from "./ParagraphBlock";
 import { DividerBlock } from "./DividerBlock";
 import { ChecklistBlock } from "./ChecklistBlock";
 import { ToggleBlock } from "./ToggleBlock";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { BlockControls } from "./BlockControls";
+import { AddBlockButton } from "./AddBlockButton";
+import { BlockTypeMenu } from "./BlockTypeMenu";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { cn } from "@/lib/utils";
 
 interface ResourcesEditorProps {
   blocks: Block[];
@@ -15,158 +19,227 @@ interface ResourcesEditorProps {
 }
 
 export const ResourcesEditor = ({ blocks, onChange, isNested = false }: ResourcesEditorProps) => {
-  const addBlock = (type: Block['type'], index?: number) => {
+  const [focusedBlockIndex, setFocusedBlockIndex] = useState<number | null>(null);
+  const [showMenuAtIndex, setShowMenuAtIndex] = useState<number | null>(null);
+  const [slashCommandIndex, setSlashCommandIndex] = useState<number | null>(null);
+
+  const addBlock = useCallback((type: BlockType, index?: number, level?: number) => {
     const newBlock: Block = {
-      id: crypto.randomUUID(),
+      id: `block-${Date.now()}-${Math.random()}`,
       type,
-      content: '',
-      ...(type === 'heading' && { level: 1 }),
-      ...(type === 'checklist' && { checked: false }),
-      ...(type === 'toggle' && { collapsed: false, children: [] }),
+      content: "",
+      level: type === 'heading' ? (level || 1) : undefined,
+      checked: type === 'checklist' ? false : undefined,
+      collapsed: type === 'toggle' ? false : undefined,
+      children: type === 'toggle' ? [] : undefined,
     };
 
-    const insertIndex = index !== undefined ? index + 1 : blocks.length;
     const newBlocks = [...blocks];
+    const insertIndex = index !== undefined ? index : blocks.length;
     newBlocks.splice(insertIndex, 0, newBlock);
     onChange(newBlocks);
-  };
+    setFocusedBlockIndex(insertIndex);
+  }, [blocks, onChange]);
 
-  const updateBlock = (index: number, updates: Partial<Block>) => {
+  const updateBlock = useCallback((index: number, updates: Partial<Block>) => {
     const newBlocks = [...blocks];
     newBlocks[index] = { ...newBlocks[index], ...updates };
+    
+    // Check for slash command
+    if (updates.content !== undefined && typeof updates.content === 'string') {
+      if (updates.content === '/' || updates.content.startsWith('/')) {
+        setSlashCommandIndex(index);
+      } else {
+        setSlashCommandIndex(null);
+      }
+    }
+    
     onChange(newBlocks);
-  };
+  }, [blocks, onChange]);
 
-  const deleteBlock = (index: number) => {
+  const deleteBlock = useCallback((index: number) => {
     const newBlocks = blocks.filter((_, i) => i !== index);
     onChange(newBlocks);
+    // Focus previous block if available
+    if (index > 0) {
+      setFocusedBlockIndex(index - 1);
+    }
+  }, [blocks, onChange]);
+
+  const duplicateBlock = useCallback((index: number) => {
+    const blockToDuplicate = blocks[index];
+    const duplicatedBlock: Block = {
+      ...blockToDuplicate,
+      id: `block-${Date.now()}-${Math.random()}`,
+      children: blockToDuplicate.children ? 
+        blockToDuplicate.children.map(child => ({
+          ...child,
+          id: `block-${Date.now()}-${Math.random()}`
+        })) : undefined
+    };
+    
+    const newBlocks = [...blocks];
+    newBlocks.splice(index + 1, 0, duplicatedBlock);
+    onChange(newBlocks);
+    setFocusedBlockIndex(index + 1);
+  }, [blocks, onChange]);
+
+  const moveBlock = useCallback((fromIndex: number, toIndex: number) => {
+    const newBlocks = [...blocks];
+    const [movedBlock] = newBlocks.splice(fromIndex, 1);
+    newBlocks.splice(toIndex, 0, movedBlock);
+    onChange(newBlocks);
+  }, [blocks, onChange]);
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    moveBlock(result.source.index, result.destination.index);
   };
 
+  const handleSlashCommandSelect = (type: BlockType, level?: number) => {
+    if (slashCommandIndex !== null) {
+      const newBlocks = [...blocks];
+      newBlocks[slashCommandIndex] = {
+        ...newBlocks[slashCommandIndex],
+        type,
+        content: "",
+        level: type === 'heading' ? level : undefined,
+        checked: type === 'checklist' ? false : undefined,
+        collapsed: type === 'toggle' ? false : undefined,
+        children: type === 'toggle' ? [] : undefined,
+      };
+      onChange(newBlocks);
+      setSlashCommandIndex(null);
+    }
+  };
+
+  useKeyboardShortcuts({
+    blocks,
+    focusedBlockIndex,
+    onAddBlock: addBlock,
+    onDeleteBlock: deleteBlock,
+    onDuplicateBlock: duplicateBlock,
+    onMoveBlock: moveBlock,
+    onFocusBlock: setFocusedBlockIndex,
+  });
+
+  if (blocks.length === 0) {
+    return (
+      <div 
+        className="text-center py-16 cursor-text"
+        onClick={() => addBlock('paragraph', 0)}
+      >
+        <div className="inline-flex items-center gap-2 text-muted-foreground">
+          <span className="animate-pulse">|</span>
+          <span className="text-sm">
+            Press 'Enter' to continue with empty page or type '/' for commands
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-2">
-      {blocks.length === 0 && !isNested && (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>Start building your documentation</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => addBlock('paragraph')}
-            className="mt-4"
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <Droppable droppableId="blocks">
+        {(provided) => (
+          <div
+            {...provided.droppableProps}
+            ref={provided.innerRef}
+            className="space-y-1"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            Add your first block
-          </Button>
-        </div>
-      )}
+            {blocks.map((block, index) => (
+              <Draggable key={block.id} draggableId={block.id} index={index}>
+                {(provided, snapshot) => (
+                  <div key={block.id}>
+                    {index > 0 && !isNested && (
+                      <AddBlockButton onClick={() => {
+                        setShowMenuAtIndex(index);
+                        addBlock('paragraph', index);
+                      }} />
+                    )}
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      className={cn(
+                        "group relative py-1 px-2 -mx-2 rounded-md transition-all",
+                        "hover:bg-accent/5",
+                        snapshot.isDragging && "bg-accent/10 shadow-lg",
+                        focusedBlockIndex === index && "bg-accent/5"
+                      )}
+                    >
+                      <BlockControls
+                        onDelete={() => deleteBlock(index)}
+                        onDuplicate={() => duplicateBlock(index)}
+                        isDragging={snapshot.isDragging}
+                        dragHandleProps={provided.dragHandleProps}
+                      />
 
-      {blocks.map((block, index) => (
-        <div key={block.id} className="group relative">
-          <div className="flex items-start gap-2">
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mt-2">
-              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => deleteBlock(index)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+                      <div className="relative">
+                        {block.type === 'heading' && (
+                          <HeadingBlock
+                            block={block}
+                            isEditing={true}
+                            onChange={(content) => updateBlock(index, { content })}
+                            onFocus={() => setFocusedBlockIndex(index)}
+                            autoFocus={focusedBlockIndex === index}
+                          />
+                        )}
+                        {block.type === 'paragraph' && (
+                          <>
+                            <ParagraphBlock
+                              block={block}
+                              isEditing={true}
+                              onChange={(content) => updateBlock(index, { content })}
+                              onFocus={() => setFocusedBlockIndex(index)}
+                              autoFocus={focusedBlockIndex === index}
+                            />
+                            {slashCommandIndex === index && (
+                              <div className="relative mt-2">
+                                <BlockTypeMenu
+                                  onSelect={handleSlashCommandSelect}
+                                  onClose={() => setSlashCommandIndex(null)}
+                                  searchQuery={block.content.slice(1)}
+                                />
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {block.type === 'divider' && <DividerBlock />}
+                        {block.type === 'checklist' && (
+                          <ChecklistBlock
+                            block={block}
+                            isEditing={true}
+                            onChange={(content, checked) => 
+                              updateBlock(index, { content, checked })
+                            }
+                            onFocus={() => setFocusedBlockIndex(index)}
+                            autoFocus={focusedBlockIndex === index}
+                          />
+                        )}
+                        {block.type === 'toggle' && (
+                          <ToggleBlock
+                            block={block}
+                            isEditing={true}
+                            onChange={(content, collapsed, children) =>
+                              updateBlock(index, { content, collapsed, children })
+                            }
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
             
-            <div className="flex-1 min-w-0">
-              {block.type === 'heading' && (
-                <HeadingBlock
-                  block={block}
-                  isEditing
-                  onChange={(content) => updateBlock(index, { content })}
-                />
-              )}
-              {block.type === 'paragraph' && (
-                <ParagraphBlock
-                  block={block}
-                  isEditing
-                  onChange={(content) => updateBlock(index, { content })}
-                />
-              )}
-              {block.type === 'divider' && <DividerBlock />}
-              {block.type === 'checklist' && (
-                <ChecklistBlock
-                  block={block}
-                  isEditing
-                  onChange={(content, checked) => updateBlock(index, { content, checked })}
-                />
-              )}
-              {block.type === 'toggle' && (
-                <ToggleBlock
-                  block={block}
-                  isEditing
-                  onChange={(content, collapsed, children) => 
-                    updateBlock(index, { content, collapsed, children })
-                  }
-                />
-              )}
-            </div>
+            {!isNested && (
+              <AddBlockButton onClick={() => addBlock('paragraph')} />
+            )}
           </div>
-
-          {/* Add block menu */}
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-8 mt-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 text-xs">
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add block
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => addBlock('heading', index)}>
-                  Heading
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addBlock('paragraph', index)}>
-                  Paragraph
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addBlock('checklist', index)}>
-                  Checklist
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addBlock('toggle', index)}>
-                  Toggle
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => addBlock('divider', index)}>
-                  Divider
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      ))}
-
-      {blocks.length > 0 && !isNested && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
-              Add block
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem onClick={() => addBlock('heading')}>
-              Heading
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addBlock('paragraph')}>
-              Paragraph
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addBlock('checklist')}>
-              Checklist
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addBlock('toggle')}>
-              Toggle
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addBlock('divider')}>
-              Divider
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
+        )}
+      </Droppable>
+    </DragDropContext>
   );
 };

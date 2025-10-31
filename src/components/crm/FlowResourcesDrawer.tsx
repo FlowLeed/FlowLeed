@@ -62,10 +62,10 @@ export const FlowResourcesDrawer = ({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader className="flex-row items-center justify-between space-y-0 pb-4">
+        <SheetHeader className="flex-row items-center justify-between space-y-0 pb-6">
           <div className="flex-1">
-            <SheetTitle>{flow.name} - Documentation</SheetTitle>
-            <SheetDescription>
+            <SheetTitle className="text-2xl font-bold">{flow.name} - Documentation</SheetTitle>
+            <SheetDescription className="text-sm">
               {isEditing 
                 ? "Edit your flow documentation and resources"
                 : "View documentation and resources for this flow"
@@ -109,8 +109,7 @@ export const FlowResourcesDrawer = ({
           )}
         </SheetHeader>
 
-        <div className="mt-6">
-
+        <div className="max-w-3xl mx-auto px-8 py-6">
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">
               Loading documentation...
