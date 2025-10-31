@@ -4,7 +4,8 @@ export type BlockType =
   | 'divider' 
   | 'checklist' 
   | 'toggle'
-  | 'list'
+  | 'bulletList'
+  | 'numberedList'
   | 'image'
   | 'video'
   | 'link';

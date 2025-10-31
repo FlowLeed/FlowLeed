@@ -15,6 +15,8 @@ import {
   CheckSquare,
   ChevronRight,
   Minus,
+  List,
+  ListOrdered,
 } from "lucide-react";
 
 interface BlockTypeMenuProps {
@@ -28,6 +30,8 @@ const blockTypes = [
   { type: 'heading' as BlockType, level: 2, icon: Heading2, label: 'Heading 2', shortcut: '⌘⌥2', description: 'Medium section heading' },
   { type: 'heading' as BlockType, level: 3, icon: Heading3, label: 'Heading 3', shortcut: '⌘⌥3', description: 'Small section heading' },
   { type: 'paragraph' as BlockType, icon: Type, label: 'Text', shortcut: '⌘⌥0', description: 'Plain text paragraph' },
+  { type: 'bulletList' as BlockType, icon: List, label: 'Bullet List', description: 'Simple bulleted list' },
+  { type: 'numberedList' as BlockType, icon: ListOrdered, label: 'Numbered List', description: 'Ordered numbered list' },
   { type: 'checklist' as BlockType, icon: CheckSquare, label: 'To-do', shortcut: '⌘⌥4', description: 'Checklist item' },
   { type: 'toggle' as BlockType, icon: ChevronRight, label: 'Toggle', shortcut: '⌘⌥5', description: 'Collapsible section' },
   { type: 'divider' as BlockType, icon: Minus, label: 'Divider', shortcut: '⌘⌥-', description: 'Visual separator' },

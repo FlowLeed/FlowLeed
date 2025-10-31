@@ -36,6 +36,20 @@ export const ResourcesViewer = ({ blocks }: ResourcesViewerProps) => {
           {block.type === 'toggle' && (
             <ToggleBlock block={block} isEditing={false} />
           )}
+          {block.type === 'bulletList' && (
+            <ul className="list-disc list-inside space-y-1 text-base leading-relaxed">
+              {block.content.split("\n").filter(item => item.trim()).map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          )}
+          {block.type === 'numberedList' && (
+            <ol className="list-decimal list-inside space-y-1 text-base leading-relaxed">
+              {block.content.split("\n").filter(item => item.trim()).map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ol>
+          )}
         </div>
       ))}
     </div>

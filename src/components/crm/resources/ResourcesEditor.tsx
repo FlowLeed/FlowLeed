@@ -5,6 +5,7 @@ import { ParagraphBlock } from "./ParagraphBlock";
 import { DividerBlock } from "./DividerBlock";
 import { ChecklistBlock } from "./ChecklistBlock";
 import { ToggleBlock } from "./ToggleBlock";
+import { ListBlock } from "./ListBlock";
 import { BlockControls } from "./BlockControls";
 import { AddBlockButton } from "./AddBlockButton";
 import { BlockTypeMenu } from "./BlockTypeMenu";
@@ -277,6 +278,16 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
                             onChange={(content, collapsed, children) =>
                               updateBlock(index, { content, collapsed, children })
                             }
+                          />
+                        )}
+                        {(block.type === 'bulletList' || block.type === 'numberedList') && (
+                          <ListBlock
+                            content={block.content}
+                            ordered={block.type === 'numberedList'}
+                            onChange={(content) => updateBlock(index, { content })}
+                            onBackspaceAtStart={() => mergeWithPreviousBlock(index)}
+                            onEnter={() => addBlock(block.type, index + 1)}
+                            autoFocus={focusedBlockIndex === index}
                           />
                         )}
                       </div>
