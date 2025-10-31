@@ -59,16 +59,21 @@ export const ListBlock = ({
   const items = content.split("\n").filter(item => item.trim());
 
   return (
-    <div className="space-y-2">
-      <Textarea
-        ref={textareaRef}
-        value={content}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={ordered ? "Type numbered list items (one per line)" : "Type bullet list items (one per line)"}
-        className="min-h-[100px] resize-none border-0 focus-visible:ring-0 shadow-none p-2 text-base leading-relaxed"
-        rows={Math.max(4, items.length + 1)}
-      />
+    <div className="flex gap-2">
+      <ListTag className={cn(
+        "flex-1 space-y-1 text-base leading-relaxed py-2",
+        ordered ? "list-decimal list-inside" : "list-disc list-inside"
+      )}>
+        <Textarea
+          ref={textareaRef}
+          value={content}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={ordered ? "Type numbered list items (one per line)" : "Type bullet list items (one per line)"}
+          className="min-h-[100px] resize-none border-0 focus-visible:ring-0 shadow-none p-0 text-base leading-relaxed list-item ml-5"
+          rows={Math.max(4, items.length + 1)}
+        />
+      </ListTag>
     </div>
   );
 };
