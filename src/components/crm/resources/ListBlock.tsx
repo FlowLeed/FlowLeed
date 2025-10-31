@@ -56,15 +56,15 @@ export const ListBlock = ({
   };
 
   const lines = content.split("\n");
-  const lineHeight = 28; // approximate line height in pixels
+  const lineHeight = 28; // line height in pixels
 
   return (
     <div className="relative">
-      <div className="flex gap-3">
+      <div className="flex gap-3 items-start">
         {/* Visual list markers */}
-        <div className="flex-shrink-0 pt-2 space-y-0" style={{ lineHeight: `${lineHeight}px` }}>
+        <div className="flex-shrink-0 pt-[9px]" style={{ lineHeight: `${lineHeight}px` }}>
           {lines.map((line, idx) => (
-            <div key={idx} className="text-muted-foreground text-base" style={{ height: `${lineHeight}px` }}>
+            <div key={idx} className="text-muted-foreground text-base" style={{ height: `${lineHeight}px`, lineHeight: `${lineHeight}px` }}>
               {ordered ? `${idx + 1}.` : '•'}
             </div>
           ))}
@@ -77,7 +77,7 @@ export const ListBlock = ({
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={ordered ? "Type numbered list items (one per line)" : "Type bullet list items (one per line)"}
-          className="flex-1 min-h-[100px] resize-none border-0 focus-visible:ring-0 shadow-none p-0 pt-2 text-base leading-relaxed"
+          className="flex-1 min-h-[100px] resize-none border-0 focus-visible:ring-0 shadow-none p-0 pt-2 text-base"
           style={{ lineHeight: `${lineHeight}px` }}
           rows={Math.max(4, lines.length)}
         />
