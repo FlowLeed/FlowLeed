@@ -3,16 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, RefreshCw, AlertCircle, MessageSquare, ArrowRight } from 'lucide-react';
+import { Lightbulb, RefreshCw, AlertCircle, MessageSquare, ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { MessageComposerDialog } from './MessageComposerDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface Suggestion {
   type: 'follow_up' | 'prayer_check' | 'birthday' | 'next_step' | 'engagement' | 'milestone' | 'stage_action';
   title: string;
   description: string;
+  reasoning?: string;
   priority: 'low' | 'medium' | 'high';
   actionText?: string;
   requiresMessage?: boolean;
@@ -63,15 +65,65 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<Suggestion | null>(null);
+  const [expandedSuggestions, setExpandedSuggestions] = useState<Record<number, boolean>>({});
+  const [feedbackGiven, setFeedbackGiven] = useState<Record<number, 'positive' | 'negative'>>({});
+
+  const submitFeedbackMutation = useMutation({
+    mutationFn: async ({ 
+      suggestion, 
+      feedbackType, 
+      actionTaken 
+    }: { 
+      suggestion: Suggestion; 
+      feedbackType: 'positive' | 'negative'; 
+      actionTaken?: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: orgMember } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (!orgMember) throw new Error('Organization not found');
+
+      const { error } = await supabase
+        .from('ai_suggestion_feedback')
+        .insert({
+          contact_id: contactId,
+          organization_id: orgMember.organization_id,
+          user_id: user!.id,
+          suggestion_type: suggestion.type,
+          suggestion_title: suggestion.title,
+          suggestion_description: suggestion.description,
+          feedback_type: feedbackType,
+          action_taken: actionTaken,
+          metadata: { reasoning: suggestion.reasoning }
+        });
+
+      if (error) throw error;
+    }
+  });
 
   const updateStageMutation = useMutation({
-    mutationFn: async ({ pipelineContactId, newStageId }: { pipelineContactId: string; newStageId: string }) => {
+    mutationFn: async ({ pipelineContactId, newStageId, suggestion }: { 
+      pipelineContactId: string; 
+      newStageId: string;
+      suggestion: Suggestion;
+    }) => {
       const { error } = await supabase
         .from('pipeline_contacts')
         .update({ stage_id: newStageId })
         .eq('id', pipelineContactId);
       
       if (error) throw error;
+
+      // Track action
+      await submitFeedbackMutation.mutateAsync({
+        suggestion,
+        feedbackType: 'positive',
+        actionTaken: 'stage_changed'
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contact-comprehensive', contactId] });
@@ -116,9 +168,33 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
     fetchSuggestions();
   }, [contactId]);
 
-  const handleGenerateMessage = (suggestion: Suggestion) => {
+  const handleGenerateMessage = async (suggestion: Suggestion) => {
     setSelectedSuggestion(suggestion);
     setMessageDialogOpen(true);
+    
+    // Track action
+    await submitFeedbackMutation.mutateAsync({
+      suggestion,
+      feedbackType: 'positive',
+      actionTaken: 'message_generated'
+    });
+  };
+
+  const handleFeedback = async (index: number, suggestion: Suggestion, feedbackType: 'positive' | 'negative') => {
+    setFeedbackGiven(prev => ({ ...prev, [index]: feedbackType }));
+    
+    await submitFeedbackMutation.mutateAsync({
+      suggestion,
+      feedbackType,
+      actionTaken: feedbackType === 'negative' ? 'dismissed' : undefined
+    });
+
+    toast({
+      title: feedbackType === 'positive' ? 'Thanks for the feedback!' : 'Feedback noted',
+      description: feedbackType === 'positive' 
+        ? 'We\'ll suggest more like this.' 
+        : 'We\'ll improve future suggestions.'
+    });
   };
 
   const handleStageUpdate = (suggestion: Suggestion) => {
@@ -144,7 +220,8 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
 
     updateStageMutation.mutate({
       pipelineContactId: flow.id,
-      newStageId: suggestion.suggestedStageId
+      newStageId: suggestion.suggestedStageId,
+      suggestion
     });
   };
 
@@ -233,48 +310,97 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
           <div className="space-y-3">
             {suggestions.map((suggestion, index) => {
               const colors = typeColors[suggestion.type];
+              const isExpanded = expandedSuggestions[index];
+              const feedback = feedbackGiven[index];
+              
               return (
-                <div 
+                <Collapsible
                   key={index}
-                  className={`p-3 rounded-lg border ${colors.bg} ${colors.border}`}
+                  open={isExpanded}
+                  onOpenChange={(open) => setExpandedSuggestions(prev => ({ ...prev, [index]: open }))}
                 >
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <p className={`font-medium ${colors.text}`}>{suggestion.title}</p>
-                    <Badge variant={priorityVariants[suggestion.priority]} className="text-xs">
-                      {suggestion.priority}
-                    </Badge>
-                  </div>
-                  <p className={`text-sm ${colors.subtext}`}>{suggestion.description}</p>
-                  
-                  {suggestion.type === 'stage_action' && suggestion.suggestedStageId && suggestion.pipelineId && (
-                    <div className="mt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleStageUpdate(suggestion)}
-                        className="w-full"
-                        disabled={updateStageMutation.isPending}
-                      >
-                        <ArrowRight className="h-4 w-4 mr-2" />
-                        {suggestion.actionText || `Move to ${suggestion.suggestedStageName}`}
-                      </Button>
+                  <div className={`p-3 rounded-lg border ${colors.bg} ${colors.border}`}>
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <p className={`font-medium ${colors.text}`}>{suggestion.title}</p>
+                      <Badge variant={priorityVariants[suggestion.priority]} className="text-xs">
+                        {suggestion.priority}
+                      </Badge>
                     </div>
-                  )}
+                    <p className={`text-sm ${colors.subtext} mb-2`}>{suggestion.description}</p>
+                    
+                    {suggestion.reasoning && (
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className={`text-xs ${colors.subtext} h-6 px-2 mb-2`}>
+                          {isExpanded ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+                          {isExpanded ? 'Hide' : 'Why?'}
+                        </Button>
+                      </CollapsibleTrigger>
+                    )}
+                    
+                    <CollapsibleContent>
+                      <div className={`text-xs ${colors.subtext} bg-background/50 rounded p-2 mb-2`}>
+                        <span className="font-medium">Reason:</span> {suggestion.reasoning}
+                      </div>
+                    </CollapsibleContent>
+                    
+                    <div className="flex items-center gap-2 mt-2">
+                      {!feedback && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => handleFeedback(index, suggestion, 'positive')}
+                          >
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => handleFeedback(index, suggestion, 'negative')}
+                          >
+                            <ThumbsDown className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
+                      {feedback && (
+                        <Badge variant="outline" className="text-xs">
+                          {feedback === 'positive' ? '👍 Helpful' : '👎 Not helpful'}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {suggestion.type === 'stage_action' && suggestion.suggestedStageId && suggestion.pipelineId && (
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStageUpdate(suggestion)}
+                          className="w-full"
+                          disabled={updateStageMutation.isPending}
+                        >
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          {suggestion.actionText || `Move to ${suggestion.suggestedStageName}`}
+                        </Button>
+                      </div>
+                    )}
 
-                  {suggestion.requiresMessage && (
-                    <div className="mt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleGenerateMessage(suggestion)}
-                        className="w-full"
-                      >
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Generate Message
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                    {suggestion.requiresMessage && (
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateMessage(suggestion)}
+                          className="w-full"
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Generate Message
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </Collapsible>
               );
             })}
           </div>

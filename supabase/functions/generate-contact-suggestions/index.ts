@@ -134,6 +134,11 @@ IMPORTANT:
 - Recommend stage progression when appropriate
 - Give context-aware advice that aligns with the flow's purpose
 
+REASONING FIELD:
+- Always include a brief, specific reasoning for each suggestion
+- Examples: "No contact in 18 days", "Birthday in 5 days", "Prayer request is 12 days old", "Stalled in Welcome stage for 23 days"
+- Keep reasoning concise (under 50 characters)
+
 MESSAGE CAPABILITY:
 - When suggesting text messages, emails, or thank-you notes, set requiresMessage: true and specify messageType
 - Examples:
@@ -231,6 +236,10 @@ ${pipelineContexts || 'Not in any pipeline'}`;
                         },
                         title: { type: 'string' },
                         description: { type: 'string' },
+                        reasoning: { 
+                          type: 'string',
+                          description: 'Brief explanation of why this suggestion is being made (e.g., "No contact in 18 days" or "Birthday in 5 days")'
+                        },
                         priority: { 
                           type: 'string', 
                           enum: ['low', 'medium', 'high'] 
@@ -245,7 +254,7 @@ ${pipelineContexts || 'Not in any pipeline'}`;
                         suggestedStageName: { type: 'string' },
                         pipelineId: { type: 'string' }
                       },
-                      required: ['type', 'title', 'description', 'priority'],
+                      required: ['type', 'title', 'description', 'reasoning', 'priority'],
                       additionalProperties: false
                     }
                   }

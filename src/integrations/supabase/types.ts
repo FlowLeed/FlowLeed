@@ -14,6 +14,76 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_suggestion_feedback: {
+        Row: {
+          action_taken: string | null
+          contact_id: string
+          created_at: string
+          feedback_type: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          organization_id: string
+          suggestion_description: string
+          suggestion_title: string
+          suggestion_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_taken?: string | null
+          contact_id: string
+          created_at?: string
+          feedback_type: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organization_id: string
+          suggestion_description: string
+          suggestion_title: string
+          suggestion_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_taken?: string | null
+          contact_id?: string
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          organization_id?: string
+          suggestion_description?: string
+          suggestion_title?: string
+          suggestion_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_suggestion_feedback_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_suggestion_feedback_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_suggestion_feedback_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auth_verification_tokens: {
         Row: {
           created_at: string | null
