@@ -431,6 +431,40 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
                     </CollapsibleContent>
                     
                     <div className="flex items-center gap-2 mt-2">
+                      {suggestion.type === 'stage_action' && suggestion.suggestedStageId && suggestion.pipelineId && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleStageUpdate(suggestion)}
+                          className="flex-1 gap-2"
+                          disabled={updateStageMutation.isPending}
+                        >
+                          {updateStageMutation.isPending ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                              Moving...
+                            </>
+                          ) : (
+                            <>
+                              <ArrowRight className="h-4 w-4" />
+                              {suggestion.actionText || `Move to ${suggestion.suggestedStageName}`}
+                            </>
+                          )}
+                        </Button>
+                      )}
+
+                      {suggestion.requiresMessage && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleGenerateMessage(suggestion)}
+                          className="flex-1 gap-2"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          Generate Message
+                        </Button>
+                      )}
+
                       {!feedback && (
                         <>
                           <Button
@@ -457,47 +491,6 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
                         </Badge>
                       )}
                     </div>
-                    
-                    {suggestion.type === 'stage_action' && suggestion.suggestedStageId && suggestion.pipelineId && (
-                      <div className="mt-3">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleStageUpdate(suggestion)}
-                          className="w-full gap-2"
-                          disabled={updateStageMutation.isPending}
-                        >
-                          {updateStageMutation.isPending ? (
-                            <>
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                              Moving...
-                            </>
-                          ) : (
-                            <>
-                              <ArrowRight className="h-4 w-4" />
-                              {suggestion.actionText || `Move to ${suggestion.suggestedStageName}`}
-                            </>
-                          )}
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-1 text-center">
-                          in {flows?.find(f => f.pipeline.id === suggestion.pipelineId)?.pipeline.name || 'flow'}
-                        </p>
-                      </div>
-                    )}
-
-                    {suggestion.requiresMessage && (
-                      <div className="mt-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleGenerateMessage(suggestion)}
-                          className="w-full"
-                        >
-                          <MessageSquare className="h-4 w-4 mr-2" />
-                          Generate Message
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 </Collapsible>
               );
