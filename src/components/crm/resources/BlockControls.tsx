@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface BlockControlsProps {
   onDelete: () => void;
@@ -22,6 +23,8 @@ export const BlockControls = ({
   isDragging,
   dragHandleProps,
 }: BlockControlsProps) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <div
       className={cn(
@@ -29,15 +32,20 @@ export const BlockControls = ({
         isDragging && "opacity-100"
       )}
     >
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <div
-            {...dragHandleProps}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
-          >
-            <Grip className="h-4 w-4 text-muted-foreground" />
-          </div>
-        </DropdownMenuTrigger>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+        <div
+          {...dragHandleProps}
+          onClick={(e) => {
+            // Only open menu on click, not during drag
+            if (!isDragging) {
+              e.stopPropagation();
+              setMenuOpen(true);
+            }
+          }}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
+        >
+          <Grip className="h-4 w-4 text-muted-foreground" />
+        </div>
         <DropdownMenuContent align="start" className="w-48">
           {onDuplicate && (
             <>
