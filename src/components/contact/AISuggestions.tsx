@@ -430,28 +430,6 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
                     </CollapsibleContent>
                     
                     <div className="flex items-center gap-2 mt-2">
-                      {suggestion.type === 'stage_action' && suggestion.suggestedStageId && suggestion.pipelineId && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleStageUpdate(suggestion)}
-                          className="flex-1 gap-2"
-                          disabled={updateStageMutation.isPending}
-                        >
-                          {updateStageMutation.isPending ? (
-                            <>
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                              Moving...
-                            </>
-                          ) : (
-                            <>
-                              <ArrowRight className="h-4 w-4" />
-                              {suggestion.actionText || `Move to ${suggestion.suggestedStageName}`}
-                            </>
-                          )}
-                        </Button>
-                      )}
-
                       {suggestion.requiresMessage && (
                         <Button
                           variant="outline"
