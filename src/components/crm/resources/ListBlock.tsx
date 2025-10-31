@@ -55,25 +55,33 @@ export const ListBlock = ({
     }
   };
 
-  const ListTag = ordered ? "ol" : "ul";
-  const items = content.split("\n").filter(item => item.trim());
+  const lines = content.split("\n");
+  const lineHeight = 28; // approximate line height in pixels
 
   return (
-    <div className="flex gap-2">
-      <ListTag className={cn(
-        "flex-1 space-y-1 text-base leading-relaxed py-2",
-        ordered ? "list-decimal list-inside" : "list-disc list-inside"
-      )}>
+    <div className="relative">
+      <div className="flex gap-3">
+        {/* Visual list markers */}
+        <div className="flex-shrink-0 pt-2 space-y-0" style={{ lineHeight: `${lineHeight}px` }}>
+          {lines.map((line, idx) => (
+            <div key={idx} className="text-muted-foreground text-base" style={{ height: `${lineHeight}px` }}>
+              {ordered ? `${idx + 1}.` : '•'}
+            </div>
+          ))}
+        </div>
+        
+        {/* Text input */}
         <Textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={ordered ? "Type numbered list items (one per line)" : "Type bullet list items (one per line)"}
-          className="min-h-[100px] resize-none border-0 focus-visible:ring-0 shadow-none p-0 text-base leading-relaxed list-item ml-5"
-          rows={Math.max(4, items.length + 1)}
+          className="flex-1 min-h-[100px] resize-none border-0 focus-visible:ring-0 shadow-none p-0 pt-2 text-base leading-relaxed"
+          style={{ lineHeight: `${lineHeight}px` }}
+          rows={Math.max(4, lines.length)}
         />
-      </ListTag>
+      </div>
     </div>
   );
 };
