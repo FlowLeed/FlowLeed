@@ -57,7 +57,6 @@ export const useFlowResources = (pipelineId: string | null) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["flow-resources", pipelineId] });
-      toast.success("Resources created successfully");
     },
     onError: (error) => {
       console.error("Error creating resources:", error);
@@ -91,7 +90,6 @@ export const useFlowResources = (pipelineId: string | null) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["flow-resources", pipelineId] });
-      toast.success("Resources saved successfully");
     },
     onError: (error) => {
       console.error("Error updating resources:", error);
