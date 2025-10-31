@@ -33,19 +33,20 @@ export const BlockControls = ({
       )}
     >
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-        <div
-          {...dragHandleProps}
-          onClick={(e) => {
-            // Only open menu on click, not during drag
-            if (!isDragging) {
-              e.stopPropagation();
-              setMenuOpen(true);
-            }
-          }}
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
-        >
-          <Grip className="h-4 w-4 text-muted-foreground" />
-        </div>
+        <DropdownMenuTrigger asChild>
+          <div
+            {...dragHandleProps}
+            onClick={(e) => {
+              // Only open menu on click, not during drag
+              if (!isDragging) {
+                e.stopPropagation();
+              }
+            }}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
+          >
+            <Grip className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-48">
           {onDuplicate && (
             <>
