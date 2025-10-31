@@ -62,19 +62,18 @@ export const FlowResourcesDrawer = ({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{flow.name} - Documentation</SheetTitle>
-          <SheetDescription>
-            {isEditing 
-              ? "Edit your flow documentation and resources"
-              : "View documentation and resources for this flow"
-            }
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="mt-6">
+        <SheetHeader className="flex-row items-center justify-between space-y-0 pb-4">
+          <div className="flex-1">
+            <SheetTitle>{flow.name} - Documentation</SheetTitle>
+            <SheetDescription>
+              {isEditing 
+                ? "Edit your flow documentation and resources"
+                : "View documentation and resources for this flow"
+              }
+            </SheetDescription>
+          </div>
           {canEdit && (
-            <div className="flex items-center justify-end gap-2 mb-4">
+            <div className="flex items-center gap-2">
               {isEditing ? (
                 <>
                   <Button
@@ -108,6 +107,9 @@ export const FlowResourcesDrawer = ({
               )}
             </div>
           )}
+        </SheetHeader>
+
+        <div className="mt-6">
 
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">
