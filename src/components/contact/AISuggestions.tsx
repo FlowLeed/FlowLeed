@@ -39,7 +39,13 @@ interface AISuggestionsProps {
   contactEmail?: string;
   currentPipelineId?: string;
   currentPipelineName?: string;
-  flows?: Array<{ id: string; pipeline: { id: string } }>;
+  flows?: Array<{ 
+    id?: string;
+    pipelineContactId: string; 
+    pipeline: { id: string; name: string };
+    currentStage?: { id: string; name: string };
+    assignedToUserId?: string;
+  }>;
 }
 
 const typeColors = {
@@ -224,7 +230,24 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
   };
 
   const handleStageUpdate = (suggestion: Suggestion) => {
+    console.log("🎯 handleStageUpdate called", {
+      suggestion,
+      suggestedStageId: suggestion.suggestedStageId,
+      pipelineId: suggestion.pipelineId,
+      flows: flows?.map(f => ({ 
+        pipelineId: f.pipeline.id, 
+        pipelineName: f.pipeline.name,
+        pipelineContactId: f.pipelineContactId,
+        currentStage: f.currentStage?.name
+      }))
+    });
+
     if (!suggestion.pipelineId || !suggestion.suggestedStageId || !flows) {
+      console.error("❌ Missing required fields", { 
+        pipelineId: suggestion.pipelineId,
+        suggestedStageId: suggestion.suggestedStageId,
+        hasFlows: !!flows
+      });
       toast({ 
         title: 'Error', 
         description: 'Missing stage information',
@@ -235,7 +258,19 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
 
     const flow = flows.find(f => f.pipeline.id === suggestion.pipelineId);
     
+    console.log("🔍 Flow lookup result", {
+      searchingForPipelineId: suggestion.pipelineId,
+      foundFlow: flow ? {
+        pipelineId: flow.pipeline.id,
+        pipelineName: flow.pipeline.name,
+        pipelineContactId: flow.pipelineContactId,
+        currentStage: flow.currentStage?.name
+      } : null,
+      availableFlowIds: flows.map(f => f.pipeline.id)
+    });
+    
     if (!flow) {
+      console.error("❌ Flow not found");
       toast({ 
         title: 'Error', 
         description: 'Contact is not in this flow',
@@ -244,8 +279,25 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
       return;
     }
 
+    if (!flow.pipelineContactId) {
+      console.error("❌ Missing pipelineContactId", { flow });
+      toast({ 
+        title: 'Error', 
+        description: 'Invalid flow configuration',
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    console.log("✅ Calling updateStageMutation", {
+      pipelineContactId: flow.pipelineContactId,
+      newStageId: suggestion.suggestedStageId,
+      pipelineName: flow.pipeline.name,
+      stageName: suggestion.suggestedStageName
+    });
+
     updateStageMutation.mutate({
-      pipelineContactId: flow.id,
+      pipelineContactId: flow.pipelineContactId,
       newStageId: suggestion.suggestedStageId,
       suggestion
     });
@@ -409,15 +461,27 @@ export const AISuggestions: React.FC<AISuggestionsProps> = ({
                     {suggestion.type === 'stage_action' && suggestion.suggestedStageId && suggestion.pipelineId && (
                       <div className="mt-3">
                         <Button
-                          variant="outline"
+                          variant="default"
                           size="sm"
                           onClick={() => handleStageUpdate(suggestion)}
-                          className="w-full"
+                          className="w-full gap-2"
                           disabled={updateStageMutation.isPending}
                         >
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                          {suggestion.actionText || `Move to ${suggestion.suggestedStageName}`}
+                          {updateStageMutation.isPending ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                              Moving...
+                            </>
+                          ) : (
+                            <>
+                              <ArrowRight className="h-4 w-4" />
+                              {suggestion.actionText || `Move to ${suggestion.suggestedStageName}`}
+                            </>
+                          )}
                         </Button>
+                        <p className="text-xs text-muted-foreground mt-1 text-center">
+                          in {flows?.find(f => f.pipeline.id === suggestion.pipelineId)?.pipeline.name || 'flow'}
+                        </p>
                       </div>
                     )}
 
