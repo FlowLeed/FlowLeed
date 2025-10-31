@@ -286,7 +286,7 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
                             ordered={block.type === 'numberedList'}
                             onChange={(content) => updateBlock(index, { content })}
                             onBackspaceAtStart={() => mergeWithPreviousBlock(index)}
-                            onEnter={() => addBlock(block.type, index + 1)}
+                            onEnter={() => addBlock('paragraph', index + 1)}
                             autoFocus={focusedBlockIndex === index}
                           />
                         )}

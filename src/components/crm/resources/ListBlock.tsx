@@ -49,6 +49,17 @@ export const ListBlock = ({
       // Only exit list (create new block) if current line is empty
       if (currentLine.trim() === '') {
         e.preventDefault();
+        
+        // Remove the empty line before exiting
+        const lines = target.value.split('\n');
+        const currentLineIndex = textBeforeCursor.split('\n').length - 1;
+        lines.splice(currentLineIndex, 1);
+        const cleanedContent = lines.join('\n');
+        
+        // Update content first to remove empty line
+        onChange(cleanedContent);
+        
+        // Then create new block
         onEnter?.();
       }
       // Otherwise allow default Enter behavior to add new line (new list item)
