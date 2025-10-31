@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft } from "lucide-react";
+import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
@@ -81,6 +81,7 @@ interface HeaderProps {
   isSelectMode?: boolean;
   onToggleSelectMode?: () => void;
   onSelectAll?: () => void;
+  onDocsClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -102,7 +103,8 @@ export const Header: React.FC<HeaderProps> = ({
   onViewModeChange,
   isSelectMode = false,
   onToggleSelectMode,
-  onSelectAll
+  onSelectAll,
+  onDocsClick
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
@@ -373,6 +375,14 @@ export const Header: React.FC<HeaderProps> = ({
             onFilterChange={onFilterChange}
             contactCounts={contactCounts}
           />
+        )}
+        
+        {/* Docs Button */}
+        {onDocsClick && (
+          <Button variant="outline" size="sm" onClick={onDocsClick} className="ml-2">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Docs
+          </Button>
         )}
       </div>
       

@@ -1506,6 +1506,61 @@ export type Database = {
           },
         ]
       }
+      pipeline_resources: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          last_edited_by_user_id: string | null
+          organization_id: string
+          pipeline_id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          last_edited_by_user_id?: string | null
+          organization_id: string
+          pipeline_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          last_edited_by_user_id?: string | null
+          organization_id?: string
+          pipeline_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_resources_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_resources_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_resources_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: true
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipeline_stages: {
         Row: {
           color: string | null
