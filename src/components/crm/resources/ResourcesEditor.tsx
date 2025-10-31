@@ -197,7 +197,7 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
           <div
             {...provided.droppableProps}
             ref={provided.innerRef}
-            className="space-y-1"
+            className="space-y-0.5"
           >
             {blocks.map((block, index) => (
               <Draggable key={block.id} draggableId={block.id} index={index}>
@@ -213,7 +213,7 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
                       ref={provided.innerRef}
                       {...provided.draggableProps}
                       className={cn(
-                        "group relative py-1 px-2 -mx-2 rounded-md transition-all",
+                        "group relative py-0.5 px-2 -mx-2 rounded-md transition-all",
                         "hover:bg-accent/5",
                         snapshot.isDragging && "bg-accent/10 shadow-lg",
                         focusedBlockIndex === index && "bg-accent/5"

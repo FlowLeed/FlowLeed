@@ -46,8 +46,13 @@ export const ListBlock = ({
       const currentLineStart = textBeforeCursor.lastIndexOf('\n') + 1;
       const currentLine = target.value.substring(currentLineStart, cursorPos);
       
-      // Only exit list (create new block) if current line is empty
-      if (currentLine.trim() === '') {
+      // Check if this is a double-enter: empty line AND previous character is newline
+      const isDoubleEnter = currentLine.trim() === '' && 
+                            cursorPos > 0 && 
+                            target.value[cursorPos - 1] === '\n';
+      
+      // Only exit list (create new block) on double-enter
+      if (isDoubleEnter) {
         e.preventDefault();
         
         // Remove the empty line before exiting
