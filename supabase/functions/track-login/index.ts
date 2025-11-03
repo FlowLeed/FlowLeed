@@ -88,6 +88,27 @@ Deno.serve(async (req) => {
 
     console.log('Login tracked successfully for user:', user.id);
 
+    // Safety net: Check if organization has any pipelines, create defaults if empty
+    const { data: pipelines, error: pipelinesError } = await supabaseAdmin
+      .from('pipelines')
+      .select('id')
+      .eq('organization_id', orgMember.organization_id)
+      .limit(1);
+
+    if (!pipelinesError && (!pipelines || pipelines.length === 0)) {
+      console.log('Organization has no flows, creating defaults:', orgMember.organization_id);
+      
+      const { error: createError } = await supabaseAdmin.rpc('create_default_pipelines', {
+        org_id: orgMember.organization_id
+      });
+      
+      if (createError) {
+        console.error('Error creating default pipelines:', createError);
+      } else {
+        console.log('Successfully created default flows for organization:', orgMember.organization_id);
+      }
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
