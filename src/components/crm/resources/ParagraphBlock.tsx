@@ -46,9 +46,13 @@ export const ParagraphBlock = ({ block, isEditing, onChange, onFocus, autoFocus,
     );
   }
 
+  if (!block.content) {
+    return null;
+  }
+
   return (
     <p className="text-foreground whitespace-pre-wrap leading-relaxed text-[15px]">
-      {block.content || "Empty paragraph"}
+      {block.content}
     </p>
   );
 };
