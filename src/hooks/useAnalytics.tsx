@@ -32,33 +32,18 @@ export const useOverviewMetrics = (dateRange: DateRange) => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
-      let organizationId: string | null = null;
-      
-      // Try to get the saved organization from localStorage
-      const savedOrg = localStorage.getItem('active_organization');
-      if (savedOrg) {
-        try {
-          const orgData = JSON.parse(savedOrg);
-          organizationId = orgData.id;
-        } catch (e) {
-          console.error('Error parsing saved organization:', e);
-        }
-      }
-      
-      // If no saved org, get the first organization membership
-      if (!organizationId) {
-        const { data: orgMembers } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .eq("user_id", user.id)
-          .limit(1);
+      // SECURITY FIX: Always get organization from server-validated membership
+      const { data: orgMembers } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1);
 
-        if (!orgMembers || orgMembers.length === 0) {
-          throw new Error("Organization not found");
-        }
-
-        organizationId = orgMembers[0].organization_id;
+      if (!orgMembers || orgMembers.length === 0) {
+        throw new Error("Organization not found");
       }
+
+      const organizationId = orgMembers[0].organization_id;
 
       // Total contacts
       const { count: totalContacts } = await supabase
@@ -118,33 +103,18 @@ export const useFlowAnalytics = () => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
-      let organizationId: string | null = null;
-      
-      // Try to get the saved organization from localStorage
-      const savedOrg = localStorage.getItem('active_organization');
-      if (savedOrg) {
-        try {
-          const orgData = JSON.parse(savedOrg);
-          organizationId = orgData.id;
-        } catch (e) {
-          console.error('Error parsing saved organization:', e);
-        }
-      }
-      
-      // If no saved org, get the first organization membership
-      if (!organizationId) {
-        const { data: orgMembers } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .eq("user_id", user.id)
-          .limit(1);
+      // SECURITY FIX: Always get organization from server-validated membership
+      const { data: orgMembers } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1);
 
-        if (!orgMembers || orgMembers.length === 0) {
-          throw new Error("Organization not found");
-        }
-
-        organizationId = orgMembers[0].organization_id;
+      if (!orgMembers || orgMembers.length === 0) {
+        throw new Error("Organization not found");
       }
+
+      const organizationId = orgMembers[0].organization_id;
 
       const { data: flows } = await supabase
         .from("pipelines")
@@ -229,33 +199,18 @@ export const useTeamPerformance = (dateRange: DateRange) => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
-      let organizationId: string | null = null;
-      
-      // Try to get the saved organization from localStorage
-      const savedOrg = localStorage.getItem('active_organization');
-      if (savedOrg) {
-        try {
-          const orgData = JSON.parse(savedOrg);
-          organizationId = orgData.id;
-        } catch (e) {
-          console.error('Error parsing saved organization:', e);
-        }
-      }
-      
-      // If no saved org, get the first organization membership
-      if (!organizationId) {
-        const { data: orgMembers } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .eq("user_id", user.id)
-          .limit(1);
+      // SECURITY FIX: Always get organization from server-validated membership
+      const { data: orgMembers } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1);
 
-        if (!orgMembers || orgMembers.length === 0) {
-          throw new Error("Organization not found");
-        }
-
-        organizationId = orgMembers[0].organization_id;
+      if (!orgMembers || orgMembers.length === 0) {
+        throw new Error("Organization not found");
       }
+
+      const organizationId = orgMembers[0].organization_id;
 
       // Get all team members
       const { data: members } = await supabase
@@ -321,33 +276,18 @@ export const useAtRiskContacts = (daysInactive: number = 30) => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
-      let organizationId: string | null = null;
-      
-      // Try to get the saved organization from localStorage
-      const savedOrg = localStorage.getItem('active_organization');
-      if (savedOrg) {
-        try {
-          const orgData = JSON.parse(savedOrg);
-          organizationId = orgData.id;
-        } catch (e) {
-          console.error('Error parsing saved organization:', e);
-        }
-      }
-      
-      // If no saved org, get the first organization membership
-      if (!organizationId) {
-        const { data: orgMembers } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .eq("user_id", user.id)
-          .limit(1);
+      // SECURITY FIX: Always get organization from server-validated membership
+      const { data: orgMembers } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1);
 
-        if (!orgMembers || orgMembers.length === 0) {
-          throw new Error("Organization not found");
-        }
-
-        organizationId = orgMembers[0].organization_id;
+      if (!orgMembers || orgMembers.length === 0) {
+        throw new Error("Organization not found");
       }
+
+      const organizationId = orgMembers[0].organization_id;
 
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysInactive);

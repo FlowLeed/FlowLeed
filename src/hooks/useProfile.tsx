@@ -59,7 +59,7 @@ export const useProfile = () => {
           setProfile(profileData);
         }
 
-        // Fetch ALL user's organizations
+        // Fetch ALL user's organizations - SECURITY: Always validate from server
         const { data: memberships, error: orgError } = await supabase
           .from('organization_members')
           .select(`
@@ -80,21 +80,25 @@ export const useProfile = () => {
         if (orgError) {
           console.error('Error fetching organizations:', orgError);
         } else if (memberships && memberships.length > 0) {
-          // Get previously selected organization from localStorage
+          // SECURITY FIX: localStorage is only used as a preference hint, not as source of truth
+          // We ALWAYS validate the user is actually a member of the organization
           const savedOrgId = localStorage.getItem(SELECTED_ORG_KEY);
           
           let selectedOrg: Organization | null = null;
           
-          // Check if saved org still exists in memberships
+          // Check if saved org exists in user's ACTUAL memberships (server-validated)
           if (savedOrgId) {
             const savedMembership = memberships.find(m => m.organization_id === savedOrgId);
             if (savedMembership) {
               selectedOrg = savedMembership.organizations as Organization;
-              console.log('Using saved organization:', selectedOrg);
+              console.log('[SECURITY] Validated saved organization:', selectedOrg.id);
+            } else {
+              console.warn('[SECURITY] Saved org not in user memberships, ignoring localStorage');
+              localStorage.removeItem(SELECTED_ORG_KEY);
             }
           }
           
-          // If no saved org or it doesn't exist, pick default deterministically
+          // If no valid saved org, pick default deterministically
           if (!selectedOrg) {
             // Sort by role priority (owner > admin > member) then by created_at
             const rolePriority = { owner: 0, admin: 1, member: 2 };
@@ -106,14 +110,14 @@ export const useProfile = () => {
             });
             
             selectedOrg = sortedMemberships[0].organizations as Organization;
-            console.log('Selected default organization:', selectedOrg, 'role:', sortedMemberships[0].role);
+            console.log('[SECURITY] Selected default organization:', selectedOrg.id, 'role:', sortedMemberships[0].role);
           }
           
           if (selectedOrg) {
-            // Persist selection
+            // Store preference (but this will always be validated on next load)
             localStorage.setItem(SELECTED_ORG_KEY, selectedOrg.id);
             setOrganization(selectedOrg);
-            console.log('Organization loaded:', selectedOrg);
+            console.log('[SECURITY] Organization loaded and validated:', selectedOrg.id);
           }
         } else {
           console.error('No organization memberships found for user');

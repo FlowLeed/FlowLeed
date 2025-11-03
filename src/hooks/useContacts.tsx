@@ -19,42 +19,24 @@ export const useContacts = (filters: ContactFilters) => {
         return [];
       }
 
-      // Get user's active organization (from localStorage or first available)
+      // SECURITY FIX: Always get organization from server-validated membership
       console.log('🔍 Fetching organization for user:', user.id);
       
-      let organizationId: string | null = null;
-      
-      // Try to get the saved organization from localStorage
-      const savedOrg = localStorage.getItem('active_organization');
-      if (savedOrg) {
-        try {
-          const orgData = JSON.parse(savedOrg);
-          organizationId = orgData.id;
-          console.log('Using saved organization:', organizationId);
-        } catch (e) {
-          console.error('Error parsing saved organization:', e);
-        }
-      }
-      
-      // If no saved org, get the first organization membership
-      if (!organizationId) {
-        const { data: orgMembers, error: orgError } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .eq("user_id", user.id)
-          .limit(1);
+      const { data: orgMembers, error: orgError } = await supabase
+        .from("organization_members")
+        .select("organization_id")
+        .eq("user_id", user.id)
+        .limit(1);
 
-        console.log('Organization member data:', orgMembers, 'error:', orgError);
+      console.log('Organization member data:', orgMembers, 'error:', orgError);
 
-        if (!orgMembers || orgMembers.length === 0) {
-          console.log('❌ No organization found for user');
-          return [];
-        }
-
-        organizationId = orgMembers[0].organization_id;
+      if (!orgMembers || orgMembers.length === 0) {
+        console.log('❌ No organization found for user');
+        return [];
       }
 
-      console.log('✅ Organization ID:', organizationId);
+      const organizationId = orgMembers[0].organization_id;
+      console.log('✅ [SECURITY] Server-validated organization ID:', organizationId);
 
       // Build base query
       let query = supabase
