@@ -29,13 +29,22 @@ serve(async (req) => {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
+    // Determine which table to use based on verification type
+    const tableName = type === 'signup' ? 'auth_verification_tokens' : 'email_verification_tokens';
+    
     // Find the token in database
-    const { data: tokenData, error: tokenError } = await supabase
-      .from('email_verification_tokens')
+    const query = supabase
+      .from(tableName)
       .select('*')
       .eq('token_hash', tokenHash)
-      .is('used_at', null)
-      .single();
+      .is('used_at', null);
+    
+    // For signup, also filter by token_type
+    if (type === 'signup') {
+      query.eq('token_type', 'signup');
+    }
+    
+    const { data: tokenData, error: tokenError } = await query.single();
 
     if (tokenError || !tokenData) {
       console.error('Token not found or already used:', tokenError);
@@ -62,7 +71,7 @@ serve(async (req) => {
 
     // Mark token as used
     const { error: updateError } = await supabase
-      .from('email_verification_tokens')
+      .from(tableName)
       .update({ used_at: new Date().toISOString() })
       .eq('id', tokenData.id);
 
