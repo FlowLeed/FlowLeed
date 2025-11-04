@@ -163,13 +163,14 @@ export const FlowView: React.FC<FlowViewProps> = ({
     }
   };
 
-  const handleUpdateStage = (stageId: string, name: string, color: string) => {
+  const handleUpdateStage = (stageId: string, name: string, color: string, defaultAssigneeId?: string | null) => {
     const updatedStages = flow.stages.map(stage => {
       if (stage.id === stageId) {
         return {
           ...stage,
           name: name,
-          color: color
+          color: color,
+          default_assignee_user_id: defaultAssigneeId
         };
       }
       return stage;
