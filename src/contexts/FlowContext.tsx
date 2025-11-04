@@ -246,60 +246,67 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
   };
 
   const loadFlowData = async (pipelinesList: any[]): Promise<Record<string, Flow>> => {
-    const flowsData: Record<string, Flow> = {};
+    if (!pipelinesList || pipelinesList.length === 0) {
+      return {};
+    }
 
-    for (const pipeline of pipelinesList) {
-      // Load stages
-      const { data: stages, error: stagesError } = await supabase
+    const flowsData: Record<string, Flow> = {};
+    const pipelineIds = pipelinesList.map(p => p.id);
+
+    // PHASE 1: Parallelize all queries - fetch ALL data for ALL pipelines at once
+    const [
+      { data: allStages, error: stagesError },
+      { data: allFlowContacts, error: contactsError }
+    ] = await Promise.all([
+      // Single query for ALL stages across ALL pipelines
+      supabase
         .from('pipeline_stages')
         .select('*')
-        .eq('pipeline_id', pipeline.id)
-        .order('stage_order');
-
-      if (stagesError) throw stagesError;
-
-      // Load flow contacts with contact details (stored as pipeline_contacts in database)
-      // Only load active contacts (not completed)
-      const { data: flowContacts, error: contactsError } = await supabase
-        .from('pipeline_contacts')
-        .select(`
-          *,
-          contacts (*)
-        `)
-        .eq('pipeline_id', pipeline.id)
-        .is('completed_end_at', null);
-
-      if (contactsError) throw contactsError;
-
-      // Load all contact tags for this flow
-      const contactIds = (flowContacts?.map(pc => pc.contact_id).filter(Boolean)) || [];
-      const { data: contactTags, error: tagsError } = await supabase
-        .from('contact_tags')
-        .select('*')
-        .in('contact_id', contactIds);
-
-      if (tagsError) throw tagsError;
-
-      // Load profiles for assigned users
-      const assignedUserIds = flowContacts
-        ?.map(pc => pc.assigned_to_user_id)
-        .filter(id => id) || [];
+        .in('pipeline_id', pipelineIds)
+        .order('stage_order'),
       
-      const { data: profiles, error: profilesError } = assignedUserIds.length > 0 
-        ? await supabase
-            .from('profiles')
-            .select('*')
-            .in('user_id', assignedUserIds)
-        : { data: [], error: null };
+      // Single query for ALL contacts across ALL pipelines
+      supabase
+        .from('pipeline_contacts')
+        .select('*, contacts(*)')
+        .in('pipeline_id', pipelineIds)
+        .is('completed_end_at', null)
+    ]);
 
-      if (profilesError) throw profilesError;
+    if (stagesError) throw stagesError;
+    if (contactsError) throw contactsError;
 
+    // Get all unique contact IDs and user IDs
+    const allContactIds = [...new Set(allFlowContacts?.map(pc => pc.contact_id).filter(Boolean) || [])];
+    const allUserIds = [...new Set(allFlowContacts?.map(pc => pc.assigned_to_user_id).filter(Boolean) || [])];
+
+    // Fetch tags and profiles in parallel
+    const [
+      { data: allContactTags, error: tagsError },
+      { data: allProfiles, error: profilesError }
+    ] = await Promise.all([
+      allContactIds.length > 0
+        ? supabase.from('contact_tags').select('*').in('contact_id', allContactIds)
+        : Promise.resolve({ data: [], error: null }),
+      allUserIds.length > 0
+        ? supabase.from('profiles').select('*').in('user_id', allUserIds)
+        : Promise.resolve({ data: [], error: null })
+    ]);
+
+    if (tagsError) throw tagsError;
+    if (profilesError) throw profilesError;
+
+    // Group data by pipeline_id in memory
+    for (const pipeline of pipelinesList) {
+      const pipelineStages = allStages?.filter(s => s.pipeline_id === pipeline.id) || [];
+      const pipelineContacts = allFlowContacts?.filter(pc => pc.pipeline_id === pipeline.id) || [];
+      
       const convertedFlow = convertDbPipelineToFrontend(
         pipeline,
-        stages || [],
-        flowContacts || [],
-        contactTags || [],
-        profiles || []
+        pipelineStages,
+        pipelineContacts,
+        allContactTags || [],
+        allProfiles || []
       );
 
       flowsData[pipeline.id] = convertedFlow;

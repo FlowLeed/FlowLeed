@@ -2,10 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
-import { useMyContactsNeedingAttention } from "@/hooks/useMyContactsNeedingAttention";
-import { useMyUpcomingTasks } from "@/hooks/useMyUpcomingTasks";
-import { useTeamActivityFeed } from "@/hooks/useTeamActivityFeed";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import { useMyFlows } from "@/hooks/useMyFlows";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
@@ -30,17 +27,19 @@ const Dashboard = () => {
   console.log('[Dashboard] user?.id:', user?.id);
   console.log('[Dashboard] profile:', profile);
   
-  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useDashboardMetrics(user?.id);
+  // PHASE 2: Consolidated dashboard data hook - fetches all data in parallel
+  const { data: dashboardData, isLoading: dashboardLoading, error: metricsError } = useDashboardData(user?.id);
+  const { data: myFlows, isLoading: flowsLoading } = useMyFlows(user?.id);
+  
+  // Extract data from consolidated query
+  const metrics = dashboardData?.metrics;
+  const contactsNeedingAttention = dashboardData?.contactsNeedingAttention || [];
+  const upcomingTasks = dashboardData?.upcomingTasks || [];
+  const teamActivity = dashboardData?.activityFeed || [];
   
   console.log('[Dashboard] metrics:', metrics);
-  console.log('[Dashboard] metricsLoading:', metricsLoading);
+  console.log('[Dashboard] dashboardLoading:', dashboardLoading);
   console.log('[Dashboard] metricsError:', metricsError);
-  const { data: contactsNeedingAttention, isLoading: contactsLoading } = 
-    useMyContactsNeedingAttention(user?.id);
-  const { data: upcomingTasks, isLoading: tasksLoading } = useMyUpcomingTasks(user?.id);
-  const { data: teamActivity, isLoading: activityLoading } =
-    useTeamActivityFeed(organization?.id, user?.id);
-  const { data: myFlows, isLoading: flowsLoading } = useMyFlows(user?.id);
 
   // Onboarding state
   const [isOwner, setIsOwner] = useState(false);
@@ -221,7 +220,7 @@ const Dashboard = () => {
           {/* Personal Metrics */}
           <PersonalMetrics
             metrics={metrics || { myContacts: 0, myInteractions: 0, pendingTasks: 0, peopleNeedingAttention: 0 }}
-            loading={metricsLoading}
+            loading={dashboardLoading}
           />
 
           {/* Main Content Grid */}
@@ -229,20 +228,20 @@ const Dashboard = () => {
             {/* People Needing Attention */}
             <ContactsNeedingAttention
               contacts={contactsNeedingAttention || []}
-              loading={contactsLoading}
+              loading={dashboardLoading}
             />
 
             {/* Upcoming Tasks */}
             <UpcomingTasks
               tasks={upcomingTasks || []}
-              loading={tasksLoading}
+              loading={dashboardLoading}
             />
           </div>
 
           {/* Team Activity Feed */}
           <TeamActivityFeed
             activities={teamActivity || []}
-            loading={activityLoading}
+            loading={dashboardLoading}
           />
 
           {/* My Flows Quick Access */}
