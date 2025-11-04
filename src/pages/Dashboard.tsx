@@ -187,7 +187,7 @@ const Dashboard = () => {
     : !memberOnboarding.isCompleted && !memberOnboarding.isDismissed && !memberOnboarding.isLoading);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
       
       {/* Onboarding Progress Bar */}
@@ -200,7 +200,7 @@ const Dashboard = () => {
         />
       )}
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto hide-scrollbar p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Date */}
           <p className="text-sm text-muted-foreground">{currentDate}</p>

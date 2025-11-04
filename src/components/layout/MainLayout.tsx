@@ -5,7 +5,7 @@ import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 
 export const MainLayout = () => {
   return (
-    <div className="flex h-screen w-full flex-col">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       <ImpersonationBanner />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
