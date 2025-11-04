@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { MoreVertical } from "lucide-react";
 import { Droppable, Draggable } from "react-beautiful-dnd";
 import { AdminColumnSettingsDialog } from "./AdminColumnSettingsDialog";
 
@@ -72,16 +72,15 @@ export const AdminFlowStage = ({
                 {stage.items.length}
               </Badge>
             </div>
-            {onAddItem && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={() => onAddItem(stage.id)}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Stage settings"
+            >
+              <MoreVertical className="h-4 w-4 text-gray-600" />
+            </Button>
           </div>
         </CardHeader>
         <Droppable droppableId={stage.id}>

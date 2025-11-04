@@ -63,23 +63,34 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
     flow_order: dbPipeline.flow_order || 0,
     stages: safeStages
       .filter(stage => stage && stage.id)
-      .map(stage => ({
-        id: stage.id,
-        name: stage.name,
-        color: stage.color,
-        is_start_step: stage.is_start_step,
-        is_end_step: stage.is_end_step,
-        contacts: safeContacts
-          .filter(pc => pc && pc.stage_id && pc.stage_id === stage.id && pc.contacts)
-          .map(pc => {
-            const contact = pc.contacts;
-            const tags = safeTags.filter(ct => ct && ct.contact_id && contact && ct.contact_id === contact.id);
-            const assignedProfile = pc.assigned_to_user_id 
-              ? safeProfiles.find(p => p && p.user_id === pc.assigned_to_user_id)
-              : undefined;
-            return convertDbContactToFrontend(contact, tags, assignedProfile, pc);
-          })
-      }))
+      .map(stage => {
+        const defaultAssigneeProfile = stage.default_assignee_user_id
+          ? safeProfiles.find(p => p && p.user_id === stage.default_assignee_user_id)
+          : undefined;
+        
+        return {
+          id: stage.id,
+          name: stage.name,
+          color: stage.color,
+          is_start_step: stage.is_start_step,
+          is_end_step: stage.is_end_step,
+          default_assignee_user_id: stage.default_assignee_user_id,
+          defaultAssignee: defaultAssigneeProfile ? {
+            name: defaultAssigneeProfile.full_name || defaultAssigneeProfile.email || "Unknown User",
+            avatar: defaultAssigneeProfile.avatar_url
+          } : undefined,
+          contacts: safeContacts
+            .filter(pc => pc && pc.stage_id && pc.stage_id === stage.id && pc.contacts)
+            .map(pc => {
+              const contact = pc.contacts;
+              const tags = safeTags.filter(ct => ct && ct.contact_id && contact && ct.contact_id === contact.id);
+              const assignedProfile = pc.assigned_to_user_id 
+                ? safeProfiles.find(p => p && p.user_id === pc.assigned_to_user_id)
+                : undefined;
+              return convertDbContactToFrontend(contact, tags, assignedProfile, pc);
+            })
+        };
+      })
   };
 };
 
@@ -258,7 +269,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       { data: allStages, error: stagesError },
       { data: allFlowContacts, error: contactsError }
     ] = await Promise.all([
-      // Single query for ALL stages across ALL pipelines
+      // Single query for ALL stages across ALL pipelines (including default assignee info)
       supabase
         .from('pipeline_stages')
         .select('*')
@@ -276,9 +287,11 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     if (stagesError) throw stagesError;
     if (contactsError) throw contactsError;
 
-    // Get all unique contact IDs and user IDs
+    // Get all unique contact IDs, user IDs, and default assignee IDs
     const allContactIds = [...new Set(allFlowContacts?.map(pc => pc.contact_id).filter(Boolean) || [])];
-    const allUserIds = [...new Set(allFlowContacts?.map(pc => pc.assigned_to_user_id).filter(Boolean) || [])];
+    const contactAssigneeIds = [...new Set(allFlowContacts?.map(pc => pc.assigned_to_user_id).filter(Boolean) || [])];
+    const stageAssigneeIds = [...new Set(allStages?.map(s => s.default_assignee_user_id).filter(Boolean) || [])];
+    const allUserIds = [...new Set([...contactAssigneeIds, ...stageAssigneeIds])];
 
     // Fetch tags and profiles in parallel
     const [
@@ -385,7 +398,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
               pipeline_id: flowId,
               name: stage.name,
               color: stage.color,
-              stage_order: i
+              stage_order: i,
+              default_assignee_user_id: stage.default_assignee_user_id || null
             })
             .select()
             .single();
@@ -399,7 +413,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
             .update({
               name: stage.name,
               color: stage.color,
-              stage_order: i
+              stage_order: i,
+              default_assignee_user_id: stage.default_assignee_user_id || null
             })
             .eq('id', stage.id)
             .eq('pipeline_id', flowId);
@@ -414,11 +429,19 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
           // Check if this stage is an end step
           const isEndStep = stage.is_end_step === true;
           
+          // Check if destination stage has default assignee
+          const destinationStage = flow.stages.find(s => s.id === stageId);
+          
           // Prepare update data
           const updateData: any = {
             stage_id: stageId,
             stage_order: j
           };
+          
+          // Auto-assign if stage has default assignee
+          if (destinationStage?.default_assignee_user_id) {
+            updateData.assigned_to_user_id = destinationStage.default_assignee_user_id;
+          }
           
           // If moving to end step, mark as completed
           if (isEndStep) {

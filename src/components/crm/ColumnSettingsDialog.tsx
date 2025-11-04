@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,13 +8,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { StageAssigneeSelector } from "./StageAssigneeSelector";
 
 interface ColumnSettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   columnName: string;
   columnColor: string;
-  onSave: (name: string, color: string) => void;
+  onSave: (name: string, color: string, defaultAssigneeId?: string | null) => void;
+  flowId?: string;
+  defaultAssigneeId?: string | null;
 }
 
 const colorOptions = [
@@ -34,12 +37,21 @@ export const ColumnSettingsDialog: React.FC<ColumnSettingsDialogProps> = ({
   columnName,
   columnColor,
   onSave,
+  flowId,
+  defaultAssigneeId,
 }) => {
   const [name, setName] = useState(columnName);
   const [color, setColor] = useState(columnColor);
+  const [defaultAssignee, setDefaultAssignee] = useState<string | null>(defaultAssigneeId || null);
+
+  useEffect(() => {
+    setName(columnName);
+    setColor(columnColor);
+    setDefaultAssignee(defaultAssigneeId || null);
+  }, [columnName, columnColor, defaultAssigneeId]);
 
   const handleSave = () => {
-    onSave(name, color);
+    onSave(name, color, defaultAssignee);
     onOpenChange(false);
   };
 
@@ -78,6 +90,20 @@ export const ColumnSettingsDialog: React.FC<ColumnSettingsDialogProps> = ({
               ))}
             </div>
           </div>
+
+          {flowId && (
+            <div className="space-y-2">
+              <Label>Auto-Assign to Team Member (Optional)</Label>
+              <StageAssigneeSelector 
+                flowId={flowId}
+                currentAssigneeId={defaultAssignee}
+                onChange={setDefaultAssignee}
+              />
+              <p className="text-xs text-muted-foreground">
+                People moved to this stage will be automatically assigned to this team member
+              </p>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-end gap-2">

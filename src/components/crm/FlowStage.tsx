@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, CheckCircle2 } from "lucide-react";
+import { MoreVertical, CheckCircle2 } from "lucide-react";
 import { FlowStage as FlowStageType, Contact } from "@/types/crm";
 import { ContactCard } from "./ContactCard";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
@@ -10,7 +10,7 @@ interface FlowStageProps {
   onAddContact?: (stageId: string) => void;
   onEditContact?: (contact: Contact) => void;
   onDeleteContact?: (contactId: string, stageId: string) => void;
-  onUpdateStage?: (stageId: string, name: string, color: string) => void;
+  onUpdateStage?: (stageId: string, name: string, color: string, defaultAssigneeId?: string | null) => void;
   pipelineId?: string;
   isSelectMode?: boolean;
   selectedContacts?: Set<string>;
@@ -49,8 +49,8 @@ export const FlowStage: React.FC<FlowStageProps> = ({
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const stageColor = stage.color || getStageColor(stage.name);
-  const handleSaveSettings = (name: string, color: string) => {
-    onUpdateStage?.(stage.id, name, color);
+  const handleSaveSettings = (name: string, color: string, defaultAssigneeId?: string | null) => {
+    onUpdateStage?.(stage.id, name, color, defaultAssigneeId);
   };
   return <>
       <div style={{
@@ -69,8 +69,12 @@ export const FlowStage: React.FC<FlowStageProps> = ({
               </Badge>
             )}
           </div>
-          <button className="p-1 rounded-full hover:bg-gray-100" onClick={() => onAddContact?.(stage.id)}>
-            <Plus className="h-4 w-4" />
+          <button 
+            className="p-1 rounded-full hover:bg-gray-100" 
+            onClick={() => setShowSettings(true)}
+            aria-label="Stage settings"
+          >
+            <MoreVertical className="h-4 w-4 text-gray-600" />
           </button>
         </div>
       
@@ -86,6 +90,14 @@ export const FlowStage: React.FC<FlowStageProps> = ({
         </Droppable>
       </div>
 
-      <ColumnSettingsDialog open={showSettings} onOpenChange={setShowSettings} columnName={stage.name} columnColor={stageColor} onSave={handleSaveSettings} />
+      <ColumnSettingsDialog 
+        open={showSettings} 
+        onOpenChange={setShowSettings} 
+        columnName={stage.name} 
+        columnColor={stageColor}
+        flowId={pipelineId}
+        defaultAssigneeId={stage.default_assignee_user_id}
+        onSave={handleSaveSettings}
+      />
     </>;
 };
