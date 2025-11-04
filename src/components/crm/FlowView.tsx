@@ -335,6 +335,18 @@ export const FlowView: React.FC<FlowViewProps> = ({
         ...updatedContact,
         status: determineStatus(destination.droppableId)
       };
+      
+      // Auto-assign if destination stage has a default assignee
+      if (destStage.default_assignee_user_id) {
+        const assignee = teamMembers.find(m => m.id === destStage.default_assignee_user_id);
+        if (assignee) {
+          updatedContact.assignedTo = {
+            name: assignee.name,
+            avatar: assignee.avatar
+          };
+        }
+      }
+      
       toast.success(`Contact moved to ${destStage.name}`);
       
       // Trigger confetti if moved to completion stage
