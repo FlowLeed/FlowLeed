@@ -4,6 +4,7 @@ import { FlowStage as FlowStageType, Contact } from "@/types/crm";
 import { ContactCard } from "./ContactCard";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Droppable, Draggable } from "react-beautiful-dnd";
 interface FlowStageProps {
   stage: FlowStageType;
@@ -57,20 +58,28 @@ export const FlowStage: React.FC<FlowStageProps> = ({
       borderColor: stageColor
     }} className="flow-column w-72 flex-shrink-0 bg-transparent p-3 border shadow-sm rounded-xl flex flex-col">
         <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-2">
-            <button className="w-3 h-3 rounded-full cursor-pointer hover:scale-110 transition-transform" style={{
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <button className="w-3 h-3 rounded-full cursor-pointer hover:scale-110 transition-transform flex-shrink-0" style={{
             backgroundColor: stageColor
           }} onClick={() => setShowSettings(true)} />
-            <h3 className="text-gray-700 font-normal">{stage.name}</h3>
+            <h3 className="text-gray-700 font-normal truncate">{stage.name}</h3>
             {stage.is_end_step && (
-              <Badge variant="secondary" className="text-xs gap-1">
+              <Badge variant="secondary" className="text-xs gap-1 flex-shrink-0">
                 <CheckCircle2 className="h-3 w-3" />
                 Completed
               </Badge>
             )}
+            {stage.defaultAssignee && (
+              <Avatar className="h-5 w-5 flex-shrink-0 ml-auto" title={`Auto-assigned to: ${stage.defaultAssignee.name}`}>
+                <AvatarImage src={stage.defaultAssignee.avatar} alt={stage.defaultAssignee.name} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  {stage.defaultAssignee.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            )}
           </div>
           <button 
-            className="p-1 rounded-full hover:bg-gray-100" 
+            className="p-1 rounded-full hover:bg-gray-100 flex-shrink-0" 
             onClick={() => setShowSettings(true)}
             aria-label="Stage settings"
           >
