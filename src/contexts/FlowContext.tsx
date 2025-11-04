@@ -317,13 +317,23 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
     const onSync = () => refresh('Sync completed');
     const onAssignment = () => refresh('Assignment updated');
+    const onFlowsCreated = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      console.log('FlowContext: Received flows-created event', customEvent.detail);
+      toast.success("Welcome! We've set up 7 default flows to get you started 🎉", {
+        duration: 5000,
+      });
+      refresh('Default flows created');
+    };
 
     window.addEventListener('pco-sync-complete', onSync);
     window.addEventListener('flow-assignment-updated', onAssignment);
+    window.addEventListener('flows-created', onFlowsCreated);
 
     return () => {
       window.removeEventListener('pco-sync-complete', onSync);
       window.removeEventListener('flow-assignment-updated', onAssignment);
+      window.removeEventListener('flows-created', onFlowsCreated);
     };
   }, [user, profileLoading]);
 

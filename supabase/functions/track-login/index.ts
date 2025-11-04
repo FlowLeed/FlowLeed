@@ -89,28 +89,54 @@ Deno.serve(async (req) => {
     console.log('Login tracked successfully for user:', user.id);
 
     // Safety net: Check if organization has any pipelines, create defaults if empty
-    const { data: pipelines, error: pipelinesError } = await supabaseAdmin
+    const { data: pipelinesBefore, error: pipelinesError } = await supabaseAdmin
       .from('pipelines')
       .select('id')
-      .eq('organization_id', orgMember.organization_id)
-      .limit(1);
+      .eq('organization_id', orgMember.organization_id);
 
-    if (!pipelinesError && (!pipelines || pipelines.length === 0)) {
-      console.log('Organization has no flows, creating defaults:', orgMember.organization_id);
+    const pipelineCountBefore = pipelinesBefore?.length || 0;
+    console.log(`Organization ${orgMember.organization_id} has ${pipelineCountBefore} pipelines before safety net`);
+
+    let createdDefaults = false;
+    let pipelineCountAfter = pipelineCountBefore;
+
+    if (!pipelinesError && pipelineCountBefore === 0) {
+      console.log('Organization has no flows, creating defaults via RPC:', orgMember.organization_id);
       
       const { error: createError } = await supabaseAdmin.rpc('create_default_pipelines', {
         org_id: orgMember.organization_id
       });
       
       if (createError) {
-        console.error('Error creating default pipelines:', createError);
+        console.error('RPC Error creating default pipelines:', createError);
       } else {
-        console.log('Successfully created default flows for organization:', orgMember.organization_id);
+        console.log('RPC call completed, verifying pipeline creation...');
+        
+        // Verify pipelines were actually created
+        const { data: pipelinesAfter } = await supabaseAdmin
+          .from('pipelines')
+          .select('id')
+          .eq('organization_id', orgMember.organization_id);
+        
+        pipelineCountAfter = pipelinesAfter?.length || 0;
+        console.log(`Organization ${orgMember.organization_id} now has ${pipelineCountAfter} pipelines`);
+        
+        if (pipelineCountAfter > 0) {
+          createdDefaults = true;
+          console.log('✅ Successfully verified default flows creation');
+        } else {
+          console.error('❌ WARNING: RPC succeeded but no pipelines found! This should not happen.');
+        }
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ 
+        success: true,
+        pipelinesBefore: pipelineCountBefore,
+        pipelinesAfter: pipelineCountAfter,
+        createdDefaults
+      }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

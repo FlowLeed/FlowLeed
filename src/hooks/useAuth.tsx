@@ -51,6 +51,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 headers: {
                   Authorization: `Bearer ${session.access_token}`
                 }
+              }).then(({ data }) => {
+                console.log('Track login response:', data);
+                // If default flows were just created, notify the UI to refresh
+                if (data?.createdDefaults) {
+                  console.log('🎉 Default flows were created, dispatching refresh event');
+                  window.dispatchEvent(new CustomEvent('flows-created', { detail: data }));
+                }
               }).catch(err => {
                 console.error('Failed to track login:', err);
               });
