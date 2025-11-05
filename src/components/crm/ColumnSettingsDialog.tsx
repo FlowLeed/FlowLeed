@@ -100,7 +100,7 @@ export const ColumnSettingsDialog: React.FC<ColumnSettingsDialogProps> = ({
                 onChange={setDefaultAssignee}
               />
               <p className="text-xs text-muted-foreground">
-                People moved to this stage will be automatically assigned to this team member
+                When someone moves to this step, they'll automatically be assigned to the selected team member.
               </p>
             </div>
           )}
