@@ -1,5 +1,6 @@
 import { Block } from "@/types/resources";
 import { cn } from "@/lib/utils";
+import { useRef, useLayoutEffect } from "react";
 
 interface HeadingBlockProps {
   block: Block;
@@ -12,6 +13,14 @@ interface HeadingBlockProps {
 
 export const HeadingBlock = ({ block, isEditing, onChange, onFocus, autoFocus, onBackspaceAtStart }: HeadingBlockProps) => {
   const level = block.level || 1;
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [block.content, isEditing]);
   
   const headingClasses = cn(
     "font-bold leading-tight whitespace-normal",
@@ -23,6 +32,7 @@ export const HeadingBlock = ({ block, isEditing, onChange, onFocus, autoFocus, o
   if (isEditing) {
     return (
       <textarea
+        ref={textareaRef}
         value={block.content}
         onChange={(e) => onChange?.(e.target.value)}
         onFocus={onFocus}

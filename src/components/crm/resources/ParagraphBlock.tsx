@@ -1,5 +1,5 @@
 import { Block } from "@/types/resources";
-import { useRef, useEffect } from "react";
+import { useRef, useLayoutEffect } from "react";
 
 interface ParagraphBlockProps {
   block: Block;
@@ -13,11 +13,18 @@ interface ParagraphBlockProps {
 export const ParagraphBlock = ({ block, isEditing, onChange, onFocus, autoFocus, onBackspaceAtStart }: ParagraphBlockProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (autoFocus && textareaRef.current) {
       textareaRef.current.focus();
     }
   }, [autoFocus]);
+
+  useLayoutEffect(() => {
+    if (textareaRef.current && isEditing) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [block.content, isEditing]);
   if (isEditing) {
     return (
       <textarea
