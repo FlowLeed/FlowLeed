@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import flowleedLogo from '@/assets/flowleed_logo.png';
+import flowleedLogo from '@/assets/flowleed_logo_2-3.png';
 
 export default function SuperAdminAuthPage() {
   const [email, setEmail] = useState('');
