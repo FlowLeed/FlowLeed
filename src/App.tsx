@@ -14,6 +14,7 @@ import { ImpersonationEscapeHandler } from "./components/ImpersonationEscapeHand
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import FlowPage from "./pages/FlowPage";
+import FlowDocumentationPage from "./pages/FlowDocumentationPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import ProfilePage from "./pages/ProfilePage";
 import TeamPage from "./pages/TeamPage";
@@ -58,6 +59,7 @@ const App = () => (
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/flows/:flowId" element={<FlowPage />} />
+              <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
               <Route path="/profile" element={<ProfilePage />} />

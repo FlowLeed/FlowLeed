@@ -42,6 +42,14 @@ export const ResourcesEditor = ({ blocks, onChange, isNested = false }: Resource
   }, [blocks, onChange]);
 
   const updateBlock = useCallback((index: number, updates: Partial<Block>) => {
+    // Only update if content actually changed
+    const currentBlock = blocks[index];
+    const hasActualChange = Object.keys(updates).some(
+      key => updates[key as keyof Block] !== currentBlock[key as keyof Block]
+    );
+    
+    if (!hasActualChange) return;
+    
     const newBlocks = [...blocks];
     newBlocks[index] = { ...newBlocks[index], ...updates };
     

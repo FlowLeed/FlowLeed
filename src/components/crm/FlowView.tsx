@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
 import { FlowTableView } from "./FlowTableView";
@@ -6,7 +7,6 @@ import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
 import { FlowCompletionConfetti } from "./FlowCompletionConfetti";
-import { FlowResourcesDrawer } from "./FlowResourcesDrawer";
 import { Header } from "../layout/Header";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
@@ -32,9 +32,9 @@ export const FlowView: React.FC<FlowViewProps> = ({
   flow, 
   onFlowChange 
 }) => {
+  const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isDocsOpen, setIsDocsOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -490,7 +490,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
           setIsFormOpen(true);
         }}
         onSettingsClick={() => setIsSettingsOpen(true)}
-        onDocsClick={() => setIsDocsOpen(true)}
+        onDocsClick={() => navigate(`/flows/${flow.id}/documentation`)}
         teamMembers={teamMembers}
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}
@@ -585,14 +585,6 @@ export const FlowView: React.FC<FlowViewProps> = ({
       )}
       {showConfetti && (
         <FlowCompletionConfetti onComplete={() => setShowConfetti(false)} />
-      )}
-      {organization && (
-        <FlowResourcesDrawer
-          open={isDocsOpen}
-          onOpenChange={setIsDocsOpen}
-          flow={flow}
-          organizationId={organization.id}
-        />
       )}
     </div>
   );
