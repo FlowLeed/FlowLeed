@@ -69,15 +69,17 @@ serve(async (req) => {
       );
     }
 
-    // Mark token as used
-    const { error: updateError } = await supabase
-      .from(tableName)
-      .update({ used_at: new Date().toISOString() })
-      .eq('id', tokenData.id);
+    // Mark token as used (except for password_reset which needs to be verified again)
+    if (type !== 'password_reset') {
+      const { error: updateError } = await supabase
+        .from(tableName)
+        .update({ used_at: new Date().toISOString() })
+        .eq('id', tokenData.id);
 
-    if (updateError) {
-      console.error('Error updating token:', updateError);
-      throw updateError;
+      if (updateError) {
+        console.error('Error updating token:', updateError);
+        throw updateError;
+      }
     }
 
     // If this is a signup verification, confirm the user's email
@@ -110,14 +112,16 @@ serve(async (req) => {
       console.log(`Email updated successfully to ${tokenData.new_email}`);
     }
 
-    // If this is a password reset verification, return the email for the frontend
+    // If this is a password reset verification, return token for re-verification
     if (type === 'password_reset') {
       console.log('Password reset token verified for email:', tokenData.email);
+      // Return the token so the frontend can send it again for the actual reset
       return new Response(
         JSON.stringify({ 
           success: true, 
           email: tokenData.email,
-          type: type
+          type: type,
+          token: token // Return original token for re-verification
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

@@ -1,5 +1,8 @@
 project_id = "lghamvpolwebtjwaxned"
 
+[functions.reset-password]
+verify_jwt = false
+
 [api]
 enabled = true
 port = 54321

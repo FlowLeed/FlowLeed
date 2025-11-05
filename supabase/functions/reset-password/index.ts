@@ -12,11 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password } = await req.json();
+    const { token, password } = await req.json();
 
-    if (!email || !password) {
+    if (!token || !password) {
       return new Response(
-        JSON.stringify({ error: 'Email and password are required' }),
+        JSON.stringify({ error: 'Token and password are required' }),
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -34,14 +34,52 @@ serve(async (req) => {
       );
     }
 
-    console.log('Processing password reset for email:', email);
+    console.log('Processing password reset with token verification');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const tokenSalt = Deno.env.get('TOKEN_SALT')!;
+
+    if (!tokenSalt) {
+      console.error('TOKEN_SALT environment variable is not set');
+      throw new Error('Server configuration error');
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user by email using listUsers
+    // Hash the token to look it up in the database
+    const encoder = new TextEncoder();
+    const data = encoder.encode(token + tokenSalt);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    console.log('Looking up token in database');
+
+    // Verify token exists, is not used, not expired, and is for password reset
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('auth_verification_tokens')
+      .select('*')
+      .eq('token_hash', tokenHash)
+      .eq('token_type', 'password_reset')
+      .is('used_at', null)
+      .gt('expires_at', new Date().toISOString())
+      .single();
+
+    if (tokenError || !tokenData) {
+      console.error('Invalid or expired token:', tokenError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired reset token' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    console.log('Token verified, updating password for email:', tokenData.email);
+
+    // Get user by email
     const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
     
     if (listError) {
@@ -49,10 +87,10 @@ serve(async (req) => {
       throw listError;
     }
 
-    const user = users?.find(u => u.email === email);
+    const user = users?.find(u => u.email === tokenData.email);
 
     if (!user) {
-      console.error('User not found for email:', email);
+      console.error('User not found for email:', tokenData.email);
       return new Response(
         JSON.stringify({ error: 'User not found' }),
         { 
@@ -71,6 +109,17 @@ serve(async (req) => {
     if (updateError) {
       console.error('Error updating password:', updateError);
       throw updateError;
+    }
+
+    // Mark token as used
+    const { error: markUsedError } = await supabase
+      .from('auth_verification_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('id', tokenData.id);
+
+    if (markUsedError) {
+      console.error('Error marking token as used:', markUsedError);
+      // Don't fail the request, password was already updated
     }
 
     console.log('Password updated successfully for user:', user.id);

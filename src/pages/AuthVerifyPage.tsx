@@ -19,6 +19,7 @@ export default function AuthVerifyPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
 
   const token = searchParams.get('token');
   const type = searchParams.get('type');
@@ -46,6 +47,7 @@ export default function AuthVerifyPage() {
 
       if (type === 'password_reset') {
         setEmail(data.email);
+        setResetToken(data.token); // Store token for password reset
         setState('password_reset');
       } else {
         setState('success');
@@ -94,9 +96,9 @@ export default function AuthVerifyPage() {
     setLoading(true);
 
     try {
-      // Call the reset-password edge function
+      // Call the reset-password edge function with token
       const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: { email, password: newPassword },
+        body: { token: resetToken, password: newPassword },
       });
 
       if (error) {
