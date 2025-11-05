@@ -24,46 +24,53 @@ export const BlockControls = ({
   dragHandleProps,
 }: BlockControlsProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mouseDownPos, setMouseDownPos] = useState<{x: number, y: number} | null>(null);
+  const [clickStart, setClickStart] = useState<{x: number, y: number, time: number} | null>(null);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setMouseDownPos({ x: e.clientX, y: e.clientY });
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setClickStart({ x: e.clientX, y: e.clientY, time: Date.now() });
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (!mouseDownPos) return;
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!clickStart) return;
     
-    const deltaX = Math.abs(e.clientX - mouseDownPos.x);
-    const deltaY = Math.abs(e.clientY - mouseDownPos.y);
+    const deltaX = Math.abs(e.clientX - clickStart.x);
+    const deltaY = Math.abs(e.clientY - clickStart.y);
     const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+    const duration = Date.now() - clickStart.time;
     
-    // If moved less than 5px, treat as click and open menu
-    if (distance < 5) {
+    // Only open menu if it's a quick click with minimal movement
+    if (duration <= 200 && distance < 5) {
+      e.preventDefault();
+      e.stopPropagation();
       setMenuOpen(true);
     }
     
-    setMouseDownPos(null);
+    setClickStart(null);
+  };
+
+  const handlePointerCancel = () => {
+    setClickStart(null);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuOpen(true);
   };
 
   return (
     <div
       className={cn(
-        "absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity -ml-10",
+        "absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity -ml-10 relative",
         (isDragging || menuOpen) && "opacity-100"
       )}
     >
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
-          <div
-            {...dragHandleProps}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
-          >
-            <Grip className="h-4 w-4 text-muted-foreground" />
-          </div>
+          {/* Invisible anchor for positioning - does not receive pointer events */}
+          <span className="absolute inset-0 pointer-events-none" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuContent align="start" side="right" sideOffset={8} className="w-48 z-50 bg-popover">
           {onDuplicate && (
             <>
               <DropdownMenuItem onClick={onDuplicate}>
@@ -82,6 +89,19 @@ export const BlockControls = ({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Actual interactive handle */}
+      <div
+        {...dragHandleProps}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onPointerLeave={handlePointerCancel}
+        onContextMenu={handleContextMenu}
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
+      >
+        <Grip className="h-4 w-4 text-muted-foreground" />
+      </div>
     </div>
   );
 };
