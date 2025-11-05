@@ -1,4 +1,4 @@
-import { Grip, Trash2, Copy, MoreVertical } from "lucide-react";
+import { Grip, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,26 +28,31 @@ export const BlockControls = ({
   return (
     <div
       className={cn(
-        "absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity -ml-14 flex items-center gap-0.5",
-        (isDragging || menuOpen) && "opacity-100"
+        "absolute left-0 top-1/2 -translate-y-1/2 transition-opacity -ml-6 sm:-ml-8 z-20",
+        (menuOpen || isDragging) ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       )}
     >
-      {/* Drag Handle */}
-      <div
-        {...dragHandleProps}
-        className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
-      >
-        <Grip className="h-4 w-4 text-muted-foreground" />
-      </div>
-      
-      {/* Menu Trigger */}
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
-          <button className="p-1 hover:bg-accent rounded">
-            <MoreVertical className="h-4 w-4 text-muted-foreground" />
-          </button>
+          <div
+            {...dragHandleProps}
+            onClick={(e) => {
+              // Only open menu on click, not during drag
+              if (!isDragging) {
+                e.stopPropagation();
+              }
+            }}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
+          >
+            <Grip className="h-4 w-4 text-muted-foreground" />
+          </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48">
+        <DropdownMenuContent 
+          align="start" 
+          side="right"
+          sideOffset={8}
+          className="w-48 bg-popover z-50"
+        >
           {onDuplicate && (
             <>
               <DropdownMenuItem onClick={onDuplicate}>
