@@ -47,7 +47,7 @@ export const BlockControls = ({
             <Grip className="h-4 w-4 text-muted-foreground" />
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 bg-popover z-50">
+        <DropdownMenuContent align="start" className="w-48">
           {onDuplicate && (
             <>
               <DropdownMenuItem onClick={onDuplicate}>
