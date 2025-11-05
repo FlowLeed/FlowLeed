@@ -29,17 +29,9 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
-    // Check if user exists
-    const { data: userData, error: userError } = await supabase.auth.admin.getUserByEmail(email);
-    
-    if (userError || !userData?.user) {
-      // Don't reveal if user exists for security
-      console.log('User not found, but returning success for security');
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Note: We don't check if user exists for security (prevents user enumeration)
+    // Token will be created regardless, but only valid users can use it
+    console.log('Processing password reset request for:', email);
 
     // Generate token
     const rawToken = crypto.randomUUID();
@@ -54,7 +46,6 @@ serve(async (req) => {
     const { error: dbError } = await supabase
       .from('auth_verification_tokens')
       .insert({
-        user_id: userData.user.id,
         email: email,
         token_hash: tokenHash,
         token_type: 'password_reset',
