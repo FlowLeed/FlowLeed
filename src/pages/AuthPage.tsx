@@ -71,7 +71,15 @@ const AuthPage = () => {
     const { error } = await signUp(email, password, fullName, organizationName);
     
     if (error) {
-      setError(error.message);
+      // Check if it's a duplicate organization name error
+      const errorMessage = error.message?.toLowerCase() || '';
+      if (errorMessage.includes('duplicate') || 
+          errorMessage.includes('organizations_slug_key') ||
+          errorMessage.includes('unique constraint')) {
+        setError('An organization with this name already exists. Please choose a different organization name.');
+      } else {
+        setError(error.message);
+      }
     } else {
       toast({
         title: "Account created!",
