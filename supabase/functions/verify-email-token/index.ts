@@ -30,7 +30,7 @@ serve(async (req) => {
     const tokenHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
     // Determine which table to use based on verification type
-    const tableName = type === 'signup' ? 'auth_verification_tokens' : 'email_verification_tokens';
+    const tableName = (type === 'signup' || type === 'password_reset') ? 'auth_verification_tokens' : 'email_verification_tokens';
     
     // Find the token in database
     const query = supabase
@@ -39,9 +39,9 @@ serve(async (req) => {
       .eq('token_hash', tokenHash)
       .is('used_at', null);
     
-    // For signup, also filter by token_type
-    if (type === 'signup') {
-      query.eq('token_type', 'signup');
+    // For signup or password_reset, also filter by token_type
+    if (type === 'signup' || type === 'password_reset') {
+      query.eq('token_type', type);
     }
     
     const { data: tokenData, error: tokenError } = await query.single();
@@ -108,6 +108,19 @@ serve(async (req) => {
       }
 
       console.log(`Email updated successfully to ${tokenData.new_email}`);
+    }
+
+    // If this is a password reset verification, return the email for the frontend
+    if (type === 'password_reset') {
+      console.log('Password reset token verified for email:', tokenData.email);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          email: tokenData.email,
+          type: type
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Token verified successfully');

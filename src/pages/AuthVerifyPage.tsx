@@ -94,19 +94,17 @@ export default function AuthVerifyPage() {
     setLoading(true);
 
     try {
-      // Sign in the user first
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: newPassword, // This will fail but we need to establish a session
+      // Call the reset-password edge function
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { email, password: newPassword },
       });
 
-      // Update password via admin (service role would be better but we'll use user session)
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
+      if (error) {
+        throw error;
+      }
 
-      if (updateError) {
-        throw updateError;
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       toast({
