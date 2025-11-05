@@ -22,26 +22,31 @@ export const HeadingBlock = ({ block, isEditing, onChange, onFocus, autoFocus, o
 
   if (isEditing) {
     return (
-      <input
-        type="text"
+      <textarea
         value={block.content}
         onChange={(e) => onChange?.(e.target.value)}
         onFocus={onFocus}
         autoFocus={autoFocus}
         onKeyDown={(e) => {
           if (e.key === 'Backspace') {
-            const target = e.target as HTMLInputElement;
+            const target = e.target as HTMLTextAreaElement;
             if (target.selectionStart === 0 && target.selectionEnd === 0) {
               e.preventDefault();
               onBackspaceAtStart?.();
             }
           }
         }}
+        rows={1}
         className={cn(
           headingClasses,
-          "w-full bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-muted-foreground/50"
+          "w-full bg-transparent border-none outline-none focus:ring-0 p-0 placeholder:text-muted-foreground/50 resize-none overflow-hidden"
         )}
         placeholder={`Heading ${level}`}
+        onInput={(e) => {
+          const target = e.target as HTMLTextAreaElement;
+          target.style.height = 'auto';
+          target.style.height = target.scrollHeight + 'px';
+        }}
       />
     );
   }
@@ -49,7 +54,7 @@ export const HeadingBlock = ({ block, isEditing, onChange, onFocus, autoFocus, o
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
   
   return (
-    <Tag className={headingClasses}>
+    <Tag className={cn(headingClasses, "break-words")}>
       {block.content || `Heading ${level}`}
     </Tag>
   );
