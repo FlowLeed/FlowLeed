@@ -525,6 +525,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
             flow={filteredFlow}
             onEditContact={handleEditContact}
             onDeleteContact={handleDeleteContact}
+            onUpdateStage={handleUpdateStage}
             onFlowChange={onFlowChange}
             isSelectMode={isSelectMode}
             selectedContacts={selectedContacts}

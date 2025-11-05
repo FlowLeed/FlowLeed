@@ -20,14 +20,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus } from "lucide-react";
+import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus, MoreVertical, RefreshCw, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
 
 interface FlowTableViewProps {
   flow: Flow;
   onEditContact: (contact: Contact) => void;
   onDeleteContact: (contactId: string, stageId: string) => void;
+  onUpdateStage?: (stageId: string, name: string, color: string, defaultAssigneeId?: string | null) => void;
   onFlowChange?: (flow: Flow) => void;
   isSelectMode?: boolean;
   selectedContacts?: Set<string>;
@@ -47,6 +49,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
   flow,
   onEditContact,
   onDeleteContact,
+  onUpdateStage,
   onFlowChange,
   isSelectMode = false,
   selectedContacts = new Set(),
@@ -58,6 +61,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
   const [expandedStages, setExpandedStages] = useState<Set<string>>(
     new Set(flow.stages.map(s => s.id))
   );
+  const [settingsStageId, setSettingsStageId] = useState<string | null>(null);
 
   // Group contacts by stage
   const contactsByStage = useMemo(() => {
@@ -126,6 +130,13 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
     }
   };
 
+  const handleSaveSettings = (name: string, color: string, defaultAssigneeId?: string | null) => {
+    if (settingsStageId) {
+      onUpdateStage?.(settingsStageId, name, color, defaultAssigneeId);
+      setSettingsStageId(null);
+    }
+  };
+
   const handleStageChange = async (contact: ContactWithStage, newStageId: string) => {
     if (newStageId === contact.stageId) return;
 
@@ -190,24 +201,59 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
         <div key={stage.id} className="space-y-0 border rounded-lg overflow-hidden">
           {/* Stage Header */}
           <div 
-            className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 border-l-4 bg-background"
+            className="flex items-center gap-3 px-4 py-3 border-l-4 bg-background"
             style={{ borderLeftColor: stage.color || '#3b82f6' }}
-            onClick={() => toggleStage(stage.id)}
           >
-            <ChevronDown 
-              className={`h-4 w-4 transition-transform ${
-                expandedStages.has(stage.id) ? '' : '-rotate-90'
-              }`}
-            />
-            <span 
-              className="font-semibold text-base"
-              style={{ color: stage.color || '#3b82f6' }}
+            <button
+              onClick={() => toggleStage(stage.id)}
+              className="flex items-center gap-2 flex-1 cursor-pointer hover:opacity-80"
             >
-              {stage.name}
-            </span>
-            <Badge variant="secondary" className="text-xs">
-              {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
-            </Badge>
+              <ChevronDown 
+                className={`h-4 w-4 transition-transform ${
+                  expandedStages.has(stage.id) ? '' : '-rotate-90'
+                }`}
+              />
+              <span 
+                className="font-semibold text-base"
+                style={{ color: stage.color || '#3b82f6' }}
+              >
+                {stage.name}
+              </span>
+              <Badge variant="secondary" className="text-xs">
+                {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
+              </Badge>
+              {stage.is_end_step && (
+                <Badge variant="secondary" className="text-xs gap-1">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Completed
+                </Badge>
+              )}
+            </button>
+            
+            {stage.defaultAssignee && (
+              <div className="relative flex-shrink-0" title={`Auto-assigned to: ${stage.defaultAssignee.name}`}>
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={stage.defaultAssignee.avatar} alt={stage.defaultAssignee.name} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    {stage.defaultAssignee.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-red-500 flex items-center justify-center">
+                  <RefreshCw className="h-2 w-2 text-white" />
+                </span>
+              </div>
+            )}
+            
+            <button 
+              className="p-1 rounded-full hover:bg-gray-100 flex-shrink-0" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setSettingsStageId(stage.id);
+              }}
+              aria-label="Stage settings"
+            >
+              <MoreVertical className="h-4 w-4 text-gray-600" />
+            </button>
           </div>
 
           {/* Table for this stage */}
@@ -364,6 +410,19 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
           )}
         </div>
       ))}
+      
+      {/* Settings Dialog */}
+      {settingsStageId && (
+        <ColumnSettingsDialog 
+          open={true}
+          onOpenChange={(open) => !open && setSettingsStageId(null)}
+          columnName={flow.stages.find(s => s.id === settingsStageId)?.name || ''}
+          columnColor={flow.stages.find(s => s.id === settingsStageId)?.color || '#3b82f6'}
+          flowId={flow.id}
+          defaultAssigneeId={flow.stages.find(s => s.id === settingsStageId)?.default_assignee_user_id}
+          onSave={handleSaveSettings}
+        />
+      )}
     </div>
   );
 };
