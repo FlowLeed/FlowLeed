@@ -45,7 +45,7 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile
     name: assignedProfile.full_name || assignedProfile.email || "Unknown User",
     avatar: assignedProfile.avatar_url
   } : undefined,
-  stageEnteredAt: pipelineContactData?.updated_at
+  stageEnteredAt: pipelineContactData?.stage_entered_at
 });
 
 // Convert database pipeline format to frontend format (keeping database names for data compatibility)
@@ -441,6 +441,18 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
           // Auto-assign if stage has default assignee
           if (destinationStage?.default_assignee_user_id) {
             updateData.assigned_to_user_id = destinationStage.default_assignee_user_id;
+          }
+          
+          // Update stage_entered_at if stage changed
+          const previousContact = previousFlow?.stages
+            .flatMap(s => s.contacts)
+            .find(c => c.id === contact.id);
+          const previousStageId = previousFlow?.stages.find(s => 
+            s.contacts.some(c => c.id === contact.id)
+          )?.id;
+          
+          if (previousStageId && previousStageId !== stageId) {
+            updateData.stage_entered_at = new Date().toISOString();
           }
           
           // If moving to end step, mark as completed

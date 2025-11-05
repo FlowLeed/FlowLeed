@@ -340,7 +340,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
       // Status change when moving between columns
       updatedContact = {
         ...updatedContact,
-        status: determineStatus(destination.droppableId)
+        status: determineStatus(destination.droppableId),
+        stageEnteredAt: new Date().toISOString() // Set stage entry time on drag-drop
       };
       
       // Auto-assign if destination stage has a default assignee
