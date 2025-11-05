@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MoreVertical, CheckCircle2 } from "lucide-react";
+import { MoreVertical, CheckCircle2, RefreshCw } from "lucide-react";
 import { FlowStage as FlowStageType, Contact } from "@/types/crm";
 import { ContactCard } from "./ContactCard";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
@@ -70,12 +70,17 @@ export const FlowStage: React.FC<FlowStageProps> = ({
               </Badge>
             )}
             {stage.defaultAssignee && (
-              <Avatar className="h-5 w-5 flex-shrink-0 ml-auto" title={`Auto-assigned to: ${stage.defaultAssignee.name}`}>
-                <AvatarImage src={stage.defaultAssignee.avatar} alt={stage.defaultAssignee.name} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                  {stage.defaultAssignee.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative flex-shrink-0 ml-auto" title={`Auto-assigned to: ${stage.defaultAssignee.name}`}>
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={stage.defaultAssignee.avatar} alt={stage.defaultAssignee.name} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    {stage.defaultAssignee.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-red-500 flex items-center justify-center">
+                  <RefreshCw className="h-2 w-2 text-white" />
+                </span>
+              </div>
             )}
           </div>
           <button 
