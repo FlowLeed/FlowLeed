@@ -25,10 +25,12 @@ export const useKeyboardShortcuts = ({
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const mod = isMac ? e.metaKey : e.ctrlKey;
 
-      // Enter: Create new paragraph below
+      // Enter: Create new block below (same type for checklist, paragraph otherwise)
       if (e.key === 'Enter' && !mod && focusedBlockIndex !== null) {
         e.preventDefault();
-        onAddBlock('paragraph', focusedBlockIndex + 1);
+        const currentBlock = blocks[focusedBlockIndex];
+        const blockType = currentBlock.type === 'checklist' ? 'checklist' : 'paragraph';
+        onAddBlock(blockType, focusedBlockIndex + 1);
         setTimeout(() => onFocusBlock(focusedBlockIndex + 1), 0);
       }
 
