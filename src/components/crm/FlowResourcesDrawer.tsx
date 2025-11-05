@@ -9,6 +9,8 @@ import { Block } from "@/types/resources";
 import { Flow } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
 import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FlowResourcesDrawerProps {
   open: boolean;
@@ -25,16 +27,35 @@ export const FlowResourcesDrawer = ({
 }: FlowResourcesDrawerProps) => {
   const { user } = useAuth();
   const { resource, isLoading, createResource, updateResource, isCreating, isUpdating } = useFlowResources(flow.id);
-  const { teamMembers } = useFlowTeamMembers(flow.id);
+  const { teamMembers, loading: teamMembersLoading } = useFlowTeamMembers(flow.id);
   const [isEditing, setIsEditing] = useState(false);
   const [editedBlocks, setEditedBlocks] = useState<Block[]>([]);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const savedIndicatorTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Check if user can edit
-  const userRole = teamMembers.find(m => m.user_id === user?.id)?.role;
-  const canEdit = userRole === 'lead' || userRole === 'manager';
+  // Fetch user's organization role
+  const { data: orgRole, isLoading: orgRoleLoading } = useQuery({
+    queryKey: ['org-role', user?.id, organizationId],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('organization_members')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('organization_id', organizationId)
+        .single();
+      return data?.role || null;
+    },
+    enabled: !!user?.id && !!organizationId,
+  });
+
+  // Check if user can edit (organization-level OR flow-level permissions)
+  const isOrgAdmin = orgRole === 'owner' || orgRole === 'admin';
+  const userFlowRole = teamMembers.find(m => m.user_id === user?.id)?.role;
+  const isFlowManager = userFlowRole === 'lead' || userFlowRole === 'manager';
+  const canEdit = isOrgAdmin || isFlowManager;
+  const permissionsLoading = teamMembersLoading || orgRoleLoading;
 
   useEffect(() => {
     if (resource) {
@@ -150,7 +171,7 @@ export const FlowResourcesDrawer = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditing(true)}
-                disabled={isLoading}
+                disabled={isLoading || permissionsLoading}
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
