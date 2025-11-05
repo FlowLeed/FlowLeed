@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import flowleedLogo from '@/assets/flowleed_logo_2.png';
+import flowleedLogo from '@/assets/flowleed_logo_2-3.png';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
