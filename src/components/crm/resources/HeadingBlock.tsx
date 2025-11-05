@@ -14,7 +14,7 @@ export const HeadingBlock = ({ block, isEditing, onChange, onFocus, autoFocus, o
   const level = block.level || 1;
   
   const headingClasses = cn(
-    "font-bold leading-tight",
+    "font-bold leading-tight whitespace-normal",
     level === 1 && "text-4xl mt-4 mb-2",
     level === 2 && "text-3xl mt-3 mb-2",
     level === 3 && "text-2xl mt-2 mb-1"
