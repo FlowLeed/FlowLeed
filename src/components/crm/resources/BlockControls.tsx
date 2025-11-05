@@ -28,8 +28,8 @@ export const BlockControls = ({
   return (
     <div
       className={cn(
-        "absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity -ml-10",
-        isDragging && "opacity-100"
+        "absolute left-0 top-1/2 -translate-y-1/2 transition-opacity -ml-6 sm:-ml-8 z-20",
+        (menuOpen || isDragging) ? "opacity-100" : "opacity-0 group-hover:opacity-100"
       )}
     >
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
