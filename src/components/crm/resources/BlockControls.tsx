@@ -24,25 +24,33 @@ export const BlockControls = ({
   dragHandleProps,
 }: BlockControlsProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [mouseDownPos, setMouseDownPos] = useState<{x: number, y: number} | null>(null);
+  const [clickStart, setClickStart] = useState<{x: number, y: number, time: number} | null>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    setMouseDownPos({ x: e.clientX, y: e.clientY });
+    setClickStart({ x: e.clientX, y: e.clientY, time: Date.now() });
   };
 
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (!mouseDownPos) return;
+  const handleClick = (e: React.MouseEvent) => {
+    if (!clickStart) return;
     
-    const deltaX = Math.abs(e.clientX - mouseDownPos.x);
-    const deltaY = Math.abs(e.clientY - mouseDownPos.y);
+    const deltaX = Math.abs(e.clientX - clickStart.x);
+    const deltaY = Math.abs(e.clientY - clickStart.y);
     const distance = Math.sqrt(deltaX ** 2 + deltaY ** 2);
+    const duration = Date.now() - clickStart.time;
     
-    // If moved less than 5px, treat as click and open menu
-    if (distance < 5) {
+    // If clicked quickly (<200ms) and didn't move much (<3px), open menu
+    if (duration < 200 && distance < 3) {
+      e.preventDefault();
+      e.stopPropagation();
       setMenuOpen(true);
     }
     
-    setMouseDownPos(null);
+    setClickStart(null);
+  };
+
+  const handleMouseLeave = () => {
+    // Cancel click detection if mouse leaves during potential drag
+    setClickStart(null);
   };
 
   return (
@@ -57,7 +65,8 @@ export const BlockControls = ({
           <div
             {...dragHandleProps}
             onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
+            onClick={handleClick}
+            onMouseLeave={handleMouseLeave}
             className="cursor-grab active:cursor-grabbing p-1 hover:bg-accent rounded"
           >
             <Grip className="h-4 w-4 text-muted-foreground" />
