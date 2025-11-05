@@ -28,8 +28,8 @@ export const BlockControls = ({
   return (
     <div
       className={cn(
-        "absolute left-0 top-1/2 -translate-y-1/2 transition-opacity -ml-6 sm:-ml-8 z-20",
-        (menuOpen || isDragging) ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        "absolute left-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity -ml-10",
+        isDragging && "opacity-100"
       )}
     >
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
@@ -47,12 +47,7 @@ export const BlockControls = ({
             <Grip className="h-4 w-4 text-muted-foreground" />
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          align="start" 
-          side="right"
-          sideOffset={8}
-          className="w-48 bg-popover z-50"
-        >
+        <DropdownMenuContent align="start" className="w-48 bg-popover z-50">
           {onDuplicate && (
             <>
               <DropdownMenuItem onClick={onDuplicate}>
