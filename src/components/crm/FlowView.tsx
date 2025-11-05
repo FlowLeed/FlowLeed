@@ -164,13 +164,20 @@ export const FlowView: React.FC<FlowViewProps> = ({
   };
 
   const handleUpdateStage = (stageId: string, name: string, color: string, defaultAssigneeId?: string | null) => {
+    const assigneeProfile = defaultAssigneeId
+      ? teamMembers.find(m => m.id === defaultAssigneeId)
+      : undefined;
+
     const updatedStages = flow.stages.map(stage => {
       if (stage.id === stageId) {
         return {
           ...stage,
           name: name,
           color: color,
-          default_assignee_user_id: defaultAssigneeId
+          default_assignee_user_id: defaultAssigneeId || undefined,
+          defaultAssignee: assigneeProfile
+            ? { name: assigneeProfile.name, avatar: assigneeProfile.avatar }
+            : undefined
         };
       }
       return stage;
