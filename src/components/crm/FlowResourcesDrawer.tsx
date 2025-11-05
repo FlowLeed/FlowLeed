@@ -139,7 +139,7 @@ export const FlowResourcesDrawer = ({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader className="flex-row items-center justify-between space-y-0 pb-6">
+        <SheetHeader className="flex-row items-center justify-between space-y-0 pb-6 pr-12">
           <div className="flex-1">
             <SheetTitle className="text-2xl font-bold">{flow.name} - Documentation</SheetTitle>
             <SheetDescription className="text-sm">
