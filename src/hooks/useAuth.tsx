@@ -44,8 +44,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (event === 'SIGNED_IN' && session?.user) {
           // Check if this is an impersonation session (skip tracking for impersonation)
           const isImpersonation = sessionStorage.getItem('impersonation_session');
+          const lastTrackedLogin = sessionStorage.getItem('last_tracked_login');
           
-          if (!isImpersonation) {
+          // Only track if not impersonating AND we haven't tracked in this session
+          if (!isImpersonation && !lastTrackedLogin) {
+            sessionStorage.setItem('last_tracked_login', Date.now().toString());
+            
             setTimeout(() => {
               supabase.functions.invoke('track-login', {
                 headers: {
@@ -62,6 +66,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 console.error('Failed to track login:', err);
               });
             }, 0);
+          } else {
+            console.log('[useAuth] Login already tracked in this session');
           }
         }
       }
@@ -130,6 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    sessionStorage.removeItem('last_tracked_login');
     await supabase.auth.signOut();
   };
 
