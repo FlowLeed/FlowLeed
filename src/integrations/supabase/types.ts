@@ -1649,8 +1649,10 @@ export type Database = {
       pipelines: {
         Row: {
           created_at: string
+          cycle_days: number | null
           description: string | null
           flow_order: number | null
+          flow_type: string
           icon: string | null
           id: string
           name: string
@@ -1659,8 +1661,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cycle_days?: number | null
           description?: string | null
           flow_order?: number | null
+          flow_type?: string
           icon?: string | null
           id?: string
           name: string
@@ -1669,8 +1673,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cycle_days?: number | null
           description?: string | null
           flow_order?: number | null
+          flow_type?: string
           icon?: string | null
           id?: string
           name?: string

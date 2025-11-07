@@ -61,6 +61,8 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
     description: dbPipeline.description,
     icon: dbPipeline.icon,
     flow_order: dbPipeline.flow_order || 0,
+    flow_type: dbPipeline.flow_type || 'linear',
+    cycle_days: dbPipeline.cycle_days,
     stages: safeStages
       .filter(stage => stage && stage.id)
       .map(stage => {
@@ -530,7 +532,9 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
           id: flowId,
           name: flow.name,
           icon: flow.icon,
-          organization_id: organization.id
+          organization_id: organization.id,
+          flow_type: flow.flow_type || 'linear',
+          cycle_days: flow.cycle_days || null,
         });
 
       console.log("Flow creation result:", { flowError });

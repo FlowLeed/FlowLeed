@@ -102,3 +102,6 @@ verify_jwt = true
 
 [functions.pco-sync-processor]
 verify_jwt = false
+
+[functions.recurring-flow-processor]
+verify_jwt = false

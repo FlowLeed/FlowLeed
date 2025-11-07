@@ -40,4 +40,6 @@ export interface Flow {
   stages: FlowStage[];
   icon?: string;
   flow_order?: number;
+  flow_type?: 'linear' | 'recurring';
+  cycle_days?: number;
 }

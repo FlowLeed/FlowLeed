@@ -67,6 +67,8 @@ export const FlowSettingsDialog = ({
   const [flowDescription, setFlowDescription] = useState(initialFlowDescription);
   const [flowIcon, setFlowIcon] = useState<LucideIcon>(Users);
   const [flowSteps, setFlowSteps] = useState<Array<{id: string, name: string, color: string, stage_order: number, is_start_step?: boolean, is_end_step?: boolean}>>(initialFlowStages);
+  const [flowType, setFlowType] = useState<'linear' | 'recurring'>('linear');
+  const [cycleDays, setCycleDays] = useState<number>(90);
   
   // Team management state
   const [teamMembers, setTeamMembers] = useState<FlowTeamMember[]>([]);
@@ -89,6 +91,21 @@ export const FlowSettingsDialog = ({
         setFlowIcon(FlowIcon);
       }
       
+      // Fetch current flow data to get flow_type and cycle_days
+      const fetchFlowData = async () => {
+        const { data, error } = await supabase
+          .from('pipelines')
+          .select('flow_type, cycle_days')
+          .eq('id', flowId)
+          .single();
+        
+        if (!error && data) {
+          setFlowType((data.flow_type as 'linear' | 'recurring') || 'linear');
+          setCycleDays(data.cycle_days || 90);
+        }
+      };
+      
+      fetchFlowData();
       fetchTeamMembers();
       fetchOrgMembers();
     }
@@ -272,6 +289,15 @@ export const FlowSettingsDialog = ({
       return;
     }
 
+    if (flowType === 'recurring' && !cycleDays) {
+      toast({
+        title: "Error",
+        description: "Cycle duration is required for recurring flows",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const iconKey = Object.keys(iconMap).find(key => iconMap[key] === flowIcon) || 'Users';
@@ -282,6 +308,8 @@ export const FlowSettingsDialog = ({
           name: flowName,
           description: flowDescription,
           icon: iconKey,
+          flow_type: flowType,
+          cycle_days: flowType === 'recurring' ? cycleDays : null,
         })
         .eq('id', flowId);
 
@@ -521,6 +549,53 @@ export const FlowSettingsDialog = ({
               onSelect={setFlowDescription}
             />
           </div>
+
+          {/* Flow Type */}
+          <div className="space-y-2">
+            <Label htmlFor="flow-type">Flow Type</Label>
+            <Select value={flowType} onValueChange={(value: 'linear' | 'recurring') => setFlowType(value)}>
+              <SelectTrigger id="flow-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="linear">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">Linear Flow</span>
+                    <span className="text-xs text-muted-foreground">People move through stages and complete</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="recurring">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">Recurring Flow</span>
+                    <span className="text-xs text-muted-foreground">People cycle back to the start after completion</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Cycle Days (only for recurring) */}
+          {flowType === 'recurring' && (
+            <div className="space-y-2">
+              <Label htmlFor="cycle-days">Cycle Duration</Label>
+              <p className="text-xs text-muted-foreground">
+                How long people stay in the final step before cycling back to the start
+              </p>
+              <Select value={cycleDays.toString()} onValueChange={(value) => setCycleDays(parseInt(value))}>
+                <SelectTrigger id="cycle-days">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 days</SelectItem>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">60 days</SelectItem>
+                  <SelectItem value="90">90 days</SelectItem>
+                  <SelectItem value="120">120 days</SelectItem>
+                  <SelectItem value="180">180 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Team Members Section */}
           <div className="space-y-4 pt-2 border-t">

@@ -17,6 +17,13 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   GripVertical,
   Plus,
   X,
@@ -99,6 +106,8 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
   const [newFlowName, setNewFlowName] = useState("");
   const [newFlowDescription, setNewFlowDescription] = useState("");
   const [newFlowIcon, setNewFlowIcon] = useState<LucideIcon>(Users);
+  const [flowType, setFlowType] = useState<'linear' | 'recurring'>('linear');
+  const [cycleDays, setCycleDays] = useState<number>(90);
   const [newFlowSteps, setNewFlowSteps] = useState<FlowStep[]>([
     { name: "New", color: "#3b82f6", isStartStep: true, isEndStep: false },
     { name: "In Progress", color: "#f59e0b", isStartStep: false, isEndStep: false },
@@ -126,10 +135,21 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
       return;
     }
 
+    if (flowType === 'recurring' && !cycleDays) {
+      toast({
+        title: "Error",
+        description: "Please select a cycle duration for recurring flows",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const newPipeline = {
         name: newFlowName,
         icon: Object.keys(iconMap).find(key => iconMap[key] === newFlowIcon) || 'Users',
+        flow_type: flowType,
+        cycle_days: flowType === 'recurring' ? cycleDays : undefined,
         stages: newFlowSteps.map((step) => ({
           id: "",
           name: step.name,
@@ -151,6 +171,8 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
       setNewFlowName("");
       setNewFlowDescription("");
       setNewFlowIcon(Users);
+      setFlowType('linear');
+      setCycleDays(90);
       setNewFlowSteps([
         { name: "New", color: "#3b82f6", isStartStep: true, isEndStep: false },
         { name: "In Progress", color: "#f59e0b", isStartStep: false, isEndStep: false },
@@ -274,6 +296,51 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
                   onSelect={setNewFlowDescription}
                 />
               </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="flow-type">Flow Type</Label>
+            <Select value={flowType} onValueChange={(value: 'linear' | 'recurring') => setFlowType(value)}>
+              <SelectTrigger id="flow-type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="linear">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">Linear Flow</span>
+                    <span className="text-xs text-muted-foreground">People move through stages and complete</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="recurring">
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">Recurring Flow</span>
+                    <span className="text-xs text-muted-foreground">People cycle back to the start after completion</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {flowType === 'recurring' && (
+            <div className="space-y-2">
+              <Label htmlFor="cycle-days">Cycle Duration</Label>
+              <p className="text-xs text-muted-foreground">
+                How long people stay in the final step before cycling back to the start
+              </p>
+              <Select value={cycleDays.toString()} onValueChange={(value) => setCycleDays(parseInt(value))}>
+                <SelectTrigger id="cycle-days">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 days</SelectItem>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">60 days</SelectItem>
+                  <SelectItem value="90">90 days</SelectItem>
+                  <SelectItem value="120">120 days</SelectItem>
+                  <SelectItem value="180">180 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           
           <div className="space-y-2">
             <Label>Flow Steps</Label>
