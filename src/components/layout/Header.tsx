@@ -314,12 +314,6 @@ export const Header: React.FC<HeaderProps> = ({
           {showFlowIcon && <FlowIcon className="h-5 w-5 text-sidebar-foreground" />}
           <div className="flex items-center gap-2">
             <div className="text-lg font-extralight">{title}</div>
-            {flowType === 'recurring' && cycleDays && (
-              <Badge variant="secondary" className="gap-1 text-xs">
-                <RotateCcw className="h-3 w-3" />
-                Cycles every {cycleDays} days
-              </Badge>
-            )}
           </div>
         <div className="flex gap-1">
           {onSettingsClick && (
