@@ -56,16 +56,16 @@ const NavItem = ({
   }
   
   return <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
-      <item.icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
-      <span className="relative inline-block min-w-0 flex-1">
-        <span className="font-extralight truncate whitespace-nowrap block">
-          {item.title}
-        </span>
+      <div className="relative flex-shrink-0">
+        <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
-          <span className="absolute -top-1 -right-2 bg-primary text-primary-foreground rounded-full p-0.5">
-            <RotateCcw className="h-2.5 w-2.5" />
+          <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground rounded-full p-0.5">
+            <RotateCcw className="h-2 w-2" />
           </span>
         )}
+      </div>
+      <span className="font-extralight truncate whitespace-nowrap min-w-0 flex-1">
+        {item.title}
       </span>
       {item.badge != null && item.badge > 0 && <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${isActive ? "bg-white text-purple-500" : "bg-purple-500 text-white"}`}>
           {item.badge}
