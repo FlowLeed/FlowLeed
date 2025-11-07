@@ -57,8 +57,10 @@ const NavItem = ({
   
   return <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
       <item.icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
-      <span className={`font-extralight truncate whitespace-nowrap min-w-0 relative inline-block ${item.flow_type === 'recurring' ? 'pr-4' : ''}`}>
-        {item.title}
+      <span className="relative inline-block min-w-0 flex-1">
+        <span className="font-extralight truncate whitespace-nowrap block">
+          {item.title}
+        </span>
         {item.flow_type === 'recurring' && (
           <span className="absolute -top-1 -right-2 bg-primary text-primary-foreground rounded-full p-0.5">
             <RotateCcw className="h-2.5 w-2.5" />
