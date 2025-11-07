@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw } from "lucide-react";
+import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw, RefreshCw } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
@@ -34,6 +34,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -311,7 +317,27 @@ export const Header: React.FC<HeaderProps> = ({
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-          {showFlowIcon && <FlowIcon className="h-5 w-5 text-sidebar-foreground" />}
+          {showFlowIcon && (
+            flowType === 'recurring' && cycleDays ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative">
+                      <FlowIcon className="h-5 w-5 text-sidebar-foreground" />
+                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 flex items-center justify-center">
+                        <RefreshCw className="h-2 w-2 text-white" />
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Cycles every {cycleDays} days</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <FlowIcon className="h-5 w-5 text-sidebar-foreground" />
+            )
+          )}
           <div className="flex items-center gap-2">
             <div className="text-lg font-extralight">{title}</div>
           </div>
