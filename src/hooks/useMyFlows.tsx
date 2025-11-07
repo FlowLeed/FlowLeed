@@ -12,7 +12,7 @@ export const useMyFlows = (userId: string | undefined) => {
       const [teamMembershipsResult, myAssignmentsResult] = await Promise.all([
         supabase
           .from("pipeline_team_members")
-          .select("pipeline_id, role, pipelines(id, name, description, icon)")
+          .select("pipeline_id, role, pipelines(id, name, description, icon, flow_type, cycle_days)")
           .eq("user_id", userId),
         supabase
           .from("pipeline_contacts")
@@ -37,6 +37,8 @@ export const useMyFlows = (userId: string | undefined) => {
         ...tm.pipelines,
         role: tm.role,
         myContactsCount: assignmentCounts.get(tm.pipeline_id) || 0,
+        flow_type: (tm.pipelines?.flow_type || 'linear') as 'linear' | 'recurring',
+        cycle_days: tm.pipelines?.cycle_days ?? undefined,
       }));
     },
     enabled: !!userId,

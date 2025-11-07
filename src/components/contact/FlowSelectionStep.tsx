@@ -1,7 +1,8 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3, Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video, UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish, Sun, Moon, Navigation, MapPin, Home, Smile, Footprints } from 'lucide-react';
+import { Workflow, Users, MessageSquare, Calendar, Settings, Heart, Star, Target, Zap, Shield, Globe, Briefcase, BookOpen, Music, Coffee, Camera, Gift, Flame, Sparkles, Check, Plus, Puzzle, LayoutDashboard, BarChart3, Church, Cross, Book, Handshake, HeartHandshake, Podcast, Video, UserCheck, Users2, GraduationCap, Baby, TrendingUp, Waves, Fish, Sun, Moon, Navigation, MapPin, Home, Smile, Footprints, RotateCcw } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface Pipeline {
@@ -9,6 +10,8 @@ interface Pipeline {
   name: string;
   description?: string;
   icon?: string;
+  flow_type?: 'linear' | 'recurring';
+  cycle_days?: number;
 }
 
 interface FlowSelectionStepProps {
@@ -105,7 +108,15 @@ export const FlowSelectionStep: React.FC<FlowSelectionStepProps> = ({
                 return <Workflow className="h-5 w-5 text-muted-foreground" />;
               })()}
               <div className="flex-1">
-                <h3 className="font-medium">{pipeline.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium">{pipeline.name}</h3>
+                  {pipeline.flow_type === 'recurring' && pipeline.cycle_days && (
+                    <Badge variant="secondary" className="gap-1 text-xs">
+                      <RotateCcw className="h-3 w-3" />
+                      Cycles every {pipeline.cycle_days} days
+                    </Badge>
+                  )}
+                </div>
                 {pipeline.description && (
                   <p className="text-sm text-muted-foreground truncate">{pipeline.description}</p>
                 )}

@@ -1,10 +1,11 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen } from "lucide-react";
+import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
+import { Badge } from "@/components/ui/badge";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -82,6 +83,8 @@ interface HeaderProps {
   onToggleSelectMode?: () => void;
   onSelectAll?: () => void;
   onDocsClick?: () => void;
+  flowType?: 'linear' | 'recurring';
+  cycleDays?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -104,7 +107,9 @@ export const Header: React.FC<HeaderProps> = ({
   isSelectMode = false,
   onToggleSelectMode,
   onSelectAll,
-  onDocsClick
+  onDocsClick,
+  flowType,
+  cycleDays
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
@@ -307,8 +312,14 @@ export const Header: React.FC<HeaderProps> = ({
             </Button>
           )}
           {showFlowIcon && <FlowIcon className="h-5 w-5 text-sidebar-foreground" />}
-          <div>
+          <div className="flex items-center gap-2">
             <div className="text-lg font-extralight">{title}</div>
+            {flowType === 'recurring' && cycleDays && (
+              <Badge variant="secondary" className="gap-1 text-xs">
+                <RotateCcw className="h-3 w-3" />
+                Cycles every {cycleDays} days
+              </Badge>
+            )}
           </div>
         <div className="flex gap-1">
           {onSettingsClick && (

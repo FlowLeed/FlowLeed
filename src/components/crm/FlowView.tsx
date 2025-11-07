@@ -498,6 +498,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         isSelectMode={isSelectMode}
+        flowType={flow.flow_type}
+        cycleDays={flow.cycle_days}
         onToggleSelectMode={handleToggleSelectMode}
         onSelectAll={handleSelectAll}
       />

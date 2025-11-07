@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users } from "lucide-react";
+import { Users, RotateCcw } from "lucide-react";
 import { getFlowIcon } from "@/lib/flowIcons";
 
 interface Flow {
@@ -10,6 +10,8 @@ interface Flow {
   name: string;
   icon?: string;
   myContactsCount: number;
+  flow_type?: 'linear' | 'recurring';
+  cycle_days?: number;
 }
 
 interface MyFlowsQuickAccessProps {
@@ -63,6 +65,12 @@ export const MyFlowsQuickAccess = ({ flows, loading }: MyFlowsQuickAccessProps) 
                     )}
                   </div>
                   <p className="text-sm font-medium line-clamp-2">{flow.name}</p>
+                  {flow.flow_type === 'recurring' && flow.cycle_days && (
+                    <Badge variant="secondary" className="gap-1 mt-2 text-xs">
+                      <RotateCcw className="h-3 w-3" />
+                      Cycles every {flow.cycle_days} days
+                    </Badge>
+                  )}
                 </CardContent>
               </Card>
             </Link>

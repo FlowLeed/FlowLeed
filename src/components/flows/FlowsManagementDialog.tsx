@@ -33,7 +33,8 @@ import {
   Check,
   Puzzle,
   LayoutDashboard,
-  BarChart3
+  BarChart3,
+  RotateCcw
 } from "lucide-react";
 import { useFlowContext } from "@/contexts/FlowContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -194,14 +195,20 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
                                     {flow.description}
                                   </p>
                                 )}
-                                <div className="flex items-center gap-2 mt-1">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {flow.stages?.length || 0} stages
-                                  </Badge>
-                                  <Badge variant="outline" className="text-xs">
-                                    {contactCount} contacts
-                                  </Badge>
-                                </div>
+                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                   <Badge variant="secondary" className="text-xs">
+                                     {flow.stages?.length || 0} stages
+                                   </Badge>
+                                   <Badge variant="outline" className="text-xs">
+                                     {contactCount} contacts
+                                   </Badge>
+                                   {flow.flow_type === 'recurring' && flow.cycle_days && (
+                                     <Badge variant="secondary" className="gap-1 text-xs">
+                                       <RotateCcw className="h-3 w-3" />
+                                       Cycles every {flow.cycle_days} days
+                                     </Badge>
+                                   )}
+                                 </div>
                               </div>
 
                               <div className="flex items-center gap-2">
