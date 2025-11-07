@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus, MoreVertical, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus, MoreVertical, Check, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
@@ -238,8 +238,8 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                     {stage.defaultAssignee.name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-red-500 flex items-center justify-center">
-                  <RefreshCw className="h-2 w-2 text-white" />
+                <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 flex items-center justify-center">
+                  <Check className="h-2 w-2 text-white" />
                 </span>
               </div>
             )}
