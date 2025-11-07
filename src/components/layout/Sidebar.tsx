@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RotateCcw } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ interface SidebarItem {
   path: string;
   badge?: number;
   comingSoon?: boolean;
+  flow_type?: 'linear' | 'recurring';
+  cycle_days?: number;
 }
 interface FlowStep {
   name: string;
@@ -55,7 +57,10 @@ const NavItem = ({
   
   return <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
       <item.icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
-      <span className="font-extralight truncate whitespace-nowrap min-w-0">{item.title}</span>
+      <span className="font-extralight truncate whitespace-nowrap min-w-0 flex items-center gap-1.5">
+        {item.title}
+        {item.flow_type === 'recurring' && <RotateCcw className="h-3.5 w-3.5" />}
+      </span>
       {item.badge != null && item.badge > 0 && <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${isActive ? "bg-white text-purple-500" : "bg-purple-500 text-white"}`}>
           {item.badge}
         </span>}
@@ -470,7 +475,9 @@ export const Sidebar = () => {
       icon,
       path: `/flows/${flow.id}`,
       // Use flow.id instead of key for database flows
-      badge: calculateFlowContactCount(flow)
+      badge: calculateFlowContactCount(flow),
+      flow_type: flow.flow_type,
+      cycle_days: flow.cycle_days
     };
   });
   
