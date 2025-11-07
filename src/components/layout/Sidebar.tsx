@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, Repeat } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ const NavItem = ({
         <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
           <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white rounded-full p-0.5">
-            <Repeat className="h-2 w-2" />
+            <RefreshCw className="h-2 w-2" />
           </span>
         )}
       </div>
