@@ -177,7 +177,7 @@ export function QuickMappingDialog({
       
       toast({
         title: isUpdate ? 'Mapping updated successfully' : 'Mapping created successfully',
-        description: `"${selectedList.name}" is now ${isUpdate ? 'remapped and' : 'mapped and'} will sync automatically every 15 minutes.`,
+        description: `"${selectedList.name}" is now ${isUpdate ? 'remapped and' : 'mapped and'} syncing...`,
       });
       
       // Call onboarding callback if provided
@@ -189,7 +189,7 @@ export function QuickMappingDialog({
         }
       }
       
-      // Automatically trigger initial sync
+      // Automatically trigger initial sync and start processing
       try {
         const newMapping = {
           integration_id: integrationId,
@@ -199,6 +199,7 @@ export function QuickMappingDialog({
           external_list_name: selectedList.name,
         };
         
+        // Start the sync job
         const { data: syncData, error: syncError } = await supabase.functions.invoke('planning-center-lists', {
           body: {
             action: 'syncLists',
@@ -206,16 +207,48 @@ export function QuickMappingDialog({
           },
         });
 
-        if (!syncError && syncData?.results?.[0]?.success) {
-          const result = syncData.results[0];
+        if (syncError) {
+          console.error('Failed to start sync:', syncError);
           toast({
-            title: 'Initial sync completed',
-            description: `Added ${result.contactsAdded} new contacts, updated ${result.contactsUpdated} existing contacts.`,
+            title: 'Sync failed to start',
+            description: syncError.message,
+            variant: 'destructive',
           });
+          handleClose();
+          return;
         }
+
+        // Get the job ID from the response
+        const jobId = syncData?.jobId;
+        if (!jobId) {
+          console.error('No job ID returned from sync');
+          toast({
+            title: 'Sync started',
+            description: `Processing contacts from "${selectedList.name}"...`,
+          });
+          handleClose();
+          return;
+        }
+
+        console.log('Sync job created:', jobId, 'Starting processor...');
+        
+        toast({
+          title: 'Sync started',
+          description: `Processing ${selectedList.member_count || 'contacts'} from "${selectedList.name}"...`,
+        });
+
+        // Start the processor loop in the background
+        processChunksUntilComplete(jobId, selectedList.name).catch(err => {
+          console.error('Processor loop failed:', err);
+        });
+
       } catch (syncError) {
-        console.warn('Auto-sync failed:', syncError);
-        // Don't show error toast as the mapping was successful
+        console.error('Auto-sync failed:', syncError);
+        toast({
+          title: 'Sync failed',
+          description: syncError instanceof Error ? syncError.message : 'Unknown error',
+          variant: 'destructive',
+        });
       }
       
       handleClose();
@@ -267,6 +300,69 @@ export function QuickMappingDialog({
   const handleFlowChange = (flowId: string) => {
     setSelectedFlowId(flowId);
     setSelectedStageId(''); // Reset stage when flow changes
+  };
+
+  // Helper function to process chunks until complete
+  const processChunksUntilComplete = async (jobId: string, listName: string) => {
+    let isProcessing = true;
+    let processedCount = 0;
+    
+    while (isProcessing) {
+      try {
+        console.log(`[Processor Loop] Invoking processor for job ${jobId}...`);
+        
+        const { data, error } = await supabase.functions.invoke('pco-sync-processor');
+        
+        if (error) {
+          console.error('[Processor Loop] Error:', error);
+          toast({
+            title: 'Sync processing error',
+            description: error.message,
+            variant: 'destructive',
+          });
+          break;
+        }
+        
+        console.log('[Processor Loop] Response:', data);
+        
+        // Check if processing is complete
+        if (data?.message === 'No pending chunks') {
+          console.log('[Processor Loop] No more pending chunks, sync complete');
+          
+          // Invalidate queries to refresh the UI
+          queryClient.invalidateQueries({ queryKey: ['flow-contacts'] });
+          queryClient.invalidateQueries({ queryKey: ['contacts'] });
+          
+          toast({
+            title: 'Sync completed',
+            description: `Successfully synced contacts from "${listName}"`,
+          });
+          
+          isProcessing = false;
+          break;
+        }
+        
+        // If we got a chunk processed, continue
+        if (data?.chunkProcessed) {
+          processedCount++;
+          console.log(`[Processor Loop] Chunk ${processedCount} processed, continuing...`);
+        }
+        
+        // Wait before next iteration (1.5 seconds)
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+      } catch (err) {
+        console.error('[Processor Loop] Unexpected error:', err);
+        toast({
+          title: 'Sync processing error',
+          description: err instanceof Error ? err.message : 'Unknown error',
+          variant: 'destructive',
+        });
+        break;
+      }
+    }
+    
+    console.log(`[Processor Loop] Finished processing ${processedCount} chunks`);
   };
 
   const isValid = selectedListId && selectedFlowId && selectedStageId;
