@@ -182,12 +182,18 @@ async function processPersonData(
     organization_id: organizationId,
     pc_person_id: pcPersonId,
     name: attributes.name || 'Unknown',
-    email: attributes.primary_campus_id ? null : (attributes.email_addresses?.[0]?.address || null),
+    email: attributes.email_addresses?.[0]?.address || null,
     phone: attributes.phone_numbers?.[0]?.number || null,
     avatar: attributes.avatar || null,
     source_type: 'planning_center',
     last_synced_at: new Date().toISOString(),
   };
+
+  console.log(`Syncing contact ${attributes.name} (PC ID: ${pcPersonId}):`, {
+    email: contactData.email,
+    phone: contactData.phone,
+    has_campus: !!attributes.primary_campus_id
+  });
 
   const { data: contact, error: contactError } = await supabase
     .from('contacts')
@@ -262,6 +268,36 @@ async function syncDemographicData(
     const personData = await personResponse.json();
     const person = personData.data;
     const included = personData.included || [];
+
+    // Extract email and phone from detailed API response
+    const detailedEmail = person.attributes.primary_email || null;
+    const detailedPhone = person.attributes.primary_phone_number?.number || null;
+
+    console.log(`Detailed API data for PC ID ${pcPersonId}:`, {
+      email: detailedEmail,
+      phone: detailedPhone
+    });
+
+    // Update contact with more complete email/phone if available
+    if (detailedEmail || detailedPhone) {
+      const updateData: any = {
+        last_synced_at: new Date().toISOString()
+      };
+      
+      if (detailedEmail) updateData.email = detailedEmail;
+      if (detailedPhone) updateData.phone = detailedPhone;
+
+      const { error: updateError } = await supabase
+        .from('contacts')
+        .update(updateData)
+        .eq('id', contactId);
+
+      if (updateError) {
+        console.error('Error updating contact with detailed data:', updateError);
+      } else {
+        console.log(`Updated contact ${contactId} with email: ${detailedEmail}, phone: ${detailedPhone}`);
+      }
+    }
 
     // Sync demographics
     const demographicData: any = {};
