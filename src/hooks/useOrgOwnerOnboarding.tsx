@@ -52,13 +52,32 @@ export const useOrgOwnerOnboarding = (organizationId: string | undefined) => {
 
         if (data) {
           const progressData = data.onboarding_progress as unknown as OwnerOnboardingProgress;
-          setProgress(progressData || {
+          const currentProgress = progressData || {
             first_flow_created: false,
             pco_connected: false,
             pco_lists_mapped: false,
             team_members_invited: false,
             flow_owners_assigned: false,
-          });
+          };
+          
+          // Auto-detect if PCO lists are mapped (safety check)
+          if (!currentProgress.pco_lists_mapped) {
+            const { data: mappings } = await supabase
+              .from("integration_list_mappings")
+              .select("id")
+              .limit(1);
+            
+            if (mappings && mappings.length > 0) {
+              // Silently update the progress without toast
+              currentProgress.pco_lists_mapped = true;
+              await supabase
+                .from("organizations")
+                .update({ onboarding_progress: currentProgress as any })
+                .eq("id", organizationId);
+            }
+          }
+          
+          setProgress(currentProgress);
           setIsCompleted(data.onboarding_completed || false);
         }
       } catch (error) {
@@ -80,7 +99,7 @@ export const useOrgOwnerOnboarding = (organizationId: string | undefined) => {
     try {
       const { error } = await supabase
         .from("organizations")
-        .update({ onboarding_progress: newProgress })
+        .update({ onboarding_progress: newProgress as any })
         .eq("id", organizationId);
 
       if (error) throw error;

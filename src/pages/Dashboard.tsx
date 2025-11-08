@@ -66,6 +66,29 @@ const Dashboard = () => {
       const userIsOwner = data?.role === "owner";
       setIsOwner(userIsOwner);
 
+      // Safety check: Auto-detect PCO list mappings on dashboard load for owners
+      if (userIsOwner && !ownerOnboarding.progress.pco_lists_mapped && !ownerOnboarding.isLoading) {
+        const { data: integration } = await supabase
+          .from("integrations")
+          .select("id")
+          .eq("organization_id", organization.id)
+          .eq("service_name", "planning_center")
+          .single();
+        
+        if (integration) {
+          const { data: mappings } = await supabase
+            .from("integration_list_mappings")
+            .select("id")
+            .eq("integration_id", integration.id)
+            .limit(1);
+          
+          if (mappings && mappings.length > 0) {
+            // Mark as complete silently
+            ownerOnboarding.updateProgress("pco_lists_mapped", true);
+          }
+        }
+      }
+
       // Mark initial load as complete
       setIsInitialLoadComplete(true);
 
