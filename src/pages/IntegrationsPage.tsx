@@ -381,7 +381,7 @@ const IntegrationsPage = () => {
                   <div className="flex-1">
                     <h4 className="font-semibold text-destructive mb-1">Connection Failed</h4>
                     <p className="text-sm text-muted-foreground mb-3">
-                      {((planningCenterIntegration as any).metadata?.error) || 'Unable to authenticate with Planning Center. Your credentials may be invalid or expired.'}
+                      {(planningCenterIntegration.metadata as { error?: string })?.error || 'Unable to authenticate with Planning Center. Your credentials may be invalid or expired.'}
                     </p>
                     <Button 
                       variant="destructive" 

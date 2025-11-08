@@ -859,6 +859,7 @@ export type Database = {
           credentials: Json
           id: string
           last_sync_at: string | null
+          metadata: Json | null
           organization_id: string
           service_name: string
           settings: Json
@@ -872,6 +873,7 @@ export type Database = {
           credentials?: Json
           id?: string
           last_sync_at?: string | null
+          metadata?: Json | null
           organization_id: string
           service_name: string
           settings?: Json
@@ -885,6 +887,7 @@ export type Database = {
           credentials?: Json
           id?: string
           last_sync_at?: string | null
+          metadata?: Json | null
           organization_id?: string
           service_name?: string
           settings?: Json
