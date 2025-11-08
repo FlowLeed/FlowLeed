@@ -251,7 +251,7 @@ async function syncDemographicData(
   try {
     // Fetch person details with demographics
     const personResponse = await fetch(
-      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data`,
+      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data,phone_numbers,email_addresses`,
       {
         headers: {
           'Authorization': `Basic ${auth}`,
@@ -269,13 +269,21 @@ async function syncDemographicData(
     const person = personData.data;
     const included = personData.included || [];
 
-    // Extract email and phone from detailed API response
-    const detailedEmail = person.attributes.primary_email || null;
-    const detailedPhone = person.attributes.primary_phone_number?.number || null;
+    // Parse email addresses and phone numbers from included relationships
+    const emails = included.filter((i: any) => i.type === 'EmailAddress');
+    const phones = included.filter((i: any) => i.type === 'PhoneNumber');
+
+    const primaryEmail = emails.find((e: any) => e.attributes?.primary) || emails[0];
+    const primaryPhone = phones.find((p: any) => p.attributes?.primary) || phones[0];
+
+    const detailedEmail = primaryEmail?.attributes?.address || null;
+    const detailedPhone = primaryPhone?.attributes?.number || null;
 
     console.log(`Detailed API data for PC ID ${pcPersonId}:`, {
-      email: detailedEmail,
-      phone: detailedPhone
+      emailsFound: emails.length,
+      phonesFound: phones.length,
+      selectedEmail: detailedEmail,
+      selectedPhone: detailedPhone
     });
 
     // Update contact with more complete email/phone if available
