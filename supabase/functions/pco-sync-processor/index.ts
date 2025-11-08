@@ -64,10 +64,10 @@ Deno.serve(async (req) => {
 
       console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number}`);
 
-      // Get PC credentials
-      const appId = integration.credentials.app_id;
+      // Get PC credentials (try application_id first, fallback to app_id for backwards compatibility)
+      const applicationId = integration.credentials.application_id ?? integration.credentials.app_id;
       const secret = integration.credentials.secret;
-      const auth = btoa(`${appId}:${secret}`);
+      const auth = btoa(`${applicationId}:${secret}`);
 
       // Process each person in the chunk
       for (const person of people) {
@@ -177,17 +177,23 @@ async function processPersonData(
   const pcPersonId = person.id;
   const attributes = person.attributes;
 
-  // Upsert contact
-  const contactData = {
+  // Upsert contact - only include email/phone if we have actual values to avoid overwriting with null
+  const contactData: any = {
     organization_id: organizationId,
     pc_person_id: pcPersonId,
     name: attributes.name || 'Unknown',
-    email: attributes.email_addresses?.[0]?.address || null,
-    phone: attributes.phone_numbers?.[0]?.number || null,
     avatar: attributes.avatar || null,
     source_type: 'planning_center',
     last_synced_at: new Date().toISOString(),
   };
+  
+  // Only set email/phone if we have actual values from the list response
+  if (attributes.email_addresses?.[0]?.address) {
+    contactData.email = attributes.email_addresses[0].address;
+  }
+  if (attributes.phone_numbers?.[0]?.number) {
+    contactData.phone = attributes.phone_numbers[0].number;
+  }
 
   console.log(`Syncing contact ${attributes.name} (PC ID: ${pcPersonId}):`, {
     email: contactData.email,
@@ -266,15 +272,15 @@ async function syncDemographicData(
         console.error(`Authentication failed for Planning Center API - credentials may be invalid`);
         
         // Get organization ID to update integration
-        const { data: integration } = await supabaseClient
+        const { data: contact } = await supabase
           .from('contacts')
           .select('organization_id')
           .eq('id', contactId)
           .single();
         
-        if (integration?.organization_id) {
+        if (contact?.organization_id) {
           // Update integration status to failed
-          const { error: updateError } = await supabaseClient
+          const { error: updateError } = await supabase
             .from('integrations')
             .update({ 
               status: 'failed',
@@ -283,7 +289,7 @@ async function syncDemographicData(
                 last_error_at: new Date().toISOString()
               }
             })
-            .eq('organization_id', integration.organization_id)
+            .eq('organization_id', contact.organization_id)
             .eq('service_name', 'planning_center');
           
           if (updateError) {
