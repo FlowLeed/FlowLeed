@@ -407,6 +407,29 @@ async function syncSingleList(mapping: any, userId: string) {
     });
 
     if (!response.ok) {
+      // Handle authentication failures
+      if (response.status === 401) {
+        console.error('Planning Center authentication failed');
+        
+        // Update integration status to failed
+        const { error: updateError } = await supabase
+          .from('integrations')
+          .update({ 
+            status: 'failed',
+            metadata: {
+              error: 'Authentication failed - please check your Planning Center credentials',
+              last_error_at: new Date().toISOString()
+            }
+          })
+          .eq('id', mapping.integration_id);
+        
+        if (updateError) {
+          console.error('Failed to update integration status:', updateError);
+        }
+        
+        throw new Error('Planning Center authentication failed - please reconnect your account');
+      }
+      
       console.error('PC API error:', response.status, response.statusText);
       throw new Error(`PC API error: ${response.status}`);
     }

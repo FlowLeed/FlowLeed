@@ -269,6 +269,30 @@ const IntegrationsPage = () => {
   const handleSyncNow = async () => {
     if (!planningCenterIntegration) return;
     
+    // First, test the connection before attempting sync
+    try {
+      const { data: testData, error: testError } = await supabase.functions.invoke('planning-center-lists', {
+        body: {
+          action: 'testConnection',
+          integrationId: planningCenterIntegration.id
+        }
+      });
+
+      if (testError || !testData?.success) {
+        toast.error("Connection Failed", {
+          description: testData?.error || 'Please check your Planning Center credentials and try reconnecting'
+        });
+        await queryClient.invalidateQueries({ queryKey: ['integrations', userOrgData?.organization_id] });
+        return;
+      }
+    } catch (error: any) {
+      console.error('Connection test error:', error);
+      toast.error("Connection Failed", {
+        description: 'Unable to connect to Planning Center. Please reconnect your account.'
+      });
+      return;
+    }
+    
     try {
       const { data, error } = await supabase.functions.invoke('planning-center-lists', {
         body: { 
@@ -348,6 +372,29 @@ const IntegrationsPage = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">Automatically sync your Planning Center people into the right Flows — mapping lists to spiritual steps that drive real connection, discipleship, and next steps.</p>
+            
+            {/* Show error alert if integration failed */}
+            {planningCenterIntegration?.status === 'failed' && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-destructive mb-1">Connection Failed</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {((planningCenterIntegration as any).metadata?.error) || 'Unable to authenticate with Planning Center. Your credentials may be invalid or expired.'}
+                    </p>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={handlePlanningCenterDisconnect}
+                      disabled={deleteIntegrationMutation.isPending}
+                    >
+                      Reconnect Planning Center
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {!planningCenterIntegration && (
               <div className="bg-muted/50 p-4 rounded-lg space-y-3">

@@ -261,7 +261,40 @@ async function syncDemographicData(
     );
 
     if (!personResponse.ok) {
-      console.error('Failed to fetch person details:', personResponse.status);
+      // Handle authentication failures specifically
+      if (personResponse.status === 401) {
+        console.error(`Authentication failed for Planning Center API - credentials may be invalid`);
+        
+        // Get organization ID to update integration
+        const { data: integration } = await supabaseClient
+          .from('contacts')
+          .select('organization_id')
+          .eq('id', contactId)
+          .single();
+        
+        if (integration?.organization_id) {
+          // Update integration status to failed
+          const { error: updateError } = await supabaseClient
+            .from('integrations')
+            .update({ 
+              status: 'failed',
+              metadata: {
+                error: 'Authentication failed - please check your Planning Center credentials',
+                last_error_at: new Date().toISOString()
+              }
+            })
+            .eq('organization_id', integration.organization_id)
+            .eq('service_name', 'planning_center');
+          
+          if (updateError) {
+            console.error('Failed to update integration status:', updateError);
+          }
+        }
+        
+        throw new Error('Planning Center authentication failed - please reconnect your account');
+      }
+      
+      console.error(`Failed to fetch person ${pcPersonId}: ${personResponse.statusText}`);
       return;
     }
 
