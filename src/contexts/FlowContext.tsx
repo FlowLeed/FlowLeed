@@ -105,8 +105,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
   // Load flows from database when user is available
   useEffect(() => {
-    // Don't load if still loading profile or no user
-    if (profileLoading || !user) {
+    // Don't load if still loading profile, no user, or no organization
+    if (profileLoading || !user || !organization) {
       return;
     }
 
@@ -187,7 +187,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
 
   const refreshFlows = async () => {
-    if (!user || profileLoading) {
+    if (!user || profileLoading || !organization) {
       return;
     }
 
