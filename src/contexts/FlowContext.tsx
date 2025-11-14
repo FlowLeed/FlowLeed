@@ -258,10 +258,21 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     }
   };
 
+  // Helper function to chunk arrays for batched queries
+  const chunk = <T,>(array: T[], size: number): T[][] => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+  };
+
   const loadFlowData = async (pipelinesList: any[]): Promise<Record<string, Flow>> => {
     if (!pipelinesList || pipelinesList.length === 0) {
       return {};
     }
+
+    console.log(`[FlowContext] Loading data for ${pipelinesList.length} pipelines`);
 
     const flowsData: Record<string, Flow> = {};
     const pipelineIds = pipelinesList.map(p => p.id);
@@ -295,21 +306,69 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     const stageAssigneeIds = [...new Set(allStages?.map(s => s.default_assignee_user_id).filter(Boolean) || [])];
     const allUserIds = [...new Set([...contactAssigneeIds, ...stageAssigneeIds])];
 
-    // Fetch tags and profiles in parallel
-    const [
-      { data: allContactTags, error: tagsError },
-      { data: allProfiles, error: profilesError }
-    ] = await Promise.all([
-      allContactIds.length > 0
-        ? supabase.from('contact_tags').select('*').in('contact_id', allContactIds)
-        : Promise.resolve({ data: [], error: null }),
-      allUserIds.length > 0
-        ? supabase.from('profiles').select('*').in('user_id', allUserIds)
-        : Promise.resolve({ data: [], error: null })
-    ]);
+    console.log(`[FlowContext] Found ${allContactIds.length} unique contacts, ${allUserIds.length} unique users`);
 
-    if (tagsError) throw tagsError;
-    if (profilesError) throw profilesError;
+    // Fetch tags and profiles using chunked queries to avoid 400 errors with large datasets
+    let allContactTags: any[] = [];
+    let allProfiles: any[] = [];
+
+    try {
+      // Fetch contact tags in chunks of 150
+      if (allContactIds.length > 0) {
+        const contactIdChunks = chunk(allContactIds, 150);
+        console.log(`[FlowContext] Fetching tags in ${contactIdChunks.length} chunks`);
+        
+        const tagChunkResults = await Promise.all(
+          contactIdChunks.map(async (chunkIds) => {
+            const { data, error } = await supabase
+              .from('contact_tags')
+              .select('*')
+              .in('contact_id', chunkIds);
+            
+            if (error) {
+              console.warn('[FlowContext] Error fetching tag chunk:', error);
+              return [];
+            }
+            return data || [];
+          })
+        );
+        
+        allContactTags = tagChunkResults.flat();
+        console.log(`[FlowContext] Loaded ${allContactTags.length} tags`);
+      }
+    } catch (err) {
+      console.error('[FlowContext] Failed to load contact tags:', err);
+      allContactTags = [];
+    }
+
+    try {
+      // Fetch profiles in chunks of 200
+      if (allUserIds.length > 0) {
+        const userIdChunks = chunk(allUserIds, 200);
+        console.log(`[FlowContext] Fetching profiles in ${userIdChunks.length} chunks`);
+        
+        const profileChunkResults = await Promise.all(
+          userIdChunks.map(async (chunkIds) => {
+            const { data, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('user_id', chunkIds);
+            
+            if (error) {
+              console.warn('[FlowContext] Error fetching profile chunk:', error);
+              return [];
+            }
+            return data || [];
+          })
+        );
+        
+        allProfiles = profileChunkResults.flat();
+        console.log(`[FlowContext] Loaded ${allProfiles.length} profiles`);
+      }
+    } catch (err) {
+      console.error('[FlowContext] Failed to load profiles:', err);
+      allProfiles = [];
+    }
 
     // Group data by pipeline_id in memory
     for (const pipeline of pipelinesList) {
@@ -320,13 +379,14 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         pipeline,
         pipelineStages,
         pipelineContacts,
-        allContactTags || [],
-        allProfiles || []
+        allContactTags,
+        allProfiles
       );
 
       flowsData[pipeline.id] = convertedFlow;
     }
 
+    console.log(`[FlowContext] Loaded ${Object.keys(flowsData).length} flows successfully`);
     return flowsData;
   };
 
