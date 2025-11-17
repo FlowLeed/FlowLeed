@@ -486,9 +486,10 @@ async function syncSingleList(mapping: any, userId: string) {
 
   console.log(`Chunked ${allPeople.length} contacts into ${chunks.length} chunks`);
 
-  // Insert chunks into queue
+  // Insert chunks into queue with organization_id for round-robin processing
   const queueItems = chunks.map((chunk, index) => ({
     sync_job_id: job.id,
+    organization_id: integration.organization_id,
     status: 'pending',
     chunk_data: chunk,
     chunk_number: index + 1

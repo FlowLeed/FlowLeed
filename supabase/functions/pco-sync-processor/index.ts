@@ -15,10 +15,10 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Processing next pending chunk from queue...');
+    console.log('Processing next pending chunks from queue...');
 
-    // Get next pending chunk (LIMIT 1, ordered by created_at)
-    const { data: chunk, error: chunkError } = await supabase
+    // Fetch up to 500 pending chunks for round-robin selection
+    const { data: chunks, error: chunkError } = await supabase
       .from('pco_sync_queue')
       .select(`
         *,
@@ -37,10 +37,17 @@ Deno.serve(async (req) => {
       `)
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
-      .limit(1)
-      .single();
+      .limit(500);
 
-    if (chunkError || !chunk) {
+    if (chunkError) {
+      console.error('Error fetching chunks:', chunkError);
+      return new Response(JSON.stringify({ error: chunkError.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    if (!chunks || chunks.length === 0) {
       console.log('No pending chunks found');
       return new Response(JSON.stringify({ message: 'No pending chunks' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -48,114 +55,159 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Processing chunk ${chunk.chunk_number} for job ${chunk.sync_job_id}`);
-
-    // Mark chunk as processing
-    await supabase
-      .from('pco_sync_queue')
-      .update({ status: 'processing' })
-      .eq('id', chunk.id);
-
-    try {
-      const job = chunk.pco_sync_jobs;
-      const integration = job.integrations;
-      const mapping = job.integration_list_mappings;
-      const people = chunk.chunk_data as any[];
-
-      console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number}`);
-
-      // Get PC credentials (try application_id first, fallback to app_id for backwards compatibility)
-      const applicationId = integration.credentials.application_id ?? integration.credentials.app_id;
-      const secret = integration.credentials.secret;
-      const auth = btoa(`${applicationId}:${secret}`);
-
-      // Process each person in the chunk
-      for (const person of people) {
-        await processPersonData(person, integration.organization_id, mapping, auth, supabase);
+    // Select up to 20 chunks using round-robin (one per organization)
+    const selectedChunks = [];
+    const seenOrgs = new Set();
+    
+    for (const chunk of chunks) {
+      if (!seenOrgs.has(chunk.organization_id)) {
+        selectedChunks.push(chunk);
+        seenOrgs.add(chunk.organization_id);
+        if (selectedChunks.length >= 20) break;
       }
-
-      // Mark chunk as completed
-      await supabase
-        .from('pco_sync_queue')
-        .update({
-          status: 'completed',
-          processed_at: new Date().toISOString()
-        })
-        .eq('id', chunk.id);
-
-      console.log(`Chunk ${chunk.chunk_number} completed successfully`);
-
-      // Update job progress
-      const { data: currentJob } = await supabase
-        .from('pco_sync_jobs')
-        .select('processed_contacts, total_contacts')
-        .eq('id', chunk.sync_job_id)
-        .single();
-
-      if (currentJob) {
-        const newProcessed = currentJob.processed_contacts + people.length;
-        const isComplete = newProcessed >= currentJob.total_contacts;
-
-        await supabase
-          .from('pco_sync_jobs')
-          .update({
-            processed_contacts: newProcessed,
-            status: isComplete ? 'completed' : 'processing',
-            completed_at: isComplete ? new Date().toISOString() : null
-          })
-          .eq('id', chunk.sync_job_id);
-
-        console.log(`Job progress: ${newProcessed}/${currentJob.total_contacts} contacts`);
-      }
-
-      return new Response(JSON.stringify({ 
-        message: 'Chunk processed successfully',
-        chunk_number: chunk.chunk_number,
-        contacts_processed: people.length
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      });
-
-    } catch (error) {
-      console.error('Error processing chunk:', error);
-
-      const newRetryCount = chunk.retry_count + 1;
-
-      if (newRetryCount <= 3) {
-        // Retry up to 3 times
-        console.log(`Retrying chunk ${chunk.chunk_number}, attempt ${newRetryCount}`);
-        await supabase
-          .from('pco_sync_queue')
-          .update({
-            status: 'pending', // Set back to pending so it gets picked up again
-            retry_count: newRetryCount,
-            error_message: error.message
-          })
-          .eq('id', chunk.id);
-      } else {
-        // Mark as failed after 3 retries
-        console.error(`Chunk ${chunk.chunk_number} failed after 3 retries`);
-        await supabase
-          .from('pco_sync_queue')
-          .update({
-            status: 'failed',
-            error_message: error.message
-          })
-          .eq('id', chunk.id);
-
-        // Update job status
-        await supabase
-          .from('pco_sync_jobs')
-          .update({ 
-            status: 'failed', 
-            error_message: `Chunk ${chunk.chunk_number} failed: ${error.message}` 
-          })
-          .eq('id', chunk.sync_job_id);
-      }
-
-      throw error;
     }
+
+    console.log(`Processing ${selectedChunks.length} chunks from ${seenOrgs.size} organizations`);
+
+    let successCount = 0;
+    let errorCount = 0;
+    const processedOrgs = new Set();
+
+    // Process each selected chunk
+    for (const chunk of selectedChunks) {
+      try {
+        console.log(`Processing chunk ${chunk.chunk_number} for job ${chunk.sync_job_id} (org: ${chunk.organization_id})`);
+        processedOrgs.add(chunk.organization_id);
+
+        // Mark chunk as processing
+        await supabase
+          .from('pco_sync_queue')
+          .update({ status: 'processing' })
+          .eq('id', chunk.id);
+
+        const job = chunk.pco_sync_jobs;
+        const integration = job.integrations;
+        const mapping = job.integration_list_mappings;
+        const people = chunk.chunk_data as any[];
+
+        console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number}`);
+
+        // Get PC credentials (try application_id first, fallback to app_id for backwards compatibility)
+        const applicationId = integration.credentials.application_id ?? integration.credentials.app_id;
+        const secret = integration.credentials.secret;
+        const auth = btoa(`${applicationId}:${secret}`);
+
+        // Process each person in the chunk
+        for (const person of people) {
+          await processPersonData(person, integration.organization_id, mapping, auth, supabase);
+        }
+
+        // Mark chunk as completed
+        await supabase
+          .from('pco_sync_queue')
+          .update({
+            status: 'completed',
+            processed_at: new Date().toISOString()
+          })
+          .eq('id', chunk.id);
+
+        console.log(`Chunk ${chunk.chunk_number} completed successfully`);
+
+        // Update job progress
+        const { data: currentJob } = await supabase
+          .from('pco_sync_jobs')
+          .select('processed_contacts, total_contacts')
+          .eq('id', chunk.sync_job_id)
+          .single();
+
+        if (currentJob) {
+          const newProcessed = currentJob.processed_contacts + people.length;
+          const isComplete = newProcessed >= currentJob.total_contacts;
+
+          await supabase
+            .from('pco_sync_jobs')
+            .update({
+              processed_contacts: newProcessed,
+              status: isComplete ? 'completed' : 'processing',
+              completed_at: isComplete ? new Date().toISOString() : null
+            })
+            .eq('id', chunk.sync_job_id);
+
+          console.log(`Job progress: ${newProcessed}/${currentJob.total_contacts} contacts`);
+
+          // Track PCO sync when job is complete
+          if (isComplete) {
+            await supabase.rpc('track_pco_sync', {
+              p_org_id: integration.organization_id,
+              p_sync_type: 'list_sync'
+            });
+            
+            // Update mapping last_sync_at
+            await supabase
+              .from('integration_list_mappings')
+              .update({ last_sync_at: new Date().toISOString() })
+              .eq('id', job.list_mapping_id);
+          }
+        }
+
+        successCount++;
+
+      } catch (error) {
+        console.error(`Error processing chunk ${chunk.id}:`, error);
+        errorCount++;
+
+        // Check retry count
+        const currentRetryCount = chunk.retry_count || 0;
+
+        if (currentRetryCount < 3) {
+          // Mark for retry
+          await supabase
+            .from('pco_sync_queue')
+            .update({
+              status: 'pending',
+              retry_count: currentRetryCount + 1,
+              error_message: error.message
+            })
+            .eq('id', chunk.id);
+
+          console.log(`Chunk ${chunk.chunk_number} marked for retry (attempt ${currentRetryCount + 1}/3)`);
+        } else {
+          // Max retries reached, mark as failed
+          await supabase
+            .from('pco_sync_queue')
+            .update({
+              status: 'failed',
+              error_message: error.message
+            })
+            .eq('id', chunk.id);
+
+          // Mark job as failed if this chunk failed
+          const job = chunk.pco_sync_jobs;
+          if (job) {
+            await supabase
+              .from('pco_sync_jobs')
+              .update({
+                status: 'failed',
+                error_message: error.message
+              })
+              .eq('id', job.id);
+          }
+
+          console.error(`Chunk ${chunk.chunk_number} failed after 3 retries`);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({
+      message: `Processed ${successCount} chunks successfully, ${errorCount} failed`,
+      successCount,
+      errorCount,
+      organizations: processedOrgs.size,
+      organizationIds: Array.from(processedOrgs)
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
 
   } catch (error) {
     console.error('Fatal error in processor:', error);
