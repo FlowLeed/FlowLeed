@@ -1402,6 +1402,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          organization_id: string
           processed_at: string | null
           retry_count: number
           status: string
@@ -1414,6 +1415,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          organization_id: string
           processed_at?: string | null
           retry_count?: number
           status?: string
@@ -1426,6 +1428,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          organization_id?: string
           processed_at?: string | null
           retry_count?: number
           status?: string
@@ -1433,6 +1436,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_sync_queue_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_sync_queue_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pco_sync_queue_sync_job_id_fkey"
             columns: ["sync_job_id"]
