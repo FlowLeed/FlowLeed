@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
 
     console.log('Processing next pending chunks from queue...');
 
-    // Fetch up to 500 pending chunks for round-robin selection
+    // Fetch up to 100 pending chunks for round-robin selection
     const { data: chunks, error: chunkError } = await supabase
       .from('pco_sync_queue')
       .select(`
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       `)
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
-      .limit(500);
+      .limit(100);
 
     if (chunkError) {
       console.error('Error fetching chunks:', chunkError);
