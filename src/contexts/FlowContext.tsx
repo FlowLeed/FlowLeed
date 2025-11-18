@@ -12,6 +12,7 @@ interface FlowContextType {
   deleteFlow: (flowId: string) => Promise<void>;
   refreshFlows: () => Promise<void>;
   reorderFlows: (flows: Flow[]) => Promise<void>;
+  duplicateFlow: (flowId: string) => Promise<string>;
   loading: boolean;
   error: string | null;
 }
@@ -752,8 +753,83 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
     }
   };
 
+  const duplicateFlow = async (sourceFlowId: string): Promise<string> => {
+    if (!user?.id || !organization) {
+      throw new Error("User or organization context missing");
+    }
+
+    try {
+      // Fetch source flow with stages
+      const { data: sourceFlow, error: flowError } = await supabase
+        .from('pipelines')
+        .select('*, pipeline_stages(*)')
+        .eq('id', sourceFlowId)
+        .single();
+
+      if (flowError || !sourceFlow) {
+        throw new Error("Source flow not found");
+      }
+
+      // Create new flow
+      const newFlowId = crypto.randomUUID();
+      const { error: pipelineError } = await supabase
+        .from('pipelines')
+        .insert({
+          id: newFlowId,
+          organization_id: organization.id,
+          name: `${sourceFlow.name} (Copy)`,
+          description: sourceFlow.description,
+          icon: sourceFlow.icon,
+          flow_type: sourceFlow.flow_type,
+          cycle_days: sourceFlow.cycle_days,
+          flow_order: Object.keys(flows).length
+        });
+
+      if (pipelineError) throw pipelineError;
+
+      // Create stages
+      if (sourceFlow.pipeline_stages && sourceFlow.pipeline_stages.length > 0) {
+        const newStages = sourceFlow.pipeline_stages.map((stage: any) => ({
+          id: crypto.randomUUID(),
+          pipeline_id: newFlowId,
+          name: stage.name,
+          color: stage.color,
+          stage_order: stage.stage_order,
+          is_start_step: stage.is_start_step,
+          is_end_step: stage.is_end_step,
+          default_assignee_user_id: stage.default_assignee_user_id
+        }));
+
+        const { error: stagesError } = await supabase
+          .from('pipeline_stages')
+          .insert(newStages);
+
+        if (stagesError) throw stagesError;
+      }
+
+      // Add current user as lead
+      const { error: teamError } = await supabase
+        .from('pipeline_team_members')
+        .insert({
+          pipeline_id: newFlowId,
+          user_id: user.id,
+          role: 'lead'
+        });
+
+      if (teamError) throw teamError;
+
+      await refreshFlows();
+      toast.success("Flow duplicated successfully! 🎉");
+      return newFlowId;
+    } catch (err) {
+      console.error('Error duplicating flow:', err);
+      toast.error("Failed to duplicate flow");
+      throw err;
+    }
+  };
+
   return (
-    <FlowContext.Provider value={{ flows, updateFlow, createFlow, deleteFlow, refreshFlows, reorderFlows, loading, error }}>
+    <FlowContext.Provider value={{ flows, updateFlow, createFlow, deleteFlow, refreshFlows, reorderFlows, duplicateFlow, loading, error }}>
       {children}
     </FlowContext.Provider>
   );
