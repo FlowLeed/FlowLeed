@@ -13,6 +13,7 @@ import {
   Plus,
   Settings,
   Trash2,
+  Copy,
   Users,
   MessageSquare,
   Calendar,
@@ -90,12 +91,13 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const { flows, deleteFlow, reorderFlows, createFlow, refreshFlows } = useFlowContext();
+  const { flows, deleteFlow, reorderFlows, createFlow, refreshFlows, duplicateFlow } = useFlowContext();
   const { organization } = useProfile();
   const [editingFlowId, setEditingFlowId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [flowToDelete, setFlowToDelete] = useState<Flow | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [duplicatingFlowId, setDuplicatingFlowId] = useState<string | null>(null);
 
   // Convert flows object to array and sort by flow_order
   const flowsArray = Object.values(flows).sort((a, b) => 
@@ -128,6 +130,17 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
       await deleteFlow(flowToDelete.id);
       setShowDeleteDialog(false);
       setFlowToDelete(null);
+    }
+  };
+
+  const handleDuplicate = async (flowId: string) => {
+    setDuplicatingFlowId(flowId);
+    try {
+      await duplicateFlow(flowId);
+    } catch (error) {
+      console.error('Failed to duplicate flow:', error);
+    } finally {
+      setDuplicatingFlowId(null);
     }
   };
 
@@ -218,6 +231,14 @@ export const FlowsManagementDialog: React.FC<FlowsManagementDialogProps> = ({
                                   onClick={() => setEditingFlowId(flow.id)}
                                 >
                                   <Settings className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDuplicate(flow.id)}
+                                  disabled={duplicatingFlowId === flow.id}
+                                >
+                                  <Copy className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="ghost"
