@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, X, Star, User, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Users } from "lucide-react";
+import { UserPlus, X, Star, User, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Users, Copy } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import type { LucideIcon } from "lucide-react";
 import { AIDescriptionSuggestions } from "@/components/flows/AIDescriptionSuggestions";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
+import { useFlowContext } from "@/contexts/FlowContext";
 
 interface FlowTeamMember {
   id: string;
@@ -76,7 +77,9 @@ export const FlowSettingsDialog = ({
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const { toast } = useToast();
+  const { duplicateFlow } = useFlowContext();
 
   // Initialize flow data when dialog opens
   useEffect(() => {
@@ -410,6 +413,18 @@ export const FlowSettingsDialog = ({
     } finally {
       setLoading(false);
       setShowDeleteDialog(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    try {
+      await duplicateFlow(flowId);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error duplicating flow:', error);
+    } finally {
+      setDuplicating(false);
     }
   };
 
@@ -793,18 +808,28 @@ export const FlowSettingsDialog = ({
           </div>
 
           <DialogFooter className="sm:justify-between">
-            <Button 
-              variant="destructive" 
-              onClick={() => setShowDeleteDialog(true)}
-              disabled={loading}
-            >
-              Delete Flow
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="destructive" 
+                onClick={() => setShowDeleteDialog(true)}
+                disabled={loading || duplicating}
+              >
+                Delete Flow
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleDuplicate}
+                disabled={loading || duplicating}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                Duplicate
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveFlow} disabled={loading}>
+              <Button onClick={handleSaveFlow} disabled={loading || duplicating}>
                 Save Changes
               </Button>
             </div>
