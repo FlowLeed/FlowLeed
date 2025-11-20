@@ -586,6 +586,117 @@ export type Database = {
         }
         Relationships: []
       }
+      flow_moment_types: {
+        Row: {
+          category: string
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          organization_id: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          category?: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          organization_id: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          category?: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_moment_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_moment_types_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_moments: {
+        Row: {
+          contact_id: string
+          created_at: string
+          created_by_user_id: string | null
+          flow_moment_type_id: string
+          id: string
+          metadata: Json | null
+          occurred_at: string
+          source_reference: string
+          source_system: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          flow_moment_type_id: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          source_reference: string
+          source_system?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          flow_moment_type_id?: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+          source_reference?: string
+          source_system?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_moments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_moments_flow_moment_type_id_fkey"
+            columns: ["flow_moment_type_id"]
+            isOneToOne: false
+            referencedRelation: "flow_moment_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       impersonation_actions: {
         Row: {
           action_description: string
@@ -1315,6 +1426,83 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      pco_moment_mappings: {
+        Row: {
+          created_at: string
+          flow_moment_type_id: string
+          id: string
+          integration_id: string
+          is_active: boolean
+          last_synced_at: string | null
+          organization_id: string
+          pco_source_identifier: string
+          pco_source_label: string
+          pco_source_type: string
+          pco_tab_name: string | null
+          trigger_condition: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          flow_moment_type_id: string
+          id?: string
+          integration_id: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          organization_id: string
+          pco_source_identifier: string
+          pco_source_label: string
+          pco_source_type?: string
+          pco_tab_name?: string | null
+          trigger_condition?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          flow_moment_type_id?: string
+          id?: string
+          integration_id?: string
+          is_active?: boolean
+          last_synced_at?: string | null
+          organization_id?: string
+          pco_source_identifier?: string
+          pco_source_label?: string
+          pco_source_type?: string
+          pco_tab_name?: string | null
+          trigger_condition?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pco_moment_mappings_flow_moment_type_id_fkey"
+            columns: ["flow_moment_type_id"]
+            isOneToOne: false
+            referencedRelation: "flow_moment_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_moment_mappings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_moment_mappings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_moment_mappings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2147,6 +2335,10 @@ export type Database = {
           _session_id: string
         }
         Returns: string
+      }
+      seed_default_moment_types: {
+        Args: { org_id: string }
+        Returns: undefined
       }
       start_impersonation_session:
         | {

@@ -19,6 +19,7 @@ import UserProfilePage from "./pages/UserProfilePage";
 import ProfilePage from "./pages/ProfilePage";
 import TeamPage from "./pages/TeamPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
+import FlowMomentsMappingPage from "./pages/FlowMomentsMappingPage";
 import AuthPage from "./pages/AuthPage";
 import AuthVerifyPage from "./pages/AuthVerifyPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/settings/flow-moments" element={<FlowMomentsMappingPage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
