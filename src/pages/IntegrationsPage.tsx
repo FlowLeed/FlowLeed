@@ -15,6 +15,7 @@ import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
 import { SyncProgressDisplay } from "@/components/integrations/SyncProgressDisplay";
+import { FlowMomentsMappingSection } from "@/components/integrations/FlowMomentsMappingSection";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
 import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
 
@@ -503,6 +504,22 @@ const IntegrationsPage = () => {
                   setSelectedIntegrationId(planningCenterIntegration.id);
                   setMappingDialogOpen(true);
                 }} />
+                      
+                      <Separator />
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">Flow Moments Mapping</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Map Planning Center custom tabs and fields to Flow Moments
+                          </p>
+                        </div>
+                        
+                        <FlowMomentsMappingSection
+                          integrationId={planningCenterIntegration.id}
+                          organizationId={userOrgData!.organization_id}
+                        />
+                      </div>
                     </div>
                   </>}
               </div>}
