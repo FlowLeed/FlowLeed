@@ -297,6 +297,9 @@ async function processPersonData(
 
   // Sync demographic data
   await syncDemographicData(contact.id, pcPersonId, auth, supabase);
+  
+  // Sync flow moments from custom field data
+  await syncFlowMomentsFromFieldData(contact.id, organizationId, pcPersonId, auth, supabase);
 }
 
 // Helper function to sync demographic data from Planning Center
@@ -501,3 +504,115 @@ async function syncDemographicData(
     // Don't throw - we don't want to fail the whole chunk for demographic sync issues
   }
 }
+
+// Helper function to sync flow moments from PCO custom field data
+async function syncFlowMomentsFromFieldData(
+  contactId: string,
+  organizationId: string,
+  pcPersonId: string,
+  auth: string,
+  supabase: any
+) {
+  try {
+    // 1. Fetch active mappings for this org
+    const { data: mappings, error: mappingsError } = await supabase
+      .from('pco_moment_mappings')
+      .select('*, flow_moment_types(*)')
+      .eq('organization_id', organizationId)
+      .eq('is_active', true);
+    
+    if (mappingsError) {
+      console.error('Error fetching moment mappings:', mappingsError);
+      return;
+    }
+    
+    if (!mappings || mappings.length === 0) {
+      console.log('No active moment mappings found for organization');
+      return;
+    }
+    
+    console.log(`Found ${mappings.length} active moment mappings`);
+    
+    // 2. Fetch field data from PCO for this person
+    const fieldDataResponse = await fetch(
+      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/field_data?include=field_definition`,
+      {
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (!fieldDataResponse.ok) {
+      console.error(`Failed to fetch field data for person ${pcPersonId}: ${fieldDataResponse.statusText}`);
+      return;
+    }
+    
+    const fieldDataJson = await fieldDataResponse.json();
+    const fieldDataArray = fieldDataJson.data || [];
+    
+    console.log(`Fetched ${fieldDataArray.length} field data entries for person ${pcPersonId}`);
+    
+    // 3. For each mapping, check if condition matches
+    for (const mapping of mappings) {
+      const fieldData = fieldDataArray.find(
+        (fd: any) => fd.relationships?.field_definition?.data?.id === mapping.pco_source_identifier
+      );
+      
+      if (!fieldData) {
+        continue;
+      }
+      
+      // Check trigger condition
+      const value = fieldData.attributes?.value;
+      const condition = mapping.trigger_condition || { operator: 'equals', value: 'Yes' };
+      
+      let shouldCreateMoment = false;
+      
+      if (condition.operator === 'equals' && value === condition.value) {
+        shouldCreateMoment = true;
+      } else if (condition.operator === 'not_equals' && value !== condition.value) {
+        shouldCreateMoment = true;
+      } else if (condition.operator === 'is_not_empty' && value) {
+        shouldCreateMoment = true;
+      }
+      
+      if (shouldCreateMoment) {
+        console.log(`Creating moment for mapping ${mapping.id}: ${mapping.pco_source_label} = ${value}`);
+        
+        // 4. Create or update flow moment
+        const { error: momentError } = await supabase.from('flow_moments').upsert({
+          contact_id: contactId,
+          flow_moment_type_id: mapping.flow_moment_type_id,
+          source_system: 'pco',
+          source_reference: mapping.pco_source_identifier,
+          occurred_at: fieldData.attributes?.updated_at || new Date().toISOString(),
+          metadata: {
+            pco_field_value: value,
+            pco_field_label: mapping.pco_source_label,
+            tab_name: mapping.pco_tab_name,
+          },
+        }, {
+          onConflict: 'contact_id,flow_moment_type_id,source_reference',
+        });
+        
+        if (momentError) {
+          console.error('Error creating flow moment:', momentError);
+        } else {
+          console.log(`Successfully created/updated moment for ${mapping.pco_source_label}`);
+          
+          // Update mapping last_synced_at
+          await supabase
+            .from('pco_moment_mappings')
+            .update({ last_synced_at: new Date().toISOString() })
+            .eq('id', mapping.id);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error syncing flow moments:', error);
+    // Don't throw - we don't want to fail the whole chunk for flow moments sync issues
+  }
+}
+

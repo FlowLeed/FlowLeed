@@ -23,6 +23,7 @@ import { QuickActionsBar } from "@/components/contact/QuickActionsBar";
 import { AISuggestions } from "@/components/contact/AISuggestions";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
 import { TagManager } from "@/components/contact/TagManager";
+import { FlowMomentsCard } from "@/components/contact/FlowMomentsCard";
 
 import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
@@ -959,6 +960,9 @@ const UserProfilePage = () => {
       <div className="space-y-6">
         {/* Flow Status Block */}
         <ContactFlowStatus flows={flows} contactId={contactId!} />
+        
+        {/* Flow Moments */}
+        <FlowMomentsCard contactId={contactId!} />
         
         {/* Family Members Block (if any) */}
         {familyMembers && familyMembers.length > 0 && (
