@@ -83,8 +83,15 @@ Deno.serve(async (req) => {
     );
 
     if (!pcoResponse.ok) {
-      console.error('PCO API error:', await pcoResponse.text());
-      return new Response(JSON.stringify({ error: 'Failed to fetch from Planning Center' }), {
+      const errorText = await pcoResponse.text();
+      console.error('PCO API error:', errorText);
+      
+      // Provide more helpful error message for authentication failures
+      const errorMessage = pcoResponse.status === 401 
+        ? 'Planning Center authentication failed - please reconnect your account'
+        : 'Failed to fetch from Planning Center';
+      
+      return new Response(JSON.stringify({ error: errorMessage }), {
         status: pcoResponse.status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
