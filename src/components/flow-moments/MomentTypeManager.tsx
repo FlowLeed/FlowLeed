@@ -66,7 +66,6 @@ export function MomentTypeManager({ open, onOpenChange }: MomentTypeManagerProps
     }
   };
 
-  const IconPreview = iconMap[formData.icon] || iconMap.Sparkles;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -133,10 +132,7 @@ export function MomentTypeManager({ open, onOpenChange }: MomentTypeManagerProps
                 onValueChange={(value) => setFormData({ ...formData, icon: value })}
               >
                 <SelectTrigger>
-                  <div className="flex items-center gap-2">
-                    <IconPreview className="h-4 w-4" />
-                    <span>{formData.icon}</span>
-                  </div>
+                  <SelectValue placeholder="Select icon" />
                 </SelectTrigger>
                 <SelectContent>
                   {iconOptions.map((option) => {
