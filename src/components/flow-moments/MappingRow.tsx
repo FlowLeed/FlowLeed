@@ -69,14 +69,9 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
   const IconComponent = selectedMomentType?.icon ? iconMap[selectedMomentType.icon] : null;
 
   return (
-    <div className="grid grid-cols-12 gap-4 px-4 py-3 border rounded-lg hover:bg-muted/30 transition-colors">
-      {/* Tab */}
-      <div className="col-span-2 flex items-center">
-        <span className="text-sm text-muted-foreground truncate">{field.tabName}</span>
-      </div>
-
+    <div className="grid grid-cols-10 gap-4 px-4 py-3 border rounded-lg hover:bg-muted/30 transition-colors">
       {/* Field Name */}
-      <div className="col-span-3 flex items-center">
+      <div className="col-span-4 flex items-center">
         <span className="text-sm font-medium truncate">{field.name}</span>
       </div>
 
@@ -169,7 +164,7 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
       </div>
 
       {/* Status & Actions */}
-      <div className="col-span-2 flex items-center justify-between gap-2">
+      <div className="col-span-1 flex items-center justify-end gap-2">
         {isEditing ? (
           <div className="flex gap-1">
             <Button
