@@ -26,19 +26,14 @@ export function FlowMomentsMappingSection({
 
   const isLoading = momentTypesLoading || mappingsLoading || fieldsLoading;
 
-  // Get all fields from all tabs
-  const allFields = fields.flatMap(tab => 
-    tab.fields.map(field => ({
-      ...field,
-      tabName: tab.tabName,
-    }))
-  );
-
   // Map field IDs to existing mappings
   const mappingByFieldId = new Map();
   mappings.forEach(mapping => {
     mappingByFieldId.set(mapping.pco_source_identifier, mapping);
   });
+
+  // Calculate total fields count
+  const totalFieldsCount = fields.reduce((sum, tab) => sum + tab.fields.length, 0);
 
   const handleSeedDefaults = async () => {
     if (momentTypes.length === 0) {
@@ -93,7 +88,7 @@ export function FlowMomentsMappingSection({
       {/* Stats */}
       <div className="flex gap-4">
         <div className="flex-1 text-center p-3 bg-muted/50 rounded-lg">
-          <div className="text-2xl font-bold">{allFields.length}</div>
+          <div className="text-2xl font-bold">{totalFieldsCount}</div>
           <div className="text-xs text-muted-foreground">PCO Fields</div>
         </div>
         <div className="flex-1 text-center p-3 bg-muted/50 rounded-lg">
@@ -106,7 +101,7 @@ export function FlowMomentsMappingSection({
         </div>
       </div>
 
-      {/* Mappings Table */}
+      {/* Mappings by Tab */}
       <Card>
         <CardHeader>
           <CardTitle>Custom Field Mappings</CardTitle>
@@ -120,31 +115,48 @@ export function FlowMomentsMappingSection({
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : allFields.length === 0 ? (
+          ) : fields.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No custom fields found. Click "Refresh Fields from PCO" to fetch them.
             </div>
           ) : (
-            <div className="space-y-2">
-              {/* Table Header */}
-              <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-muted/50 rounded-lg font-medium text-sm">
-                <div className="col-span-2">Tab</div>
-                <div className="col-span-3">Field Name</div>
-                <div className="col-span-3">Moment Type</div>
-                <div className="col-span-2">Trigger</div>
-                <div className="col-span-2">Status</div>
-              </div>
-              
-              {/* Table Rows */}
-              {allFields.map((field) => (
-                <MappingRow
-                  key={field.id}
-                  field={field}
-                  mapping={mappingByFieldId.get(field.id)}
-                  momentTypes={momentTypes}
-                  integrationId={integrationId}
-                  organizationId={organizationId}
-                />
+            <div className="space-y-6">
+              {fields.map((tab, tabIndex) => (
+                <div key={`${tab.tabName}-${tabIndex}`} className="space-y-3">
+                  {/* Tab Section Header */}
+                  <div className="border-b pb-2">
+                    <h3 className="text-lg font-semibold text-foreground">{tab.tabName}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {tab.fields.length} field{tab.fields.length !== 1 ? 's' : ''} • 
+                      {' '}{tab.fields.filter(f => mappingByFieldId.has(f.id)).length} mapped
+                    </p>
+                  </div>
+
+                  {/* Mini Table Header */}
+                  <div className="grid grid-cols-10 gap-4 px-4 py-2 bg-muted/30 rounded-lg font-medium text-xs text-muted-foreground">
+                    <div className="col-span-4">Field Name</div>
+                    <div className="col-span-3">Moment Type</div>
+                    <div className="col-span-2">Trigger</div>
+                    <div className="col-span-1">Status</div>
+                  </div>
+
+                  {/* Fields in this Tab */}
+                  <div className="space-y-2">
+                    {tab.fields.map((field) => (
+                      <MappingRow
+                        key={field.id}
+                        field={{
+                          ...field,
+                          tabName: tab.tabName,
+                        }}
+                        mapping={mappingByFieldId.get(field.id)}
+                        momentTypes={momentTypes}
+                        integrationId={integrationId}
+                        organizationId={organizationId}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
