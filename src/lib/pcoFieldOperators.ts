@@ -5,6 +5,7 @@ export interface OperatorOption {
 
 export function getOperatorsForFieldType(dataType: string): OperatorOption[] {
   switch (dataType) {
+    case 'checkbox':  // Planning Center's name for yes/no fields
     case 'yes_no':
       return [
         { value: 'is_yes', label: 'Is Yes' },
