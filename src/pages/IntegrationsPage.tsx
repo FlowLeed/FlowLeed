@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,17 +11,17 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
-import { ExternalLink, Loader2, CheckCircle, AlertCircle, Key, Database, Calendar, Mail, Zap } from "lucide-react";
+import { ExternalLink, Loader2, CheckCircle, AlertCircle, Key, Database, Calendar, Mail, Zap, Settings } from "lucide-react";
 import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog";
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
 import { SyncProgressDisplay } from "@/components/integrations/SyncProgressDisplay";
-import { FlowMomentsMappingSection } from "@/components/integrations/FlowMomentsMappingSection";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
 import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
 
 const IntegrationsPage = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [planningCenterForm, setPlanningCenterForm] = useState({
     appId: '',
     secret: ''
@@ -468,6 +469,13 @@ const IntegrationsPage = () => {
                    <Button variant="destructive" onClick={handlePlanningCenterDisconnect} disabled={deleteIntegrationMutation.isPending}>
                      {deleteIntegrationMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
                    </Button>
+                   <Button 
+                     variant="outline" 
+                     onClick={() => navigate('/integrations/planning-center/advanced')}
+                   >
+                     <Settings className="h-4 w-4 mr-2" />
+                     Advanced Settings
+                   </Button>
                  </div>
                 
                 <Separator />
@@ -504,22 +512,6 @@ const IntegrationsPage = () => {
                   setSelectedIntegrationId(planningCenterIntegration.id);
                   setMappingDialogOpen(true);
                 }} />
-                      
-                      <Separator />
-                      
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">Flow Moments Mapping</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Map Planning Center custom tabs and fields to Flow Moments
-                          </p>
-                        </div>
-                        
-                        <FlowMomentsMappingSection
-                          integrationId={planningCenterIntegration.id}
-                          organizationId={userOrgData!.organization_id}
-                        />
-                      </div>
                     </div>
                   </>}
               </div>}
