@@ -198,10 +198,19 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
           </>
         ) : mapping ? (
           <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-            {(field.dataType === 'checkbox' || field.dataType === 'yes_no')
-              ? getOperatorLabel(mapping.trigger_condition?.value === 'Yes' ? 'is_yes' : 'is_no')
-              : `${getOperatorLabel(mapping.trigger_condition?.operator)}${needsValueInput(mapping.trigger_condition?.operator) ? ` "${mapping.trigger_condition?.value}"` : ''}`
-            }
+            {(() => {
+              // For checkbox/yes_no, convert stored value to virtual operator
+              if (field.dataType === 'checkbox' || field.dataType === 'yes_no') {
+                const virtualOp = mapping.trigger_condition?.value === 'Yes' ? 'is_yes' : 'is_no';
+                return availableOperators.find(op => op.value === virtualOp)?.label || 'Is Yes';
+              }
+              
+              // For all other fields, look up the label from available operators
+              const operator = mapping.trigger_condition?.operator;
+              const operatorLabel = availableOperators.find(op => op.value === operator)?.label || operator;
+              const valueDisplay = needsValueInput(operator) ? ` "${mapping.trigger_condition?.value}"` : '';
+              return `${operatorLabel}${valueDisplay}`;
+            })()}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">-</span>
