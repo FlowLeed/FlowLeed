@@ -28,16 +28,19 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
   
   // Convert stored format to display format for checkbox/yes_no fields
   const getInitialOperator = () => {
-    if (!mapping) {
-      return "equals";
-    }
-    // Check if it's a checkbox/yes_no field
+    // Check if it's a checkbox/yes_no field FIRST
     if (field.dataType === 'checkbox' || field.dataType === 'yes_no') {
-      const storedValue = mapping.trigger_condition?.value;
-      if (storedValue === 'Yes') return 'is_yes';
-      if (storedValue === 'No') return 'is_no';
-      return 'is_yes'; // default
+      if (mapping) {
+        // Convert existing mapping from storage format
+        const storedValue = mapping.trigger_condition?.value;
+        if (storedValue === 'Yes') return 'is_yes';
+        if (storedValue === 'No') return 'is_no';
+      }
+      // Default for new checkbox mappings
+      return 'is_yes';
     }
+    
+    // For other field types
     return mapping?.trigger_condition?.operator || "equals";
   };
 
