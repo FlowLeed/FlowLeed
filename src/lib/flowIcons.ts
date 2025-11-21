@@ -42,6 +42,8 @@ import {
   MapPin,
   Home,
   Smile,
+  UsersRound,
+  PartyPopper,
   type LucideIcon
 } from "lucide-react";
 
@@ -90,7 +92,9 @@ export const iconMap: { [key: string]: LucideIcon } = {
   'Navigation': Navigation,
   'MapPin': MapPin,
   'Home': Home,
-  'Smile': Smile
+  'Smile': Smile,
+  'UsersRound': UsersRound,
+  'PartyPopper': PartyPopper
 };
 
 export const iconOptions = [
@@ -136,7 +140,9 @@ export const iconOptions = [
   { name: 'Navigation', icon: Navigation },
   { name: 'MapPin', icon: MapPin },
   { name: 'Home', icon: Home },
-  { name: 'Smile', icon: Smile }
+  { name: 'Smile', icon: Smile },
+  { name: 'UsersRound', icon: UsersRound },
+  { name: 'PartyPopper', icon: PartyPopper }
 ];
 
 export const getFlowIcon = (iconName?: string): LucideIcon => {

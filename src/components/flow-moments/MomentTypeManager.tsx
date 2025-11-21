@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2, Edit2 } from "lucide-react";
 import { useFlowMomentTypes, type FlowMomentType } from "@/hooks/useFlowMomentTypes";
-import { iconMap, iconOptions } from "@/lib/flowIcons";
+import { iconOptions, getFlowIcon } from "@/lib/flowIcons";
 
 interface MomentTypeManagerProps {
   open: boolean;
@@ -136,7 +136,7 @@ export function MomentTypeManager({ open, onOpenChange }: MomentTypeManagerProps
                 </SelectTrigger>
                 <SelectContent>
                   {iconOptions.map((option) => {
-                    const Icon = iconMap[option.name];
+                    const Icon = getFlowIcon(option.name);
                     return (
                       <SelectItem key={option.name} value={option.name}>
                         <div className="flex items-center gap-2">
@@ -210,7 +210,7 @@ export function MomentTypeManager({ open, onOpenChange }: MomentTypeManagerProps
             <h3 className="font-semibold">Existing Moment Types ({momentTypes.length})</h3>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {momentTypes.map((mt) => {
-                const Icon = mt.icon ? iconMap[mt.icon] : iconMap.Sparkles;
+                const Icon = getFlowIcon(mt.icon);
                 return (
                   <Card key={mt.id} className={editingId === mt.id ? "ring-2 ring-primary" : ""}>
                     <CardContent className="p-3">
