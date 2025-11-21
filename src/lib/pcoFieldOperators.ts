@@ -10,43 +10,89 @@ export interface FieldWithOptions {
 
 // Build combined dropdown options based on field type
 export function getCombinedOptionsForField(field: FieldWithOptions): OperatorOption[] {
-  switch (field.dataType) {
+  const dataType = field.dataType.toLowerCase(); // Normalize to lowercase
+  
+  // Log for debugging (can remove later)
+  if (field.options && field.options.length > 0) {
+    console.log(`Field with options has dataType: "${field.dataType}"`);
+  }
+  
+  switch (dataType) {
     case 'checkbox':
     case 'yes_no':
+    case 'boolean':
       return [
         { value: 'is_yes', label: 'Is Yes' },
         { value: 'is_no', label: 'Is No' },
       ];
     
     case 'date':
+    case 'date_picker':
       return [
         { value: 'is_not_empty', label: 'Has any date' },
         { value: 'equals', label: 'Is specific date' },
       ];
     
+    // Handle all dropdown/select variations
     case 'dropdown':
+    case 'select':
+    case 'single_select':
+    case 'string_select':
+    // Handle multi-select/checkboxes variations
     case 'checkboxes':
+    case 'multi_select':
+    case 'multiple_select':
+    case 'multiselect':
+      // If field has options, show them
+      if (field.options && field.options.length > 0) {
+        return [
+          { value: 'is_not_empty', label: 'Has any value' },
+          ...field.options.map(option => ({
+            value: `option:${option}`,
+            label: option,
+          })),
+        ];
+      }
+      // If no options but it's a select type, fall back to basic operators
       return [
         { value: 'is_not_empty', label: 'Has any value' },
-        ...(field.options || []).map(option => ({
-          value: `option:${option}`,
-          label: option,
-        })),
+        { value: 'equals', label: 'Equals specific value' },
       ];
     
     case 'file':
+    case 'attachment':
       return [{ value: 'is_not_empty', label: 'File exists' }];
     
     case 'text':
+    case 'string':
     case 'paragraph':
+    case 'textarea':
     case 'number':
+    case 'integer':
+    case 'decimal':
       return [
         { value: 'is_not_empty', label: 'Has any value' },
         { value: 'equals', label: 'Equals specific value' },
       ];
     
     default:
-      return [{ value: 'equals', label: 'Equals' }];
+      // Log unhandled types for debugging
+      console.warn(`Unhandled dataType: "${field.dataType}". Showing basic options.`);
+      // For unknown types, check if we have options
+      if (field.options && field.options.length > 0) {
+        return [
+          { value: 'is_not_empty', label: 'Has any value' },
+          ...field.options.map(option => ({
+            value: `option:${option}`,
+            label: option,
+          })),
+        ];
+      }
+      // Otherwise show basic equals option
+      return [
+        { value: 'is_not_empty', label: 'Has any value' },
+        { value: 'equals', label: 'Equals' },
+      ];
   }
 }
 
