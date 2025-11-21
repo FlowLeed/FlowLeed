@@ -131,7 +131,17 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
 
             {/* Value Input (only if operator needs value) */}
             {showValueInput && (
-              field.options.length > 0 ? (
+              field.dataType === 'yes_no' ? (
+                <Select value={triggerValue} onValueChange={setTriggerValue}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue placeholder="Select value" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : field.options.length > 0 ? (
                 <Select value={triggerValue} onValueChange={setTriggerValue}>
                   <SelectTrigger className="h-8 text-xs flex-1">
                     <SelectValue placeholder="Value" />
