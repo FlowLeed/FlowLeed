@@ -25,9 +25,22 @@ interface MappingRowProps {
 
 export function MappingRow({ field, mapping, momentTypes, integrationId, organizationId }: MappingRowProps) {
   const { createMapping, updateMapping, deleteMapping } = usePcoMomentMappings(integrationId);
+  
+  // Convert stored format to display format for yes/no fields
+  const getInitialOperator = () => {
+    if (!mapping || field.dataType !== 'yes_no') {
+      return mapping?.trigger_condition?.operator || "equals";
+    }
+    // For yes/no fields, convert: equals+Yes -> is_yes, equals+No -> is_no
+    const storedValue = mapping.trigger_condition?.value;
+    if (storedValue === 'Yes') return 'is_yes';
+    if (storedValue === 'No') return 'is_no';
+    return 'is_yes'; // default
+  };
+
   const [isEditing, setIsEditing] = useState(!mapping);
   const [selectedMomentTypeId, setSelectedMomentTypeId] = useState(mapping?.flow_moment_type_id || "");
-  const [selectedOperator, setSelectedOperator] = useState(mapping?.trigger_condition?.operator || "equals");
+  const [selectedOperator, setSelectedOperator] = useState(getInitialOperator());
   const [triggerValue, setTriggerValue] = useState(mapping?.trigger_condition?.value || "Yes");
 
   const availableOperators = getOperatorsForFieldType(field.dataType);
@@ -35,6 +48,20 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
 
   const handleSave = async () => {
     if (!selectedMomentTypeId) return;
+
+    // Convert display format to storage format for yes/no fields
+    let finalOperator = selectedOperator;
+    let finalValue = triggerValue;
+    
+    if (field.dataType === 'yes_no') {
+      if (selectedOperator === 'is_yes') {
+        finalOperator = 'equals';
+        finalValue = 'Yes';
+      } else if (selectedOperator === 'is_no') {
+        finalOperator = 'equals';
+        finalValue = 'No';
+      }
+    }
 
     const mappingData = {
       organization_id: organizationId,
@@ -45,8 +72,8 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
       pco_tab_name: field.tabName,
       flow_moment_type_id: selectedMomentTypeId,
       trigger_condition: {
-        operator: selectedOperator,
-        value: showValueInput ? triggerValue : '',
+        operator: finalOperator,
+        value: finalValue,
       },
       is_active: true,
     };
@@ -165,8 +192,10 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
           </>
         ) : mapping ? (
           <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-            {getOperatorLabel(mapping.trigger_condition?.operator)}
-            {needsValueInput(mapping.trigger_condition?.operator) && ` "${mapping.trigger_condition?.value}"`}
+            {field.dataType === 'yes_no' 
+              ? getOperatorLabel(mapping.trigger_condition?.value === 'Yes' ? 'is_yes' : 'is_no')
+              : `${getOperatorLabel(mapping.trigger_condition?.operator)}${needsValueInput(mapping.trigger_condition?.operator) ? ` "${mapping.trigger_condition?.value}"` : ''}`
+            }
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">-</span>
