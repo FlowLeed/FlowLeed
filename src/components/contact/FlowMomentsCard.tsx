@@ -83,11 +83,6 @@ export function FlowMomentsCard({ contactId }: FlowMomentsCardProps) {
                   <p className="font-medium text-sm">
                     {moment.flow_moment_types.name}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {format(new Date(moment.occurred_at), 'MMMM d, yyyy')}
-                    {moment.source_system === 'pco' && ' (from PCO)'}
-                    {moment.source_system === 'manual' && ' (manual)'}
-                  </p>
                   {moment.metadata?.pco_field_value && (
                     <p className="text-xs text-muted-foreground mt-1">
                       {moment.metadata.pco_field_label}: {moment.metadata.pco_field_value}
