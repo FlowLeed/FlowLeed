@@ -26,16 +26,19 @@ interface MappingRowProps {
 export function MappingRow({ field, mapping, momentTypes, integrationId, organizationId }: MappingRowProps) {
   const { createMapping, updateMapping, deleteMapping } = usePcoMomentMappings(integrationId);
   
-  // Convert stored format to display format for yes/no fields
+  // Convert stored format to display format for checkbox/yes_no fields
   const getInitialOperator = () => {
-    if (!mapping || field.dataType !== 'yes_no') {
-      return mapping?.trigger_condition?.operator || "equals";
+    if (!mapping) {
+      return "equals";
     }
-    // For yes/no fields, convert: equals+Yes -> is_yes, equals+No -> is_no
-    const storedValue = mapping.trigger_condition?.value;
-    if (storedValue === 'Yes') return 'is_yes';
-    if (storedValue === 'No') return 'is_no';
-    return 'is_yes'; // default
+    // Check if it's a checkbox/yes_no field
+    if (field.dataType === 'checkbox' || field.dataType === 'yes_no') {
+      const storedValue = mapping.trigger_condition?.value;
+      if (storedValue === 'Yes') return 'is_yes';
+      if (storedValue === 'No') return 'is_no';
+      return 'is_yes'; // default
+    }
+    return mapping?.trigger_condition?.operator || "equals";
   };
 
   const [isEditing, setIsEditing] = useState(!mapping);
@@ -49,11 +52,11 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
   const handleSave = async () => {
     if (!selectedMomentTypeId) return;
 
-    // Convert display format to storage format for yes/no fields
+    // Convert display format to storage format for checkbox/yes_no fields
     let finalOperator = selectedOperator;
     let finalValue = triggerValue;
     
-    if (field.dataType === 'yes_no') {
+    if (field.dataType === 'checkbox' || field.dataType === 'yes_no') {
       if (selectedOperator === 'is_yes') {
         finalOperator = 'equals';
         finalValue = 'Yes';
@@ -192,7 +195,7 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
           </>
         ) : mapping ? (
           <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-            {field.dataType === 'yes_no' 
+            {(field.dataType === 'checkbox' || field.dataType === 'yes_no')
               ? getOperatorLabel(mapping.trigger_condition?.value === 'Yes' ? 'is_yes' : 'is_no')
               : `${getOperatorLabel(mapping.trigger_condition?.operator)}${needsValueInput(mapping.trigger_condition?.operator) ? ` "${mapping.trigger_condition?.value}"` : ''}`
             }
