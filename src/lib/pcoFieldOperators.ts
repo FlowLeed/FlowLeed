@@ -6,7 +6,10 @@ export interface OperatorOption {
 export function getOperatorsForFieldType(dataType: string): OperatorOption[] {
   switch (dataType) {
     case 'yes_no':
-      return [{ value: 'equals', label: 'Equals' }];
+      return [
+        { value: 'is_yes', label: 'Is Yes' },
+        { value: 'is_no', label: 'Is No' },
+      ];
     
     case 'date':
       return [
@@ -39,7 +42,7 @@ export function getOperatorsForFieldType(dataType: string): OperatorOption[] {
 }
 
 export function needsValueInput(operator: string): boolean {
-  return operator !== 'is_not_empty';
+  return operator !== 'is_not_empty' && operator !== 'is_yes' && operator !== 'is_no';
 }
 
 export function getOperatorLabel(operator: string): string {
@@ -47,6 +50,8 @@ export function getOperatorLabel(operator: string): string {
     equals: 'Equals',
     not_equals: 'Does not equal',
     is_not_empty: 'Has any value',
+    is_yes: 'Is Yes',
+    is_no: 'Is No',
   };
   return labelMap[operator] || operator;
 }
