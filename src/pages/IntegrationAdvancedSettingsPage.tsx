@@ -98,7 +98,8 @@ const IntegrationAdvancedSettingsPage = () => {
   const displayName = getIntegrationDisplayName(integrationName);
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
+    <div className="flex-1 overflow-y-auto">
+      <div className="container mx-auto py-8 space-y-6">
       {/* Breadcrumb Navigation */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -173,6 +174,7 @@ const IntegrationAdvancedSettingsPage = () => {
           Back to Integrations
         </Button>
       </div>
+    </div>
     </div>
   );
 };
