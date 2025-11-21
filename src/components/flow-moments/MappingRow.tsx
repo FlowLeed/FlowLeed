@@ -3,11 +3,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Check, X, Save, Trash2 } from "lucide-react";
+import { Check, X, Save, Trash2, Calendar as CalendarIcon } from "lucide-react";
 import { usePcoMomentMappings } from "@/hooks/usePcoMomentMappings";
 import type { FlowMomentType } from "@/hooks/useFlowMomentTypes";
 import { iconMap } from "@/lib/flowIcons";
-import { getOperatorsForFieldType, needsValueInput, getOperatorLabel } from "@/lib/pcoFieldOperators";
+import { 
+  getCombinedOptionsForField, 
+  needsAdditionalInput, 
+  encodeTriggerCondition, 
+  decodeTriggerCondition,
+  getTriggerLabel 
+} from "@/lib/pcoFieldOperators";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface MappingRowProps {
   field: {
@@ -26,48 +36,41 @@ interface MappingRowProps {
 export function MappingRow({ field, mapping, momentTypes, integrationId, organizationId }: MappingRowProps) {
   const { createMapping, updateMapping, deleteMapping } = usePcoMomentMappings(integrationId);
   
-  // Convert stored format to display format for checkbox/yes_no fields
-  const getInitialOperator = () => {
-    // Check if it's a checkbox/yes_no field FIRST
-    if (field.dataType === 'checkbox' || field.dataType === 'yes_no') {
-      if (mapping) {
-        // Convert existing mapping from storage format
-        const storedValue = mapping.trigger_condition?.value;
-        if (storedValue === 'Yes') return 'is_yes';
-        if (storedValue === 'No') return 'is_no';
-      }
-      // Default for new checkbox mappings
-      return 'is_yes';
-    }
-    
-    // For other field types
-    return mapping?.trigger_condition?.operator || "equals";
-  };
-
+  // Decode existing mapping into combined dropdown format
+  const initialDecoded = mapping 
+    ? decodeTriggerCondition(
+        mapping.trigger_condition?.operator || '',
+        mapping.trigger_condition?.value || null,
+        field
+      )
+    : { selectedValue: '', additionalValue: null };
+  
   const [isEditing, setIsEditing] = useState(!mapping);
   const [selectedMomentTypeId, setSelectedMomentTypeId] = useState(mapping?.flow_moment_type_id || "");
-  const [selectedOperator, setSelectedOperator] = useState(getInitialOperator());
-  const [triggerValue, setTriggerValue] = useState(mapping?.trigger_condition?.value || "Yes");
+  const [selectedTrigger, setSelectedTrigger] = useState(initialDecoded.selectedValue);
+  const [additionalValue, setAdditionalValue] = useState(initialDecoded.additionalValue || '');
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    field.dataType === 'date' && initialDecoded.additionalValue 
+      ? new Date(initialDecoded.additionalValue) 
+      : undefined
+  );
 
-  const availableOperators = getOperatorsForFieldType(field.dataType);
-  const showValueInput = needsValueInput(selectedOperator);
+  const triggerOptions = getCombinedOptionsForField({
+    dataType: field.dataType,
+    options: field.options || [],
+  });
 
   const handleSave = async () => {
-    if (!selectedMomentTypeId) return;
+    if (!selectedMomentTypeId || !selectedTrigger) return;
 
-    // Convert display format to storage format for checkbox/yes_no fields
-    let finalOperator = selectedOperator;
-    let finalValue = triggerValue;
-    
-    if (field.dataType === 'checkbox' || field.dataType === 'yes_no') {
-      if (selectedOperator === 'is_yes') {
-        finalOperator = 'equals';
-        finalValue = 'Yes';
-      } else if (selectedOperator === 'is_no') {
-        finalOperator = 'equals';
-        finalValue = 'No';
-      }
+    // Prepare additional value based on field type
+    let finalAdditionalValue = additionalValue;
+    if (field.dataType === 'date' && selectedDate) {
+      finalAdditionalValue = format(selectedDate, 'yyyy-MM-dd');
     }
+
+    // Encode the combined dropdown selection back to database format
+    const triggerCondition = encodeTriggerCondition(selectedTrigger, finalAdditionalValue);
 
     const mappingData = {
       organization_id: organizationId,
@@ -77,10 +80,7 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
       pco_source_label: field.name,
       pco_tab_name: field.tabName,
       flow_moment_type_id: selectedMomentTypeId,
-      trigger_condition: {
-        operator: finalOperator,
-        value: finalValue,
-      },
+      trigger_condition: triggerCondition,
       is_active: true,
     };
 
@@ -145,72 +145,75 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
       </div>
 
       {/* Trigger */}
-      <div className="col-span-2 flex items-center gap-2">
+      <div className="col-span-2 flex flex-col gap-2">
         {isEditing ? (
           <>
-            {/* Operator Selection */}
-            <Select value={selectedOperator} onValueChange={setSelectedOperator}>
-              <SelectTrigger className="h-8 text-xs w-[120px]">
-                <SelectValue />
+            <Select value={selectedTrigger} onValueChange={setSelectedTrigger}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Select trigger..." />
               </SelectTrigger>
-              <SelectContent>
-                {availableOperators.map((op) => (
-                  <SelectItem key={op.value} value={op.value}>
-                    {op.label}
+              <SelectContent className="max-h-[300px]">
+                {triggerOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {/* Value Input (only if operator needs value) */}
-            {showValueInput && (
-              field.dataType === 'yes_no' ? (
-                <Select value={triggerValue} onValueChange={setTriggerValue}>
-                  <SelectTrigger className="h-8 text-xs flex-1">
-                    <SelectValue placeholder="Select value" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Yes">Yes</SelectItem>
-                    <SelectItem value="No">No</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : field.options.length > 0 ? (
-                <Select value={triggerValue} onValueChange={setTriggerValue}>
-                  <SelectTrigger className="h-8 text-xs flex-1">
-                    <SelectValue placeholder="Value" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {field.options.map((option) => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  value={triggerValue}
-                  onChange={(e) => setTriggerValue(e.target.value)}
-                  placeholder="Value"
-                  className="h-8 text-xs flex-1"
-                  type={field.dataType === 'number' ? 'number' : 'text'}
-                />
-              )
+            {/* Show additional input when needed */}
+            {needsAdditionalInput(selectedTrigger, field.dataType) && (
+              <>
+                {field.dataType === 'date' ? (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "h-8 text-xs justify-start text-left font-normal",
+                          !selectedDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-3 w-3" />
+                        {selectedDate ? format(selectedDate, "PPP") : <span>Pick date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <Input
+                    value={additionalValue}
+                    onChange={(e) => setAdditionalValue(e.target.value)}
+                    placeholder="Enter value"
+                    className="h-8 text-xs"
+                    type={field.dataType === 'number' ? 'number' : 'text'}
+                  />
+                )}
+              </>
             )}
           </>
         ) : mapping ? (
           <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-            {(() => {
-              // For checkbox/yes_no, convert stored value to virtual operator
-              if (field.dataType === 'checkbox' || field.dataType === 'yes_no') {
-                const virtualOp = mapping.trigger_condition?.value === 'Yes' ? 'is_yes' : 'is_no';
-                return availableOperators.find(op => op.value === virtualOp)?.label || 'Is Yes';
-              }
-              
-              // For all other fields, look up the label from available operators
-              const operator = mapping.trigger_condition?.operator;
-              const operatorLabel = availableOperators.find(op => op.value === operator)?.label || operator;
-              const valueDisplay = needsValueInput(operator) ? ` "${mapping.trigger_condition?.value}"` : '';
-              return `${operatorLabel}${valueDisplay}`;
-            })()}
+            {getTriggerLabel(
+              decodeTriggerCondition(
+                mapping.trigger_condition?.operator || '',
+                mapping.trigger_condition?.value || null,
+                field
+              ).selectedValue,
+              decodeTriggerCondition(
+                mapping.trigger_condition?.operator || '',
+                mapping.trigger_condition?.value || null,
+                field
+              ).additionalValue
+            )}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">-</span>
