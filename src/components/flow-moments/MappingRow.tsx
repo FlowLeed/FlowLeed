@@ -7,6 +7,7 @@ import { Check, X, Save, Trash2 } from "lucide-react";
 import { usePcoMomentMappings } from "@/hooks/usePcoMomentMappings";
 import type { FlowMomentType } from "@/hooks/useFlowMomentTypes";
 import { iconMap } from "@/lib/flowIcons";
+import { getOperatorsForFieldType, needsValueInput, getOperatorLabel } from "@/lib/pcoFieldOperators";
 
 interface MappingRowProps {
   field: {
@@ -26,7 +27,11 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
   const { createMapping, updateMapping, deleteMapping } = usePcoMomentMappings(integrationId);
   const [isEditing, setIsEditing] = useState(!mapping);
   const [selectedMomentTypeId, setSelectedMomentTypeId] = useState(mapping?.flow_moment_type_id || "");
+  const [selectedOperator, setSelectedOperator] = useState(mapping?.trigger_condition?.operator || "equals");
   const [triggerValue, setTriggerValue] = useState(mapping?.trigger_condition?.value || "Yes");
+
+  const availableOperators = getOperatorsForFieldType(field.dataType);
+  const showValueInput = needsValueInput(selectedOperator);
 
   const handleSave = async () => {
     if (!selectedMomentTypeId) return;
@@ -40,8 +45,8 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
       pco_tab_name: field.tabName,
       flow_moment_type_id: selectedMomentTypeId,
       trigger_condition: {
-        operator: 'equals',
-        value: triggerValue,
+        operator: selectedOperator,
+        value: showValueInput ? triggerValue : '',
       },
       is_active: true,
     };
@@ -112,30 +117,51 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
       </div>
 
       {/* Trigger */}
-      <div className="col-span-2 flex items-center">
+      <div className="col-span-2 flex items-center gap-2">
         {isEditing ? (
-          field.options.length > 0 ? (
-            <Select value={triggerValue} onValueChange={setTriggerValue}>
-              <SelectTrigger className="h-8 text-xs">
+          <>
+            {/* Operator Selection */}
+            <Select value={selectedOperator} onValueChange={setSelectedOperator}>
+              <SelectTrigger className="h-8 text-xs w-[120px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {field.options.map((option) => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                {availableOperators.map((op) => (
+                  <SelectItem key={op.value} value={op.value}>
+                    {op.label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          ) : (
-            <Input
-              value={triggerValue}
-              onChange={(e) => setTriggerValue(e.target.value)}
-              placeholder="Value"
-              className="h-8 text-xs"
-            />
-          )
+
+            {/* Value Input (only if operator needs value) */}
+            {showValueInput && (
+              field.options.length > 0 ? (
+                <Select value={triggerValue} onValueChange={setTriggerValue}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue placeholder="Value" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options.map((option) => (
+                      <SelectItem key={option} value={option}>{option}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={triggerValue}
+                  onChange={(e) => setTriggerValue(e.target.value)}
+                  placeholder="Value"
+                  className="h-8 text-xs flex-1"
+                  type={field.dataType === 'number' ? 'number' : 'text'}
+                />
+              )
+            )}
+          </>
         ) : mapping ? (
           <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-            = "{mapping.trigger_condition?.value}"
+            {getOperatorLabel(mapping.trigger_condition?.operator)}
+            {needsValueInput(mapping.trigger_condition?.operator) && ` "${mapping.trigger_condition?.value}"`}
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">-</span>
