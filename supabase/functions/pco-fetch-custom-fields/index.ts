@@ -66,8 +66,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const credentials = integration.credentials as { appId: string; secret: string };
-    const authString = btoa(`${credentials.appId}:${credentials.secret}`);
+    const credentials = integration.credentials as { application_id: string; secret: string };
+    const authString = btoa(`${credentials.application_id}:${credentials.secret}`);
 
     console.log('Fetching PCO field definitions...');
 
