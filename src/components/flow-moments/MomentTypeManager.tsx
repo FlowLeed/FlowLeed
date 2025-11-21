@@ -133,12 +133,10 @@ export function MomentTypeManager({ open, onOpenChange }: MomentTypeManagerProps
                 onValueChange={(value) => setFormData({ ...formData, icon: value })}
               >
                 <SelectTrigger>
-                  <SelectValue>
-                    <div className="flex items-center gap-2">
-                      <IconPreview className="h-4 w-4" />
-                      <span>{formData.icon}</span>
-                    </div>
-                  </SelectValue>
+                  <div className="flex items-center gap-2">
+                    <IconPreview className="h-4 w-4" />
+                    <span>{formData.icon}</span>
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
                   {iconOptions.map((option) => {
