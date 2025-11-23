@@ -152,6 +152,11 @@ export function FlowMomentsCard({ contactId }: FlowMomentsCardProps) {
         isCompleted: !!completedMoment,
         occurredAt: completedMoment?.occurred_at,
       };
+    }).sort((a, b) => {
+      // Sort completed moments first
+      if (a.isCompleted && !b.isCompleted) return -1;
+      if (!a.isCompleted && b.isCompleted) return 1;
+      return 0;
     });
   }, [momentTypes, moments, mappings]);
 
