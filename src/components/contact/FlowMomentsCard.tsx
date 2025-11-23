@@ -63,19 +63,16 @@ function MomentBadge({ moment }: MomentBadgeProps) {
       </p>
       
       {/* Date or status */}
-      <p 
-        className={cn(
-          "text-xs text-center",
-          isCompleted ? "font-medium" : "text-muted-foreground"
-        )}
-        style={{
-          color: isCompleted && moment.color ? moment.color : undefined
-        }}
-      >
-        {isCompleted && moment.occurredAt
-          ? format(new Date(moment.occurredAt), 'MMM d, yyyy')
-          : 'Not Started'}
-      </p>
+      {isCompleted && moment.occurredAt && (
+        <p 
+          className="text-xs text-center font-medium"
+          style={{
+            color: moment.color || undefined
+          }}
+        >
+          {format(new Date(moment.occurredAt), 'MMM d, yyyy')}
+        </p>
+      )}
     </div>
   );
 }
