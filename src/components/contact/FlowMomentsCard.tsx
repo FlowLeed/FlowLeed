@@ -1,99 +1,133 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFlowMoments } from "@/hooks/useFlowMoments";
+import { useFlowMomentTypes } from "@/hooks/useFlowMomentTypes";
 import { Loader2, Sparkles } from "lucide-react";
 import { iconMap } from "@/lib/flowIcons";
 import { format } from "date-fns";
+import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface FlowMomentsCardProps {
   contactId: string;
 }
 
+interface MomentBadgeProps {
+  moment: {
+    id: string;
+    name: string;
+    icon?: string;
+    color?: string;
+    isCompleted: boolean;
+    occurredAt?: string;
+  };
+}
+
+function MomentBadge({ moment }: MomentBadgeProps) {
+  const IconComponent = moment.icon 
+    ? iconMap[moment.icon] || Sparkles
+    : Sparkles;
+
+  const isCompleted = moment.isCompleted;
+  
+  return (
+    <div className="flex flex-col items-center gap-2 min-w-[100px]">
+      {/* Circular icon badge */}
+      <div 
+        className={cn(
+          "w-16 h-16 rounded-full flex items-center justify-center transition-all",
+          !isCompleted && "opacity-50"
+        )}
+        style={{ 
+          backgroundColor: isCompleted && moment.color
+            ? `${moment.color}20` 
+            : 'hsl(var(--muted))',
+        }}
+      >
+        <IconComponent 
+          className="h-7 w-7" 
+          style={{ 
+            color: isCompleted && moment.color
+              ? moment.color 
+              : 'hsl(var(--muted-foreground))',
+          }}
+        />
+      </div>
+      
+      {/* Moment name */}
+      <p 
+        className={cn(
+          "text-sm font-medium text-center leading-tight max-w-[100px]",
+          !isCompleted && "text-muted-foreground"
+        )}
+      >
+        {moment.name}
+      </p>
+      
+      {/* Date or status */}
+      <p 
+        className={cn(
+          "text-xs text-center",
+          isCompleted ? "font-medium" : "text-muted-foreground"
+        )}
+        style={{
+          color: isCompleted && moment.color ? moment.color : undefined
+        }}
+      >
+        {isCompleted && moment.occurredAt
+          ? format(new Date(moment.occurredAt), 'MMM d, yyyy')
+          : 'Not Started'}
+      </p>
+    </div>
+  );
+}
+
 export function FlowMomentsCard({ contactId }: FlowMomentsCardProps) {
-  const { data: moments, isLoading } = useFlowMoments(contactId);
+  const { data: moments, isLoading: momentsLoading } = useFlowMoments(contactId);
+  const { momentTypes, isLoading: typesLoading } = useFlowMomentTypes();
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Flow Moments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const isLoading = momentsLoading || typesLoading;
 
-  if (!moments || moments.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Flow Moments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No moments recorded yet
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+  const mergedMoments = useMemo(() => {
+    if (!momentTypes) return [];
+    
+    return momentTypes.map(type => {
+      // Find if this contact has completed this moment
+      const completedMoment = moments?.find(
+        m => m.flow_moment_type_id === type.id
+      );
+      
+      return {
+        id: type.id,
+        name: type.name,
+        icon: type.icon,
+        color: type.color,
+        isCompleted: !!completedMoment,
+        occurredAt: completedMoment?.occurred_at,
+      };
+    });
+  }, [momentTypes, moments]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
-          Flow Moments
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {moments.map((moment) => {
-            const IconComponent = moment.flow_moment_types.icon 
-              ? iconMap[moment.flow_moment_types.icon] || Sparkles
-              : Sparkles;
-            
-            return (
-              <div key={moment.id} className="flex items-start gap-3 pb-3 border-b last:border-0 last:pb-0">
-                <div 
-                  className="p-2 rounded-lg shrink-0"
-                  style={{ 
-                    backgroundColor: moment.flow_moment_types.color 
-                      ? `${moment.flow_moment_types.color}20` 
-                      : 'hsl(var(--muted))',
-                  }}
-                >
-                  <IconComponent 
-                    className="h-4 w-4" 
-                    style={{ 
-                      color: moment.flow_moment_types.color || 'hsl(var(--muted-foreground))',
-                    }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">
-                    {moment.flow_moment_types.name}
-                  </p>
-                  {moment.metadata?.pco_field_value && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {moment.metadata.pco_field_label}: {moment.metadata.pco_field_value}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+    <div className="space-y-3">
+      <h3 className="text-lg font-semibold flex items-center gap-2">
+        <Sparkles className="h-5 w-5" />
+        Flow Moments
+      </h3>
+      
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      </CardContent>
-    </Card>
+      ) : mergedMoments.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          No moment types configured
+        </p>
+      ) : (
+        <div className="flex overflow-x-auto gap-6 pb-4 px-1">
+          {mergedMoments.map((moment) => (
+            <MomentBadge key={moment.id} moment={moment} />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
