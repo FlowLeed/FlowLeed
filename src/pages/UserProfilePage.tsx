@@ -945,6 +945,9 @@ const UserProfilePage = () => {
         </Card>
       </div>
 
+      {/* Flow Moments */}
+      <FlowMomentsCard contactId={contactId!} />
+
       {/* AI Suggestions Block */}
       <AISuggestions 
         contactId={contactId!}
@@ -960,9 +963,6 @@ const UserProfilePage = () => {
       <div className="space-y-6">
         {/* Flow Status Block */}
         <ContactFlowStatus flows={flows} contactId={contactId!} />
-        
-        {/* Flow Moments */}
-        <FlowMomentsCard contactId={contactId!} />
         
         {/* Family Members Block (if any) */}
         {familyMembers && familyMembers.length > 0 && (
