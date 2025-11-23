@@ -505,6 +505,35 @@ async function syncDemographicData(
   }
 }
 
+// Helper function to parse PCO date values
+function parsePcoDateValue(value: any): string | null {
+  if (!value) return null;
+  
+  // If it's already an ISO string, use it
+  if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+    return value;
+  }
+  
+  // Try to parse common date formats from PCO
+  // PCO can return: MM/DD/YYYY, YYYY-MM-DD, or ISO timestamps
+  if (typeof value === 'string') {
+    // Try MM/DD/YYYY format
+    const mmddyyyyMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (mmddyyyyMatch) {
+      const [_, month, day, year] = mmddyyyyMatch;
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day)).toISOString();
+    }
+    
+    // Try parsing as a Date object
+    const parsed = new Date(value);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+  
+  return null;
+}
+
 // Helper function to sync flow moments from PCO custom field data
 async function syncFlowMomentsFromFieldData(
   contactId: string,
@@ -581,13 +610,19 @@ async function syncFlowMomentsFromFieldData(
       if (shouldCreateMoment) {
         console.log(`Creating moment for mapping ${mapping.id}: ${mapping.pco_source_label} = ${value}`);
         
+        // Try to parse the value as a date if it looks like a date
+        const parsedDate = parsePcoDateValue(value);
+        const occurredAt = parsedDate || fieldData.attributes?.updated_at || new Date().toISOString();
+        
+        console.log(`Using occurred_at: ${occurredAt} (original value: ${value})`);
+        
         // 4. Create or update flow moment
         const { error: momentError } = await supabase.from('flow_moments').upsert({
           contact_id: contactId,
           flow_moment_type_id: mapping.flow_moment_type_id,
           source_system: 'pco',
           source_reference: mapping.pco_source_identifier,
-          occurred_at: fieldData.attributes?.updated_at || new Date().toISOString(),
+          occurred_at: occurredAt,
           metadata: {
             pco_field_value: value,
             pco_field_label: mapping.pco_source_label,
