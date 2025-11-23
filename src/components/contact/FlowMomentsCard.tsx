@@ -1,10 +1,13 @@
 import { useFlowMoments } from "@/hooks/useFlowMoments";
 import { useFlowMomentTypes } from "@/hooks/useFlowMomentTypes";
+import { usePcoMomentMappings } from "@/hooks/usePcoMomentMappings";
 import { Loader2, Sparkles } from "lucide-react";
 import { iconMap } from "@/lib/flowIcons";
 import { format } from "date-fns";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FlowMomentsCardProps {
   contactId: string;
@@ -81,12 +84,61 @@ export function FlowMomentsCard({ contactId }: FlowMomentsCardProps) {
   const { data: moments, isLoading: momentsLoading } = useFlowMoments(contactId);
   const { momentTypes, isLoading: typesLoading } = useFlowMomentTypes();
 
-  const isLoading = momentsLoading || typesLoading;
+  // Get contact's organization
+  const { data: contact } = useQuery({
+    queryKey: ['contact', contactId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select('organization_id')
+        .eq('id', contactId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!contactId,
+  });
+
+  // Get PCO integration
+  const { data: integration } = useQuery({
+    queryKey: ['pco-integration', contact?.organization_id],
+    queryFn: async () => {
+      if (!contact?.organization_id) return null;
+      const { data, error } = await supabase
+        .from('integrations')
+        .select('id')
+        .eq('organization_id', contact.organization_id)
+        .eq('service_name', 'planning_center')
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!contact?.organization_id,
+  });
+
+  // Get PCO moment mappings
+  const { mappings, isLoading: mappingsLoading } = usePcoMomentMappings(integration?.id);
+
+  const isLoading = momentsLoading || typesLoading || mappingsLoading;
 
   const mergedMoments = useMemo(() => {
     if (!momentTypes) return [];
     
-    return momentTypes.map(type => {
+    // Get the set of moment type IDs that have active mappings
+    const mappedMomentTypeIds = new Set(
+      mappings
+        ?.filter(m => m.is_active)
+        ?.map(m => m.flow_moment_type_id) || []
+    );
+    
+    // Filter to only show moment types that have mappings
+    const filteredTypes = momentTypes.filter(type => 
+      mappedMomentTypeIds.has(type.id)
+    );
+    
+    return filteredTypes.map(type => {
       // Find if this contact has completed this moment
       const completedMoment = moments?.find(
         m => m.flow_moment_type_id === type.id
@@ -101,7 +153,7 @@ export function FlowMomentsCard({ contactId }: FlowMomentsCardProps) {
         occurredAt: completedMoment?.occurred_at,
       };
     });
-  }, [momentTypes, moments]);
+  }, [momentTypes, moments, mappings]);
 
   return (
     <div className="space-y-3">
@@ -116,7 +168,7 @@ export function FlowMomentsCard({ contactId }: FlowMomentsCardProps) {
         </div>
       ) : mergedMoments.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">
-          No moment types configured
+          No moment types mapped to PCO fields
         </p>
       ) : (
         <div className="flex overflow-x-auto gap-6 pb-4 px-1">
