@@ -583,15 +583,27 @@ async function syncFlowMomentsFromFieldData(
     
     console.log(`Fetched ${fieldDataArray.length} field data entries for person ${pcPersonId}`);
     
+    // Debug: Log all field definition IDs
+    const fieldDefIds = fieldDataArray.map((fd: any) => ({
+      id: fd.relationships?.field_definition?.data?.id,
+      value: fd.attributes?.value
+    }));
+    console.log(`Field definition IDs for person ${pcPersonId}:`, JSON.stringify(fieldDefIds));
+    
     // 3. For each mapping, check if condition matches
     for (const mapping of mappings) {
+      console.log(`Checking mapping ${mapping.id} (${mapping.pco_source_label}) for field ID: ${mapping.pco_source_identifier}`);
+      
       const fieldData = fieldDataArray.find(
         (fd: any) => fd.relationships?.field_definition?.data?.id === mapping.pco_source_identifier
       );
       
       if (!fieldData) {
+        console.log(`Field data not found for mapping ${mapping.pco_source_label} (field ID: ${mapping.pco_source_identifier})`);
         continue;
       }
+      
+      console.log(`Found field data for ${mapping.pco_source_label}, value:`, fieldData.attributes?.value);
       
       // Check trigger condition
       const value = fieldData.attributes?.value;
