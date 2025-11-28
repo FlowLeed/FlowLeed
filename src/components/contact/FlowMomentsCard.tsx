@@ -3,7 +3,6 @@ import { useFlowMomentTypes } from "@/hooks/useFlowMomentTypes";
 import { usePcoMomentMappings } from "@/hooks/usePcoMomentMappings";
 import { Loader2, Sparkles } from "lucide-react";
 import { iconMap } from "@/lib/flowIcons";
-import { format } from "date-fns";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +19,6 @@ interface MomentBadgeProps {
     icon?: string;
     color?: string;
     isCompleted: boolean;
-    occurredAt?: string;
   };
 }
 
@@ -64,18 +62,6 @@ function MomentBadge({ moment }: MomentBadgeProps) {
       >
         {moment.name}
       </p>
-      
-      {/* Date or status */}
-      {isCompleted && moment.occurredAt && (
-        <p 
-          className="text-xs text-center font-medium"
-          style={{
-            color: moment.color || undefined
-          }}
-        >
-          {format(new Date(moment.occurredAt), 'MMM d, yyyy')}
-        </p>
-      )}
     </div>
   );
 }
