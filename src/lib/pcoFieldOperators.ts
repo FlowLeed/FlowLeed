@@ -18,51 +18,7 @@ export function getCombinedOptionsForField(field: FieldWithOptions): OperatorOpt
   }
   
   switch (dataType) {
-    case 'checkbox':
-    case 'yes_no':
-    case 'boolean':
-      return [
-        { value: 'is_yes', label: 'Is Yes' },
-        { value: 'is_no', label: 'Is No' },
-      ];
-    
-    case 'date':
-    case 'date_picker':
-      return [
-        { value: 'is_not_empty', label: 'Has any date' },
-        { value: 'equals', label: 'Is specific date' },
-      ];
-    
-    // Handle all dropdown/select variations
-    case 'dropdown':
-    case 'select':
-    case 'single_select':
-    case 'string_select':
-    // Handle multi-select/checkboxes variations
-    case 'checkboxes':
-    case 'multi_select':
-    case 'multiple_select':
-    case 'multiselect':
-      // If field has options, show them
-      if (field.options && field.options.length > 0) {
-        return [
-          { value: 'is_not_empty', label: 'Has any value' },
-          ...field.options.map(option => ({
-            value: `option:${option}`,
-            label: option,
-          })),
-        ];
-      }
-      // If no options but it's a select type, fall back to basic operators
-      return [
-        { value: 'is_not_empty', label: 'Has any value' },
-        { value: 'equals', label: 'Equals specific value' },
-      ];
-    
-    case 'file':
-    case 'attachment':
-      return [{ value: 'is_not_empty', label: 'File exists' }];
-    
+    // Simple fields: only "Has any value"
     case 'text':
     case 'string':
     case 'paragraph':
@@ -70,29 +26,54 @@ export function getCombinedOptionsForField(field: FieldWithOptions): OperatorOpt
     case 'number':
     case 'integer':
     case 'decimal':
+    case 'date':
+    case 'date_picker':
+    case 'file':
+    case 'attachment':
+    case 'section_header':
+    case 'header':
+      return [{ value: 'is_not_empty', label: 'Has any value' }];
+    
+    // Yes/No fields: Yes, No, Empty
+    case 'checkbox':
+    case 'yes_no':
+    case 'boolean':
       return [
-        { value: 'is_not_empty', label: 'Has any value' },
-        { value: 'equals', label: 'Equals specific value' },
+        { value: 'is_yes', label: 'Yes' },
+        { value: 'is_no', label: 'No' },
+        { value: 'is_empty', label: 'Empty' },
       ];
     
-    default:
-      // Log unhandled types for debugging
-      console.warn(`Unhandled dataType: "${field.dataType}". Showing basic options.`);
-      // For unknown types, check if we have options
+    // Dropdown/Checkboxes: only show actual option values
+    case 'dropdown':
+    case 'select':
+    case 'single_select':
+    case 'string_select':
+    case 'checkboxes':
+    case 'multi_select':
+    case 'multiple_select':
+    case 'multiselect':
+      // Only show the actual dropdown options
       if (field.options && field.options.length > 0) {
-        return [
-          { value: 'is_not_empty', label: 'Has any value' },
-          ...field.options.map(option => ({
-            value: `option:${option}`,
-            label: option,
-          })),
-        ];
+        return field.options.map(option => ({
+          value: `option:${option}`,
+          label: option,
+        }));
       }
-      // Otherwise show basic equals option
-      return [
-        { value: 'is_not_empty', label: 'Has any value' },
-        { value: 'equals', label: 'Equals' },
-      ];
+      // Fallback if no options available
+      return [{ value: 'is_not_empty', label: 'Has any value' }];
+    
+    default:
+      console.warn(`Unhandled dataType: "${field.dataType}". Showing basic options.`);
+      // For unknown types with options, show them
+      if (field.options && field.options.length > 0) {
+        return field.options.map(option => ({
+          value: `option:${option}`,
+          label: option,
+        }));
+      }
+      // Otherwise default to has any value
+      return [{ value: 'is_not_empty', label: 'Has any value' }];
   }
 }
 
@@ -113,12 +94,15 @@ export function encodeTriggerCondition(selectedValue: string, additionalValue: s
     };
   }
   
-  // Handle yes/no
+  // Handle yes/no with new operators
   if (selectedValue === 'is_yes') {
-    return { operator: 'equals', value: 'Yes' };
+    return { operator: 'is_truthy', value: null };
   }
   if (selectedValue === 'is_no') {
-    return { operator: 'equals', value: 'No' };
+    return { operator: 'is_falsy', value: null };
+  }
+  if (selectedValue === 'is_empty') {
+    return { operator: 'is_empty', value: null };
   }
   
   // Handle "has any value" / "file exists"
@@ -140,8 +124,19 @@ export function decodeTriggerCondition(
   value: string | null,
   field: FieldWithOptions
 ): { selectedValue: string; additionalValue: string | null } {
-  // Handle yes/no fields
-  if (field.dataType === 'checkbox' || field.dataType === 'yes_no') {
+  // Handle new yes/no operators
+  if (operator === 'is_truthy') {
+    return { selectedValue: 'is_yes', additionalValue: null };
+  }
+  if (operator === 'is_falsy') {
+    return { selectedValue: 'is_no', additionalValue: null };
+  }
+  if (operator === 'is_empty') {
+    return { selectedValue: 'is_empty', additionalValue: null };
+  }
+  
+  // Handle legacy yes/no fields (backwards compatibility)
+  if ((field.dataType === 'checkbox' || field.dataType === 'yes_no') && operator === 'equals') {
     return {
       selectedValue: value === 'Yes' ? 'is_yes' : 'is_no',
       additionalValue: null,
@@ -149,26 +144,21 @@ export function decodeTriggerCondition(
   }
   
   // Handle dropdown/checkboxes with specific option
-  if ((field.dataType === 'dropdown' || field.dataType === 'checkboxes') && operator === 'equals' && value) {
-    return {
-      selectedValue: `option:${value}`,
-      additionalValue: null,
-    };
+  if (operator === 'equals' && value) {
+    // Check if this is an option field
+    if (field.options && field.options.length > 0 && field.options.includes(value)) {
+      return {
+        selectedValue: `option:${value}`,
+        additionalValue: null,
+      };
+    }
   }
   
-  // Handle "has any value" / "file exists"
+  // Handle "has any value"
   if (operator === 'is_not_empty') {
     return {
       selectedValue: 'is_not_empty',
       additionalValue: null,
-    };
-  }
-  
-  // Handle "equals" with specific date or text value
-  if (operator === 'equals' && value) {
-    return {
-      selectedValue: 'equals',
-      additionalValue: value,
     };
   }
   
@@ -184,8 +174,9 @@ export function getTriggerLabel(selectedValue: string, additionalValue: string |
     return selectedValue.substring(7); // Just the option name
   }
   
-  if (selectedValue === 'is_yes') return 'Is Yes';
-  if (selectedValue === 'is_no') return 'Is No';
+  if (selectedValue === 'is_yes') return 'Yes';
+  if (selectedValue === 'is_no') return 'No';
+  if (selectedValue === 'is_empty') return 'Empty';
   if (selectedValue === 'is_not_empty') return 'Has any value';
   
   if (selectedValue === 'equals' && additionalValue) {

@@ -638,17 +638,30 @@ async function syncFlowMomentsFromFieldData(
       
       console.log(`Found field data for ${mapping.pco_source_label}, value:`, fieldData.attributes?.value, 'attributes:', JSON.stringify(fieldData.attributes));
       
+      // Helper to check truthy values (handles "true", "Yes", "1", etc.)
+      const isTruthyValue = (val: any): boolean => {
+        if (!val) return false;
+        const normalized = String(val).toLowerCase().trim();
+        return ['true', 'yes', '1', 'checked', 'on'].includes(normalized);
+      };
+
       // Check trigger condition
       const value = fieldData.attributes?.value;
       const condition = mapping.trigger_condition || { operator: 'equals', value: 'Yes' };
       
       let shouldCreateMoment = false;
       
-      if (condition.operator === 'equals' && value === condition.value) {
+      if (condition.operator === 'is_truthy') {
+        shouldCreateMoment = isTruthyValue(value);
+      } else if (condition.operator === 'is_falsy') {
+        shouldCreateMoment = value && !isTruthyValue(value);
+      } else if (condition.operator === 'is_empty') {
+        shouldCreateMoment = !value || String(value).trim() === '';
+      } else if (condition.operator === 'is_not_empty') {
+        shouldCreateMoment = !!value && String(value).trim() !== '';
+      } else if (condition.operator === 'equals' && value === condition.value) {
         shouldCreateMoment = true;
       } else if (condition.operator === 'not_equals' && value !== condition.value) {
-        shouldCreateMoment = true;
-      } else if (condition.operator === 'is_not_empty' && value) {
         shouldCreateMoment = true;
       }
       
