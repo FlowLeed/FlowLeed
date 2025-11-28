@@ -603,7 +603,7 @@ async function syncFlowMomentsFromFieldData(
         continue;
       }
       
-      console.log(`Found field data for ${mapping.pco_source_label}, value:`, fieldData.attributes?.value);
+      console.log(`Found field data for ${mapping.pco_source_label}, value:`, fieldData.attributes?.value, 'attributes:', JSON.stringify(fieldData.attributes));
       
       // Check trigger condition
       const value = fieldData.attributes?.value;
@@ -624,9 +624,17 @@ async function syncFlowMomentsFromFieldData(
         
         // Try to parse the value as a date if it looks like a date
         const parsedDate = parsePcoDateValue(value);
-        const occurredAt = parsedDate || fieldData.attributes?.updated_at || new Date().toISOString();
+        // Fallback chain:
+        // 1. Parsed date from field value (for date fields like "Date Baptized")
+        // 2. created_at from PCO field_datum (when the field was first set)
+        // 3. updated_at from PCO field_datum (when the field was last modified)
+        // 4. Current timestamp (last resort)
+        const occurredAt = parsedDate 
+          || fieldData.attributes?.created_at 
+          || fieldData.attributes?.updated_at 
+          || new Date().toISOString();
         
-        console.log(`Using occurred_at: ${occurredAt} (original value: ${value})`);
+        console.log(`Using occurred_at: ${occurredAt} (original value: ${value}, created_at: ${fieldData.attributes?.created_at}, updated_at: ${fieldData.attributes?.updated_at})`);
         
         // 4. Create or update flow moment
         const { error: momentError } = await supabase.from('flow_moments').upsert({
