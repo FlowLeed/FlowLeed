@@ -43,8 +43,8 @@ Deno.serve(async (req) => {
       throw new Error('Integration not found');
     }
 
-    const credentials = integration.credentials as { app_id: string; secret: string };
-    const auth = `${credentials.app_id}:${credentials.secret}`;
+    const credentials = integration.credentials as { application_id: string; secret: string };
+    const auth = `${credentials.application_id}:${credentials.secret}`;
     const authB64 = btoa(auth);
 
     // Fetch all active moment mappings
