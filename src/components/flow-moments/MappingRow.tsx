@@ -244,7 +244,7 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
               </Button>
             )}
           </div>
-        ) : (
+        ) : mapping ? (
           <>
             <Badge variant="default" className="text-xs">
               <Check className="h-3 w-3 mr-1" />
@@ -270,6 +270,15 @@ export function MappingRow({ field, mapping, momentTypes, integrationId, organiz
               </Button>
             </div>
           </>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={() => setIsEditing(true)}
+          >
+            Map
+          </Button>
         )}
       </div>
     </div>
