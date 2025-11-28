@@ -543,6 +543,14 @@ async function syncFlowMomentsFromFieldData(
   supabase: any
 ) {
   try {
+    // Debug mode for specific people
+    const DEBUG_PC_PERSON_IDS = ['43802262']; // Steven Hernandez
+    const isDebugPerson = DEBUG_PC_PERSON_IDS.includes(pcPersonId);
+    
+    if (isDebugPerson) {
+      console.log(`[DEBUG MODE] Processing person ${pcPersonId}`);
+    }
+    
     // 1. Fetch active mappings for this org
     const { data: mappings, error: mappingsError } = await supabase
       .from('pco_moment_mappings')
@@ -561,6 +569,10 @@ async function syncFlowMomentsFromFieldData(
     }
     
     console.log(`Found ${mappings.length} active moment mappings`);
+    
+    if (isDebugPerson) {
+      console.log(`[DEBUG] Looking for field IDs: ${mappings.map(m => `${m.pco_source_identifier} (${m.pco_source_label})`).join(', ')}`);
+    }
     
     // 2. Fetch field data from PCO for this person
     const fieldDataResponse = await fetch(
@@ -589,6 +601,27 @@ async function syncFlowMomentsFromFieldData(
       value: fd.attributes?.value
     }));
     console.log(`Field definition IDs for person ${pcPersonId}:`, JSON.stringify(fieldDefIds));
+    
+    // Debug logging for specific people
+    if (isDebugPerson) {
+      console.log(`[DEBUG] Raw PCO field_data response for ${pcPersonId}:`, JSON.stringify(fieldDataJson, null, 2));
+      console.log(`[DEBUG] Field IDs returned by PCO:`, fieldDefIds.map(f => f.id));
+      
+      // Store debug info in database
+      try {
+        await supabase.from('pco_sync_debug_logs').upsert({
+          pc_person_id: pcPersonId,
+          contact_id: contactId,
+          field_data_count: fieldDataArray.length,
+          field_ids_returned: fieldDefIds.map(f => f.id),
+          raw_response: fieldDataJson,
+          checked_at: new Date().toISOString()
+        }, { onConflict: 'pc_person_id' });
+        console.log(`[DEBUG] Stored debug info in pco_sync_debug_logs`);
+      } catch (debugError) {
+        console.error('[DEBUG] Failed to store debug info:', debugError);
+      }
+    }
     
     // 3. For each mapping, check if condition matches
     for (const mapping of mappings) {
