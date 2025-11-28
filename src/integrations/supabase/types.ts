@@ -1506,6 +1506,47 @@ export type Database = {
           },
         ]
       }
+      pco_sync_debug_logs: {
+        Row: {
+          checked_at: string | null
+          contact_id: string | null
+          created_at: string | null
+          field_data_count: number | null
+          field_ids_returned: string[] | null
+          id: string
+          pc_person_id: string
+          raw_response: Json | null
+        }
+        Insert: {
+          checked_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          field_data_count?: number | null
+          field_ids_returned?: string[] | null
+          id?: string
+          pc_person_id: string
+          raw_response?: Json | null
+        }
+        Update: {
+          checked_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          field_data_count?: number | null
+          field_ids_returned?: string[] | null
+          id?: string
+          pc_person_id?: string
+          raw_response?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pco_sync_debug_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pco_sync_jobs: {
         Row: {
           completed_at: string | null
