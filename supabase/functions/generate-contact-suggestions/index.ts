@@ -64,6 +64,25 @@ serve(async (req) => {
       .select('tag')
       .eq('contact_id', contactId);
 
+    // Fetch all flow moment types for the organization
+    const { data: allMomentTypes } = await supabase
+      .from('flow_moment_types')
+      .select('id, name, category, description')
+      .eq('organization_id', contact.organization_id)
+      .eq('is_active', true)
+      .order('category', { ascending: true });
+
+    // Fetch contact's completed flow moments
+    const { data: contactMoments } = await supabase
+      .from('flow_moments')
+      .select(`
+        id,
+        occurred_at,
+        flow_moment_type_id,
+        flow_moment_types(name, category)
+      `)
+      .eq('contact_id', contactId);
+
     // Fetch recent interactions (last 10)
     const { data: interactions } = await supabase
       .from('contact_interactions')
@@ -220,6 +239,35 @@ serve(async (req) => {
       }
     }
 
+    // Build spiritual journey context (flow moments)
+    let spiritualJourneyContext = '';
+    if (allMomentTypes && allMomentTypes.length > 0) {
+      spiritualJourneyContext = '\n\nSPIRITUAL JOURNEY MILESTONES:\n';
+      
+      // Group by category
+      const categories = ['salvation', 'next_step', 'serving', 'group', 'other'];
+      const completedMomentIds = new Set(contactMoments?.map(m => m.flow_moment_type_id) || []);
+      
+      categories.forEach(category => {
+        const categoryMoments = allMomentTypes.filter(mt => mt.category === category);
+        if (categoryMoments.length === 0) return;
+        
+        spiritualJourneyContext += `\n${category.toUpperCase()}:\n`;
+        categoryMoments.forEach(mt => {
+          const completed = completedMomentIds.has(mt.id);
+          const moment = contactMoments?.find(m => m.flow_moment_type_id === mt.id);
+          const date = moment ? new Date(moment.occurred_at).toLocaleDateString() : '';
+          spiritualJourneyContext += `  ${completed ? '✅' : '❌'} ${mt.name}${completed ? ` (${date})` : ''}\n`;
+        });
+      });
+      
+      spiritualJourneyContext += '\nIMPORTANT: Use this spiritual journey data to suggest appropriate next steps. For example:\n';
+      spiritualJourneyContext += '- If salvation is complete but not baptism, suggest baptism discussion\n';
+      spiritualJourneyContext += '- If serving but not in a small group, suggest group connection\n';
+      spiritualJourneyContext += '- If no leadership training but actively serving, suggest leadership development\n';
+      spiritualJourneyContext += '- Consider the timing of completed moments for follow-up opportunities\n';
+    }
+
     // Build AI prompt with enhanced flow context
     const systemPrompt = `You are a pastoral care assistant analyzing contact engagement data to suggest next steps.
 
@@ -230,7 +278,7 @@ Focus on:
 - Pipeline progression issues (stalled contacts)
 - Stage-specific recommendations based on flow purpose
 - Relationship building opportunities
-${feedbackContext}${teamActivityContext}${benchmarksContext}
+${feedbackContext}${teamActivityContext}${benchmarksContext}${spiritualJourneyContext}
 IMPORTANT:
 - Consider the flow description to understand the ministry context
 - Use stage sequence to suggest appropriate next steps
