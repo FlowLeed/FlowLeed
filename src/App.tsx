@@ -18,6 +18,7 @@ import FlowDocumentationPage from "./pages/FlowDocumentationPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import ProfilePage from "./pages/ProfilePage";
 import TeamPage from "./pages/TeamPage";
+import GroupsPage from "./pages/GroupsPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import IntegrationAdvancedSettingsPage from "./pages/IntegrationAdvancedSettingsPage";
 import AuthPage from "./pages/AuthPage";
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
+              <Route path="/groups" element={<GroupsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />

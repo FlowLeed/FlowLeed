@@ -697,6 +697,289 @@ export type Database = {
           },
         ]
       }
+      group_attendance: {
+        Row: {
+          checked_in_at: string | null
+          checked_in_by_user_id: string | null
+          contact_id: string
+          created_at: string
+          group_meeting_id: string
+          group_member_id: string
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          checked_in_at?: string | null
+          checked_in_by_user_id?: string | null
+          contact_id: string
+          created_at?: string
+          group_meeting_id: string
+          group_member_id: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          checked_in_at?: string | null
+          checked_in_by_user_id?: string | null
+          contact_id?: string
+          created_at?: string
+          group_meeting_id?: string
+          group_member_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_attendance_checked_in_by_user_id_fkey"
+            columns: ["checked_in_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "group_attendance_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_attendance_group_meeting_id_fkey"
+            columns: ["group_meeting_id"]
+            isOneToOne: false
+            referencedRelation: "group_meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_attendance_group_member_id_fkey"
+            columns: ["group_member_id"]
+            isOneToOne: false
+            referencedRelation: "group_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_meetings: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          duration_minutes: number | null
+          group_id: string
+          id: string
+          location: string | null
+          meeting_date: string
+          meeting_type: string | null
+          notes: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          group_id: string
+          id?: string
+          location?: string | null
+          meeting_date: string
+          meeting_type?: string | null
+          notes?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          group_id?: string
+          id?: string
+          location?: string | null
+          meeting_date?: string
+          meeting_type?: string | null
+          notes?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_meetings_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "group_meetings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          attendance_count: number | null
+          contact_id: string
+          created_at: string
+          group_id: string
+          id: string
+          joined_at: string
+          last_attended_at: string | null
+          notes: string | null
+          pco_membership_id: string | null
+          role: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_count?: number | null
+          contact_id: string
+          created_at?: string
+          group_id: string
+          id?: string
+          joined_at?: string
+          last_attended_at?: string | null
+          notes?: string | null
+          pco_membership_id?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_count?: number | null
+          contact_id?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          joined_at?: string
+          last_attended_at?: string | null
+          notes?: string | null
+          pco_membership_id?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          capacity: number | null
+          co_leader_user_id: string | null
+          created_at: string
+          description: string | null
+          group_type: string
+          id: string
+          leader_user_id: string | null
+          location: string | null
+          meeting_day: string | null
+          meeting_frequency: string | null
+          meeting_time: string | null
+          metadata: Json | null
+          name: string
+          organization_id: string
+          pco_group_id: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          co_leader_user_id?: string | null
+          created_at?: string
+          description?: string | null
+          group_type?: string
+          id?: string
+          leader_user_id?: string | null
+          location?: string | null
+          meeting_day?: string | null
+          meeting_frequency?: string | null
+          meeting_time?: string | null
+          metadata?: Json | null
+          name: string
+          organization_id: string
+          pco_group_id?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          co_leader_user_id?: string | null
+          created_at?: string
+          description?: string | null
+          group_type?: string
+          id?: string
+          leader_user_id?: string | null
+          location?: string | null
+          meeting_day?: string | null
+          meeting_frequency?: string | null
+          meeting_time?: string | null
+          metadata?: Json | null
+          name?: string
+          organization_id?: string
+          pco_group_id?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_co_leader_user_id_fkey"
+            columns: ["co_leader_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "groups_leader_user_id_fkey"
+            columns: ["leader_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       impersonation_actions: {
         Row: {
           action_description: string
