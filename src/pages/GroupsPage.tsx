@@ -5,13 +5,29 @@ import { Button } from "@/components/ui/button";
 import { Plus, Users } from "lucide-react";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const GroupsPage = () => {
+  console.log("[GroupsPage] Component rendered");
+  
   const { organization } = useProfile();
+  console.log("[GroupsPage] Organization:", organization?.id);
+  
   const { groups, isLoading } = useGroups(organization?.id);
+  console.log("[GroupsPage] Groups:", groups, "Loading:", isLoading);
+  
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
+
+  if (!organization) {
+    return (
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="text-center py-12">
+          <p>Loading organization...</p>
+        </div>
+      </div>
+    );
+  }
 
   const filteredGroups = selectedType === "all" 
     ? groups 
