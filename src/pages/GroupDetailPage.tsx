@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
@@ -7,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Users, Calendar, Settings, UserPlus } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ArrowLeft, Users, Calendar, Settings, UserPlus, MoreVertical, Edit, Trash2, CheckCircle2, User } from "lucide-react";
+import { AddGroupMemberDialog } from "@/components/groups/AddGroupMemberDialog";
+import { EditGroupDialog } from "@/components/groups/EditGroupDialog";
+import { CreateMeetingDialog } from "@/components/groups/CreateMeetingDialog";
+import { TakeAttendanceDialog } from "@/components/groups/TakeAttendanceDialog";
 
 const groupTypeLabels: Record<string, string> = {
   small_group: "Small Group",
@@ -21,10 +28,18 @@ const GroupDetailPage = () => {
   const navigate = useNavigate();
   const { organization } = useProfile();
   const { groups, isLoading: groupsLoading } = useGroups(organization?.id);
-  const { members, isLoading: membersLoading } = useGroupMembers(groupId);
+  const { members, isLoading: membersLoading, updateMember, removeMember } = useGroupMembers(groupId);
   const { meetings, meetingsLoading } = useGroupAttendance(groupId);
 
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [editGroupOpen, setEditGroupOpen] = useState(false);
+  const [createMeetingOpen, setCreateMeetingOpen] = useState(false);
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
+  const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+
   const group = groups.find((g) => g.id === groupId);
+  const existingMemberIds = members.map((m) => m.contact_id);
 
   if (groupsLoading) {
     return (
@@ -70,7 +85,7 @@ const GroupDetailPage = () => {
               )}
             </div>
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setEditGroupOpen(true)}>
             <Settings className="h-4 w-4 mr-2" />
             Edit Group
           </Button>
@@ -135,7 +150,7 @@ const GroupDetailPage = () => {
           <TabsContent value="members" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Group Members</h2>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setAddMemberOpen(true)}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add Member
               </Button>
@@ -150,7 +165,7 @@ const GroupDetailPage = () => {
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Users className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">No members yet</p>
-                  <Button size="sm" className="mt-4">
+                  <Button size="sm" className="mt-4" onClick={() => setAddMemberOpen(true)}>
                     <UserPlus className="h-4 w-4 mr-2" />
                     Add First Member
                   </Button>
@@ -161,7 +176,10 @@ const GroupDetailPage = () => {
                 {members.map((member) => (
                   <Card key={member.id}>
                     <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
+                      <div 
+                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        onClick={() => navigate(`/contacts/${member.contact_id}`)}
+                      >
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                           <Users className="h-5 w-5 text-primary" />
                         </div>
@@ -172,13 +190,47 @@ const GroupDetailPage = () => {
                           </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge variant="secondary">{member.status}</Badge>
-                        {member.attendance_count > 0 && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {member.attendance_count} meetings attended
-                          </p>
-                        )}
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <Badge variant="secondary">{member.status}</Badge>
+                          {member.attendance_count > 0 && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {member.attendance_count} meetings attended
+                            </p>
+                          )}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/contacts/${member.contact_id}`)}>
+                              <User className="h-4 w-4 mr-2" />
+                              View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                const newRole = member.role === "leader" ? "member" : "leader";
+                                await updateMember.mutateAsync({
+                                  id: member.id,
+                                  updates: { role: newRole },
+                                });
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Change to {member.role === "leader" ? "Member" : "Leader"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setMemberToRemove(member.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remove from Group
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </CardContent>
                   </Card>
@@ -190,7 +242,7 @@ const GroupDetailPage = () => {
           <TabsContent value="meetings" className="space-y-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Group Meetings</h2>
-              <Button size="sm">
+              <Button size="sm" onClick={() => setCreateMeetingOpen(true)}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Create Meeting
               </Button>
@@ -205,7 +257,7 @@ const GroupDetailPage = () => {
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">No meetings scheduled yet</p>
-                  <Button size="sm" className="mt-4">
+                  <Button size="sm" className="mt-4" onClick={() => setCreateMeetingOpen(true)}>
                     <Calendar className="h-4 w-4 mr-2" />
                     Create First Meeting
                   </Button>
@@ -217,15 +269,28 @@ const GroupDetailPage = () => {
                   <Card key={meeting.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
-                        <div>
+                        <div className="flex-1">
                           <CardTitle>{meeting.title}</CardTitle>
                           <CardDescription>
-                            {new Date(meeting.meeting_date).toLocaleDateString()} • {meeting.location || "No location"}
+                            {new Date(meeting.meeting_date).toLocaleDateString()} • {meeting.duration_minutes} min • {meeting.location || "No location"}
                           </CardDescription>
                         </div>
-                        <Badge variant={meeting.status === "completed" ? "secondary" : "default"}>
-                          {meeting.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={meeting.status === "completed" ? "secondary" : "default"}>
+                            {meeting.status}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedMeeting(meeting);
+                              setAttendanceDialogOpen(true);
+                            }}
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Take Attendance
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     {meeting.description && (
@@ -239,6 +304,64 @@ const GroupDetailPage = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Dialogs */}
+        {group && (
+          <>
+            <AddGroupMemberDialog
+              groupId={groupId!}
+              open={addMemberOpen}
+              onOpenChange={setAddMemberOpen}
+              existingMemberIds={existingMemberIds}
+            />
+            <EditGroupDialog
+              group={group}
+              open={editGroupOpen}
+              onOpenChange={setEditGroupOpen}
+            />
+            <CreateMeetingDialog
+              groupId={groupId!}
+              groupLocation={group.location}
+              open={createMeetingOpen}
+              onOpenChange={setCreateMeetingOpen}
+            />
+          </>
+        )}
+
+        {selectedMeeting && (
+          <TakeAttendanceDialog
+            groupId={groupId!}
+            meeting={selectedMeeting}
+            open={attendanceDialogOpen}
+            onOpenChange={setAttendanceDialogOpen}
+          />
+        )}
+
+        {/* Remove Member Confirmation */}
+        <AlertDialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Member?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove this member from the group? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (memberToRemove) {
+                    await removeMember.mutateAsync(memberToRemove);
+                    setMemberToRemove(null);
+                  }
+                }}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
