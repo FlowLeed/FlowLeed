@@ -19,6 +19,7 @@ import UserProfilePage from "./pages/UserProfilePage";
 import ProfilePage from "./pages/ProfilePage";
 import TeamPage from "./pages/TeamPage";
 import GroupsPage from "./pages/GroupsPage";
+import GroupDetailPage from "./pages/GroupDetailPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import IntegrationAdvancedSettingsPage from "./pages/IntegrationAdvancedSettingsPage";
 import AuthPage from "./pages/AuthPage";
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
               <Route path="/groups" element={<GroupsPage />} />
+              <Route path="/groups/:groupId" element={<GroupDetailPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
