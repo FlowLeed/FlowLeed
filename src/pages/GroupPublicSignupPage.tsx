@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, MapPin, Calendar, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Users, MapPin, Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface GroupDetails {
@@ -168,10 +168,16 @@ export default function GroupPublicSignupPage() {
           <CardContent className="pt-6 text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Request Submitted!</h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-4">
               Your signup request for <strong>{group?.name}</strong> has been submitted.
               A group leader will review it shortly.
             </p>
+            <Button variant="outline" asChild>
+              <Link to="/groups/directory">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Browse More Groups
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -182,8 +188,15 @@ export default function GroupPublicSignupPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader>
+      <div className="w-full max-w-lg space-y-4">
+        <Button variant="ghost" asChild className="mb-2">
+          <Link to="/groups/directory">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Browse All Groups
+          </Link>
+        </Button>
+        <Card>
+          <CardHeader>
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="secondary">
               {groupTypeLabels[group.group_type] || group.group_type}
@@ -276,7 +289,8 @@ export default function GroupPublicSignupPage() {
             </form>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
