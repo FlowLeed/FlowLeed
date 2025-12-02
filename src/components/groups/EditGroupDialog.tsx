@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useGroups, Group } from "@/hooks/useGroups";
-import { Save } from "lucide-react";
+import { Save, Copy, Check, Link } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditGroupDialogProps {
   group: Group;
@@ -16,16 +18,20 @@ interface EditGroupDialogProps {
 
 export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogProps) => {
   const { updateGroup } = useGroups(group.organization_id);
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
   
   const [formData, setFormData] = useState({
     name: group.name,
     description: group.description || "",
     group_type: group.group_type,
     capacity: group.capacity?.toString() || "",
-        meeting_day: group.meeting_day || "none",
-        meeting_time: group.meeting_time || "",
-        meeting_frequency: group.meeting_frequency || "none",
+    meeting_day: group.meeting_day || "none",
+    meeting_time: group.meeting_time || "",
+    meeting_frequency: group.meeting_frequency || "none",
     location: group.location || "",
+    visibility: group.visibility || "private",
+    allow_public_signup: group.allow_public_signup || false,
   });
 
   useEffect(() => {
@@ -39,7 +45,10 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         meeting_time: group.meeting_time || "",
         meeting_frequency: group.meeting_frequency || "none",
         location: group.location || "",
+        visibility: group.visibility || "private",
+        allow_public_signup: group.allow_public_signup || false,
       });
+      setCopied(false);
     }
   }, [open, group]);
 
@@ -57,10 +66,38 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         meeting_time: formData.meeting_time || null,
         meeting_frequency: formData.meeting_frequency === "none" ? null : formData.meeting_frequency || null,
         location: formData.location || null,
+        visibility: formData.visibility,
+        allow_public_signup: formData.allow_public_signup,
       },
     });
 
     onOpenChange(false);
+  };
+
+  const getSignupLink = () => {
+    if (!group.public_signup_token) return "";
+    return `${window.location.origin}/groups/join/${group.public_signup_token}`;
+  };
+
+  const copySignupLink = async () => {
+    const link = getSignupLink();
+    if (!link) return;
+    
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      toast({
+        title: "Link copied",
+        description: "Public signup link copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please copy the link manually",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -131,7 +168,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
                 <SelectTrigger>
                   <SelectValue placeholder="Select day" />
                 </SelectTrigger>
-              <SelectContent>
+                <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   <SelectItem value="Monday">Monday</SelectItem>
                   <SelectItem value="Tuesday">Tuesday</SelectItem>
@@ -163,7 +200,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
                 <SelectTrigger>
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
-              <SelectContent>
+                <SelectContent>
                   <SelectItem value="none">None</SelectItem>
                   <SelectItem value="Weekly">Weekly</SelectItem>
                   <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
@@ -180,6 +217,70 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 placeholder="Meeting location"
               />
+            </div>
+
+            {/* Visibility Settings */}
+            <div className="col-span-2 border-t pt-4 mt-2">
+              <h3 className="font-medium mb-3">Public Access Settings</h3>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="visibility">Visibility</Label>
+                  <Select
+                    value={formData.visibility}
+                    onValueChange={(value) => setFormData({ ...formData, visibility: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="private">Private - Only visible to organization</SelectItem>
+                      <SelectItem value="unlisted">Unlisted - Accessible via link only</SelectItem>
+                      <SelectItem value="public">Public - Visible in public directory</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="allow_public_signup" className="cursor-pointer">
+                      Allow Public Signup
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enable a public link for people to request to join this group
+                    </p>
+                  </div>
+                  <Switch
+                    id="allow_public_signup"
+                    checked={formData.allow_public_signup}
+                    onCheckedChange={(checked) => setFormData({ ...formData, allow_public_signup: checked })}
+                  />
+                </div>
+
+                {formData.allow_public_signup && group.public_signup_token && (
+                  <div className="space-y-2">
+                    <Label>Public Signup Link</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        readOnly
+                        value={getSignupLink()}
+                        className="bg-muted text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={copySignupLink}
+                      >
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Share this link to allow people to request to join this group
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

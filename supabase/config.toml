@@ -108,3 +108,6 @@ verify_jwt = false
 
 [functions.recurring-flow-processor]
 verify_jwt = false
+
+[functions.group-public-signup]
+verify_jwt = false

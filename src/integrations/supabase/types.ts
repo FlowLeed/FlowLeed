@@ -888,8 +888,76 @@ export type Database = {
           },
         ]
       }
+      group_signup_requests: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          email: string
+          group_id: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          processed_at: string | null
+          processed_by_user_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          email: string
+          group_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          processed_at?: string | null
+          processed_by_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          email?: string
+          group_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          processed_at?: string | null
+          processed_by_user_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_signup_requests_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_signup_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_signup_requests_processed_by_user_id_fkey"
+            columns: ["processed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       groups: {
         Row: {
+          allow_public_signup: boolean
           capacity: number | null
           co_leader_user_id: string | null
           created_at: string
@@ -905,11 +973,14 @@ export type Database = {
           name: string
           organization_id: string
           pco_group_id: string | null
+          public_signup_token: string | null
           status: string
           tags: string[] | null
           updated_at: string
+          visibility: string
         }
         Insert: {
+          allow_public_signup?: boolean
           capacity?: number | null
           co_leader_user_id?: string | null
           created_at?: string
@@ -925,11 +996,14 @@ export type Database = {
           name: string
           organization_id: string
           pco_group_id?: string | null
+          public_signup_token?: string | null
           status?: string
           tags?: string[] | null
           updated_at?: string
+          visibility?: string
         }
         Update: {
+          allow_public_signup?: boolean
           capacity?: number | null
           co_leader_user_id?: string | null
           created_at?: string
@@ -945,9 +1019,11 @@ export type Database = {
           name?: string
           organization_id?: string
           pco_group_id?: string | null
+          public_signup_token?: string | null
           status?: string
           tags?: string[] | null
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
