@@ -30,17 +30,21 @@ const AuthPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check for password recovery session on component mount
+  // Listen for PASSWORD_RECOVERY event from Supabase auth
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user && session.user.recovery_sent_at) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
         setIsRecoveryMode(true);
       }
-    };
-    
-    checkSession();
+    });
+
+    // Also check URL hash on mount (Supabase sends #type=recovery in the URL)
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery')) {
+      setIsRecoveryMode(true);
+    }
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
