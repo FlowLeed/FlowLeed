@@ -39,6 +39,7 @@ import OnboardingFlowsPage from "./pages/admin/OnboardingFlowsPage";
 import OngoingSupportFlowsPage from "./pages/admin/OngoingSupportFlowsPage";
 import CommunicationsPage from "./pages/admin/CommunicationsPage";
 import SuperAdminProfilePage from "./pages/admin/SuperAdminProfilePage";
+import GroupPublicSignupPage from "./pages/GroupPublicSignupPage";
 
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/auth/verify" element={<AuthVerifyPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/invite/:token" element={<InvitePage />} />
+              <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
               
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>

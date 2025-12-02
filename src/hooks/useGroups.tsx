@@ -22,6 +22,9 @@ export interface Group {
   created_at: string;
   updated_at: string;
   member_count?: number;
+  visibility?: string;
+  public_signup_token?: string;
+  allow_public_signup?: boolean;
 }
 
 export const useGroups = (organizationId: string | undefined) => {
