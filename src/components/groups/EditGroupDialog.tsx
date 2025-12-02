@@ -22,9 +22,9 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
     description: group.description || "",
     group_type: group.group_type,
     capacity: group.capacity?.toString() || "",
-    meeting_day: group.meeting_day || "",
-    meeting_time: group.meeting_time || "",
-    meeting_frequency: group.meeting_frequency || "",
+        meeting_day: group.meeting_day || "none",
+        meeting_time: group.meeting_time || "",
+        meeting_frequency: group.meeting_frequency || "none",
     location: group.location || "",
   });
 
@@ -35,9 +35,9 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         description: group.description || "",
         group_type: group.group_type,
         capacity: group.capacity?.toString() || "",
-        meeting_day: group.meeting_day || "",
+        meeting_day: group.meeting_day || "none",
         meeting_time: group.meeting_time || "",
-        meeting_frequency: group.meeting_frequency || "",
+        meeting_frequency: group.meeting_frequency || "none",
         location: group.location || "",
       });
     }
@@ -53,9 +53,9 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         description: formData.description || null,
         group_type: formData.group_type,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
-        meeting_day: formData.meeting_day || null,
+        meeting_day: formData.meeting_day === "none" ? null : formData.meeting_day || null,
         meeting_time: formData.meeting_time || null,
-        meeting_frequency: formData.meeting_frequency || null,
+        meeting_frequency: formData.meeting_frequency === "none" ? null : formData.meeting_frequency || null,
         location: formData.location || null,
       },
     });
@@ -131,8 +131,8 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
                 <SelectTrigger>
                   <SelectValue placeholder="Select day" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+              <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="Monday">Monday</SelectItem>
                   <SelectItem value="Tuesday">Tuesday</SelectItem>
                   <SelectItem value="Wednesday">Wednesday</SelectItem>
@@ -163,8 +163,8 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
                 <SelectTrigger>
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+              <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
                   <SelectItem value="Weekly">Weekly</SelectItem>
                   <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
                   <SelectItem value="Monthly">Monthly</SelectItem>
