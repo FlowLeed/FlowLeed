@@ -2,15 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, RefreshCw, Info, Settings, Users } from "lucide-react";
+import { Loader2, RefreshCw, Info, Settings } from "lucide-react";
 import { useFlowMomentTypes } from "@/hooks/useFlowMomentTypes";
 import { usePcoMomentMappings } from "@/hooks/usePcoMomentMappings";
 import { usePcoCustomFields } from "@/hooks/usePcoCustomFields";
 import { MappingRow } from "@/components/flow-moments/MappingRow";
 import { MomentTypeManager } from "@/components/flow-moments/MomentTypeManager";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
 
 interface FlowMomentsMappingSectionProps {
   integrationId: string;
@@ -44,35 +41,14 @@ export function FlowMomentsMappingSection({
     }
   };
 
-  const backfillMoments = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('pco-backfill-moments', {
-        body: { integrationId, organizationId }
-      });
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success(
-        `Synced ${data.contactsProcessed} contacts, created ${data.momentsCreated} new moments`,
-        { description: data.errors > 0 ? `${data.errors} contacts had errors` : undefined }
-      );
-    },
-    onError: (error: Error) => {
-      toast.error('Failed to sync moments', { description: error.message });
-    }
-  });
-
   return (
     <div className="space-y-4">
       {/* Info Box */}
       <Alert>
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Every church names things differently. Use this section to tell FlowLeed which Planning Center
-          tabs/fields represent key moments like Salvation, Baptism, or Join the Church. We'll do the
-          rest during sync.
+          Map PCO custom fields to Flow Moments below. Moments will sync automatically when you run "Sync Now" 
+          from the Integrations page — no need to sync them separately.
         </AlertDescription>
       </Alert>
 
@@ -86,16 +62,6 @@ export function FlowMomentsMappingSection({
           {refreshFields.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh Fields from PCO
-        </Button>
-        <Button
-          onClick={() => backfillMoments.mutate()}
-          disabled={backfillMoments.isPending}
-          size="sm"
-          variant="secondary"
-        >
-          {backfillMoments.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          <Users className="h-4 w-4 mr-2" />
-          Sync All Contacts' Moments
         </Button>
         <Button
           variant="outline"

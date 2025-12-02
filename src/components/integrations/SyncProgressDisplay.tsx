@@ -1,7 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
@@ -15,6 +14,8 @@ interface SyncProgressDisplayProps {
   listMappingId: string;
   pipelineId: string;
   stageId: string;
+  integrationId?: string;
+  organizationId?: string;
   onComplete?: () => void;
 }
 
@@ -26,11 +27,42 @@ export function SyncProgressDisplay({
   listMappingId,
   pipelineId,
   stageId,
+  integrationId,
+  organizationId,
   onComplete,
 }: SyncProgressDisplayProps) {
   const { toast } = useToast();
   const { refreshFlows } = useFlowContext();
   const [hasShownCompletion, setHasShownCompletion] = useState(false);
+  const [momentsSyncStatus, setMomentsSyncStatus] = useState<'idle' | 'syncing' | 'done'>('idle');
+
+  // Auto-trigger moments backfill after contact sync completes
+  const backfillMoments = useMutation({
+    mutationFn: async () => {
+      if (!integrationId || !organizationId) return null;
+      
+      const { data, error } = await supabase.functions.invoke('pco-backfill-moments', {
+        body: { integrationId, organizationId }
+      });
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data) {
+        setMomentsSyncStatus('done');
+        toast({
+          title: "Moments Synced",
+          description: `Created ${data.momentsCreated} flow moments for ${data.contactsProcessed} contacts`,
+        });
+      }
+    },
+    onError: (error: Error) => {
+      setMomentsSyncStatus('idle');
+      console.error('Moments backfill error:', error);
+      // Don't show error toast - moments sync is secondary
+    }
+  });
 
   // Fetch chunk processing status
   const { data: queueStatus } = useQuery({
@@ -85,20 +117,26 @@ export function SyncProgressDisplay({
     refetchInterval: 2000,
   });
 
-  // Show completion toast and refresh flows
+  // Show completion toast, refresh flows, and trigger moments sync
   useEffect(() => {
     if (jobStatus === 'completed' && !hasShownCompletion && contactsInFlow !== undefined) {
       setHasShownCompletion(true);
       refreshFlows();
       toast({
-        title: "Sync Complete!",
+        title: "Contact Sync Complete!",
         description: `${contactsInFlow} contacts added to the flow`,
       });
+      
+      // Auto-trigger moments backfill if we have the required IDs
+      if (integrationId && organizationId && momentsSyncStatus === 'idle') {
+        setMomentsSyncStatus('syncing');
+        backfillMoments.mutate();
+      }
       
       // Call completion callback if provided
       onComplete?.();
     }
-  }, [jobStatus, contactsInFlow, hasShownCompletion, toast, refreshFlows, onComplete]);
+  }, [jobStatus, contactsInFlow, hasShownCompletion, toast, refreshFlows, onComplete, integrationId, organizationId, momentsSyncStatus]);
 
   const progressPercentage = totalContacts > 0 
     ? Math.round((processedContacts / totalContacts) * 100) 
@@ -193,6 +231,19 @@ export function SyncProgressDisplay({
                   ({processedContacts - contactsInFlow} already existed)
                 </span>
               )}
+            </p>
+          )}
+          
+          {/* Moments sync status */}
+          {momentsSyncStatus === 'syncing' && (
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-2">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Syncing flow moments...</span>
+            </div>
+          )}
+          {momentsSyncStatus === 'done' && (
+            <p className="text-xs text-muted-foreground mt-2">
+              ✓ Flow moments synced
             </p>
           )}
         </div>
