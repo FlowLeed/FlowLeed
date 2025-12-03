@@ -535,24 +535,36 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
             });
             
             // Check if flow has a completion moment type and create moment
-            const { data: pipelineData } = await supabase
+            const { data: pipelineData, error: pipelineFetchError } = await supabase
               .from('pipelines')
               .select('completion_moment_type_id')
               .eq('id', flowId)
               .single();
             
+            if (pipelineFetchError) {
+              console.error('Error fetching pipeline for moment creation:', pipelineFetchError);
+            }
+            
+            console.log(`[FlowMoment] Pipeline ${flowId} completion_moment_type_id:`, pipelineData?.completion_moment_type_id);
+            
             if (pipelineData?.completion_moment_type_id) {
               // Check if contact already has this moment
-              const { data: existingMoment } = await supabase
+              const { data: existingMoment, error: existingMomentError } = await supabase
                 .from('flow_moments')
                 .select('id')
                 .eq('contact_id', contact.id)
                 .eq('flow_moment_type_id', pipelineData.completion_moment_type_id)
                 .maybeSingle();
               
+              if (existingMomentError) {
+                console.error('Error checking existing moment:', existingMomentError);
+              }
+              
+              console.log(`[FlowMoment] Existing moment for contact ${contact.id}:`, existingMoment);
+              
               if (!existingMoment) {
                 // Create the flow moment
-                await supabase.from('flow_moments').insert({
+                const { error: momentInsertError } = await supabase.from('flow_moments').insert({
                   contact_id: contact.id,
                   flow_moment_type_id: pipelineData.completion_moment_type_id,
                   source_system: 'flow',
@@ -565,8 +577,17 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
                   created_by_user_id: user!.id
                 });
                 
-                console.log(`Created completion moment for contact ${contact.id} in flow ${flow.name}`);
+                if (momentInsertError) {
+                  console.error('Error creating completion moment:', momentInsertError);
+                  toast.error('Failed to record completion moment');
+                } else {
+                  console.log(`[FlowMoment] Created completion moment for contact ${contact.id} in flow ${flow.name}`);
+                }
+              } else {
+                console.log(`[FlowMoment] Contact ${contact.id} already has this moment type`);
               }
+            } else {
+              console.log(`[FlowMoment] No completion moment type configured for flow ${flowId}`);
             }
           }
           
