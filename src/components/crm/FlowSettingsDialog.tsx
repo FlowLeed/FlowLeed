@@ -10,12 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, X, Star, User, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Users, Copy } from "lucide-react";
+import { UserPlus, X, Star, User, GripVertical, Trash2, Plus as PlusIcon, Workflow as FlowIcon, Flag, FlagTriangleRight, Users, Copy, Sparkles } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import type { LucideIcon } from "lucide-react";
 import { AIDescriptionSuggestions } from "@/components/flows/AIDescriptionSuggestions";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { useFlowContext } from "@/contexts/FlowContext";
+import { useFlowMomentTypes } from "@/hooks/useFlowMomentTypes";
 
 interface FlowTeamMember {
   id: string;
@@ -70,6 +71,7 @@ export const FlowSettingsDialog = ({
   const [flowSteps, setFlowSteps] = useState<Array<{id: string, name: string, color: string, stage_order: number, is_start_step?: boolean, is_end_step?: boolean}>>(initialFlowStages);
   const [flowType, setFlowType] = useState<'linear' | 'recurring'>('linear');
   const [cycleDays, setCycleDays] = useState<number>(90);
+  const [completionMomentTypeId, setCompletionMomentTypeId] = useState<string | null>(null);
   
   // Team management state
   const [teamMembers, setTeamMembers] = useState<FlowTeamMember[]>([]);
@@ -80,6 +82,7 @@ export const FlowSettingsDialog = ({
   const [duplicating, setDuplicating] = useState(false);
   const { toast } = useToast();
   const { duplicateFlow } = useFlowContext();
+  const { momentTypes, isLoading: momentTypesLoading } = useFlowMomentTypes();
 
   // Initialize flow data when dialog opens
   useEffect(() => {
@@ -94,17 +97,18 @@ export const FlowSettingsDialog = ({
         setFlowIcon(FlowIcon);
       }
       
-      // Fetch current flow data to get flow_type and cycle_days
+      // Fetch current flow data to get flow_type, cycle_days, and completion_moment_type_id
       const fetchFlowData = async () => {
         const { data, error } = await supabase
           .from('pipelines')
-          .select('flow_type, cycle_days')
+          .select('flow_type, cycle_days, completion_moment_type_id')
           .eq('id', flowId)
           .single();
         
         if (!error && data) {
           setFlowType((data.flow_type as 'linear' | 'recurring') || 'linear');
           setCycleDays(data.cycle_days || 90);
+          setCompletionMomentTypeId(data.completion_moment_type_id || null);
         }
       };
       
@@ -313,6 +317,7 @@ export const FlowSettingsDialog = ({
           icon: iconKey,
           flow_type: flowType,
           cycle_days: flowType === 'recurring' ? cycleDays : null,
+          completion_moment_type_id: completionMomentTypeId || null,
         })
         .eq('id', flowId);
 
@@ -611,6 +616,35 @@ export const FlowSettingsDialog = ({
               </Select>
             </div>
           )}
+
+          {/* Completion Moment */}
+          <div className="space-y-2">
+            <Label htmlFor="completion-moment">Completion Moment (Optional)</Label>
+            <p className="text-xs text-muted-foreground">
+              When someone completes this flow, automatically record this moment on their profile
+            </p>
+            <Select 
+              value={completionMomentTypeId || "none"} 
+              onValueChange={(value) => setCompletionMomentTypeId(value === "none" ? null : value)}
+            >
+              <SelectTrigger id="completion-moment">
+                <SelectValue placeholder="Select a moment type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  <span className="text-muted-foreground">None</span>
+                </SelectItem>
+                {momentTypes?.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-3 w-3" style={{ color: type.color || undefined }} />
+                      <span>{type.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Team Members Section */}
           <div className="space-y-4 pt-2 border-t">

@@ -2256,6 +2256,7 @@ export type Database = {
       }
       pipelines: {
         Row: {
+          completion_moment_type_id: string | null
           created_at: string
           cycle_days: number | null
           description: string | null
@@ -2268,6 +2269,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          completion_moment_type_id?: string | null
           created_at?: string
           cycle_days?: number | null
           description?: string | null
@@ -2280,6 +2282,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          completion_moment_type_id?: string | null
           created_at?: string
           cycle_days?: number | null
           description?: string | null
@@ -2291,7 +2294,15 @@ export type Database = {
           organization_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pipelines_completion_moment_type_id_fkey"
+            columns: ["completion_moment_type_id"]
+            isOneToOne: false
+            referencedRelation: "flow_moment_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

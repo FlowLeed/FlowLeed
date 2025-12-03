@@ -533,6 +533,41 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
               stage_id: stageId,
               completed_at: new Date().toISOString()
             });
+            
+            // Check if flow has a completion moment type and create moment
+            const { data: pipelineData } = await supabase
+              .from('pipelines')
+              .select('completion_moment_type_id')
+              .eq('id', flowId)
+              .single();
+            
+            if (pipelineData?.completion_moment_type_id) {
+              // Check if contact already has this moment
+              const { data: existingMoment } = await supabase
+                .from('flow_moments')
+                .select('id')
+                .eq('contact_id', contact.id)
+                .eq('flow_moment_type_id', pipelineData.completion_moment_type_id)
+                .maybeSingle();
+              
+              if (!existingMoment) {
+                // Create the flow moment
+                await supabase.from('flow_moments').insert({
+                  contact_id: contact.id,
+                  flow_moment_type_id: pipelineData.completion_moment_type_id,
+                  source_system: 'flow',
+                  source_reference: `pipeline:${flowId}:${stageId}`,
+                  occurred_at: new Date().toISOString(),
+                  metadata: {
+                    pipeline_name: flow.name,
+                    stage_name: stage.name
+                  },
+                  created_by_user_id: user!.id
+                });
+                
+                console.log(`Created completion moment for contact ${contact.id} in flow ${flow.name}`);
+              }
+            }
           }
           
           // Update the pipeline_contacts entry

@@ -5,7 +5,7 @@ export interface FlowMoment {
   id: string;
   contact_id: string;
   flow_moment_type_id: string;
-  source_system: 'pco' | 'manual' | 'form';
+  source_system: 'pco' | 'manual' | 'form' | 'flow';
   source_reference: string;
   occurred_at: string;
   metadata: any;
