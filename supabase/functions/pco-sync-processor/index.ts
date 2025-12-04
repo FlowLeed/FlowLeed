@@ -312,7 +312,7 @@ async function syncDemographicData(
   try {
     // Fetch person details with demographics
     const personResponse = await fetch(
-      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data,phone_numbers,email_addresses`,
+      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data,phone_numbers,emails`,
       {
         headers: {
           'Authorization': `Basic ${auth}`,
@@ -364,7 +364,7 @@ async function syncDemographicData(
     const included = personData.included || [];
 
     // Parse email addresses and phone numbers from included relationships
-    const emails = included.filter((i: any) => i.type === 'EmailAddress');
+    const emails = included.filter((i: any) => i.type === 'Email');
     const phones = included.filter((i: any) => i.type === 'PhoneNumber');
 
     const primaryEmail = emails.find((e: any) => e.attributes?.primary) || emails[0];
