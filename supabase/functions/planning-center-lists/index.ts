@@ -390,9 +390,10 @@ async function syncSingleList(mapping: any, userId: string) {
   
   console.log('Fetching PC list members for list:', mapping.external_list_id);
 
-  // Fetch all list members from Planning Center with pagination
+  // Fetch all list members from Planning Center using list_results endpoint with pagination
+  // The /people endpoint has a 50-person cap, but /list_results properly paginates
   let allPeople: any[] = [];
-  let nextUrl: string | null = `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/people?per_page=100&include=phone_numbers,emails`;
+  let nextUrl: string | null = `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/list_results?per_page=100&include=person`;
   let pageCount = 0;
 
   while (nextUrl) {
@@ -443,17 +444,16 @@ async function syncSingleList(mapping: any, userId: string) {
       links: data.links ? Object.keys(data.links) : 'none'
     });
     
-    // Collect people from data array (direct endpoint returns people in data)
-    const dataCount = data.data?.length || 0;
-    const pagePeople = data.data || [];
-    if (pagePeople.length > 0) {
-      allPeople.push(...pagePeople);
+    // Extract person data from included array (list_results includes person data)
+    const includedPeople = (data.included || []).filter((item: any) => item.type === 'Person');
+    if (includedPeople.length > 0) {
+      allPeople.push(...includedPeople);
     }
     
     // Get next page URL from links
     nextUrl = data.links?.next || null;
     
-    console.log(`Page ${pageCount}: fetched ${pagePeople.length} people, next URL: ${nextUrl ? 'yes' : 'no'}`);
+    console.log(`Page ${pageCount}: fetched ${includedPeople.length} people, next URL: ${nextUrl ? 'yes' : 'no'}`);
   }
 
   console.log(`Total pages fetched: ${pageCount}, Total people: ${allPeople.length}`);
