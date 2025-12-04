@@ -392,7 +392,7 @@ async function syncSingleList(mapping: any, userId: string) {
 
   // Fetch all list members from Planning Center with pagination
   let allPeople: any[] = [];
-  let nextUrl: string | null = `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/people?per_page=100&include=phone_numbers,email_addresses`;
+  let nextUrl: string | null = `https://api.planningcenteronline.com/people/v2/lists/${mapping.external_list_id}/people?per_page=100&include=phone_numbers,emails`;
   let pageCount = 0;
 
   while (nextUrl) {
