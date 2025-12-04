@@ -436,6 +436,13 @@ async function syncSingleList(mapping: any, userId: string) {
 
     const data = await response.json();
     
+    // Log pagination metadata for debugging
+    console.log(`Page ${pageCount} response meta:`, {
+      total_count: data.meta?.total_count,
+      count: data.meta?.count,
+      links: data.links ? Object.keys(data.links) : 'none'
+    });
+    
     // Collect people from data array (direct endpoint returns people in data)
     const dataCount = data.data?.length || 0;
     const pagePeople = data.data || [];
@@ -446,7 +453,7 @@ async function syncSingleList(mapping: any, userId: string) {
     // Get next page URL from links
     nextUrl = data.links?.next || null;
     
-    console.log(`Page ${pageCount}: data length: ${dataCount}, people: ${pagePeople.length}`);
+    console.log(`Page ${pageCount}: fetched ${pagePeople.length} people, next URL: ${nextUrl ? 'yes' : 'no'}`);
   }
 
   console.log(`Total pages fetched: ${pageCount}, Total people: ${allPeople.length}`);
