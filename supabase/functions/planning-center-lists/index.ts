@@ -441,19 +441,31 @@ async function syncSingleList(mapping: any, userId: string) {
     console.log(`Page ${pageCount} response meta:`, {
       total_count: data.meta?.total_count,
       count: data.meta?.count,
+      data_count: data.data?.length || 0,
+      included_count: data.included?.length || 0,
       links: data.links ? Object.keys(data.links) : 'none'
     });
     
-    // Extract person data from included array (list_results includes person data)
-    const includedPeople = (data.included || []).filter((item: any) => item.type === 'Person');
-    if (includedPeople.length > 0) {
-      allPeople.push(...includedPeople);
+    // Extract person IDs from ListResult objects
+    // Each ListResult has relationships.person.data.id - the /list_results endpoint
+    // does NOT include full person data in the included array
+    const listResults = data.data || [];
+    const personRefs = listResults
+      .filter((item: any) => item.type === 'ListResult' && item.relationships?.person?.data?.id)
+      .map((item: any) => ({
+        type: 'Person',
+        id: item.relationships.person.data.id,
+        // pco-sync-processor will fetch full person details including email/phone
+      }));
+    
+    if (personRefs.length > 0) {
+      allPeople.push(...personRefs);
     }
     
     // Get next page URL from links
     nextUrl = data.links?.next || null;
     
-    console.log(`Page ${pageCount}: fetched ${includedPeople.length} people, next URL: ${nextUrl ? 'yes' : 'no'}`);
+    console.log(`Page ${pageCount}: extracted ${personRefs.length} person IDs from ${listResults.length} list results, next URL: ${nextUrl ? 'yes' : 'no'}`);
   }
 
   console.log(`Total pages fetched: ${pageCount}, Total people: ${allPeople.length}`);
