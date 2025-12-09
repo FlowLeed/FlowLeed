@@ -27,6 +27,7 @@ interface Stage {
   name: string;
   color?: string;
   stage_order: number;
+  default_assignee_user_id?: string | null;
 }
 
 export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
@@ -74,7 +75,7 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
       
       const { data, error } = await supabase
         .from('pipeline_stages')
-        .select('id, name, color, stage_order')
+        .select('id, name, color, stage_order, default_assignee_user_id')
         .eq('pipeline_id', selectedPipeline.id)
         .order('stage_order');
 
@@ -86,7 +87,7 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
 
   // Add contact to flow mutation
   const addToFlowMutation = useMutation({
-    mutationFn: async ({ stageId, stageOrder }: { stageId: string; stageOrder: number }) => {
+    mutationFn: async ({ stageId, stageOrder, defaultAssigneeUserId }: { stageId: string; stageOrder: number; defaultAssigneeUserId?: string | null }) => {
       if (!selectedPipeline) throw new Error('No pipeline selected');
 
       const { error } = await supabase
@@ -95,7 +96,8 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
           contact_id: contactId,
           pipeline_id: selectedPipeline.id,
           stage_id: stageId,
-          stage_order: stageOrder
+          stage_order: stageOrder,
+          assigned_to_user_id: defaultAssigneeUserId || null
         });
 
       if (error) throw error;
@@ -144,7 +146,8 @@ export const AddToFlowDialog: React.FC<AddToFlowDialogProps> = ({
   const handleStageSelect = (stage: Stage) => {
     addToFlowMutation.mutate({
       stageId: stage.id,
-      stageOrder: stage.stage_order
+      stageOrder: stage.stage_order,
+      defaultAssigneeUserId: stage.default_assignee_user_id
     });
   };
 

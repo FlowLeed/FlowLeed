@@ -9,6 +9,7 @@ interface Stage {
   name: string;
   color?: string;
   stage_order: number;
+  default_assignee_user_id?: string | null;
 }
 
 interface StageSelectionStepProps {
