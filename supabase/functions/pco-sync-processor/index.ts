@@ -278,6 +278,19 @@ async function processPersonData(
     .single();
 
   if (!existingPipelineContact) {
+    // Fetch the stage's default assignee for auto-assignment
+    let assignedToUserId = null;
+    const { data: stageData } = await supabase
+      .from('pipeline_stages')
+      .select('default_assignee_user_id')
+      .eq('id', mapping.stage_id)
+      .single();
+    
+    if (stageData?.default_assignee_user_id) {
+      assignedToUserId = stageData.default_assignee_user_id;
+      console.log(`Auto-assigning contact to user ${assignedToUserId} based on stage default`);
+    }
+
     const { error: pipelineError } = await supabase
       .from('pipeline_contacts')
       .insert({
@@ -286,12 +299,13 @@ async function processPersonData(
         stage_id: mapping.stage_id,
         source_type: 'planning_center',
         source_id: pcPersonId,
+        assigned_to_user_id: assignedToUserId,
       });
 
     if (pipelineError) {
       console.error('Error adding contact to pipeline:', pipelineError);
     } else {
-      console.log(`Added contact ${contact.name} to pipeline`);
+      console.log(`Added contact ${contact.name} to pipeline${assignedToUserId ? ' (auto-assigned)' : ''}`);
     }
   }
 
