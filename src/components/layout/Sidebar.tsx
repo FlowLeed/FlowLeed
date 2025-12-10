@@ -440,14 +440,14 @@ export const Sidebar = () => {
     icon: Users,
     path: "/contacts"
   }, {
+    title: "Analytics",
+    icon: BarChart3,
+    path: "/analytics"
+  }, {
     title: "Groups",
     icon: UsersRound,
     path: "/groups",
     comingSoon: true
-  }, {
-    title: "Analytics",
-    icon: BarChart3,
-    path: "/analytics"
   }, {
     title: "Tasks",
     icon: CheckSquare,
