@@ -442,7 +442,8 @@ export const Sidebar = () => {
   }, {
     title: "Groups",
     icon: UsersRound,
-    path: "/groups"
+    path: "/groups",
+    comingSoon: true
   }, {
     title: "Analytics",
     icon: BarChart3,
