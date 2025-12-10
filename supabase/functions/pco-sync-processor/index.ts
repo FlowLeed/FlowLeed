@@ -5,6 +5,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to sleep for a specified number of milliseconds
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper function to fetch with retry and exponential backoff for rate limiting
+async function fetchWithRetry(
+  url: string, 
+  options: RequestInit, 
+  maxRetries: number = 3
+): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      
+      // Handle rate limiting (429)
+      if (response.status === 429) {
+        const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
+        const backoffDelay = Math.max(retryAfter * 1000, 1000 * Math.pow(2, attempt));
+        console.log(`Rate limited (429). Waiting ${backoffDelay}ms before retry ${attempt + 1}/${maxRetries}`);
+        
+        if (attempt < maxRetries) {
+          await sleep(backoffDelay);
+          continue;
+        }
+        throw new Error(`Rate limited after ${maxRetries} retries`);
+      }
+      
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`Fetch attempt ${attempt + 1} failed:`, error);
+      
+      if (attempt < maxRetries) {
+        const backoffDelay = 1000 * Math.pow(2, attempt);
+        console.log(`Waiting ${backoffDelay}ms before retry...`);
+        await sleep(backoffDelay);
+      }
+    }
+  }
+  
+  throw lastError || new Error('Fetch failed after retries');
+}
+
+// Delay between API calls to prevent rate limiting (ms)
+const API_CALL_DELAY = 350;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -97,9 +144,15 @@ Deno.serve(async (req) => {
         const secret = integration.credentials.secret;
         const auth = btoa(`${applicationId}:${secret}`);
 
-        // Process each person in the chunk
-        for (const person of people) {
+        // Process each person in the chunk with delay between API calls
+        for (let i = 0; i < people.length; i++) {
+          const person = people[i];
           await processPersonData(person, integration.organization_id, mapping, auth, supabase);
+          
+          // Add delay between person processing to avoid rate limiting
+          if (i < people.length - 1) {
+            await sleep(API_CALL_DELAY);
+          }
         }
 
         // Mark chunk as completed
@@ -232,7 +285,7 @@ async function processPersonData(
   let attributes = person.attributes;
   if (!attributes) {
     console.log(`Fetching full person data for PC ID: ${pcPersonId}`);
-    const personResponse = await fetch(
+    const personResponse = await fetchWithRetry(
       `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=emails,phone_numbers`,
       {
         headers: {
@@ -365,8 +418,11 @@ async function syncDemographicData(
   supabase: any
 ) {
   try {
+    // Add delay before demographic sync to prevent rate limiting
+    await sleep(API_CALL_DELAY);
+    
     // Fetch person details with demographics
-    const personResponse = await fetch(
+    const personResponse = await fetchWithRetry(
       `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data,phone_numbers,emails`,
       {
         headers: {
