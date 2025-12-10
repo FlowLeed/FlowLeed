@@ -685,8 +685,10 @@ async function syncFlowMomentsFromFieldData(
       console.log(`[DEBUG] Looking for field IDs: ${mappings.map(m => `${m.pco_source_identifier} (${m.pco_source_label})`).join(', ')}`);
     }
     
-    // 2. Fetch field data from PCO for this person
-    const fieldDataResponse = await fetch(
+    // 2. Fetch field data from PCO for this person (with delay to prevent rate limiting)
+    await sleep(API_CALL_DELAY);
+    
+    const fieldDataResponse = await fetchWithRetry(
       `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/field_data?include=field_definition`,
       {
         headers: {
