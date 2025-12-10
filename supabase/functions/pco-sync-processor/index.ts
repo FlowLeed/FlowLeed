@@ -227,7 +227,42 @@ async function processPersonData(
   supabase: any
 ) {
   const pcPersonId = person.id;
-  const attributes = person.attributes;
+  
+  // If we only have an ID reference (from list_results), fetch full person data from PCO
+  let attributes = person.attributes;
+  if (!attributes) {
+    console.log(`Fetching full person data for PC ID: ${pcPersonId}`);
+    const personResponse = await fetch(
+      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=emails,phone_numbers`,
+      {
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (!personResponse.ok) {
+      console.error(`Failed to fetch person ${pcPersonId}: ${personResponse.status}`);
+      throw new Error(`Failed to fetch person data: ${personResponse.status}`);
+    }
+    
+    const personData = await personResponse.json();
+    attributes = personData.data?.attributes || {};
+    
+    // Extract emails and phone numbers from included data
+    const included = personData.included || [];
+    const emails = included.filter((i: any) => i.type === 'Email');
+    const phones = included.filter((i: any) => i.type === 'PhoneNumber');
+    
+    // Attach to attributes for consistent processing below
+    if (emails.length > 0) {
+      attributes.emails = emails;
+    }
+    if (phones.length > 0) {
+      attributes.phone_numbers = phones;
+    }
+  }
 
   // Upsert contact - only include email/phone if we have actual values to avoid overwriting with null
   const contactData: any = {
@@ -239,12 +274,18 @@ async function processPersonData(
     last_synced_at: new Date().toISOString(),
   };
   
-  // Only set email/phone if we have actual values from the list response
-  if (attributes.email_addresses?.[0]?.address) {
-    contactData.email = attributes.email_addresses[0].address;
+  // Handle email - check both formats (inline and from included)
+  const emailAddress = attributes.email_addresses?.[0]?.address 
+    || attributes.emails?.[0]?.attributes?.address;
+  if (emailAddress) {
+    contactData.email = emailAddress;
   }
-  if (attributes.phone_numbers?.[0]?.number) {
-    contactData.phone = attributes.phone_numbers[0].number;
+  
+  // Handle phone - check both formats (inline and from included)
+  const phoneNumber = attributes.phone_numbers?.[0]?.number 
+    || attributes.phone_numbers?.[0]?.attributes?.number;
+  if (phoneNumber) {
+    contactData.phone = phoneNumber;
   }
 
   console.log(`Syncing contact ${attributes.name} (PC ID: ${pcPersonId}):`, {
