@@ -515,6 +515,12 @@ async function syncDemographicData(
     // Sync demographics
     const demographicData: any = {};
     
+    console.log(`[Demographics] Processing PC ID ${pcPersonId}:`, {
+      birthdate: person.attributes.birthdate,
+      gender: person.attributes.gender,
+      marital_status: person.attributes.marital_status
+    });
+    
     if (person.attributes.birthdate) {
       demographicData.birthday = person.attributes.birthdate;
     }
@@ -537,16 +543,26 @@ async function syncDemographicData(
     if (Object.keys(demographicData).length > 0) {
       demographicData.contact_id = contactId;
       
-      await supabase
+      const { error: demoError } = await supabase
         .from('contact_demographics')
         .upsert(demographicData, {
           onConflict: 'contact_id',
           ignoreDuplicates: false,
         });
+      
+      if (demoError) {
+        console.error(`[Demographics] Error upserting for contact ${contactId}:`, demoError);
+      } else {
+        console.log(`[Demographics] Successfully synced for contact ${contactId}:`, demographicData);
+      }
+    } else {
+      console.log(`[Demographics] No demographic data found in PCO for PC ID ${pcPersonId}`);
     }
 
     // Sync addresses
     const addresses = included.filter((item: any) => item.type === 'Address');
+    console.log(`[Addresses] Found ${addresses.length} addresses for PC ID ${pcPersonId}`);
+    
     for (const address of addresses) {
       const addressData = {
         contact_id: contactId,
@@ -558,56 +574,115 @@ async function syncDemographicData(
         is_primary: address.attributes.primary || false,
       };
 
-      await supabase
+      const { error: addrError } = await supabase
         .from('contact_addresses')
         .upsert(addressData, {
           onConflict: 'contact_id,address_type',
           ignoreDuplicates: false,
         });
+      
+      if (addrError) {
+        console.error(`[Addresses] Error upserting address for contact ${contactId}:`, addrError);
+      }
     }
 
     // Sync household/family members
-    const households = included.filter((item: any) => item.type === 'Household');
+    let households = included.filter((item: any) => item.type === 'Household');
+    console.log(`[Households] Found ${households.length} households in included data for PC ID ${pcPersonId}`);
+    
+    // Log all included types to debug what's actually returned
+    const includedTypes = [...new Set(included.map((item: any) => item.type))];
+    console.log(`[Households] Included data types: ${includedTypes.join(', ')}`);
+    
+    // If no households in included, try fetching directly from the person's households endpoint
+    if (households.length === 0) {
+      console.log(`[Households] No households in include, trying direct fetch for PC ID ${pcPersonId}`);
+      await sleep(API_CALL_DELAY);
+      
+      try {
+        const householdsResponse = await fetchWithRetry(
+          `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/households`,
+          {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        
+        if (householdsResponse.ok) {
+          const householdsData = await householdsResponse.json();
+          households = householdsData.data || [];
+          console.log(`[Households] Direct fetch found ${households.length} households for PC ID ${pcPersonId}`);
+        } else {
+          console.error(`[Households] Direct fetch failed: ${householdsResponse.status} ${householdsResponse.statusText}`);
+        }
+      } catch (householdError) {
+        console.error(`[Households] Error fetching households directly:`, householdError);
+      }
+    }
+    
     if (households.length > 0) {
       const householdId = households[0].id;
+      console.log(`[Households] Processing household ID ${householdId} for PC ID ${pcPersonId}`);
       
-      // Fetch household members
-      const membersResponse = await fetch(
-        `https://api.planningcenteronline.com/people/v2/households/${householdId}/people`,
-        {
-          headers: {
-            'Authorization': `Basic ${auth}`,
-            'Content-Type': 'application/json',
-          },
+      // Add rate limit delay before fetching household members
+      await sleep(API_CALL_DELAY);
+      
+      try {
+        // Use fetchWithRetry instead of fetch for proper rate limiting handling
+        const membersResponse = await fetchWithRetry(
+          `https://api.planningcenteronline.com/people/v2/households/${householdId}/people`,
+          {
+            headers: {
+              'Authorization': `Basic ${auth}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (membersResponse.ok) {
+          const membersData = await membersResponse.json();
+          const members = membersData.data || [];
+          console.log(`[Households] Found ${members.length} household members for household ${householdId}`);
+
+          let syncedCount = 0;
+          for (const member of members) {
+            // Skip self
+            if (member.id === pcPersonId) continue;
+
+            const familyMemberData = {
+              contact_id: contactId,
+              pc_person_id: member.id,
+              name: member.attributes.name || 'Unknown',
+              relationship: member.attributes.child ? 'child' : 'spouse',
+              is_child: member.attributes.child || false,
+              birthday: member.attributes.birthdate || null,
+              avatar: member.attributes.avatar || null,
+            };
+
+            const { error: famError } = await supabase
+              .from('contact_family_members')
+              .upsert(familyMemberData, {
+                onConflict: 'contact_id,pc_person_id',
+                ignoreDuplicates: false,
+              });
+            
+            if (famError) {
+              console.error(`[Households] Error upserting family member ${member.id}:`, famError);
+            } else {
+              syncedCount++;
+            }
+          }
+          console.log(`[Households] Synced ${syncedCount} family members for contact ${contactId}`);
+        } else {
+          console.error(`[Households] Failed to fetch household members: ${membersResponse.status} ${membersResponse.statusText}`);
         }
-      );
-
-      if (membersResponse.ok) {
-        const membersData = await membersResponse.json();
-        const members = membersData.data || [];
-
-        for (const member of members) {
-          // Skip self
-          if (member.id === pcPersonId) continue;
-
-          const familyMemberData = {
-            contact_id: contactId,
-            pc_person_id: member.id,
-            name: member.attributes.name || 'Unknown',
-            relationship: member.attributes.child ? 'child' : 'spouse',
-            is_child: member.attributes.child || false,
-            birthday: member.attributes.birthdate || null,
-            avatar: member.attributes.avatar || null,
-          };
-
-          await supabase
-            .from('contact_family_members')
-            .upsert(familyMemberData, {
-              onConflict: 'contact_id,pc_person_id',
-              ignoreDuplicates: false,
-            });
-        }
+      } catch (memberError) {
+        console.error(`[Households] Error fetching household members:`, memberError);
       }
+    } else {
+      console.log(`[Households] No households found for PC ID ${pcPersonId}`);
     }
 
   } catch (error) {
