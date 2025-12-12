@@ -43,6 +43,8 @@ serve(async (req) => {
       return await testPlanningCenterConnection(integrationId, userData.user.id);
     } else if (action === 'fetchLists') {
       return await fetchPlanningCenterLists(integrationId, userData.user.id);
+    } else if (action === 'syncAllPeople') {
+      return await syncAllPeopleFromPCO(integrationId, userData.user.id);
     } else if (action === 'syncLists') {
       // If mappings were provided directly, use them
       if (Array.isArray(listMappings) && listMappings.length > 0) {
@@ -299,6 +301,221 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
   } catch (error) {
     console.error('Error fetching PC lists:', error);
     return new Response(JSON.stringify({ error: 'Failed to fetch lists' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// Sync ALL people from PCO (not just list members)
+async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
+  try {
+    console.log('Syncing ALL people from PCO for integration:', integrationId);
+    
+    // Get integration credentials
+    const { data: integration, error: integrationError } = await supabase
+      .from('integrations')
+      .select('credentials, organization_id, user_id')
+      .eq('id', integrationId)
+      .single();
+
+    if (integrationError || !integration) {
+      console.error('Integration not found:', integrationError);
+      return new Response(JSON.stringify({ error: 'Integration not found' }), { 
+        status: 404, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    const credentials = integration.credentials as any;
+    const application_id = credentials?.application_id;
+    const secret = credentials?.secret;
+    
+    if (!application_id || !secret) {
+      return new Response(JSON.stringify({ error: 'Missing Planning Center credentials' }), { 
+        status: 400, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      });
+    }
+
+    const auth = btoa(`${application_id}:${secret}`);
+    
+    // Fetch ALL people from PCO with pagination
+    let allPeople: any[] = [];
+    let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers';
+    let pageCount = 0;
+
+    while (nextUrl) {
+      pageCount++;
+      console.log(`Fetching people page ${pageCount}...`);
+      
+      const response = await fetch(nextUrl, {
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          await supabase
+            .from('integrations')
+            .update({ 
+              status: 'failed',
+              metadata: {
+                error: 'Authentication failed - please check your Planning Center credentials',
+                last_error_at: new Date().toISOString()
+              }
+            })
+            .eq('id', integrationId);
+          
+          return new Response(JSON.stringify({ 
+            error: 'Planning Center authentication failed - please reconnect your account' 
+          }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        
+        throw new Error(`PC API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const people = data.data || [];
+      
+      // Build person objects with included email/phone data
+      const included = data.included || [];
+      
+      for (const person of people) {
+        // Find related emails and phones from included
+        const personEmails = included.filter((i: any) => 
+          i.type === 'Email' && 
+          person.relationships?.emails?.data?.some((e: any) => e.id === i.id)
+        );
+        const personPhones = included.filter((i: any) => 
+          i.type === 'PhoneNumber' && 
+          person.relationships?.phone_numbers?.data?.some((p: any) => p.id === i.id)
+        );
+        
+        // Attach to attributes for processing
+        if (personEmails.length > 0) {
+          person.attributes.emails = personEmails;
+        }
+        if (personPhones.length > 0) {
+          person.attributes.phone_numbers = personPhones;
+        }
+        
+        allPeople.push(person);
+      }
+      
+      nextUrl = data.links?.next || null;
+      
+      console.log(`Page ${pageCount}: fetched ${people.length} people, total: ${allPeople.length}`);
+    }
+
+    console.log(`Total people fetched: ${allPeople.length} in ${pageCount} pages`);
+
+    if (allPeople.length === 0) {
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'No people found in Planning Center',
+        totalContacts: 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Create sync job (without list_mapping_id for full people sync)
+    const { data: job, error: jobError } = await supabase
+      .from('pco_sync_jobs')
+      .insert({
+        organization_id: integration.organization_id,
+        integration_id: integrationId,
+        list_mapping_id: null, // No mapping for full people sync
+        status: 'pending',
+        total_contacts: allPeople.length,
+        processed_contacts: 0,
+        metadata: {
+          sync_type: 'full_people_sync',
+          pages_fetched: pageCount
+        }
+      })
+      .select()
+      .single();
+
+    if (jobError || !job) {
+      console.error('Failed to create sync job:', jobError);
+      return new Response(JSON.stringify({ error: 'Failed to create sync job' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log(`Created sync job: ${job.id}`);
+
+    // Chunk contacts into batches of 50
+    const CHUNK_SIZE = 50;
+    const chunks = [];
+    for (let i = 0; i < allPeople.length; i += CHUNK_SIZE) {
+      chunks.push(allPeople.slice(i, i + CHUNK_SIZE));
+    }
+
+    console.log(`Chunked ${allPeople.length} people into ${chunks.length} chunks`);
+
+    // Insert chunks into queue
+    const queueItems = chunks.map((chunk, index) => ({
+      sync_job_id: job.id,
+      organization_id: integration.organization_id,
+      status: 'pending',
+      chunk_data: chunk,
+      chunk_number: index + 1
+    }));
+
+    const { error: queueError } = await supabase
+      .from('pco_sync_queue')
+      .insert(queueItems);
+
+    if (queueError) {
+      console.error('Failed to create queue items:', queueError);
+      await supabase
+        .from('pco_sync_jobs')
+        .update({ status: 'failed', error_message: 'Failed to create queue items' })
+        .eq('id', job.id);
+      
+      return new Response(JSON.stringify({ error: 'Failed to create queue items' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Update last sync time on integration
+    await supabase
+      .from('integrations')
+      .update({ last_sync_at: new Date().toISOString() })
+      .eq('id', integrationId);
+
+    // Track PCO sync
+    await supabase.rpc('track_pco_sync', {
+      p_org_id: integration.organization_id,
+      p_sync_type: 'full_people_sync'
+    });
+
+    console.log(`Full people sync job ${job.id} created with ${chunks.length} chunks`);
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      jobId: job.id,
+      totalContacts: allPeople.length,
+      chunks: chunks.length
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error syncing all people from PCO:', error);
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -118,7 +118,7 @@ export function SyncSettingsSection({
           className="shrink-0"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-          {isSyncing ? 'Syncing All...' : 'Sync All Lists'}
+          {isSyncing ? 'Syncing...' : 'Sync All People'}
         </Button>
       </div>
 

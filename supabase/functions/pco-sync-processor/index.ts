@@ -134,10 +134,10 @@ Deno.serve(async (req) => {
 
         const job = chunk.pco_sync_jobs;
         const integration = job.integrations;
-        const mapping = job.integration_list_mappings;
+        const mapping = job.integration_list_mappings; // May be null for full people sync
         const people = chunk.chunk_data as any[];
 
-        console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number}`);
+        console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number} (full sync: ${!mapping})`);
 
         // Get PC credentials (try application_id first, fallback to app_id for backwards compatibility)
         const applicationId = integration.credentials.application_id ?? integration.credentials.app_id;
@@ -190,16 +190,19 @@ Deno.serve(async (req) => {
 
           // Track PCO sync when job is complete
           if (isComplete) {
+            const syncType = job.list_mapping_id ? 'list_sync' : 'full_people_sync';
             await supabase.rpc('track_pco_sync', {
               p_org_id: integration.organization_id,
-              p_sync_type: 'list_sync'
+              p_sync_type: syncType
             });
             
-            // Update mapping last_sync_at
-            await supabase
-              .from('integration_list_mappings')
-              .update({ last_sync_at: new Date().toISOString() })
-              .eq('id', job.list_mapping_id);
+            // Update mapping last_sync_at (only if this was a list sync)
+            if (job.list_mapping_id) {
+              await supabase
+                .from('integration_list_mappings')
+                .update({ last_sync_at: new Date().toISOString() })
+                .eq('id', job.list_mapping_id);
+            }
           }
         }
 
@@ -363,44 +366,49 @@ async function processPersonData(
 
   console.log(`Contact upserted: ${contact.name} (${contact.id})`);
 
-  // Add to pipeline if not already in it
-  const { data: existingPipelineContact } = await supabase
-    .from('pipeline_contacts')
-    .select('id')
-    .eq('contact_id', contact.id)
-    .eq('pipeline_id', mapping.pipeline_id)
-    .single();
-
-  if (!existingPipelineContact) {
-    // Fetch the stage's default assignee for auto-assignment
-    let assignedToUserId = null;
-    const { data: stageData } = await supabase
-      .from('pipeline_stages')
-      .select('default_assignee_user_id')
-      .eq('id', mapping.stage_id)
-      .single();
-    
-    if (stageData?.default_assignee_user_id) {
-      assignedToUserId = stageData.default_assignee_user_id;
-      console.log(`Auto-assigning contact to user ${assignedToUserId} based on stage default`);
-    }
-
-    const { error: pipelineError } = await supabase
+  // Only add to pipeline if we have a mapping (list sync, not full people sync)
+  if (mapping?.pipeline_id && mapping?.stage_id) {
+    // Add to pipeline if not already in it
+    const { data: existingPipelineContact } = await supabase
       .from('pipeline_contacts')
-      .insert({
-        contact_id: contact.id,
-        pipeline_id: mapping.pipeline_id,
-        stage_id: mapping.stage_id,
-        source_type: 'planning_center',
-        source_id: pcPersonId,
-        assigned_to_user_id: assignedToUserId,
-      });
+      .select('id')
+      .eq('contact_id', contact.id)
+      .eq('pipeline_id', mapping.pipeline_id)
+      .single();
 
-    if (pipelineError) {
-      console.error('Error adding contact to pipeline:', pipelineError);
-    } else {
-      console.log(`Added contact ${contact.name} to pipeline${assignedToUserId ? ' (auto-assigned)' : ''}`);
+    if (!existingPipelineContact) {
+      // Fetch the stage's default assignee for auto-assignment
+      let assignedToUserId = null;
+      const { data: stageData } = await supabase
+        .from('pipeline_stages')
+        .select('default_assignee_user_id')
+        .eq('id', mapping.stage_id)
+        .single();
+      
+      if (stageData?.default_assignee_user_id) {
+        assignedToUserId = stageData.default_assignee_user_id;
+        console.log(`Auto-assigning contact to user ${assignedToUserId} based on stage default`);
+      }
+
+      const { error: pipelineError } = await supabase
+        .from('pipeline_contacts')
+        .insert({
+          contact_id: contact.id,
+          pipeline_id: mapping.pipeline_id,
+          stage_id: mapping.stage_id,
+          source_type: 'planning_center',
+          source_id: pcPersonId,
+          assigned_to_user_id: assignedToUserId,
+        });
+
+      if (pipelineError) {
+        console.error('Error adding contact to pipeline:', pipelineError);
+      } else {
+        console.log(`Added contact ${contact.name} to pipeline${assignedToUserId ? ' (auto-assigned)' : ''}`);
+      }
     }
+  } else {
+    console.log(`Contact ${contact.name} synced without flow assignment (full people sync)`);
   }
 
   // Sync demographic data
