@@ -298,7 +298,7 @@ const IntegrationsPage = () => {
     try {
       const { data, error } = await supabase.functions.invoke('planning-center-lists', {
         body: { 
-          action: 'syncLists',
+          action: 'syncAllPeople',
           integrationId: planningCenterIntegration.id 
         }
       });
@@ -306,14 +306,14 @@ const IntegrationsPage = () => {
       if (error) throw error;
       
       // Set the job ID to start polling
-      if (data?.results?.[0]?.jobId) {
-        setCurrentSyncJobId(data.results[0].jobId);
+      if (data?.jobId) {
+        setCurrentSyncJobId(data.jobId);
         toast.success("Sync started", {
-          description: `Queued ${data.results[0].contactsCount || 0} contacts for processing`
+          description: `Queued ${data.totalContacts || 0} people for processing`
         });
       } else {
         toast.success("Sync completed", {
-          description: `Synced ${data?.results?.length || 0} list(s)`
+          description: `Synced ${data?.totalContacts || 0} people`
         });
       }
       
@@ -322,7 +322,7 @@ const IntegrationsPage = () => {
     } catch (error: any) {
       console.error('Sync error:', error);
       toast.error("Sync failed", {
-        description: error.message || 'Failed to sync data from Planning Center'
+        description: error.message || 'Failed to sync people from Planning Center'
       });
     }
   };
