@@ -1913,7 +1913,7 @@ export type Database = {
           error_message: string | null
           id: string
           integration_id: string
-          list_mapping_id: string
+          list_mapping_id: string | null
           metadata: Json | null
           organization_id: string
           processed_contacts: number
@@ -1928,7 +1928,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           integration_id: string
-          list_mapping_id: string
+          list_mapping_id?: string | null
           metadata?: Json | null
           organization_id: string
           processed_contacts?: number
@@ -1943,7 +1943,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           integration_id?: string
-          list_mapping_id?: string
+          list_mapping_id?: string | null
           metadata?: Json | null
           organization_id?: string
           processed_contacts?: number
