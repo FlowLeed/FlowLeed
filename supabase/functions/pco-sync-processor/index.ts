@@ -49,8 +49,10 @@ async function fetchWithRetry(
   throw lastError || new Error('Fetch failed after retries');
 }
 
-// Delay between API calls to prevent rate limiting (ms)
-const API_CALL_DELAY = 350;
+// Delay between API calls to prevent rate limiting (ms) - increased for safety
+const API_CALL_DELAY = 500;
+// Delay between processing chunks (ms)
+const CHUNK_DELAY = 200;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -102,7 +104,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Select up to 20 chunks using round-robin (one per organization)
+    // Select up to 5 chunks using round-robin (one per organization) - reduced from 20 for safer resource usage
     const selectedChunks = [];
     const seenOrgs = new Set();
     
@@ -110,7 +112,7 @@ Deno.serve(async (req) => {
       if (!seenOrgs.has(chunk.organization_id)) {
         selectedChunks.push(chunk);
         seenOrgs.add(chunk.organization_id);
-        if (selectedChunks.length >= 20) break;
+        if (selectedChunks.length >= 5) break;
       }
     }
 
@@ -123,6 +125,22 @@ Deno.serve(async (req) => {
     // Process each selected chunk
     for (const chunk of selectedChunks) {
       try {
+        // Check if job was cancelled before processing this chunk
+        const { data: jobCheck } = await supabase
+          .from('pco_sync_jobs')
+          .select('status')
+          .eq('id', chunk.sync_job_id)
+          .single();
+
+        if (jobCheck?.status === 'cancelled') {
+          console.log(`Job ${chunk.sync_job_id} was cancelled, skipping chunk ${chunk.chunk_number}`);
+          await supabase
+            .from('pco_sync_queue')
+            .update({ status: 'cancelled' })
+            .eq('id', chunk.id);
+          continue;
+        }
+
         console.log(`Processing chunk ${chunk.chunk_number} for job ${chunk.sync_job_id} (org: ${chunk.organization_id})`);
         processedOrgs.add(chunk.organization_id);
 
@@ -207,6 +225,9 @@ Deno.serve(async (req) => {
         }
 
         successCount++;
+        
+        // Add delay between chunks to prevent overwhelming the database
+        await sleep(CHUNK_DELAY);
 
       } catch (error) {
         console.error(`Error processing chunk ${chunk.id}:`, error);

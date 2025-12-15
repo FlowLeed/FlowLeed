@@ -1,5 +1,6 @@
 import { Progress } from "@/components/ui/progress";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, StopCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -8,7 +9,7 @@ import { useFlowContext } from "@/contexts/FlowContext";
 
 interface SyncProgressDisplayProps {
   jobId: string;
-  jobStatus: 'pending' | 'processing' | 'completed' | 'failed';
+  jobStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   totalContacts: number;
   processedContacts: number;
   listMappingId: string;
@@ -17,6 +18,7 @@ interface SyncProgressDisplayProps {
   integrationId?: string;
   organizationId?: string;
   onComplete?: () => void;
+  onCancel?: () => void;
 }
 
 export function SyncProgressDisplay({
@@ -30,6 +32,7 @@ export function SyncProgressDisplay({
   integrationId,
   organizationId,
   onComplete,
+  onCancel,
 }: SyncProgressDisplayProps) {
   const { toast } = useToast();
   const { refreshFlows } = useFlowContext();
@@ -165,7 +168,7 @@ export function SyncProgressDisplay({
   }
 
   // Processing phase
-  if (jobStatus === 'processing' || (processedContacts > 0 && jobStatus !== 'completed')) {
+  if (jobStatus === 'processing' || (processedContacts > 0 && jobStatus !== 'completed' && jobStatus !== 'cancelled')) {
     return (
       <div className="space-y-3 py-4">
         <div className="flex items-center justify-between text-sm">
@@ -175,9 +178,22 @@ export function SyncProgressDisplay({
               Syncing contacts...
             </span>
           </div>
-          <span className="font-medium">
-            {processedContacts}/{totalContacts}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="font-medium">
+              {processedContacts}/{totalContacts}
+            </span>
+            {onCancel && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancel}
+                className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <StopCircle className="h-4 w-4 mr-1" />
+                Stop
+              </Button>
+            )}
+          </div>
         </div>
 
         <Progress value={progressPercentage} className="h-2" />
@@ -204,6 +220,21 @@ export function SyncProgressDisplay({
             </p>
           )}
         </div>
+      </div>
+    );
+  }
+
+  // Cancelled phase
+  if (jobStatus === 'cancelled') {
+    return (
+      <div className="space-y-2 py-4">
+        <div className="flex items-center justify-center gap-2 text-sm text-amber-600">
+          <StopCircle className="h-5 w-5" />
+          <span className="font-medium">Sync cancelled</span>
+        </div>
+        <p className="text-xs text-center text-muted-foreground">
+          Processed {processedContacts} of {totalContacts} contacts before stopping.
+        </p>
       </div>
     );
   }

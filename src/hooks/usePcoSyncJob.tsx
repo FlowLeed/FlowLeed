@@ -3,14 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface PcoSyncJob {
   id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   total_contacts: number;
   processed_contacts: number;
   error_message?: string | null;
   started_at: string;
   completed_at?: string | null;
   metadata: any;
-  list_mapping_id: string;
+  list_mapping_id: string | null;
 }
 
 export function usePcoSyncJob(jobId: string | null) {
@@ -30,9 +30,9 @@ export function usePcoSyncJob(jobId: string | null) {
     },
     enabled: !!jobId,
     refetchInterval: (query) => {
-      // Stop polling if job is completed or failed
+      // Stop polling if job is completed, failed, or cancelled
       const data = query.state.data;
-      if (data?.status === 'completed' || data?.status === 'failed') {
+      if (data?.status === 'completed' || data?.status === 'failed' || data?.status === 'cancelled') {
         return false;
       }
       // Poll every 2 seconds while processing

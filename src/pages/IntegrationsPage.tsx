@@ -326,6 +326,36 @@ const IntegrationsPage = () => {
       });
     }
   };
+
+  const handleCancelSync = async () => {
+    if (!currentSyncJobId) return;
+    
+    try {
+      // Update job status to cancelled
+      await supabase
+        .from('pco_sync_jobs')
+        .update({ status: 'cancelled' })
+        .eq('id', currentSyncJobId);
+      
+      // Also cancel all pending queue items for this job
+      await supabase
+        .from('pco_sync_queue')
+        .update({ status: 'cancelled' })
+        .eq('sync_job_id', currentSyncJobId)
+        .eq('status', 'pending');
+      
+      toast.success("Sync cancelled", {
+        description: "The sync has been stopped. Already processed contacts will remain."
+      });
+      
+      await queryClient.invalidateQueries({ queryKey: ['pco-sync-job', currentSyncJobId] });
+    } catch (error: any) {
+      console.error('Cancel sync error:', error);
+      toast.error("Failed to cancel", {
+        description: error.message || 'Could not cancel the sync'
+      });
+    }
+  };
   const getStatusBadge = (integration: any, isLoading: boolean = false, isDeleting: boolean = false) => {
     if (isDeleting) {
       return <Badge variant="secondary">Disconnecting...</Badge>;
@@ -495,6 +525,7 @@ const IntegrationsPage = () => {
                           stageId={syncJob.metadata?.stage_id || ''}
                           integrationId={planningCenterIntegration.id}
                           organizationId={userOrgData?.organization_id}
+                          onCancel={isSyncing ? handleCancelSync : undefined}
                         />
                       )}
                       
