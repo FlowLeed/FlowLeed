@@ -12,9 +12,10 @@ interface SyncProgressDisplayProps {
   jobStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
   totalContacts: number;
   processedContacts: number;
-  listMappingId: string;
-  pipelineId: string;
-  stageId: string;
+  listMappingId?: string | null;
+  pipelineId?: string | null;
+  stageId?: string | null;
+  isFullPeopleSync?: boolean;
   integrationId?: string;
   organizationId?: string;
   onComplete?: () => void;
@@ -29,6 +30,7 @@ export function SyncProgressDisplay({
   listMappingId,
   pipelineId,
   stageId,
+  isFullPeopleSync = false,
   integrationId,
   organizationId,
   onComplete,
@@ -94,7 +96,7 @@ export function SyncProgressDisplay({
     refetchInterval: 2000,
   });
 
-  // Fetch real-time contact count in pipeline
+  // Fetch real-time contact count in pipeline (only for list-based syncs)
   const { data: contactsInFlow } = useQuery({
     queryKey: ['pipeline-contacts-count', pipelineId, stageId, jobId],
     queryFn: async () => {
@@ -109,26 +111,38 @@ export function SyncProgressDisplay({
       const { count, error } = await supabase
         .from('pipeline_contacts')
         .select('*', { count: 'exact', head: true })
-        .eq('pipeline_id', pipelineId)
-        .eq('stage_id', stageId)
+        .eq('pipeline_id', pipelineId!)
+        .eq('stage_id', stageId!)
         .gte('created_at', job.started_at);
 
       if (error) throw error;
       return count || 0;
     },
-    enabled: !!jobId && !!pipelineId && !!stageId,
+    enabled: !!jobId && !!pipelineId && !!stageId && !isFullPeopleSync,
     refetchInterval: 2000,
   });
 
   // Show completion toast, refresh flows, and trigger moments sync
   useEffect(() => {
-    if (jobStatus === 'completed' && !hasShownCompletion && contactsInFlow !== undefined) {
+    const canShowCompletion = isFullPeopleSync 
+      ? jobStatus === 'completed' && !hasShownCompletion
+      : jobStatus === 'completed' && !hasShownCompletion && contactsInFlow !== undefined;
+    
+    if (canShowCompletion) {
       setHasShownCompletion(true);
       refreshFlows();
-      toast({
-        title: "Contact Sync Complete!",
-        description: `${contactsInFlow} contacts added to the flow`,
-      });
+      
+      if (isFullPeopleSync) {
+        toast({
+          title: "People Sync Complete!",
+          description: `${processedContacts} people synced to Flowleed`,
+        });
+      } else {
+        toast({
+          title: "Contact Sync Complete!",
+          description: `${contactsInFlow} contacts added to the flow`,
+        });
+      }
       
       // Auto-trigger moments backfill if we have the required IDs
       if (integrationId && organizationId && momentsSyncStatus === 'idle') {
@@ -139,7 +153,7 @@ export function SyncProgressDisplay({
       // Call completion callback if provided
       onComplete?.();
     }
-  }, [jobStatus, contactsInFlow, hasShownCompletion, toast, refreshFlows, onComplete, integrationId, organizationId, momentsSyncStatus]);
+  }, [jobStatus, contactsInFlow, hasShownCompletion, toast, refreshFlows, onComplete, integrationId, organizationId, momentsSyncStatus, isFullPeopleSync, processedContacts]);
 
   const progressPercentage = totalContacts > 0 
     ? Math.round((processedContacts / totalContacts) * 100) 
@@ -152,7 +166,10 @@ export function SyncProgressDisplay({
         <div className="flex items-center justify-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <span className="text-sm text-muted-foreground animate-pulse">
-            Preparing to sync {totalContacts} contacts...
+            {isFullPeopleSync 
+              ? `Preparing to sync ${totalContacts} people from Planning Center...`
+              : `Preparing to sync ${totalContacts} contacts...`
+            }
           </span>
         </div>
         <div className="flex gap-1.5 justify-center">
@@ -161,7 +178,7 @@ export function SyncProgressDisplay({
           <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.2s' }}></span>
         </div>
         <p className="text-xs text-center text-muted-foreground">
-          This may take a moment while we fetch contacts from Planning Center...
+          This may take a moment while we fetch {isFullPeopleSync ? 'people' : 'contacts'} from Planning Center...
         </p>
       </div>
     );
@@ -175,7 +192,7 @@ export function SyncProgressDisplay({
           <div className="flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
             <span className="text-muted-foreground">
-              Syncing contacts...
+              {isFullPeopleSync ? 'Syncing people to Flowleed...' : 'Syncing contacts...'}
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -214,7 +231,7 @@ export function SyncProgressDisplay({
             </p>
           )}
 
-          {contactsInFlow !== undefined && contactsInFlow > 0 && (
+          {!isFullPeopleSync && contactsInFlow !== undefined && contactsInFlow > 0 && (
             <p className="text-xs text-primary font-medium">
               ✓ {contactsInFlow} contacts added to flow
             </p>
@@ -252,9 +269,12 @@ export function SyncProgressDisplay({
         
         <div className="space-y-1 text-center">
           <p className="text-sm text-muted-foreground">
-            Processed: {processedContacts}/{totalContacts} contacts
+            {isFullPeopleSync 
+              ? `${processedContacts} people synced to Flowleed`
+              : `Processed: ${processedContacts}/${totalContacts} contacts`
+            }
           </p>
-          {contactsInFlow !== undefined && (
+          {!isFullPeopleSync && contactsInFlow !== undefined && (
             <p className="text-sm font-medium text-primary">
               {contactsInFlow} contacts added to flow
               {contactsInFlow < processedContacts && (
