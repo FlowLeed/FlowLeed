@@ -55,7 +55,7 @@ const IntegrationsPage = () => {
   
   const { updateProgress } = useOrgOwnerOnboarding(userOrgData?.organization_id);
 
-  // Auto-detect active sync jobs on page load
+  // Auto-detect active "Sync All People" jobs on page load (list_mapping_id IS NULL)
   const { data: activeJob } = useQuery({
     queryKey: ['active-sync-job', userOrgData?.organization_id],
     enabled: !!userOrgData?.organization_id,
@@ -64,6 +64,7 @@ const IntegrationsPage = () => {
         .from('pco_sync_jobs')
         .select('id, status')
         .eq('organization_id', userOrgData!.organization_id)
+        .is('list_mapping_id', null) // Only "Sync All People" jobs
         .in('status', ['pending', 'processing'])
         .order('created_at', { ascending: false })
         .limit(1)
@@ -300,26 +301,35 @@ const IntegrationsPage = () => {
   const handleSyncNow = async () => {
     if (!planningCenterIntegration || !userOrgData?.organization_id) return;
     
-    // Check for existing active job to prevent duplicates
-    const { data: existingJob } = await supabase
-      .from('pco_sync_jobs')
-      .select('id, status')
-      .eq('organization_id', userOrgData.organization_id)
-      .in('status', ['pending', 'processing'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (existingJob) {
-      setCurrentSyncJobId(existingJob.id);
-      toast.info("Sync already in progress", {
-        description: "Showing the current sync progress"
-      });
-      return;
-    }
-
     // Set preparing state immediately
     setIsPreparing(true);
+    
+    // Cancel any existing "Sync All People" jobs before starting a new one
+    const { data: existingJobs } = await supabase
+      .from('pco_sync_jobs')
+      .select('id')
+      .eq('organization_id', userOrgData.organization_id)
+      .is('list_mapping_id', null) // Only "Sync All People" jobs
+      .in('status', ['pending', 'processing']);
+
+    if (existingJobs && existingJobs.length > 0) {
+      const jobIds = existingJobs.map(j => j.id);
+      
+      // Cancel the jobs
+      await supabase
+        .from('pco_sync_jobs')
+        .update({ status: 'cancelled' })
+        .in('id', jobIds);
+      
+      // Cancel any pending queue items for these jobs
+      await supabase
+        .from('pco_sync_queue')
+        .update({ status: 'cancelled' })
+        .in('sync_job_id', jobIds)
+        .eq('status', 'pending');
+      
+      console.log('Cancelled existing sync jobs:', jobIds);
+    }
     
     // First, test the connection before attempting sync
     try {
