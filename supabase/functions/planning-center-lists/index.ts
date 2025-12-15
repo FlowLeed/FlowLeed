@@ -453,8 +453,8 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
 
     console.log(`Created sync job: ${job.id}`);
 
-    // Chunk contacts into batches of 50
-    const CHUNK_SIZE = 50;
+    // Chunk contacts into batches of 25 (reduced from 50 for safer resource usage)
+    const CHUNK_SIZE = 25;
     const chunks = [];
     for (let i = 0; i < allPeople.length; i += CHUNK_SIZE) {
       chunks.push(allPeople.slice(i, i + CHUNK_SIZE));
@@ -713,8 +713,8 @@ async function syncSingleList(mapping: any, userId: string) {
 
   console.log(`Created sync job: ${job.id}`);
 
-  // Chunk contacts into batches of 50
-  const CHUNK_SIZE = 50;
+  // Chunk contacts into batches of 25 (reduced from 50 for safer resource usage)
+  const CHUNK_SIZE = 25;
   const chunks = [];
   for (let i = 0; i < allPeople.length; i += CHUNK_SIZE) {
     chunks.push(allPeople.slice(i, i + CHUNK_SIZE));
