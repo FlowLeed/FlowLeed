@@ -327,6 +327,27 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       });
     }
 
+    // Check for existing active sync job to prevent duplicates
+    const { data: existingJob } = await supabase
+      .from('pco_sync_jobs')
+      .select('id, status')
+      .eq('organization_id', integration.organization_id)
+      .in('status', ['pending', 'processing'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingJob) {
+      console.log('Sync already in progress, returning existing job:', existingJob.id);
+      return new Response(JSON.stringify({ 
+        error: 'Sync already in progress',
+        existingJobId: existingJob.id
+      }), {
+        status: 409,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const credentials = integration.credentials as any;
     const application_id = credentials?.application_id;
     const secret = credentials?.secret;

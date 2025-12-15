@@ -8,14 +8,15 @@ import { useEffect, useState } from "react";
 import { useFlowContext } from "@/contexts/FlowContext";
 
 interface SyncProgressDisplayProps {
-  jobId: string;
-  jobStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-  totalContacts: number;
-  processedContacts: number;
+  jobId?: string | null;
+  jobStatus?: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  totalContacts?: number;
+  processedContacts?: number;
   listMappingId?: string | null;
   pipelineId?: string | null;
   stageId?: string | null;
   isFullPeopleSync?: boolean;
+  isPreparing?: boolean;
   integrationId?: string;
   organizationId?: string;
   onComplete?: () => void;
@@ -25,12 +26,13 @@ interface SyncProgressDisplayProps {
 export function SyncProgressDisplay({
   jobId,
   jobStatus,
-  totalContacts,
-  processedContacts,
+  totalContacts = 0,
+  processedContacts = 0,
   listMappingId,
   pipelineId,
   stageId,
   isFullPeopleSync = false,
+  isPreparing = false,
   integrationId,
   organizationId,
   onComplete,
@@ -159,7 +161,34 @@ export function SyncProgressDisplay({
     ? Math.round((processedContacts / totalContacts) * 100) 
     : 0;
 
-  // Preparing phase - when job just started
+  // Initial preparing phase - user clicked button, waiting for job to be created
+  if (isPreparing) {
+    return (
+      <div className="space-y-3 py-4">
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground animate-pulse">
+            Connecting to Planning Center...
+          </span>
+        </div>
+        <div className="flex gap-1.5 justify-center">
+          <span className="h-2 w-2 rounded-full bg-primary animate-bounce"></span>
+          <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+          <span className="h-2 w-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+        </div>
+        <p className="text-xs text-center text-muted-foreground">
+          Fetching people from Planning Center. This may take a moment for large organizations...
+        </p>
+      </div>
+    );
+  }
+
+  // No job to display
+  if (!jobId || !jobStatus) {
+    return null;
+  }
+
+  // Preparing phase - job created but not processed yet
   if (processedContacts === 0 && jobStatus !== 'completed') {
     return (
       <div className="space-y-3 py-4">
