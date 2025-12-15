@@ -521,8 +521,9 @@ const IntegrationsPage = () => {
                           totalContacts={syncJob.total_contacts}
                           processedContacts={syncJob.processed_contacts}
                           listMappingId={syncJob.list_mapping_id}
-                          pipelineId={syncJob.metadata?.pipeline_id || ''}
-                          stageId={syncJob.metadata?.stage_id || ''}
+                          pipelineId={syncJob.metadata?.pipeline_id}
+                          stageId={syncJob.metadata?.stage_id}
+                          isFullPeopleSync={!syncJob.list_mapping_id}
                           integrationId={planningCenterIntegration.id}
                           organizationId={userOrgData?.organization_id}
                           onCancel={isSyncing ? handleCancelSync : undefined}
