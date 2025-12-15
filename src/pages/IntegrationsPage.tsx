@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,12 +28,13 @@ const IntegrationsPage = () => {
   });
   const [testingConnection, setTestingConnection] = useState(false);
   const [currentSyncJobId, setCurrentSyncJobId] = useState<string | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
   const [showQuickMapping, setShowQuickMapping] = useState(false);
   const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string>('');
   
   const { data: syncJob } = usePcoSyncJob(currentSyncJobId);
-  const isSyncing = syncJob?.status === 'processing' || syncJob?.status === 'pending';
+  const isSyncing = isPreparing || syncJob?.status === 'processing' || syncJob?.status === 'pending';
 
   // Get organization ID for onboarding
   const { data: userOrgData } = useQuery({
@@ -53,6 +54,34 @@ const IntegrationsPage = () => {
   });
   
   const { updateProgress } = useOrgOwnerOnboarding(userOrgData?.organization_id);
+
+  // Auto-detect active sync jobs on page load
+  const { data: activeJob } = useQuery({
+    queryKey: ['active-sync-job', userOrgData?.organization_id],
+    enabled: !!userOrgData?.organization_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('pco_sync_jobs')
+        .select('id, status')
+        .eq('organization_id', userOrgData!.organization_id)
+        .in('status', ['pending', 'processing'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    refetchInterval: (query) => {
+      // Only refetch if there's an active job
+      return query.state.data ? 3000 : false;
+    }
+  });
+
+  // Set currentSyncJobId when an active job is found on load
+  useEffect(() => {
+    if (activeJob?.id && !currentSyncJobId && !isPreparing) {
+      setCurrentSyncJobId(activeJob.id);
+    }
+  }, [activeJob?.id, currentSyncJobId, isPreparing]);
 
   // Fetch existing integrations
   const {
@@ -269,7 +298,28 @@ const IntegrationsPage = () => {
     }
   };
   const handleSyncNow = async () => {
-    if (!planningCenterIntegration) return;
+    if (!planningCenterIntegration || !userOrgData?.organization_id) return;
+    
+    // Check for existing active job to prevent duplicates
+    const { data: existingJob } = await supabase
+      .from('pco_sync_jobs')
+      .select('id, status')
+      .eq('organization_id', userOrgData.organization_id)
+      .in('status', ['pending', 'processing'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingJob) {
+      setCurrentSyncJobId(existingJob.id);
+      toast.info("Sync already in progress", {
+        description: "Showing the current sync progress"
+      });
+      return;
+    }
+
+    // Set preparing state immediately
+    setIsPreparing(true);
     
     // First, test the connection before attempting sync
     try {
@@ -281,6 +331,7 @@ const IntegrationsPage = () => {
       });
 
       if (testError || !testData?.success) {
+        setIsPreparing(false);
         toast.error("Connection Failed", {
           description: testData?.error || 'Please check your Planning Center credentials and try reconnecting'
         });
@@ -288,6 +339,7 @@ const IntegrationsPage = () => {
         return;
       }
     } catch (error: any) {
+      setIsPreparing(false);
       console.error('Connection test error:', error);
       toast.error("Connection Failed", {
         description: 'Unable to connect to Planning Center. Please reconnect your account.'
@@ -303,7 +355,18 @@ const IntegrationsPage = () => {
         }
       });
 
+      setIsPreparing(false);
+
       if (error) throw error;
+      
+      // Handle 409 conflict (sync already in progress)
+      if (data?.existingJobId) {
+        setCurrentSyncJobId(data.existingJobId);
+        toast.info("Sync already in progress", {
+          description: "Showing the current sync progress"
+        });
+        return;
+      }
       
       // Set the job ID to start polling
       if (data?.jobId) {
@@ -320,6 +383,7 @@ const IntegrationsPage = () => {
       await queryClient.invalidateQueries({ queryKey: ['integrations', userOrgData?.organization_id] });
       window.dispatchEvent(new CustomEvent('pco-sync-complete'));
     } catch (error: any) {
+      setIsPreparing(false);
       console.error('Sync error:', error);
       toast.error("Sync failed", {
         description: error.message || 'Failed to sync people from Planning Center'
@@ -514,19 +578,20 @@ const IntegrationsPage = () => {
                     <Separator />
                     
                     <div className="space-y-6">
-                      {syncJob && (
+                      {(isPreparing || syncJob) && (
                         <SyncProgressDisplay
-                          jobId={syncJob.id}
-                          jobStatus={syncJob.status}
-                          totalContacts={syncJob.total_contacts}
-                          processedContacts={syncJob.processed_contacts}
-                          listMappingId={syncJob.list_mapping_id}
-                          pipelineId={syncJob.metadata?.pipeline_id}
-                          stageId={syncJob.metadata?.stage_id}
-                          isFullPeopleSync={!syncJob.list_mapping_id}
+                          jobId={syncJob?.id}
+                          jobStatus={syncJob?.status}
+                          totalContacts={syncJob?.total_contacts}
+                          processedContacts={syncJob?.processed_contacts}
+                          listMappingId={syncJob?.list_mapping_id}
+                          pipelineId={syncJob?.metadata?.pipeline_id}
+                          stageId={syncJob?.metadata?.stage_id}
+                          isFullPeopleSync={syncJob ? !syncJob.list_mapping_id : true}
+                          isPreparing={isPreparing}
                           integrationId={planningCenterIntegration.id}
                           organizationId={userOrgData?.organization_id}
-                          onCancel={isSyncing ? handleCancelSync : undefined}
+                          onCancel={isSyncing && !isPreparing ? handleCancelSync : undefined}
                         />
                       )}
                       
