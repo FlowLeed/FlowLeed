@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, RefreshCw } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { formatDistanceToNow } from "date-fns";
 
 interface SyncSettingsSectionProps {
   integrationId: string;
@@ -17,46 +15,10 @@ interface SyncSettingsSectionProps {
 }
 
 const FREQUENCY_OPTIONS = [
-  { value: 'every_5_minutes', label: 'Every 5 minutes' },
-  { value: 'every_15_minutes', label: 'Every 15 minutes' },
-  { value: 'every_30_minutes', label: 'Every 30 minutes' },
-  { value: 'hourly', label: 'Every hour' },
-  { value: 'daily', label: 'Every day' },
-  { value: 'weekly', label: 'Every week' },
+  { value: 'daily', label: 'Once a day' },
+  { value: 'twice_daily', label: 'Twice a day' },
   { value: 'manual', label: 'Manual only' },
 ];
-
-const getNextSyncTime = (lastSync: string | undefined, frequency: string): string => {
-  if (!lastSync || frequency === 'manual') return 'Manual only';
-  
-  const lastSyncDate = new Date(lastSync);
-  let nextSync: Date;
-  
-  switch (frequency) {
-    case 'every_5_minutes':
-      nextSync = new Date(lastSyncDate.getTime() + 5 * 60 * 1000);
-      break;
-    case 'every_15_minutes':
-      nextSync = new Date(lastSyncDate.getTime() + 15 * 60 * 1000);
-      break;
-    case 'every_30_minutes':
-      nextSync = new Date(lastSyncDate.getTime() + 30 * 60 * 1000);
-      break;
-    case 'hourly':
-      nextSync = new Date(lastSyncDate.getTime() + 60 * 60 * 1000);
-      break;
-    case 'daily':
-      nextSync = new Date(lastSyncDate.getTime() + 24 * 60 * 60 * 1000);
-      break;
-    case 'weekly':
-      nextSync = new Date(lastSyncDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-      break;
-    default:
-      return 'Unknown';
-  }
-  
-  return `in ${formatDistanceToNow(nextSync)}`;
-};
 
 export function SyncSettingsSection({ 
   integrationId, 
@@ -101,7 +63,7 @@ export function SyncSettingsSection({
 
   const currentFrequencyLabel = FREQUENCY_OPTIONS.find(
     opt => opt.value === currentFrequency
-  )?.label || 'Every 15 minutes';
+  )?.label || 'Once a day';
 
   return (
     <div className="space-y-4">
