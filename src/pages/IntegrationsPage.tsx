@@ -155,7 +155,7 @@ const IntegrationsPage = () => {
           secret
         },
         settings: {},
-        sync_frequency: 'every_15_minutes', // Smart default
+        sync_frequency: 'daily', // Smart default - once per day
         organization_id: orgMember.organization_id,
         user_id: user.id
       }).select().single();

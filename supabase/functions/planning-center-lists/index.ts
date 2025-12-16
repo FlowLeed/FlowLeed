@@ -1104,22 +1104,14 @@ function shouldSyncNow(lastSyncAt: string | null, frequency: string): boolean {
   const diffMs = now.getTime() - lastSync.getTime();
   
   switch (frequency) {
-    case 'every_5_minutes':
-      return diffMs >= 5 * 60 * 1000;
-    case 'every_15_minutes':
-      return diffMs >= 15 * 60 * 1000;
-    case 'every_30_minutes':
-      return diffMs >= 30 * 60 * 1000;
-    case 'hourly':
-      return diffMs >= 60 * 60 * 1000;
     case 'daily':
-      return diffMs >= 24 * 60 * 60 * 1000;
-    case 'weekly':
-      return diffMs >= 7 * 24 * 60 * 60 * 1000;
+      return diffMs >= 24 * 60 * 60 * 1000; // 24 hours
+    case 'twice_daily':
+      return diffMs >= 12 * 60 * 60 * 1000; // 12 hours
     case 'manual':
       return false; // Never auto-sync for manual
     default:
-      return diffMs >= 15 * 60 * 1000; // Default to 15 minutes
+      return diffMs >= 24 * 60 * 60 * 1000; // Default to daily
   }
 }
 
@@ -1165,7 +1157,7 @@ async function autoSyncAllMappings() {
     for (const mapping of allMappings) {
       try {
         const integration = mapping.integrations;
-        const syncFrequency = integration.sync_frequency || 'every_15_minutes';
+        const syncFrequency = integration.sync_frequency || 'daily';
         
         // Check if enough time has passed based on frequency setting
         const shouldSync = shouldSyncNow(mapping.last_sync_at, syncFrequency);
