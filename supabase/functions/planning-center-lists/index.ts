@@ -368,7 +368,8 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
     
     // Fetch ALL people from PCO with pagination
     let allPeople: any[] = [];
-    let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers';
+    // Only sync active contacts from PCO
+    let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers&where[status]=active';
     let pageCount = 0;
 
     while (nextUrl) {
