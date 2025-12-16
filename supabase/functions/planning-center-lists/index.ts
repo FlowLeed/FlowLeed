@@ -327,25 +327,30 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       });
     }
 
-    // Check for existing active sync job to prevent duplicates
-    const { data: existingJob } = await supabase
+    // Cancel any existing "Sync All People" jobs before starting a new one
+    const { data: existingJobs } = await supabase
       .from('pco_sync_jobs')
-      .select('id, status')
+      .select('id')
       .eq('organization_id', integration.organization_id)
-      .in('status', ['pending', 'processing'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .is('list_mapping_id', null) // Only "Sync All People" jobs
+      .in('status', ['pending', 'processing']);
 
-    if (existingJob) {
-      console.log('Sync already in progress, returning existing job:', existingJob.id);
-      return new Response(JSON.stringify({ 
-        error: 'Sync already in progress',
-        existingJobId: existingJob.id
-      }), {
-        status: 409,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (existingJobs && existingJobs.length > 0) {
+      const jobIds = existingJobs.map(j => j.id);
+      console.log('Cancelling existing "Sync All People" jobs:', jobIds);
+      
+      // Cancel the jobs
+      await supabase
+        .from('pco_sync_jobs')
+        .update({ status: 'cancelled' })
+        .in('id', jobIds);
+      
+      // Cancel any pending queue items for these jobs
+      await supabase
+        .from('pco_sync_queue')
+        .update({ status: 'cancelled' })
+        .in('sync_job_id', jobIds)
+        .eq('status', 'pending');
     }
 
     const credentials = integration.credentials as any;
@@ -492,21 +497,33 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       chunk_number: index + 1
     }));
 
-    const { error: queueError } = await supabase
-      .from('pco_sync_queue')
-      .insert(queueItems);
-
-    if (queueError) {
-      console.error('Failed to create queue items:', queueError);
-      await supabase
-        .from('pco_sync_jobs')
-        .update({ status: 'failed', error_message: 'Failed to create queue items' })
-        .eq('id', job.id);
+    // Insert queue items in batches to avoid timeout on large syncs
+    const QUEUE_BATCH_SIZE = 50;
+    console.log(`Inserting ${queueItems.length} queue items in batches of ${QUEUE_BATCH_SIZE}...`);
+    
+    for (let i = 0; i < queueItems.length; i += QUEUE_BATCH_SIZE) {
+      const batch = queueItems.slice(i, i + QUEUE_BATCH_SIZE);
+      const batchNumber = Math.floor(i / QUEUE_BATCH_SIZE) + 1;
+      const totalBatches = Math.ceil(queueItems.length / QUEUE_BATCH_SIZE);
       
-      return new Response(JSON.stringify({ error: 'Failed to create queue items' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      const { error: queueError } = await supabase
+        .from('pco_sync_queue')
+        .insert(batch);
+
+      if (queueError) {
+        console.error(`Failed to create queue batch ${batchNumber}/${totalBatches}:`, queueError);
+        await supabase
+          .from('pco_sync_jobs')
+          .update({ status: 'failed', error_message: `Failed to create queue items at batch ${batchNumber}` })
+          .eq('id', job.id);
+        
+        return new Response(JSON.stringify({ error: 'Failed to create queue items' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      console.log(`Inserted queue batch ${batchNumber}/${totalBatches}`);
     }
 
     // Update last sync time on integration
