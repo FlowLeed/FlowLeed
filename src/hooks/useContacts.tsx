@@ -74,6 +74,39 @@ export const useContacts = (filters: ContactFilters) => {
         }
       }
 
+      // Handle assigned-to filtering server-side for accurate results
+      let contactIdsAssignedToUser: string[] | null = null;
+
+      if (filters.assignedToUserId && filters.assignedToUserId !== "all" && filters.assignedToUserId !== "unassigned") {
+        // Get contacts assigned at pipeline level
+        const { data: pipelineAssignments } = await supabase
+          .from("pipeline_contacts")
+          .select("contact_id, contacts!inner(organization_id)")
+          .eq("assigned_to_user_id", filters.assignedToUserId)
+          .eq("contacts.organization_id", organizationId);
+        
+        const pipelineLevelIds = pipelineAssignments?.map(pc => pc.contact_id) || [];
+        
+        // Get contacts assigned at contact level
+        const { data: contactAssignments } = await supabase
+          .from("contacts")
+          .select("id")
+          .eq("assigned_to_user_id", filters.assignedToUserId)
+          .eq("organization_id", organizationId);
+        
+        const contactLevelIds = contactAssignments?.map(c => c.id) || [];
+        
+        // Combine both lists (unique IDs)
+        contactIdsAssignedToUser = [...new Set([...pipelineLevelIds, ...contactLevelIds])];
+        console.log('📊 Contacts assigned to user:', contactIdsAssignedToUser.length, '(pipeline:', pipelineLevelIds.length, ', contact:', contactLevelIds.length, ')');
+        
+        // If no contacts assigned, return early
+        if (contactIdsAssignedToUser.length === 0) {
+          console.log('✅ No contacts assigned to this user, returning empty');
+          return [];
+        }
+      }
+
       // Build base query
       let query = supabase
         .from("contacts")
@@ -94,6 +127,21 @@ export const useContacts = (filters: ContactFilters) => {
         query = query.in("id", contactIdsInFlow);
       }
 
+      // Apply assigned-to filter at query level (for specific users)
+      if (contactIdsAssignedToUser !== null) {
+        // Intersect with flow filter if both are applied
+        if (contactIdsInFlow !== null) {
+          const intersection = contactIdsAssignedToUser.filter(id => contactIdsInFlow!.includes(id));
+          if (intersection.length === 0) {
+            console.log('✅ No contacts match both flow and assigned-to filters');
+            return [];
+          }
+          query = query.in("id", intersection);
+        } else {
+          query = query.in("id", contactIdsAssignedToUser);
+        }
+      }
+
       // Apply search filter
       if (filters.searchTerm) {
         query = query.or(
@@ -101,11 +149,10 @@ export const useContacts = (filters: ContactFilters) => {
         );
       }
 
-      // Apply assigned filter
+      // Apply unassigned filter (contact-level only)
       if (filters.assignedToUserId === "unassigned") {
         query = query.is("assigned_to_user_id", null);
       }
-      // Specific user filtering is applied client-side to include pipeline-level assignments
 
       const { data, error } = await query;
       
@@ -128,13 +175,6 @@ export const useContacts = (filters: ContactFilters) => {
         const idsToExclude = new Set(contactIdsNotInFlows);
         filteredData = filteredData.filter(contact => !idsToExclude.has(contact.id));
         console.log('After no-flows filter:', filteredData.length);
-      }
-      // Apply assigned-to filter for a specific user (includes pipeline-level assignments)
-      if (filters.assignedToUserId !== "all" && filters.assignedToUserId !== "unassigned") {
-        filteredData = filteredData.filter((contact: any) =>
-          contact.assigned_to_user_id === filters.assignedToUserId ||
-          contact.pipeline_contacts?.some((pc: any) => pc.assigned_to_user_id === filters.assignedToUserId)
-        );
       }
 
       // Apply last interaction filter
