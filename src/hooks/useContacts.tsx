@@ -38,6 +38,42 @@ export const useContacts = (filters: ContactFilters) => {
       const organizationId = orgMembers[0].organization_id;
       console.log('✅ [SECURITY] Server-validated organization ID:', organizationId);
 
+      // Handle flow filtering server-side for accurate results
+      let contactIdsInFlow: string[] | null = null;
+      let contactIdsNotInFlows: string[] | null = null;
+
+      if (filters.flowId !== "all") {
+        if (filters.flowId === "no-flows") {
+          // Get all contact IDs that ARE in any flow for this org
+          const { data: contactsInFlows } = await supabase
+            .from("pipeline_contacts")
+            .select("contact_id, contacts!inner(organization_id)")
+            .eq("contacts.organization_id", organizationId);
+          
+          const idsInFlows = new Set(contactsInFlows?.map(pc => pc.contact_id) || []);
+          
+          // We'll filter out these IDs from the main query
+          contactIdsNotInFlows = Array.from(idsInFlows);
+          console.log('📊 Contacts in flows to exclude:', contactIdsNotInFlows.length);
+        } else {
+          // Get contact IDs in this specific flow
+          const { data: pipelineContacts } = await supabase
+            .from("pipeline_contacts")
+            .select("contact_id, contacts!inner(organization_id)")
+            .eq("pipeline_id", filters.flowId)
+            .eq("contacts.organization_id", organizationId);
+          
+          contactIdsInFlow = pipelineContacts?.map(pc => pc.contact_id) || [];
+          console.log('📊 Contacts in selected flow:', contactIdsInFlow.length);
+          
+          // If no contacts in this flow, return early
+          if (contactIdsInFlow.length === 0) {
+            console.log('✅ No contacts in selected flow, returning empty');
+            return [];
+          }
+        }
+      }
+
       // Build base query
       let query = supabase
         .from("contacts")
@@ -52,6 +88,11 @@ export const useContacts = (filters: ContactFilters) => {
         `)
         .eq("organization_id", organizationId)
         .order("created_at", { ascending: false });
+
+      // Apply flow filter at query level
+      if (contactIdsInFlow !== null) {
+        query = query.in("id", contactIdsInFlow);
+      }
 
       // Apply search filter
       if (filters.searchTerm) {
@@ -82,17 +123,11 @@ export const useContacts = (filters: ContactFilters) => {
       let filteredData = data || [];
       console.log('Initial data count:', filteredData.length);
 
-      // Apply flow filter (client-side since it's a nested relationship)
-      if (filters.flowId !== "all") {
-        if (filters.flowId === "no-flows") {
-          filteredData = filteredData.filter(
-            (contact) => !contact.pipeline_contacts || contact.pipeline_contacts.length === 0
-          );
-        } else {
-          filteredData = filteredData.filter((contact) =>
-            contact.pipeline_contacts?.some((pc: any) => pc.pipeline_id === filters.flowId)
-          );
-        }
+      // Apply "no-flows" filter client-side (exclude contacts that are in flows)
+      if (contactIdsNotInFlows !== null && contactIdsNotInFlows.length > 0) {
+        const idsToExclude = new Set(contactIdsNotInFlows);
+        filteredData = filteredData.filter(contact => !idsToExclude.has(contact.id));
+        console.log('After no-flows filter:', filteredData.length);
       }
       // Apply assigned-to filter for a specific user (includes pipeline-level assignments)
       if (filters.assignedToUserId !== "all" && filters.assignedToUserId !== "unassigned") {
