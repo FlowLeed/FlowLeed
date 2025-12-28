@@ -66,6 +66,59 @@ Deno.serve(async (req) => {
 
     console.log('Processing next pending chunks from queue...');
 
+    // === STUCK CHUNK RECOVERY ===
+    // Reset chunks that have been in "processing" status for more than 10 minutes
+    const stuckThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    
+    // First, reset stuck chunks with retry_count < 3 to pending
+    const { data: resetChunks, error: resetError } = await supabase
+      .from('pco_sync_queue')
+      .update({ 
+        status: 'pending',
+        updated_at: new Date().toISOString()
+      })
+      .eq('status', 'processing')
+      .lt('updated_at', stuckThreshold)
+      .lt('retry_count', 3)
+      .select('id, chunk_number, sync_job_id, retry_count');
+    
+    if (resetChunks && resetChunks.length > 0) {
+      console.log(`♻️ Reset ${resetChunks.length} stuck chunks for retry:`, 
+        resetChunks.map(c => `chunk ${c.chunk_number} (retry ${c.retry_count})`).join(', '));
+      
+      // Increment retry count separately for reset chunks
+      for (const chunk of resetChunks) {
+        await supabase
+          .from('pco_sync_queue')
+          .update({ retry_count: (chunk.retry_count || 0) + 1 })
+          .eq('id', chunk.id);
+      }
+    }
+    
+    // Mark chunks as failed if they've exceeded retry limit while stuck
+    const { data: failedChunks, error: failError } = await supabase
+      .from('pco_sync_queue')
+      .update({ 
+        status: 'failed', 
+        error_message: 'Exceeded maximum retry attempts after timeout',
+        updated_at: new Date().toISOString()
+      })
+      .eq('status', 'processing')
+      .lt('updated_at', stuckThreshold)
+      .gte('retry_count', 3)
+      .select('id, chunk_number, sync_job_id');
+    
+    if (failedChunks && failedChunks.length > 0) {
+      console.log(`❌ Marked ${failedChunks.length} stuck chunks as failed (exceeded retries)`);
+      
+      // Check if any jobs need to be completed after failing chunks
+      const jobIds = [...new Set(failedChunks.map(c => c.sync_job_id))];
+      for (const jobId of jobIds) {
+        await checkAndCompleteJob(supabase, jobId);
+      }
+    }
+    // === END STUCK CHUNK RECOVERY ===
+
     // Fetch up to 100 pending chunks for round-robin selection
     const { data: chunks, error: chunkError } = await supabase
       .from('pco_sync_queue')
@@ -934,3 +987,104 @@ async function syncFlowMomentsFromFieldData(
   }
 }
 
+
+// Helper function to check if a job should be marked as complete
+async function checkAndCompleteJob(supabase: any, jobId: string) {
+  try {
+    // Check if there are any remaining pending or processing chunks
+    const { data: remainingChunks, error: remainingError } = await supabase
+      .from('pco_sync_queue')
+      .select('id')
+      .eq('sync_job_id', jobId)
+      .in('status', ['pending', 'processing']);
+    
+    if (remainingError) {
+      console.error('Error checking remaining chunks:', remainingError);
+      return;
+    }
+    
+    // If there are still pending/processing chunks, job is not done
+    if (remainingChunks && remainingChunks.length > 0) {
+      return;
+    }
+    
+    // Count failed chunks
+    const { count: failedCount, error: failedError } = await supabase
+      .from('pco_sync_queue')
+      .select('id', { count: 'exact', head: true })
+      .eq('sync_job_id', jobId)
+      .eq('status', 'failed');
+    
+    if (failedError) {
+      console.error('Error counting failed chunks:', failedError);
+      return;
+    }
+    
+    // Get job details to calculate final processed count
+    const { data: job } = await supabase
+      .from('pco_sync_jobs')
+      .select('id, status, integration_id, list_mapping_id, total_contacts')
+      .eq('id', jobId)
+      .single();
+    
+    if (!job || job.status === 'completed' || job.status === 'cancelled') {
+      return;
+    }
+    
+    // Count completed chunks and calculate processed contacts
+    const { data: completedChunks } = await supabase
+      .from('pco_sync_queue')
+      .select('chunk_data')
+      .eq('sync_job_id', jobId)
+      .eq('status', 'completed');
+    
+    const processedContacts = completedChunks?.reduce((sum: number, chunk: any) => {
+      const chunkData = chunk.chunk_data as any[];
+      return sum + (chunkData?.length || 0);
+    }, 0) || 0;
+    
+    // Determine final status and error message
+    const hasFailures = failedCount && failedCount > 0;
+    const errorMessage = hasFailures 
+      ? `Completed with ${failedCount} failed chunks` 
+      : null;
+    
+    console.log(`✅ Job ${jobId} complete: ${processedContacts} contacts processed, ${failedCount || 0} chunks failed`);
+    
+    // Update job as completed
+    await supabase
+      .from('pco_sync_jobs')
+      .update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        processed_contacts: processedContacts,
+        error_message: errorMessage
+      })
+      .eq('id', jobId);
+    
+    // Get organization ID for tracking
+    const { data: integration } = await supabase
+      .from('integrations')
+      .select('organization_id')
+      .eq('id', job.integration_id)
+      .single();
+    
+    if (integration?.organization_id) {
+      const syncType = job.list_mapping_id ? 'list_sync' : 'full_people_sync';
+      await supabase.rpc('track_pco_sync', {
+        p_org_id: integration.organization_id,
+        p_sync_type: syncType
+      });
+      
+      // Update mapping last_sync_at if this was a list sync
+      if (job.list_mapping_id) {
+        await supabase
+          .from('integration_list_mappings')
+          .update({ last_sync_at: new Date().toISOString() })
+          .eq('id', job.list_mapping_id);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking job completion:', error);
+  }
+}
