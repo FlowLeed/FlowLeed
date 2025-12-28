@@ -15,7 +15,8 @@ import {
   Copy, 
   Loader2,
   Play,
-  Settings
+  Settings,
+  Info
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -364,11 +365,31 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
                   </a>
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Select events like <code className="bg-muted px-1 rounded">moment.interacted</code>,{' '}
-                <code className="bg-muted px-1 rounded">prayer.requested</code>,{' '}
-                <code className="bg-muted px-1 rounded">service.attended</code>
-              </p>
+
+              {/* Webhook Setup Instructions */}
+              <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3 mt-4">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  Webhook Setup Instructions
+                </h4>
+                <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                  <li>Click "Add Webhook in Church Online" button above</li>
+                  <li>Paste the webhook URL you copied</li>
+                  <li>For "Which data would you like to send?" select: <strong className="text-foreground">"Send specific events"</strong></li>
+                  <li>Enable these events:
+                    <ul className="ml-6 mt-1 space-y-1">
+                      <li>✓ <code className="bg-muted px-1 rounded text-xs">Salvation Decision</code> <span className="text-xs">(moment.interacted)</span></li>
+                      <li>✓ <code className="bg-muted px-1 rounded text-xs">Prayer Request</code> <span className="text-xs">(prayer.requested)</span></li>
+                      <li>✓ <code className="bg-muted px-1 rounded text-xs">Service Attended</code> <span className="text-xs">(service.attended)</span></li>
+                    </ul>
+                  </li>
+                  <li>Save your webhook settings</li>
+                </ol>
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  Avoid "Send all events" — it generates high volume traffic
+                </p>
+              </div>
             </div>
 
             <Separator />
