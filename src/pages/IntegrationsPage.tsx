@@ -16,6 +16,7 @@ import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
 import { SyncProgressDisplay } from "@/components/integrations/SyncProgressDisplay";
+import { ChurchOnlineIntegration } from "@/components/integrations/ChurchOnlineIntegration";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
 import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
 
@@ -626,6 +627,11 @@ const IntegrationsPage = () => {
               </div>}
           </CardContent>
         </Card>
+
+        {/* Church Online Platform Integration */}
+        {userOrgData?.organization_id && (
+          <ChurchOnlineIntegration organizationId={userOrgData.organization_id} />
+        )}
 
         {/* Other integrations coming soon */}
         <Card className="opacity-50">

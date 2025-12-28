@@ -22,6 +22,7 @@ import GroupsPage from "./pages/GroupsPage";
 import GroupDetailPage from "./pages/GroupDetailPage";
 import IntegrationsPage from "./pages/IntegrationsPage";
 import IntegrationAdvancedSettingsPage from "./pages/IntegrationAdvancedSettingsPage";
+import ChurchOnlineAdvancedPage from "./pages/ChurchOnlineAdvancedPage";
 import AuthPage from "./pages/AuthPage";
 import AuthVerifyPage from "./pages/AuthVerifyPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/team" element={<TeamPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/integrations/:integrationName/advanced" element={<IntegrationAdvancedSettingsPage />} />
+              <Route path="/integrations/church-online/advanced" element={<ChurchOnlineAdvancedPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/calls" element={<CallsPage />} />
