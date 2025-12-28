@@ -111,3 +111,9 @@ verify_jwt = false
 
 [functions.group-public-signup]
 verify_jwt = false
+
+[functions.church-online-webhook]
+verify_jwt = false
+
+[functions.church-online-test-connection]
+verify_jwt = false

@@ -221,6 +221,168 @@ export type Database = {
           },
         ]
       }
+      church_online_events: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          data: Json
+          error_message: string | null
+          event_id: string
+          event_type: string
+          id: string
+          integration_id: string
+          organization_id: string
+          processed_at: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          data?: Json
+          error_message?: string | null
+          event_id: string
+          event_type: string
+          id?: string
+          integration_id: string
+          organization_id: string
+          processed_at?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          data?: Json
+          error_message?: string | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          integration_id?: string
+          organization_id?: string
+          processed_at?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_online_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_events_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      church_online_flow_automations: {
+        Row: {
+          create_contact_if_missing: boolean
+          created_at: string
+          event_filter: Json | null
+          event_type: string
+          flow_moment_type_id: string | null
+          id: string
+          integration_id: string
+          is_active: boolean
+          organization_id: string
+          pipeline_id: string | null
+          stage_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          create_contact_if_missing?: boolean
+          created_at?: string
+          event_filter?: Json | null
+          event_type: string
+          flow_moment_type_id?: string | null
+          id?: string
+          integration_id: string
+          is_active?: boolean
+          organization_id: string
+          pipeline_id?: string | null
+          stage_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          create_contact_if_missing?: boolean
+          created_at?: string
+          event_filter?: Json | null
+          event_type?: string
+          flow_moment_type_id?: string | null
+          id?: string
+          integration_id?: string
+          is_active?: boolean
+          organization_id?: string
+          pipeline_id?: string | null
+          stage_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_online_flow_automations_flow_moment_type_id_fkey"
+            columns: ["flow_moment_type_id"]
+            isOneToOne: false
+            referencedRelation: "flow_moment_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_flow_automations_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_flow_automations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_flow_automations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_flow_automations_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_flow_automations_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_addresses: {
         Row: {
           address_type: string
