@@ -28,19 +28,24 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { subdomain, integrationId } = await req.json();
+    const { domain, subdomain, integrationId } = await req.json();
 
-    if (!subdomain && !integrationId) {
+    if (!domain && !subdomain && !integrationId) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Missing subdomain or integrationId' }),
+        JSON.stringify({ success: false, error: 'Missing domain, subdomain, or integrationId' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    let targetSubdomain = subdomain;
+    let targetDomain = domain;
 
-    // If integrationId provided, get subdomain from integration
-    if (integrationId && !subdomain) {
+    // If subdomain provided (legacy), convert to full domain
+    if (subdomain && !domain) {
+      targetDomain = `${subdomain.replace(/\.online\.church$/i, '').trim()}.online.church`;
+    }
+
+    // If integrationId provided, get domain from integration
+    if (integrationId && !targetDomain) {
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -59,22 +64,23 @@ Deno.serve(async (req) => {
         );
       }
 
-      const settings = integration.settings as { subdomain?: string };
-      targetSubdomain = settings?.subdomain;
+      const settings = integration.settings as { domain?: string; subdomain?: string };
+      // Support both new domain format and legacy subdomain format
+      targetDomain = settings?.domain || (settings?.subdomain ? `${settings.subdomain}.online.church` : null);
     }
 
-    if (!targetSubdomain) {
+    if (!targetDomain) {
       return new Response(
-        JSON.stringify({ success: false, error: 'No subdomain configured' }),
+        JSON.stringify({ success: false, error: 'No domain configured' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Clean subdomain (remove any trailing .online.church if included)
-    targetSubdomain = targetSubdomain.replace(/\.online\.church$/i, '').trim();
+    // Clean domain (remove https:// and trailing slashes)
+    targetDomain = targetDomain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
 
     // Make GraphQL request to Church Online API
-    const apiUrl = `https://${targetSubdomain}.online.church/graphql`;
+    const apiUrl = `https://${targetDomain}/graphql`;
     
     console.log('Testing connection to:', apiUrl);
 
@@ -119,7 +125,7 @@ Deno.serve(async (req) => {
         success: true, 
         organization: data.data?.organization,
         currentService: data.data?.currentService,
-        subdomain: targetSubdomain
+        domain: targetDomain
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
