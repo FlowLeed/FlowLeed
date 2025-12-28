@@ -45,7 +45,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [showConfetti, setShowConfetti] = useState(false);
-  const [showCompleted, setShowCompleted] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(true);
   const { organization } = useProfile();
   const queryClient = useQueryClient();
 
