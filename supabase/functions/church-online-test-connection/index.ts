@@ -88,9 +88,11 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
-        query: TEST_QUERY
+        query: TEST_QUERY,
+        operationName: 'TestConnection'
       })
     });
 
