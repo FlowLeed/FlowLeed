@@ -5,18 +5,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// GraphQL query to test connection and get current service info
+// GraphQL query to test connection - only use documented public queries
 const TEST_QUERY = `
   query TestConnection {
-    currentService {
+    currentService(onEmpty: LOAD_NEXT) {
       id
-      title
       startTime
       endTime
-    }
-    organization {
-      id
-      name
+      content {
+        title
+      }
     }
   }
 `;
@@ -122,11 +120,14 @@ Deno.serve(async (req) => {
 
     console.log('Connection successful:', data.data);
 
+    const currentService = data.data?.currentService;
+    const serviceName = currentService?.content?.title || 'Church Online Platform';
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        organization: data.data?.organization,
-        currentService: data.data?.currentService,
+        organization: { name: serviceName },
+        currentService: currentService,
         domain: targetDomain
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
