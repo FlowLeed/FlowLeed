@@ -26,9 +26,27 @@ interface ChurchOnlineIntegrationProps {
 export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrationProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [subdomain, setSubdomain] = useState('');
+  const [domainInput, setDomainInput] = useState('');
   const [testingConnection, setTestingConnection] = useState(false);
   const [webhookCopied, setWebhookCopied] = useState(false);
+
+  // Parse domain input to detect custom domain vs subdomain
+  const parseDomainInput = (input: string): { domain: string; isCustomDomain: boolean } => {
+    let cleaned = input.trim().toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/.*$/, '');
+    
+    if (cleaned.endsWith('.online.church')) {
+      // Standard subdomain format
+      return { domain: cleaned, isCustomDomain: false };
+    } else if (cleaned.includes('.')) {
+      // Custom domain (has dots but not .online.church)
+      return { domain: cleaned, isCustomDomain: true };
+    } else {
+      // Just a subdomain entered without .online.church
+      return { domain: `${cleaned}.online.church`, isCustomDomain: false };
+    }
+  };
 
   // Fetch existing Church Online integration
   const { data: integration, isLoading } = useQuery({
@@ -48,24 +66,23 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
 
   // Create integration mutation
   const createIntegrationMutation = useMutation({
-    mutationFn: async (subdomain: string) => {
+    mutationFn: async (input: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Clean subdomain
-      const cleanSubdomain = subdomain.replace(/\.online\.church$/i, '').trim().toLowerCase();
+      const { domain, isCustomDomain } = parseDomainInput(input);
 
       // Test connection first
       const { data: testResult, error: testError } = await supabase.functions.invoke(
         'church-online-test-connection',
-        { body: { subdomain: cleanSubdomain } }
+        { body: { domain } }
       );
 
       if (testError || !testResult?.success) {
         throw new Error(testResult?.error || 'Failed to connect to Church Online Platform');
       }
 
-      // Create integration
+      // Create integration with domain info
       const { data, error } = await supabase
         .from('integrations')
         .insert({
@@ -73,7 +90,8 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
           status: 'active',
           credentials: {},
           settings: { 
-            subdomain: cleanSubdomain,
+            domain,
+            isCustomDomain,
             organizationName: testResult.organization?.name
           },
           organization_id: organizationId,
@@ -87,7 +105,7 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['church-online-integration', organizationId] });
-      setSubdomain('');
+      setDomainInput('');
       toast.success('Connected to Church Online Platform', {
         description: `Successfully connected to ${data.testResult.organization?.name || 'your church'}`
       });
@@ -155,8 +173,8 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
   };
 
   const handleConnect = () => {
-    if (subdomain) {
-      createIntegrationMutation.mutate(subdomain);
+    if (domainInput) {
+      createIntegrationMutation.mutate(domainInput);
     }
   };
 
@@ -191,7 +209,25 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
     return <Badge variant="outline">Not Connected</Badge>;
   };
 
-  const settings = integration?.settings as { subdomain?: string; organizationName?: string } | null;
+  const settings = integration?.settings as { 
+    domain?: string; 
+    subdomain?: string; // legacy
+    isCustomDomain?: boolean;
+    organizationName?: string;
+  } | null;
+
+  // Get the display domain (handles both new and legacy format)
+  const getDisplayDomain = () => {
+    if (settings?.domain) return settings.domain;
+    if (settings?.subdomain) return `${settings.subdomain}.online.church`;
+    return '';
+  };
+
+  // Get the admin webhook URL
+  const getAdminWebhookUrl = () => {
+    const domain = getDisplayDomain();
+    return `https://${domain}/admin/integration/webhooks/webhook/new`;
+  };
 
   return (
     <Card>
@@ -228,26 +264,22 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="co-subdomain">Your Church Subdomain</Label>
-              <div className="flex items-center gap-2">
-                <Input 
-                  id="co-subdomain"
-                  placeholder="yourchurch"
-                  value={subdomain}
-                  onChange={(e) => setSubdomain(e.target.value)}
-                  className="flex-1"
-                />
-                <span className="text-sm text-muted-foreground">.online.church</span>
-              </div>
+              <Label htmlFor="co-domain">Your Church Online URL</Label>
+              <Input 
+                id="co-domain"
+                placeholder="yourchurch.online.church or live.yourchurch.com"
+                value={domainInput}
+                onChange={(e) => setDomainInput(e.target.value)}
+              />
               <p className="text-xs text-muted-foreground">
-                Example: If your URL is lifechurch.online.church, enter "lifechurch"
+                Enter your full Church Online URL (e.g., lifechurch.online.church) or custom domain (e.g., live.thepromisecenter.com)
               </p>
             </div>
 
             <div className="flex gap-2">
               <Button 
                 onClick={handleConnect}
-                disabled={!subdomain || createIntegrationMutation.isPending}
+                disabled={!domainInput || createIntegrationMutation.isPending}
               >
                 {createIntegrationMutation.isPending ? (
                   <>
@@ -275,9 +307,9 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div>
-                <p className="font-medium">{settings?.organizationName || settings?.subdomain}</p>
+                <p className="font-medium">{settings?.organizationName || getDisplayDomain()}</p>
                 <p className="text-sm text-muted-foreground">
-                  {settings?.subdomain}.online.church
+                  {getDisplayDomain()}
                 </p>
               </div>
               <Button 
@@ -320,23 +352,23 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
                   )}
                 </Button>
               </div>
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded p-3 mt-2">
-                <p className="text-xs">
-                  <strong>Next step:</strong> Go to your{' '}
+              <div className="flex gap-2 mt-2">
+                <Button variant="outline" size="sm" asChild>
                   <a 
-                    href={`https://${settings?.subdomain}.online.church/admin/settings/webhooks`}
+                    href={getAdminWebhookUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline"
                   >
-                    Church Online admin panel
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Add Webhook in Church Online
                   </a>
-                  {' '}→ Settings → Webhooks → Add the URL above for events like{' '}
-                  <code className="bg-muted px-1 rounded">moment.interacted</code>,{' '}
-                  <code className="bg-muted px-1 rounded">prayer.requested</code>,{' '}
-                  <code className="bg-muted px-1 rounded">service.attended</code>
-                </p>
+                </Button>
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Select events like <code className="bg-muted px-1 rounded">moment.interacted</code>,{' '}
+                <code className="bg-muted px-1 rounded">prayer.requested</code>,{' '}
+                <code className="bg-muted px-1 rounded">service.attended</code>
+              </p>
             </div>
 
             <Separator />
