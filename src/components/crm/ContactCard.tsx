@@ -1,9 +1,10 @@
 import React from "react";
 import { Contact } from "@/types/crm";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MoreVertical, MessageSquare, Mail, Phone, UserX } from "lucide-react";
+import { MoreVertical, MessageSquare, Mail, Phone, UserX, CheckCircle2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { differenceInDays } from "date-fns";
 
@@ -26,6 +27,7 @@ interface ContactCardProps {
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  isCompleted?: boolean;
 }
 export const ContactCard: React.FC<ContactCardProps> = ({
   contact,
@@ -34,7 +36,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({
   pipelineId,
   isSelectMode = false,
   isSelected = false,
-  onToggleSelect
+  onToggleSelect,
+  isCompleted = false
 }) => {
   const {
     name,
@@ -52,7 +55,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
       onToggleSelect?.();
     }
   };
-  return <div className={`contact-card bg-white p-3 border-2 mb-3 transition-all duration-200 rounded-xl overflow-hidden max-w-full cursor-pointer ${isSelectMode ? isSelected ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50' : 'border-gray-200 hover:border-blue-300'}`} onClick={handleCardClick}>
+  return <div className={`contact-card bg-white p-3 border-2 mb-3 transition-all duration-200 rounded-xl overflow-hidden max-w-full cursor-pointer ${isSelectMode ? isSelected ? 'border-primary bg-primary/5' : 'border-gray-200 hover:border-primary/50' : 'border-gray-200 hover:border-blue-300'} ${isCompleted ? 'opacity-50' : ''}`} onClick={handleCardClick}>
       <div className="flex justify-between items-start mb-3">
         <div className="flex gap-2 items-center min-w-0 flex-1">
           {isSelectMode ? <div className="flex-shrink-0" onClick={e => e.stopPropagation()}>
@@ -75,7 +78,14 @@ export const ContactCard: React.FC<ContactCardProps> = ({
                   <h4 title={name} className="text-sm cursor-pointer truncate font-light">{name}</h4>
                 </Link>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
+                  {isCompleted ? (
+                    <Badge variant="secondary" className="text-xs gap-1 py-0 h-5">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Done
+                    </Badge>
+                  ) : (
+                    <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
+                  )}
                 </div>
               </>}
           </div>

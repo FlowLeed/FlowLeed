@@ -94,9 +94,9 @@ export const FlowStage: React.FC<FlowStageProps> = ({
       
         <Droppable droppableId={stage.id}>
           {(provided, snapshot) => <div className={`space-y-3 min-h-[200px] flex-1 p-2 rounded-lg transition-colors ${snapshot.isDraggingOver ? "bg-blue-50" : ""}`} ref={provided.innerRef} {...provided.droppableProps}>
-              {stage.contacts.map((contact, index) => <Draggable key={contact.id} draggableId={contact.id} index={index}>
+              {stage.contacts.map((contact, index) => <Draggable key={contact.id} draggableId={contact.id} index={index} isDragDisabled={!!contact.completedEndAt}>
                   {(provided, snapshot) => <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`transition-shadow ${snapshot.isDragging ? "shadow-lg" : ""}`}>
-                      <ContactCard contact={contact} onEdit={() => onEditContact?.(contact)} onDelete={() => onDeleteContact?.(contact.id, stage.id)} pipelineId={pipelineId} isSelectMode={isSelectMode} isSelected={selectedContacts.has(contact.id)} onToggleSelect={() => onToggleContact?.(contact.id)} />
+                      <ContactCard contact={contact} onEdit={() => onEditContact?.(contact)} onDelete={() => onDeleteContact?.(contact.id, stage.id)} pipelineId={pipelineId} isSelectMode={isSelectMode} isSelected={selectedContacts.has(contact.id)} onToggleSelect={() => onToggleContact?.(contact.id)} isCompleted={!!contact.completedEndAt} />
                     </div>}
                 </Draggable>)}
               {provided.placeholder}

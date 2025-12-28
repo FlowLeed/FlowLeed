@@ -310,7 +310,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                         key={contact.id}
                         className={`cursor-pointer hover:bg-muted/50 ${
                           isSelectMode && selectedContacts.has(contact.id) ? 'bg-primary/5' : ''
-                        }`}
+                        } ${contact.completedEndAt ? 'opacity-50' : ''}`}
                         onClick={(e) => {
                           if (isSelectMode) {
                             e.preventDefault();
@@ -337,6 +337,12 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                               </AvatarFallback>
                             </Avatar>
                             <span className="font-light">{contact.name}</span>
+                            {contact.completedEndAt && (
+                              <Badge variant="secondary" className="text-xs gap-1 py-0 h-5">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Done
+                              </Badge>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">

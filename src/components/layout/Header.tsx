@@ -83,6 +83,9 @@ interface HeaderProps {
     unassigned: number;
     byMember: Record<string, number>;
   };
+  showCompleted?: boolean;
+  onShowCompletedChange?: (show: boolean) => void;
+  completedCount?: number;
   viewMode?: 'kanban' | 'table';
   onViewModeChange?: (mode: 'kanban' | 'table') => void;
   isSelectMode?: boolean;
@@ -108,6 +111,9 @@ export const Header: React.FC<HeaderProps> = ({
   selectedFilter = null,
   onFilterChange,
   contactCounts,
+  showCompleted = false,
+  onShowCompletedChange,
+  completedCount = 0,
   viewMode,
   onViewModeChange,
   isSelectMode = false,
@@ -405,6 +411,9 @@ export const Header: React.FC<HeaderProps> = ({
             selectedFilter={selectedFilter}
             onFilterChange={onFilterChange}
             contactCounts={contactCounts}
+            showCompleted={showCompleted ?? false}
+            onShowCompletedChange={onShowCompletedChange ?? (() => {})}
+            completedCount={completedCount ?? 0}
           />
         )}
         

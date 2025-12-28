@@ -17,6 +17,7 @@ export interface Contact {
   email?: string;
   phone?: string;
   stageEnteredAt?: string;
+  completedEndAt?: string;
 }
 
 export interface FlowStage {

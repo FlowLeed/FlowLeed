@@ -3,7 +3,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Filter, UserX, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Filter, UserX, X, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TeamMember {
@@ -22,15 +23,21 @@ interface FlowHeaderFiltersProps {
     unassigned: number;
     byMember: Record<string, number>;
   };
+  showCompleted: boolean;
+  onShowCompletedChange: (show: boolean) => void;
+  completedCount: number;
 }
 
 export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
   teamMembers,
   selectedFilter,
   onFilterChange,
-  contactCounts
+  contactCounts,
+  showCompleted,
+  onShowCompletedChange,
+  completedCount
 }) => {
-  const hasActiveFilter = selectedFilter !== null;
+  const hasActiveFilter = selectedFilter !== null || showCompleted;
 
   return (
     <Popover>
@@ -47,7 +54,22 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
-          <div className="space-y-2">
+          {/* Show Completed toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+              <label htmlFor="show-completed" className="text-sm font-medium">
+                Show Completed ({completedCount})
+              </label>
+            </div>
+            <Switch
+              id="show-completed"
+              checked={showCompleted}
+              onCheckedChange={onShowCompletedChange}
+            />
+          </div>
+
+          <div className="border-t pt-4 space-y-2">
             <label className="text-sm font-medium">Assigned to</label>
             <div className="space-y-2">
               {/* Unassigned option */}
@@ -93,7 +115,7 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
             </div>
           </div>
 
-          {hasActiveFilter && (
+          {(selectedFilter !== null) && (
             <Button 
               variant="ghost" 
               size="sm" 
@@ -101,7 +123,7 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
               className="w-full"
             >
               <X className="mr-2 h-4 w-4" />
-              Clear Filter
+              Clear Assignment Filter
             </Button>
           )}
         </div>

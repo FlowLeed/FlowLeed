@@ -45,6 +45,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const { organization } = useProfile();
   const queryClient = useQueryClient();
 
@@ -64,24 +65,32 @@ export const FlowView: React.FC<FlowViewProps> = ({
   }));
 
 
-  // Filter contacts based on selected filter
+  // Filter contacts based on selected filter and showCompleted toggle
   const filteredFlow = useMemo(() => {
-    if (!selectedFilter) return flow;
-
     const filteredStages = flow.stages.map(stage => ({
       ...stage,
       contacts: stage.contacts.filter(contact => {
-        if (selectedFilter === "unassigned") {
-          return !contact.assignedTo;
+        // Filter out completed contacts if showCompleted is false
+        if (!showCompleted && contact.completedEndAt) {
+          return false;
+        }
+
+        // Apply assignment filter
+        if (selectedFilter) {
+          if (selectedFilter === "unassigned") {
+            return !contact.assignedTo;
+          }
+          
+          // Find the team member by ID and match with contact's assignedTo
+          const teamMember = teamMembers.find(member => member.id === selectedFilter);
+          if (!teamMember || !contact.assignedTo) return false;
+          
+          // Match by name or email
+          return contact.assignedTo.name === teamMember.name || 
+                 contact.assignedTo.name === teamMember.email;
         }
         
-        // Find the team member by ID and match with contact's assignedTo
-        const teamMember = teamMembers.find(member => member.id === selectedFilter);
-        if (!teamMember || !contact.assignedTo) return false;
-        
-        // Match by name or email
-        return contact.assignedTo.name === teamMember.name || 
-               contact.assignedTo.name === teamMember.email;
+        return true;
       })
     }));
 
@@ -89,26 +98,33 @@ export const FlowView: React.FC<FlowViewProps> = ({
       ...flow,
       stages: filteredStages
     };
-  }, [flow, selectedFilter, teamMembers]);
+  }, [flow, selectedFilter, teamMembers, showCompleted]);
 
-  // Calculate contact counts for filter badges
+  // Calculate contact counts for filter badges (only count active, non-completed contacts)
   const contactCounts = useMemo(() => {
-    const allContacts = flow.stages.flatMap(stage => stage.contacts);
+    const activeContacts = flow.stages.flatMap(stage => 
+      stage.contacts.filter(c => !c.completedEndAt)
+    );
     const byMember: Record<string, number> = {};
     
     teamMembers.forEach(member => {
-      byMember[member.id] = allContacts.filter(contact => 
+      byMember[member.id] = activeContacts.filter(contact => 
         contact.assignedTo && 
         (contact.assignedTo.name === member.name || contact.assignedTo.name === member.email)
       ).length;
     });
 
     return {
-      all: allContacts.length,
-      unassigned: allContacts.filter(contact => !contact.assignedTo).length,
+      all: activeContacts.length,
+      unassigned: activeContacts.filter(contact => !contact.assignedTo).length,
       byMember
     };
   }, [flow, teamMembers]);
+
+  // Count completed contacts
+  const completedCount = useMemo(() => {
+    return flow.stages.flatMap(stage => stage.contacts).filter(c => c.completedEndAt).length;
+  }, [flow]);
 
   const handleAddContact = (stageId: string) => {
     setCurrentContact(null);
@@ -502,6 +518,9 @@ export const FlowView: React.FC<FlowViewProps> = ({
         cycleDays={flow.cycle_days}
         onToggleSelectMode={handleToggleSelectMode}
         onSelectAll={handleSelectAll}
+        showCompleted={showCompleted}
+        onShowCompletedChange={setShowCompleted}
+        completedCount={completedCount}
       />
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
         {viewMode === 'kanban' ? (

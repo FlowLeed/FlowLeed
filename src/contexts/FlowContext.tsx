@@ -46,7 +46,8 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile
     name: assignedProfile.full_name || assignedProfile.email || "Unknown User",
     avatar: assignedProfile.avatar_url
   } : undefined,
-  stageEnteredAt: pipelineContactData?.stage_entered_at
+  stageEnteredAt: pipelineContactData?.stage_entered_at,
+  completedEndAt: pipelineContactData?.completed_end_at
 });
 
 // Convert database pipeline format to frontend format (keeping database names for data compatibility)
@@ -290,12 +291,11 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         .in('pipeline_id', pipelineIds)
         .order('stage_order'),
       
-      // Single query for ALL contacts across ALL pipelines
+      // Single query for ALL contacts across ALL pipelines (include completed for toggle)
       supabase
         .from('pipeline_contacts')
         .select('*, contacts(*)')
         .in('pipeline_id', pipelineIds)
-        .is('completed_end_at', null)
     ]);
 
     if (stagesError) throw stagesError;
