@@ -1,3 +1,4 @@
+// Church Online Webhook - v3.0.0
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -5,16 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, ce-id, ce-source, ce-type, ce-subject, ce-time',
 };
 
-interface CloudEvent {
-  id: string;
-  source: string;
-  type: string;
-  subject?: string;
-  time?: string;
-  data: Record<string, unknown>;
-}
-
 Deno.serve(async (req) => {
+  console.log('=== Church Online Webhook Received ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -47,7 +43,7 @@ Deno.serve(async (req) => {
       eventType: ceType,
       subject: ceSubject,
       time: ceTime,
-      dataKeys: Object.keys(body)
+      body: JSON.stringify(body)
     });
 
     // Create Supabase client with service role
@@ -71,6 +67,8 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('Found integration for org:', integration.organization_id);
+
     // Log the event (with deduplication via unique constraint)
     const { data: eventRecord, error: eventError } = await supabase
       .from('church_online_events')
@@ -92,10 +90,16 @@ Deno.serve(async (req) => {
       console.error('Failed to log event:', eventError);
     }
 
+    console.log('Event logged:', eventRecord?.id);
+
     // Try to match user to contact by email
     let contactId: string | null = null;
-    const userEmail = body.email || body.user?.email;
-    const userName = body.name || body.user?.name || `${body.user?.firstName || ''} ${body.user?.lastName || ''}`.trim();
+    const userEmail = body.email || (body.user ? body.user.email : null);
+    const userFirstName = body.firstName || (body.user ? body.user.firstName : '');
+    const userLastName = body.lastName || (body.user ? body.user.lastName : '');
+    const userName = body.name || (body.user ? body.user.name : null) || `${userFirstName} ${userLastName}`.trim();
+
+    console.log('User data:', { email: userEmail, name: userName });
 
     if (userEmail) {
       // Find existing contact by email
@@ -108,6 +112,7 @@ Deno.serve(async (req) => {
 
       if (existingContact) {
         contactId = existingContact.id;
+        console.log('Found existing contact:', contactId);
       }
     }
 
@@ -119,22 +124,30 @@ Deno.serve(async (req) => {
       .eq('event_type', ceType)
       .eq('is_active', true);
 
+    console.log('Found automations:', automations?.length || 0);
+
     // Process each automation
     for (const automation of automations || []) {
       try {
+        console.log('Processing automation:', automation.id);
+
         // Check if event matches filter (if any)
         if (automation.event_filter && Object.keys(automation.event_filter).length > 0) {
           const filter = automation.event_filter as Record<string, unknown>;
           let matches = true;
           
           for (const [key, value] of Object.entries(filter)) {
-            if (body[key] !== value && body.data?.[key] !== value) {
+            const bodyData = body.data || body;
+            if (body[key] !== value && bodyData[key] !== value) {
               matches = false;
               break;
             }
           }
           
-          if (!matches) continue;
+          if (!matches) {
+            console.log('Event filter did not match, skipping');
+            continue;
+          }
         }
 
         // Create contact if missing and allowed
@@ -145,7 +158,7 @@ Deno.serve(async (req) => {
               organization_id: integration.organization_id,
               name: userName || userEmail.split('@')[0],
               email: userEmail,
-              phone: body.phone || body.user?.phone || null,
+              phone: body.phone || (body.user ? body.user.phone : null),
               source_type: 'church_online'
             })
             .select('id')
@@ -154,6 +167,8 @@ Deno.serve(async (req) => {
           if (!contactError && newContact) {
             contactId = newContact.id;
             console.log('Created new contact:', contactId);
+          } else if (contactError) {
+            console.error('Failed to create contact:', contactError);
           }
         }
 
@@ -164,23 +179,26 @@ Deno.serve(async (req) => {
 
         // Add to flow if pipeline/stage specified
         if (automation.pipeline_id && automation.stage_id) {
-          // Check if already in this pipeline
+          // Check if already in this pipeline using contact_interactions
           const { data: existingPipelineContact } = await supabase
-            .from('pipeline_contacts')
+            .from('contact_interactions')
             .select('id')
             .eq('contact_id', contactId)
             .eq('pipeline_id', automation.pipeline_id)
+            .eq('interaction_type', 'pipeline_entry')
             .maybeSingle();
 
           if (!existingPipelineContact) {
             const { error: pipelineError } = await supabase
-              .from('pipeline_contacts')
+              .from('contact_interactions')
               .insert({
                 contact_id: contactId,
                 pipeline_id: automation.pipeline_id,
                 stage_id: automation.stage_id,
-                source_type: 'church_online',
-                source_id: eventRecord?.id
+                interaction_type: 'pipeline_entry',
+                subject: 'Added from Church Online',
+                details: `Automatically added via ${ceType} event`,
+                created_by_user_id: null,
               });
 
             if (pipelineError) {
@@ -188,6 +206,8 @@ Deno.serve(async (req) => {
             } else {
               console.log('Added contact to pipeline:', automation.pipeline_id);
             }
+          } else {
+            console.log('Contact already in pipeline');
           }
         }
 
@@ -229,6 +249,8 @@ Deno.serve(async (req) => {
         })
         .eq('id', eventRecord.id);
     }
+
+    console.log('=== Webhook processing complete ===');
 
     return new Response(
       JSON.stringify({ 
