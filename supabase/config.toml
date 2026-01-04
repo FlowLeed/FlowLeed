@@ -112,6 +112,7 @@ verify_jwt = false
 [functions.group-public-signup]
 verify_jwt = false
 
+# Church Online webhook handler for receiving events
 [functions.church-online-webhook]
 verify_jwt = false
 
