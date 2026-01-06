@@ -843,27 +843,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
       if (pipelineError) throw pipelineError;
 
-      // Create stages
-      if (sourceFlow.pipeline_stages && sourceFlow.pipeline_stages.length > 0) {
-        const newStages = sourceFlow.pipeline_stages.map((stage: any) => ({
-          id: crypto.randomUUID(),
-          pipeline_id: newFlowId,
-          name: stage.name,
-          color: stage.color,
-          stage_order: stage.stage_order,
-          is_start_step: stage.is_start_step,
-          is_end_step: stage.is_end_step,
-          default_assignee_user_id: stage.default_assignee_user_id
-        }));
-
-        const { error: stagesError } = await supabase
-          .from('pipeline_stages')
-          .insert(newStages);
-
-        if (stagesError) throw stagesError;
-      }
-
-      // Add current user as lead (use upsert to handle duplicate key issues from trigger)
+      // Add current user as lead FIRST (before creating stages with assignees)
       const { error: teamError } = await supabase
         .from('pipeline_team_members')
         .upsert({
@@ -876,7 +856,26 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
 
       if (teamError) {
         console.error("Error adding team member:", teamError);
-        // Continue even if this fails as the trigger might have already added it
+      }
+
+      // Create stages - clear default_assignee_user_id since team isn't copied
+      if (sourceFlow.pipeline_stages && sourceFlow.pipeline_stages.length > 0) {
+        const newStages = sourceFlow.pipeline_stages.map((stage: any) => ({
+          id: crypto.randomUUID(),
+          pipeline_id: newFlowId,
+          name: stage.name,
+          color: stage.color,
+          stage_order: stage.stage_order,
+          is_start_step: stage.is_start_step,
+          is_end_step: stage.is_end_step,
+          default_assignee_user_id: null  // Clear assignees - team isn't copied
+        }));
+
+        const { error: stagesError } = await supabase
+          .from('pipeline_stages')
+          .insert(newStages);
+
+        if (stagesError) throw stagesError;
       }
 
       await refreshFlows();
