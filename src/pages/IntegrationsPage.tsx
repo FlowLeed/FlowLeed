@@ -610,8 +610,9 @@ const IntegrationsPage = () => {
                       
                       <SyncSettingsSection
                         integrationId={planningCenterIntegration.id}
-                        currentFrequency={planningCenterIntegration.sync_frequency || 'every_15_minutes'}
+                        currentFrequency={planningCenterIntegration.sync_frequency || 'daily'}
                         lastSyncAt={planningCenterIntegration.last_sync_at}
+                        autoSyncAllEnabled={planningCenterIntegration.auto_sync_all_people ?? true}
                         onSyncNow={handleSyncNow}
                         isSyncing={isSyncing}
                       />

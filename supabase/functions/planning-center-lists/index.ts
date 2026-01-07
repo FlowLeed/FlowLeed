@@ -1117,7 +1117,87 @@ function shouldSyncNow(lastSyncAt: string | null, frequency: string): boolean {
 
 async function autoSyncAllMappings() {
   try {
-    console.log('Starting automatic sync of all active list mappings...');
+    console.log('Starting automatic sync...');
+    
+    // ============================================
+    // STEP 1: Auto-Sync All People (NEW FEATURE)
+    // ============================================
+    console.log('Checking for integrations with auto_sync_all_people enabled...');
+    
+    const { data: autoSyncIntegrations, error: intError } = await supabase
+      .from('integrations')
+      .select('id, user_id, organization_id, sync_frequency, metadata')
+      .eq('service_name', 'planning_center')
+      .eq('status', 'active')
+      .eq('auto_sync_all_people', true);
+    
+    if (intError) {
+      console.error('Error fetching auto-sync integrations:', intError);
+    } else if (autoSyncIntegrations && autoSyncIntegrations.length > 0) {
+      console.log(`Found ${autoSyncIntegrations.length} integrations with auto-sync-all enabled`);
+      
+      for (const integration of autoSyncIntegrations) {
+        const metadata = integration.metadata as { last_full_sync_at?: string } | null;
+        const lastFullSync = metadata?.last_full_sync_at;
+        const frequency = integration.sync_frequency || 'daily';
+        
+        // Skip if frequency is manual
+        if (frequency === 'manual') {
+          console.log(`Skipping integration ${integration.id} - manual sync only`);
+          continue;
+        }
+        
+        // Check if enough time has passed
+        if (shouldSyncNow(lastFullSync || null, frequency)) {
+          console.log(`Triggering full people sync for integration ${integration.id} (last sync: ${lastFullSync || 'never'})`);
+          
+          // Check for existing active job to prevent duplicates
+          const { data: existingJob } = await supabase
+            .from('pco_sync_jobs')
+            .select('id')
+            .eq('organization_id', integration.organization_id)
+            .is('list_mapping_id', null)
+            .in('status', ['pending', 'processing'])
+            .maybeSingle();
+          
+          if (existingJob) {
+            console.log(`Skipping integration ${integration.id} - sync job already in progress: ${existingJob.id}`);
+            continue;
+          }
+          
+          try {
+            // Trigger the full sync using the existing function logic
+            await triggerAutoFullPeopleSync(integration.id, integration.organization_id);
+            
+            // Update last_full_sync_at in metadata
+            const newMetadata = { 
+              ...(integration.metadata as object || {}), 
+              last_full_sync_at: new Date().toISOString() 
+            };
+            await supabase
+              .from('integrations')
+              .update({ 
+                metadata: newMetadata,
+                last_sync_at: new Date().toISOString()
+              })
+              .eq('id', integration.id);
+            
+            console.log(`Successfully triggered auto full sync for integration ${integration.id}`);
+          } catch (syncError) {
+            console.error(`Error triggering full sync for integration ${integration.id}:`, syncError);
+          }
+        } else {
+          console.log(`Skipping integration ${integration.id} - frequency ${frequency} not reached (last sync: ${lastFullSync})`);
+        }
+      }
+    } else {
+      console.log('No integrations with auto_sync_all_people enabled');
+    }
+    
+    // ============================================
+    // STEP 2: Auto-Sync List Mappings (EXISTING)
+    // ============================================
+    console.log('Checking for list mappings with auto_sync enabled...');
     
     const { data: allMappings, error: mappingsError } = await supabase
       .from('integration_list_mappings')
@@ -1144,7 +1224,7 @@ async function autoSyncAllMappings() {
       console.log('No active auto-sync mappings found');
       return new Response(JSON.stringify({ 
         success: true,
-        message: 'No active auto-sync mappings found',
+        message: 'Auto-sync complete (no list mappings to sync)',
         results: []
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1177,7 +1257,7 @@ async function autoSyncAllMappings() {
           .update({ last_sync_at: new Date().toISOString() })
           .eq('id', mapping.id);
         
-        // Track PCO sync (note: syncSingleList already tracks, but this is extra safety for auto-sync)
+        // Track PCO sync
         try {
           const { data: integrationData } = await supabase
             .from('integrations')
@@ -1228,4 +1308,164 @@ async function autoSyncAllMappings() {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
+}
+
+// Trigger a full people sync for auto-sync (no user auth required)
+async function triggerAutoFullPeopleSync(integrationId: string, organizationId: string) {
+  console.log('Starting auto full people sync for integration:', integrationId);
+  
+  // Get integration credentials
+  const { data: integration, error: integrationError } = await supabase
+    .from('integrations')
+    .select('credentials, organization_id, user_id')
+    .eq('id', integrationId)
+    .single();
+
+  if (integrationError || !integration) {
+    throw new Error('Integration not found');
+  }
+
+  const credentials = integration.credentials as any;
+  const application_id = credentials?.application_id;
+  const secret = credentials?.secret;
+  
+  if (!application_id || !secret) {
+    throw new Error('Missing Planning Center credentials');
+  }
+
+  const auth = btoa(`${application_id}:${secret}`);
+  
+  // Fetch ALL people from PCO with pagination
+  let allPeople: any[] = [];
+  let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers&where[status]=active';
+  let pageCount = 0;
+
+  while (nextUrl) {
+    pageCount++;
+    console.log(`[Auto-sync] Fetching people page ${pageCount}...`);
+    
+    const response = await fetch(nextUrl, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        await supabase
+          .from('integrations')
+          .update({ 
+            status: 'failed',
+            metadata: {
+              error: 'Authentication failed during auto-sync',
+              last_error_at: new Date().toISOString()
+            }
+          })
+          .eq('id', integrationId);
+        
+        throw new Error('Planning Center authentication failed');
+      }
+      throw new Error(`PC API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const people = data.data || [];
+    const included = data.included || [];
+    
+    for (const person of people) {
+      const personEmails = included.filter((i: any) => 
+        i.type === 'Email' && 
+        person.relationships?.emails?.data?.some((e: any) => e.id === i.id)
+      );
+      const personPhones = included.filter((i: any) => 
+        i.type === 'PhoneNumber' && 
+        person.relationships?.phone_numbers?.data?.some((p: any) => p.id === i.id)
+      );
+      
+      if (personEmails.length > 0) {
+        person.attributes.emails = personEmails;
+      }
+      if (personPhones.length > 0) {
+        person.attributes.phone_numbers = personPhones;
+      }
+      
+      allPeople.push(person);
+    }
+    
+    nextUrl = data.links?.next || null;
+    console.log(`[Auto-sync] Page ${pageCount}: fetched ${people.length} people, total: ${allPeople.length}`);
+  }
+
+  console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages`);
+
+  if (allPeople.length === 0) {
+    console.log('[Auto-sync] No people found in Planning Center');
+    return;
+  }
+
+  // Create sync job
+  const { data: job, error: jobError } = await supabase
+    .from('pco_sync_jobs')
+    .insert({
+      organization_id: organizationId,
+      integration_id: integrationId,
+      list_mapping_id: null,
+      status: 'pending',
+      total_contacts: allPeople.length,
+      processed_contacts: 0,
+      metadata: {
+        sync_type: 'auto_full_people_sync',
+        pages_fetched: pageCount
+      }
+    })
+    .select()
+    .single();
+
+  if (jobError || !job) {
+    throw new Error('Failed to create sync job');
+  }
+
+  console.log(`[Auto-sync] Created sync job: ${job.id}`);
+
+  // Chunk contacts into batches
+  const CHUNK_SIZE = 25;
+  const chunks = [];
+  for (let i = 0; i < allPeople.length; i += CHUNK_SIZE) {
+    chunks.push(allPeople.slice(i, i + CHUNK_SIZE));
+  }
+
+  // Insert chunks into queue
+  const queueItems = chunks.map((chunk, index) => ({
+    sync_job_id: job.id,
+    organization_id: organizationId,
+    status: 'pending',
+    chunk_data: chunk,
+    chunk_number: index + 1
+  }));
+
+  const QUEUE_BATCH_SIZE = 50;
+  for (let i = 0; i < queueItems.length; i += QUEUE_BATCH_SIZE) {
+    const batch = queueItems.slice(i, i + QUEUE_BATCH_SIZE);
+    const { error: queueError } = await supabase
+      .from('pco_sync_queue')
+      .insert(batch);
+
+    if (queueError) {
+      console.error(`[Auto-sync] Failed to create queue batch:`, queueError);
+      await supabase
+        .from('pco_sync_jobs')
+        .update({ status: 'failed', error_message: 'Failed to create queue items' })
+        .eq('id', job.id);
+      throw new Error('Failed to create queue items');
+    }
+  }
+
+  // Track PCO sync
+  await supabase.rpc('track_pco_sync', {
+    p_org_id: organizationId,
+    p_sync_type: 'auto_full_people_sync'
+  });
+
+  console.log(`[Auto-sync] Full people sync job ${job.id} created with ${chunks.length} chunks`);
 }

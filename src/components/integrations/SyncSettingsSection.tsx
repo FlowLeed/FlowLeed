@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Clock, RefreshCw } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,7 @@ interface SyncSettingsSectionProps {
   integrationId: string;
   currentFrequency: string;
   lastSyncAt?: string;
+  autoSyncAllEnabled?: boolean;
   onSyncNow: () => void;
   isSyncing?: boolean;
 }
@@ -24,10 +26,12 @@ export function SyncSettingsSection({
   integrationId, 
   currentFrequency, 
   lastSyncAt, 
+  autoSyncAllEnabled = true,
   onSyncNow, 
   isSyncing 
 }: SyncSettingsSectionProps) {
   const [selectedFrequency, setSelectedFrequency] = useState(currentFrequency);
+  const [autoSyncAll, setAutoSyncAll] = useState(autoSyncAllEnabled);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -56,14 +60,45 @@ export function SyncSettingsSection({
     },
   });
 
+  const updateAutoSyncMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { error } = await supabase
+        .from('integrations')
+        .update({ auto_sync_all_people: enabled })
+        .eq('id', integrationId);
+      
+      if (error) throw error;
+      return enabled;
+    },
+    onSuccess: (enabled) => {
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      toast({
+        title: enabled ? "Automatic sync enabled" : "Automatic sync disabled",
+        description: enabled 
+          ? "All Planning Center contacts will sync automatically based on your frequency setting."
+          : "Contacts will only sync when you click 'Sync All People'.",
+      });
+    },
+    onError: (error) => {
+      // Revert UI state on error
+      setAutoSyncAll(!autoSyncAll);
+      toast({
+        title: "Error updating auto-sync setting",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleFrequencyChange = (frequency: string) => {
     setSelectedFrequency(frequency);
     updateFrequencyMutation.mutate(frequency);
   };
 
-  const currentFrequencyLabel = FREQUENCY_OPTIONS.find(
-    opt => opt.value === currentFrequency
-  )?.label || 'Once a day';
+  const handleAutoSyncToggle = (checked: boolean) => {
+    setAutoSyncAll(checked);
+    updateAutoSyncMutation.mutate(checked);
+  };
 
   return (
     <div className="space-y-4">
@@ -84,10 +119,28 @@ export function SyncSettingsSection({
         </Button>
       </div>
 
+      <div className="flex items-center justify-between py-3 border-b">
+        <div className="space-y-0.5">
+          <label className="text-sm font-medium">Automatic Sync</label>
+          <p className="text-xs text-muted-foreground">
+            Keep all contacts up-to-date automatically
+          </p>
+        </div>
+        <Switch
+          checked={autoSyncAll}
+          onCheckedChange={handleAutoSyncToggle}
+          disabled={updateAutoSyncMutation.isPending}
+        />
+      </div>
+
       <div className="space-y-2">
         <label className="text-sm font-medium">Sync Frequency</label>
-        <Select value={selectedFrequency} onValueChange={handleFrequencyChange}>
-          <SelectTrigger>
+        <Select 
+          value={selectedFrequency} 
+          onValueChange={handleFrequencyChange}
+          disabled={!autoSyncAll}
+        >
+          <SelectTrigger className={!autoSyncAll ? "opacity-50" : ""}>
             <SelectValue placeholder="Select frequency" />
           </SelectTrigger>
           <SelectContent>
@@ -98,6 +151,11 @@ export function SyncSettingsSection({
             ))}
           </SelectContent>
         </Select>
+        {!autoSyncAll && (
+          <p className="text-xs text-muted-foreground">
+            Enable automatic sync to set a frequency
+          </p>
+        )}
       </div>
     </div>
   );
