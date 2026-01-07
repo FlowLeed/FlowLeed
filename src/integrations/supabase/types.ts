@@ -1487,6 +1487,7 @@ export type Database = {
       }
       integrations: {
         Row: {
+          auto_sync_all_people: boolean | null
           created_at: string
           credentials: Json
           id: string
@@ -1501,6 +1502,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_sync_all_people?: boolean | null
           created_at?: string
           credentials?: Json
           id?: string
@@ -1515,6 +1517,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_sync_all_people?: boolean | null
           created_at?: string
           credentials?: Json
           id?: string
