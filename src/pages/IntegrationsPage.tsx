@@ -589,6 +589,15 @@ const IntegrationsPage = () => {
                     <Separator />
                     
                     <div className="space-y-6">
+                      <SyncSettingsSection
+                        integrationId={planningCenterIntegration.id}
+                        currentFrequency={planningCenterIntegration.sync_frequency || 'daily'}
+                        lastSyncAt={planningCenterIntegration.last_sync_at}
+                        autoSyncAllEnabled={planningCenterIntegration.auto_sync_all_people ?? true}
+                        onSyncNow={handleSyncNow}
+                        isSyncing={isSyncing}
+                      />
+                      
                       {(isPreparing || syncJob) && (
                         <SyncProgressDisplay
                           jobId={syncJob?.id}
@@ -605,17 +614,6 @@ const IntegrationsPage = () => {
                           onCancel={isSyncing && !isPreparing ? handleCancelSync : undefined}
                         />
                       )}
-                      
-                      <Separator />
-                      
-                      <SyncSettingsSection
-                        integrationId={planningCenterIntegration.id}
-                        currentFrequency={planningCenterIntegration.sync_frequency || 'daily'}
-                        lastSyncAt={planningCenterIntegration.last_sync_at}
-                        autoSyncAllEnabled={planningCenterIntegration.auto_sync_all_people ?? true}
-                        onSyncNow={handleSyncNow}
-                        isSyncing={isSyncing}
-                      />
                       
                       <Separator />
                       
