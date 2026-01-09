@@ -308,6 +308,41 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
   }
 }
 
+// Helper to extract household ID from included data
+function extractHouseholdId(person: any, included: any[]): string | null {
+  // Check if person has household relationships
+  const householdRelData = person.relationships?.households?.data?.[0];
+  if (householdRelData?.id) {
+    return householdRelData.id;
+  }
+  
+  // Fallback: find household in included that contains this person
+  const household = included.find((item: any) => 
+    item.type === 'Household' && 
+    item.relationships?.people?.data?.some((p: any) => p.id === person.id)
+  );
+  
+  return household?.id || null;
+}
+
+// Helper to extract addresses from included data for a person
+function extractAddresses(person: any, included: any[]): any[] {
+  const addressRelData = person.relationships?.addresses?.data || [];
+  const addressIds = addressRelData.map((a: any) => a.id);
+  return included.filter((item: any) => 
+    item.type === 'Address' && addressIds.includes(item.id)
+  );
+}
+
+// Helper to extract field data from included data for a person
+function extractFieldData(person: any, included: any[]): any[] {
+  const fieldRelData = person.relationships?.field_data?.data || [];
+  const fieldIds = fieldRelData.map((f: any) => f.id);
+  return included.filter((item: any) => 
+    item.type === 'FieldDatum' && fieldIds.includes(item.id)
+  );
+}
+
 // Sync ALL people from PCO (not just list members)
 async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
   try {
@@ -316,7 +351,7 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
     // Get integration credentials
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('credentials, organization_id, user_id')
+      .select('credentials, organization_id, user_id, last_full_sync_completed_at')
       .eq('id', integrationId)
       .single();
 
@@ -367,10 +402,25 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
 
     const auth = btoa(`${application_id}:${secret}`);
     
+    // Check if this is an incremental sync (has completed a full sync before)
+    const isIncrementalSync = !!integration.last_full_sync_completed_at;
+    const lastSyncAt = integration.last_full_sync_completed_at;
+    
+    console.log(`Sync mode: ${isIncrementalSync ? 'INCREMENTAL' : 'FULL'}, last sync: ${lastSyncAt || 'never'}`);
+    
     // Fetch ALL people from PCO with pagination
+    // OPTIMIZED: Include addresses, households, field_data to avoid re-fetching later
     let allPeople: any[] = [];
-    // Only sync active contacts from PCO
-    let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers&where[status]=active';
+    let baseUrl = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers,addresses,households,field_data&where[status]=active';
+    
+    // For incremental sync, add updated_at filter
+    if (isIncrementalSync && lastSyncAt) {
+      const sinceDate = new Date(lastSyncAt).toISOString();
+      baseUrl += `&where[updated_at][gte]=${encodeURIComponent(sinceDate)}`;
+      console.log(`Incremental sync: fetching contacts updated since ${sinceDate}`);
+    }
+    
+    let nextUrl: string | null = baseUrl;
     let pageCount = 0;
 
     while (nextUrl) {
@@ -411,7 +461,7 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       const data = await response.json();
       const people = data.data || [];
       
-      // Build person objects with included email/phone data
+      // Build person objects with included email/phone/address/household/field_data
       const included = data.included || [];
       
       for (const person of people) {
@@ -425,6 +475,11 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
           person.relationships?.phone_numbers?.data?.some((p: any) => p.id === i.id)
         );
         
+        // Extract pre-fetched data to pass to processor (avoids re-fetching)
+        const householdId = extractHouseholdId(person, included);
+        const addresses = extractAddresses(person, included);
+        const fieldData = extractFieldData(person, included);
+        
         // Attach to attributes for processing
         if (personEmails.length > 0) {
           person.attributes.emails = personEmails;
@@ -432,6 +487,15 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
         if (personPhones.length > 0) {
           person.attributes.phone_numbers = personPhones;
         }
+        
+        // Attach pre-fetched data as included_data for processor to use
+        person.included_data = {
+          householdId,
+          addresses,
+          fieldData,
+          emails: personEmails,
+          phones: personPhones,
+        };
         
         allPeople.push(person);
       }
@@ -441,13 +505,23 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       console.log(`Page ${pageCount}: fetched ${people.length} people, total: ${allPeople.length}`);
     }
 
-    console.log(`Total people fetched: ${allPeople.length} in ${pageCount} pages`);
+    console.log(`Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
 
     if (allPeople.length === 0) {
+      // Update last sync time even if no changes
+      await supabase
+        .from('integrations')
+        .update({ 
+          last_sync_at: new Date().toISOString(),
+          last_full_sync_completed_at: new Date().toISOString()
+        })
+        .eq('id', integrationId);
+      
       return new Response(JSON.stringify({ 
         success: true, 
-        message: 'No people found in Planning Center',
-        totalContacts: 0
+        message: isIncrementalSync ? 'No contacts modified since last sync' : 'No people found in Planning Center',
+        totalContacts: 0,
+        syncType: isIncrementalSync ? 'incremental' : 'full'
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -464,8 +538,9 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
         total_contacts: allPeople.length,
         processed_contacts: 0,
         metadata: {
-          sync_type: 'full_people_sync',
-          pages_fetched: pageCount
+          sync_type: isIncrementalSync ? 'incremental_sync' : 'full_people_sync',
+          pages_fetched: pageCount,
+          includes_prefetched_data: true
         }
       })
       .select()
@@ -537,16 +612,17 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
     // Track PCO sync
     await supabase.rpc('track_pco_sync', {
       p_org_id: integration.organization_id,
-      p_sync_type: 'full_people_sync'
+      p_sync_type: isIncrementalSync ? 'incremental_sync' : 'full_people_sync'
     });
 
-    console.log(`Full people sync job ${job.id} created with ${chunks.length} chunks`);
+    console.log(`${isIncrementalSync ? 'Incremental' : 'Full'} people sync job ${job.id} created with ${chunks.length} chunks`);
 
     return new Response(JSON.stringify({ 
       success: true,
       jobId: job.id,
       totalContacts: allPeople.length,
-      chunks: chunks.length
+      chunks: chunks.length,
+      syncType: isIncrementalSync ? 'incremental' : 'full'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -842,7 +918,7 @@ async function autoSyncAllMappings() {
     
     const { data: autoSyncIntegrations, error: intError } = await supabase
       .from('integrations')
-      .select('id, user_id, organization_id, sync_frequency, metadata')
+      .select('id, user_id, organization_id, sync_frequency, metadata, last_full_sync_completed_at')
       .eq('service_name', 'planning_center')
       .eq('status', 'active')
       .eq('auto_sync_all_people', true);
@@ -854,7 +930,8 @@ async function autoSyncAllMappings() {
       
       for (const integration of autoSyncIntegrations) {
         const metadata = integration.metadata as { last_full_sync_at?: string } | null;
-        const lastFullSync = metadata?.last_full_sync_at;
+        // Use last_full_sync_completed_at for accurate delta calculation
+        const lastFullSync = integration.last_full_sync_completed_at || metadata?.last_full_sync_at;
         const frequency = integration.sync_frequency || 'daily';
         
         // Skip if frequency is manual
@@ -883,7 +960,7 @@ async function autoSyncAllMappings() {
           
           try {
             // Trigger the full sync using the existing function logic
-            await triggerAutoFullPeopleSync(integration.id, integration.organization_id);
+            await triggerAutoFullPeopleSync(integration.id, integration.organization_id, integration.last_full_sync_completed_at);
             
             // Update last_full_sync_at in metadata
             const newMetadata = { 
@@ -1027,7 +1104,8 @@ async function autoSyncAllMappings() {
 }
 
 // Trigger a full people sync for auto-sync (no user auth required)
-async function triggerAutoFullPeopleSync(integrationId: string, organizationId: string) {
+// Supports incremental sync by using last_full_sync_completed_at
+async function triggerAutoFullPeopleSync(integrationId: string, organizationId: string, lastFullSyncCompletedAt?: string | null) {
   console.log('Starting auto full people sync for integration:', integrationId);
   
   // Get integration credentials
@@ -1051,9 +1129,23 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
 
   const auth = btoa(`${application_id}:${secret}`);
   
+  // Determine if this is an incremental sync
+  const isIncrementalSync = !!lastFullSyncCompletedAt;
+  
+  // Build URL with pre-fetched data and optional incremental filter
+  let baseUrl = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers,addresses,households,field_data&where[status]=active';
+  
+  if (isIncrementalSync && lastFullSyncCompletedAt) {
+    const sinceDate = new Date(lastFullSyncCompletedAt).toISOString();
+    baseUrl += `&where[updated_at][gte]=${encodeURIComponent(sinceDate)}`;
+    console.log(`[Auto-sync] Incremental sync: fetching contacts updated since ${sinceDate}`);
+  } else {
+    console.log(`[Auto-sync] Full sync: fetching all contacts`);
+  }
+  
   // Fetch ALL people from PCO with pagination
   let allPeople: any[] = [];
-  let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers&where[status]=active';
+  let nextUrl: string | null = baseUrl;
   let pageCount = 0;
 
   while (nextUrl) {
@@ -1099,12 +1191,26 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
         person.relationships?.phone_numbers?.data?.some((p: any) => p.id === i.id)
       );
       
+      // Extract pre-fetched data
+      const householdId = extractHouseholdId(person, included);
+      const addresses = extractAddresses(person, included);
+      const fieldData = extractFieldData(person, included);
+      
       if (personEmails.length > 0) {
         person.attributes.emails = personEmails;
       }
       if (personPhones.length > 0) {
         person.attributes.phone_numbers = personPhones;
       }
+      
+      // Attach pre-fetched data
+      person.included_data = {
+        householdId,
+        addresses,
+        fieldData,
+        emails: personEmails,
+        phones: personPhones,
+      };
       
       allPeople.push(person);
     }
@@ -1113,10 +1219,10 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     console.log(`[Auto-sync] Page ${pageCount}: fetched ${people.length} people, total: ${allPeople.length}`);
   }
 
-  console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages`);
+  console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
 
   if (allPeople.length === 0) {
-    console.log('[Auto-sync] No people found in Planning Center');
+    console.log('[Auto-sync] No people found/modified in Planning Center');
     return;
   }
 
@@ -1131,8 +1237,9 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
       total_contacts: allPeople.length,
       processed_contacts: 0,
       metadata: {
-        sync_type: 'auto_full_people_sync',
-        pages_fetched: pageCount
+        sync_type: isIncrementalSync ? 'auto_incremental_sync' : 'auto_full_people_sync',
+        pages_fetched: pageCount,
+        includes_prefetched_data: true
       }
     })
     .select()
@@ -1180,8 +1287,8 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
   // Track PCO sync
   await supabase.rpc('track_pco_sync', {
     p_org_id: organizationId,
-    p_sync_type: 'auto_full_people_sync'
+    p_sync_type: isIncrementalSync ? 'auto_incremental_sync' : 'auto_full_people_sync'
   });
 
-  console.log(`[Auto-sync] Full people sync job ${job.id} created with ${chunks.length} chunks`);
+  console.log(`[Auto-sync] ${isIncrementalSync ? 'Incremental' : 'Full'} people sync job ${job.id} created with ${chunks.length} chunks`);
 }
