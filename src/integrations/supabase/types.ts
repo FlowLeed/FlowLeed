@@ -672,6 +672,7 @@ export type Database = {
           name: string
           notes: string | null
           organization_id: string
+          pc_household_id: string | null
           pc_person_id: string | null
           phone: string | null
           source_type: string | null
@@ -688,6 +689,7 @@ export type Database = {
           name: string
           notes?: string | null
           organization_id: string
+          pc_household_id?: string | null
           pc_person_id?: string | null
           phone?: string | null
           source_type?: string | null
@@ -704,6 +706,7 @@ export type Database = {
           name?: string
           notes?: string | null
           organization_id?: string
+          pc_household_id?: string | null
           pc_person_id?: string | null
           phone?: string | null
           source_type?: string | null
@@ -1491,6 +1494,7 @@ export type Database = {
           created_at: string
           credentials: Json
           id: string
+          last_full_sync_completed_at: string | null
           last_sync_at: string | null
           metadata: Json | null
           organization_id: string
@@ -1506,6 +1510,7 @@ export type Database = {
           created_at?: string
           credentials?: Json
           id?: string
+          last_full_sync_completed_at?: string | null
           last_sync_at?: string | null
           metadata?: Json | null
           organization_id: string
@@ -1521,6 +1526,7 @@ export type Database = {
           created_at?: string
           credentials?: Json
           id?: string
+          last_full_sync_completed_at?: string | null
           last_sync_at?: string | null
           metadata?: Json | null
           organization_id?: string

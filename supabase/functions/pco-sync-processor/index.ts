@@ -207,8 +207,11 @@ Deno.serve(async (req) => {
         const integration = job.integrations;
         const mapping = job.integration_list_mappings; // May be null for full people sync
         const people = chunk.chunk_data as any[];
+        
+        // Check if this chunk has pre-fetched data (from optimized sync)
+        const hasPrefetchedData = people.length > 0 && people[0]?.included_data;
 
-        console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number} (full sync: ${!mapping})`);
+        console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number} (full sync: ${!mapping}, prefetched: ${hasPrefetchedData})`);
 
         // Get PC credentials (try application_id first, fallback to app_id for backwards compatibility)
         const applicationId = integration.credentials.application_id ?? integration.credentials.app_id;
@@ -218,11 +221,12 @@ Deno.serve(async (req) => {
         // Process each person in the chunk with delay between API calls
         for (let i = 0; i < people.length; i++) {
           const person = people[i];
-          await processPersonData(person, integration.organization_id, mapping, auth, supabase);
+          await processPersonData(person, integration.organization_id, mapping, auth, supabase, hasPrefetchedData);
           
           // Add delay between person processing to avoid rate limiting
+          // Reduced delay if we have pre-fetched data (fewer API calls needed)
           if (i < people.length - 1) {
-            await sleep(API_CALL_DELAY);
+            await sleep(hasPrefetchedData ? 100 : API_CALL_DELAY);
           }
         }
 
@@ -273,6 +277,20 @@ Deno.serve(async (req) => {
                 .from('integration_list_mappings')
                 .update({ last_sync_at: new Date().toISOString() })
                 .eq('id', job.list_mapping_id);
+            }
+            
+            // Update last_full_sync_completed_at for full people syncs
+            // This enables accurate incremental sync on next run
+            if (!job.list_mapping_id) {
+              await supabase
+                .from('integrations')
+                .update({ last_full_sync_completed_at: new Date().toISOString() })
+                .eq('id', integration.id);
+              
+              console.log(`Updated last_full_sync_completed_at for integration ${integration.id}`);
+              
+              // Populate family members from household matching after full sync
+              await populateFamilyMembersFromHouseholds(integration.organization_id, supabase);
             }
           }
         }
@@ -354,16 +372,18 @@ async function processPersonData(
   organizationId: string,
   mapping: any,
   auth: string,
-  supabase: any
+  supabase: any,
+  hasPrefetchedData: boolean = false
 ) {
   const pcPersonId = person.id;
+  const includedData = person.included_data || null;
   
   // If we only have an ID reference (from list_results), fetch full person data from PCO
   let attributes = person.attributes;
   if (!attributes) {
     console.log(`Fetching full person data for PC ID: ${pcPersonId}`);
     const personResponse = await fetchWithRetry(
-      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=emails,phone_numbers`,
+      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=emails,phone_numbers,addresses,households,field_data`,
       {
         headers: {
           'Authorization': `Basic ${auth}`,
@@ -380,10 +400,17 @@ async function processPersonData(
     const personData = await personResponse.json();
     attributes = personData.data?.attributes || {};
     
-    // Extract emails and phone numbers from included data
+    // Extract data from included array
     const included = personData.included || [];
     const emails = included.filter((i: any) => i.type === 'Email');
     const phones = included.filter((i: any) => i.type === 'PhoneNumber');
+    const addresses = included.filter((i: any) => i.type === 'Address');
+    const fieldData = included.filter((i: any) => i.type === 'FieldDatum');
+    const households = included.filter((i: any) => i.type === 'Household');
+    
+    // Get household ID
+    const householdId = households[0]?.id || 
+      personData.data?.relationships?.households?.data?.[0]?.id || null;
     
     // Attach to attributes for consistent processing below
     if (emails.length > 0) {
@@ -392,12 +419,25 @@ async function processPersonData(
     if (phones.length > 0) {
       attributes.phone_numbers = phones;
     }
+    
+    // Create included_data for later use
+    person.included_data = {
+      householdId,
+      addresses,
+      fieldData,
+      emails,
+      phones,
+    };
   }
+
+  // Extract household ID from pre-fetched data
+  const householdId = includedData?.householdId || person.included_data?.householdId || null;
 
   // Upsert contact - only include email/phone if we have actual values to avoid overwriting with null
   const contactData: any = {
     organization_id: organizationId,
     pc_person_id: pcPersonId,
+    pc_household_id: householdId, // NEW: Store household ID for local matching
     name: attributes.name || 'Unknown',
     avatar: attributes.avatar || null,
     source_type: 'planning_center',
@@ -418,7 +458,7 @@ async function processPersonData(
     contactData.phone = phoneNumber;
   }
 
-  console.log(`Syncing contact ${attributes.name} (PC ID: ${pcPersonId}):`, {
+  console.log(`Syncing contact ${attributes.name} (PC ID: ${pcPersonId}, Household: ${householdId || 'none'}):`, {
     email: contactData.email,
     phone: contactData.phone,
     has_campus: !!attributes.primary_campus_id
@@ -485,136 +525,193 @@ async function processPersonData(
     console.log(`Contact ${contact.name} synced without flow assignment (full people sync)`);
   }
 
-  // Sync demographic data
-  await syncDemographicData(contact.id, pcPersonId, auth, supabase);
+  // Sync demographic data - pass pre-fetched data if available to avoid API calls
+  await syncDemographicData(contact.id, pcPersonId, auth, supabase, person.included_data);
   
-  // Sync flow moments from custom field data
-  await syncFlowMomentsFromFieldData(contact.id, organizationId, pcPersonId, auth, supabase);
+  // Sync flow moments from custom field data - pass pre-fetched data if available
+  await syncFlowMomentsFromFieldData(contact.id, organizationId, pcPersonId, auth, supabase, person.included_data);
 }
 
 // Helper function to sync demographic data from Planning Center
+// OPTIMIZED: Uses pre-fetched data when available to avoid redundant API calls
 async function syncDemographicData(
   contactId: string,
   pcPersonId: string,
   auth: string,
-  supabase: any
+  supabase: any,
+  includedData?: any
 ) {
   try {
-    // Add delay before demographic sync to prevent rate limiting
-    await sleep(API_CALL_DELAY);
+    let person: any;
+    let addresses: any[] = [];
+    let fieldData: any[] = [];
+    let householdId: string | null = null;
     
-    // Fetch person details with demographics
-    const personResponse = await fetchWithRetry(
-      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data,phone_numbers,emails`,
-      {
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json',
-        },
+    // Check if we have pre-fetched data
+    if (includedData?.addresses && includedData?.fieldData) {
+      console.log(`[Demographics] Using pre-fetched data for PC ID ${pcPersonId}`);
+      
+      // Use pre-fetched data directly
+      addresses = includedData.addresses || [];
+      fieldData = includedData.fieldData || [];
+      householdId = includedData.householdId || null;
+      
+      // Still need to get basic person attributes for demographics
+      // But we can skip the full API call for included data
+      person = { attributes: {} };
+      
+      // Get person attributes from database if needed
+      const { data: existingContact } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('id', contactId)
+        .single();
+      
+      // For demographics, we actually need to fetch person data once
+      // But we skip the addresses/field_data/households includes
+      await sleep(API_CALL_DELAY);
+      
+      const personResponse = await fetchWithRetry(
+        `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}`,
+        {
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      if (personResponse.ok) {
+        const personData = await personResponse.json();
+        person = personData.data;
       }
-    );
+    } else {
+      // No pre-fetched data - make full API call (legacy path for list syncs)
+      console.log(`[Demographics] Fetching full data from API for PC ID ${pcPersonId}`);
+      
+      // Add delay before demographic sync to prevent rate limiting
+      await sleep(API_CALL_DELAY);
+      
+      // Fetch person details with demographics
+      const personResponse = await fetchWithRetry(
+        `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data,phone_numbers,emails`,
+        {
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
-    if (!personResponse.ok) {
-      // Handle authentication failures specifically
-      if (personResponse.status === 401) {
-        console.error(`Authentication failed for Planning Center API - credentials may be invalid`);
-        
-        // Get organization ID to update integration
-        const { data: contact } = await supabase
-          .from('contacts')
-          .select('organization_id')
-          .eq('id', contactId)
-          .single();
-        
-        if (contact?.organization_id) {
-          // Update integration status to failed
-          const { error: updateError } = await supabase
-            .from('integrations')
-            .update({ 
-              status: 'failed',
-              metadata: {
-                error: 'Authentication failed - please check your Planning Center credentials',
-                last_error_at: new Date().toISOString()
-              }
-            })
-            .eq('organization_id', contact.organization_id)
-            .eq('service_name', 'planning_center');
+      if (!personResponse.ok) {
+        // Handle authentication failures specifically
+        if (personResponse.status === 401) {
+          console.error(`Authentication failed for Planning Center API - credentials may be invalid`);
           
-          if (updateError) {
-            console.error('Failed to update integration status:', updateError);
+          // Get organization ID to update integration
+          const { data: contact } = await supabase
+            .from('contacts')
+            .select('organization_id')
+            .eq('id', contactId)
+            .single();
+          
+          if (contact?.organization_id) {
+            // Update integration status to failed
+            const { error: updateError } = await supabase
+              .from('integrations')
+              .update({ 
+                status: 'failed',
+                metadata: {
+                  error: 'Authentication failed - please check your Planning Center credentials',
+                  last_error_at: new Date().toISOString()
+                }
+              })
+              .eq('organization_id', contact.organization_id)
+              .eq('service_name', 'planning_center');
+            
+            if (updateError) {
+              console.error('Failed to update integration status:', updateError);
+            }
           }
+          
+          throw new Error('Planning Center authentication failed - please reconnect your account');
         }
         
-        throw new Error('Planning Center authentication failed - please reconnect your account');
+        console.error(`Failed to fetch person ${pcPersonId}: ${personResponse.statusText}`);
+        return;
       }
+
+      const personData = await personResponse.json();
+      person = personData.data;
+      const included = personData.included || [];
       
-      console.error(`Failed to fetch person ${pcPersonId}: ${personResponse.statusText}`);
-      return;
-    }
-
-    const personData = await personResponse.json();
-    const person = personData.data;
-    const included = personData.included || [];
-
-    // Parse email addresses and phone numbers from included relationships
-    const emails = included.filter((i: any) => i.type === 'Email');
-    const phones = included.filter((i: any) => i.type === 'PhoneNumber');
-
-    const primaryEmail = emails.find((e: any) => e.attributes?.primary) || emails[0];
-    const primaryPhone = phones.find((p: any) => p.attributes?.primary) || phones[0];
-
-    const detailedEmail = primaryEmail?.attributes?.address || null;
-    const detailedPhone = primaryPhone?.attributes?.number || null;
-
-    console.log(`Detailed API data for PC ID ${pcPersonId}:`, {
-      emailsFound: emails.length,
-      phonesFound: phones.length,
-      selectedEmail: detailedEmail,
-      selectedPhone: detailedPhone
-    });
-
-    // Update contact with more complete email/phone if available
-    if (detailedEmail || detailedPhone) {
-      const updateData: any = {
-        last_synced_at: new Date().toISOString()
-      };
+      addresses = included.filter((item: any) => item.type === 'Address');
+      fieldData = included.filter((item: any) => item.type === 'FieldDatum');
+      const households = included.filter((item: any) => item.type === 'Household');
+      householdId = households[0]?.id || null;
       
-      if (detailedEmail) updateData.email = detailedEmail;
-      if (detailedPhone) updateData.phone = detailedPhone;
+      // Parse email addresses and phone numbers from included relationships
+      const emails = included.filter((i: any) => i.type === 'Email');
+      const phones = included.filter((i: any) => i.type === 'PhoneNumber');
 
-      const { error: updateError } = await supabase
-        .from('contacts')
-        .update(updateData)
-        .eq('id', contactId);
+      const primaryEmail = emails.find((e: any) => e.attributes?.primary) || emails[0];
+      const primaryPhone = phones.find((p: any) => p.attributes?.primary) || phones[0];
 
-      if (updateError) {
-        console.error('Error updating contact with detailed data:', updateError);
-      } else {
-        console.log(`Updated contact ${contactId} with email: ${detailedEmail}, phone: ${detailedPhone}`);
+      const detailedEmail = primaryEmail?.attributes?.address || null;
+      const detailedPhone = primaryPhone?.attributes?.number || null;
+
+      console.log(`Detailed API data for PC ID ${pcPersonId}:`, {
+        emailsFound: emails.length,
+        phonesFound: phones.length,
+        selectedEmail: detailedEmail,
+        selectedPhone: detailedPhone
+      });
+
+      // Update contact with more complete email/phone if available
+      if (detailedEmail || detailedPhone) {
+        const updateData: any = {
+          last_synced_at: new Date().toISOString()
+        };
+        
+        if (detailedEmail) updateData.email = detailedEmail;
+        if (detailedPhone) updateData.phone = detailedPhone;
+        if (householdId) updateData.pc_household_id = householdId;
+
+        const { error: updateError } = await supabase
+          .from('contacts')
+          .update(updateData)
+          .eq('id', contactId);
+
+        if (updateError) {
+          console.error('Error updating contact with detailed data:', updateError);
+        } else {
+          console.log(`Updated contact ${contactId} with email: ${detailedEmail}, phone: ${detailedPhone}`);
+        }
       }
     }
 
     // Sync demographics
     const demographicData: any = {};
     
-    console.log(`[Demographics] Processing PC ID ${pcPersonId}:`, {
-      birthdate: person.attributes.birthdate,
-      gender: person.attributes.gender,
-      marital_status: person.attributes.marital_status
-    });
-    
-    if (person.attributes.birthdate) {
-      demographicData.birthday = person.attributes.birthdate;
-    }
-    if (person.attributes.gender) {
-      demographicData.gender = person.attributes.gender;
-    }
-    if (person.attributes.marital_status) {
-      demographicData.marital_status = person.attributes.marital_status;
+    if (person?.attributes) {
+      console.log(`[Demographics] Processing PC ID ${pcPersonId}:`, {
+        birthdate: person.attributes.birthdate,
+        gender: person.attributes.gender,
+        marital_status: person.attributes.marital_status
+      });
+      
+      if (person.attributes.birthdate) {
+        demographicData.birthday = person.attributes.birthdate;
+      }
+      if (person.attributes.gender) {
+        demographicData.gender = person.attributes.gender;
+      }
+      if (person.attributes.marital_status) {
+        demographicData.marital_status = person.attributes.marital_status;
+      }
     }
 
     // Look for occupation in field_data
-    const fieldData = included.filter((item: any) => item.type === 'FieldDatum');
     const occupationField = fieldData.find((field: any) => 
       field.attributes?.field_definition_name?.toLowerCase().includes('occupation')
     );
@@ -641,8 +738,7 @@ async function syncDemographicData(
       console.log(`[Demographics] No demographic data found in PCO for PC ID ${pcPersonId}`);
     }
 
-    // Sync addresses
-    const addresses = included.filter((item: any) => item.type === 'Address');
+    // Sync addresses (from pre-fetched or API data)
     console.log(`[Addresses] Found ${addresses.length} addresses for PC ID ${pcPersonId}`);
     
     for (const address of addresses) {
@@ -668,104 +764,9 @@ async function syncDemographicData(
       }
     }
 
-    // Sync household/family members
-    let households = included.filter((item: any) => item.type === 'Household');
-    console.log(`[Households] Found ${households.length} households in included data for PC ID ${pcPersonId}`);
-    
-    // Log all included types to debug what's actually returned
-    const includedTypes = [...new Set(included.map((item: any) => item.type))];
-    console.log(`[Households] Included data types: ${includedTypes.join(', ')}`);
-    
-    // If no households in included, try fetching directly from the person's households endpoint
-    if (households.length === 0) {
-      console.log(`[Households] No households in include, trying direct fetch for PC ID ${pcPersonId}`);
-      await sleep(API_CALL_DELAY);
-      
-      try {
-        const householdsResponse = await fetchWithRetry(
-          `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/households`,
-          {
-            headers: {
-              'Authorization': `Basic ${auth}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        
-        if (householdsResponse.ok) {
-          const householdsData = await householdsResponse.json();
-          households = householdsData.data || [];
-          console.log(`[Households] Direct fetch found ${households.length} households for PC ID ${pcPersonId}`);
-        } else {
-          console.error(`[Households] Direct fetch failed: ${householdsResponse.status} ${householdsResponse.statusText}`);
-        }
-      } catch (householdError) {
-        console.error(`[Households] Error fetching households directly:`, householdError);
-      }
-    }
-    
-    if (households.length > 0) {
-      const householdId = households[0].id;
-      console.log(`[Households] Processing household ID ${householdId} for PC ID ${pcPersonId}`);
-      
-      // Add rate limit delay before fetching household members
-      await sleep(API_CALL_DELAY);
-      
-      try {
-        // Use fetchWithRetry instead of fetch for proper rate limiting handling
-        const membersResponse = await fetchWithRetry(
-          `https://api.planningcenteronline.com/people/v2/households/${householdId}/people`,
-          {
-            headers: {
-              'Authorization': `Basic ${auth}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (membersResponse.ok) {
-          const membersData = await membersResponse.json();
-          const members = membersData.data || [];
-          console.log(`[Households] Found ${members.length} household members for household ${householdId}`);
-
-          let syncedCount = 0;
-          for (const member of members) {
-            // Skip self
-            if (member.id === pcPersonId) continue;
-
-            const familyMemberData = {
-              contact_id: contactId,
-              pc_person_id: member.id,
-              name: member.attributes.name || 'Unknown',
-              relationship: member.attributes.child ? 'child' : 'spouse',
-              is_child: member.attributes.child || false,
-              birthday: member.attributes.birthdate || null,
-              avatar: member.attributes.avatar || null,
-            };
-
-            const { error: famError } = await supabase
-              .from('contact_family_members')
-              .upsert(familyMemberData, {
-                onConflict: 'contact_id,pc_person_id',
-                ignoreDuplicates: false,
-              });
-            
-            if (famError) {
-              console.error(`[Households] Error upserting family member ${member.id}:`, famError);
-            } else {
-              syncedCount++;
-            }
-          }
-          console.log(`[Households] Synced ${syncedCount} family members for contact ${contactId}`);
-        } else {
-          console.error(`[Households] Failed to fetch household members: ${membersResponse.status} ${membersResponse.statusText}`);
-        }
-      } catch (memberError) {
-        console.error(`[Households] Error fetching household members:`, memberError);
-      }
-    } else {
-      console.log(`[Households] No households found for PC ID ${pcPersonId}`);
-    }
+    // NOTE: Household/family members are now populated via local matching after sync completes
+    // See populateFamilyMembersFromHouseholds() - this avoids extra API calls per contact
+    console.log(`[Households] Skipping per-contact household fetch (using local matching instead) for PC ID ${pcPersonId}`);
 
   } catch (error) {
     console.error('Error syncing demographic data:', error);
@@ -803,12 +804,14 @@ function parsePcoDateValue(value: any): string | null {
 }
 
 // Helper function to sync flow moments from PCO custom field data
+// OPTIMIZED: Uses pre-fetched data when available
 async function syncFlowMomentsFromFieldData(
   contactId: string,
   organizationId: string,
   pcPersonId: string,
   auth: string,
-  supabase: any
+  supabase: any,
+  includedData?: any
 ) {
   try {
     // Debug mode for specific people
@@ -842,26 +845,34 @@ async function syncFlowMomentsFromFieldData(
       console.log(`[DEBUG] Looking for field IDs: ${mappings.map(m => `${m.pco_source_identifier} (${m.pco_source_label})`).join(', ')}`);
     }
     
-    // 2. Fetch field data from PCO for this person (with delay to prevent rate limiting)
-    await sleep(API_CALL_DELAY);
+    // 2. Get field data - use pre-fetched if available
+    let fieldDataArray: any[] = [];
     
-    const fieldDataResponse = await fetchWithRetry(
-      `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/field_data?include=field_definition`,
-      {
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json',
-        },
+    if (includedData?.fieldData && includedData.fieldData.length > 0) {
+      console.log(`[FlowMoments] Using pre-fetched field data for PC ID ${pcPersonId}`);
+      fieldDataArray = includedData.fieldData;
+    } else {
+      // Fetch field data from PCO for this person (with delay to prevent rate limiting)
+      await sleep(API_CALL_DELAY);
+      
+      const fieldDataResponse = await fetchWithRetry(
+        `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/field_data?include=field_definition`,
+        {
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      if (!fieldDataResponse.ok) {
+        console.error(`Failed to fetch field data for person ${pcPersonId}: ${fieldDataResponse.statusText}`);
+        return;
       }
-    );
-    
-    if (!fieldDataResponse.ok) {
-      console.error(`Failed to fetch field data for person ${pcPersonId}: ${fieldDataResponse.statusText}`);
-      return;
+      
+      const fieldDataJson = await fieldDataResponse.json();
+      fieldDataArray = fieldDataJson.data || [];
     }
-    
-    const fieldDataJson = await fieldDataResponse.json();
-    const fieldDataArray = fieldDataJson.data || [];
     
     console.log(`Fetched ${fieldDataArray.length} field data entries for person ${pcPersonId}`);
     
@@ -874,7 +885,6 @@ async function syncFlowMomentsFromFieldData(
     
     // Debug logging for specific people
     if (isDebugPerson) {
-      console.log(`[DEBUG] Raw PCO field_data response for ${pcPersonId}:`, JSON.stringify(fieldDataJson, null, 2));
       console.log(`[DEBUG] Field IDs returned by PCO:`, fieldDefIds.map(f => f.id));
       
       // Store debug info in database
@@ -884,7 +894,6 @@ async function syncFlowMomentsFromFieldData(
           contact_id: contactId,
           field_data_count: fieldDataArray.length,
           field_ids_returned: fieldDefIds.map(f => f.id),
-          raw_response: fieldDataJson,
           checked_at: new Date().toISOString()
         }, { onConflict: 'pc_person_id' });
         console.log(`[DEBUG] Stored debug info in pco_sync_debug_logs`);
@@ -987,6 +996,90 @@ async function syncFlowMomentsFromFieldData(
   }
 }
 
+// NEW: Populate family members from household matching after sync completes
+// This uses local data instead of making API calls per contact
+async function populateFamilyMembersFromHouseholds(organizationId: string, supabase: any) {
+  try {
+    console.log(`[Households] Starting local family member population for org ${organizationId}...`);
+    
+    // Get all contacts with household IDs in this organization
+    const { data: contacts, error: contactsError } = await supabase
+      .from('contacts')
+      .select('id, pc_person_id, pc_household_id, name, avatar')
+      .eq('organization_id', organizationId)
+      .not('pc_household_id', 'is', null);
+    
+    if (contactsError) {
+      console.error('[Households] Error fetching contacts:', contactsError);
+      return;
+    }
+    
+    if (!contacts || contacts.length === 0) {
+      console.log('[Households] No contacts with household IDs found');
+      return;
+    }
+    
+    console.log(`[Households] Found ${contacts.length} contacts with household IDs`);
+    
+    // Group contacts by household ID
+    const householdMap = new Map<string, any[]>();
+    for (const contact of contacts) {
+      if (!contact.pc_household_id) continue;
+      
+      if (!householdMap.has(contact.pc_household_id)) {
+        householdMap.set(contact.pc_household_id, []);
+      }
+      householdMap.get(contact.pc_household_id)!.push(contact);
+    }
+    
+    console.log(`[Households] Found ${householdMap.size} unique households`);
+    
+    let totalFamilyMembersCreated = 0;
+    
+    // For each household with multiple members, create family member records
+    for (const [householdId, members] of householdMap) {
+      if (members.length < 2) continue; // Solo household, skip
+      
+      for (const contact of members) {
+        // Get other household members (excluding self)
+        const familyMembers = members
+          .filter(m => m.id !== contact.id)
+          .map(m => ({
+            contact_id: contact.id,
+            pc_person_id: m.pc_person_id,
+            name: m.name,
+            avatar: m.avatar,
+            relationship: 'Household Member',
+            is_child: false, // Can't determine from local data alone
+          }));
+        
+        if (familyMembers.length === 0) continue;
+        
+        // Upsert family members (using contact_id + pc_person_id as conflict key)
+        for (const member of familyMembers) {
+          const { error: famError } = await supabase
+            .from('contact_family_members')
+            .upsert(member, {
+              onConflict: 'contact_id,pc_person_id',
+              ignoreDuplicates: false,
+            });
+          
+          if (famError) {
+            console.error(`[Households] Error upserting family member:`, famError);
+          } else {
+            totalFamilyMembersCreated++;
+          }
+        }
+      }
+    }
+    
+    console.log(`[Households] ✅ Created/updated ${totalFamilyMembersCreated} family member records using local matching`);
+    
+  } catch (error) {
+    console.error('[Households] Error populating family members:', error);
+    // Don't throw - this is a non-critical enhancement
+  }
+}
 
 // Helper function to check if a job should be marked as complete
 async function checkAndCompleteJob(supabase: any, jobId: string) {
@@ -1082,6 +1175,17 @@ async function checkAndCompleteJob(supabase: any, jobId: string) {
           .from('integration_list_mappings')
           .update({ last_sync_at: new Date().toISOString() })
           .eq('id', job.list_mapping_id);
+      }
+      
+      // Update last_full_sync_completed_at for full people syncs
+      if (!job.list_mapping_id) {
+        await supabase
+          .from('integrations')
+          .update({ last_full_sync_completed_at: new Date().toISOString() })
+          .eq('id', job.integration_id);
+        
+        // Populate family members from household matching
+        await populateFamilyMembersFromHouseholds(integration.organization_id, supabase);
       }
     }
   } catch (error) {
