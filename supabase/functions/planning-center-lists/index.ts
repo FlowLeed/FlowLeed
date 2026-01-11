@@ -803,6 +803,18 @@ async function syncSingleList(mapping: any, userId: string) {
 
   console.log(`Total pages fetched: ${pageCount}, Total people: ${allPeople.length}`);
 
+  // PREVENTION: Don't create sync jobs with 0 contacts
+  if (allPeople.length === 0) {
+    console.log(`List ${mapping.external_list_id} has 0 members - skipping job creation`);
+    return {
+      listId: mapping.external_list_id,
+      success: true,
+      contactsCount: 0,
+      jobId: null,
+      message: 'No contacts to sync in this list'
+    };
+  }
+
   // Create sync job
   const { data: job, error: jobError } = await supabase
     .from('pco_sync_jobs')

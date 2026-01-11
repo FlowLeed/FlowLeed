@@ -66,6 +66,77 @@ Deno.serve(async (req) => {
 
     console.log('Processing next pending chunks from queue...');
 
+    // === ZOMBIE JOB AUTO-FINALIZE SWEEP ===
+    // Clean up jobs that are stuck in pending/processing but have no pending queue items
+    const zombieThreshold = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // 30 minutes
+    
+    const { data: zombieJobs, error: zombieError } = await supabase
+      .from('pco_sync_jobs')
+      .select('id, status, started_at, total_contacts, list_mapping_id, integration_id')
+      .in('status', ['pending', 'processing'])
+      .lt('started_at', zombieThreshold);
+    
+    if (zombieJobs && zombieJobs.length > 0) {
+      console.log(`🔍 Found ${zombieJobs.length} potentially zombie jobs older than 30 minutes`);
+      
+      for (const job of zombieJobs) {
+        // Check if job has any pending/processing/retrying queue items
+        const { data: pendingChunks, error: pendingError } = await supabase
+          .from('pco_sync_queue')
+          .select('id')
+          .eq('sync_job_id', job.id)
+          .in('status', ['pending', 'processing', 'retrying'])
+          .limit(1);
+        
+        if (pendingError) {
+          console.error(`Error checking pending chunks for job ${job.id}:`, pendingError);
+          continue;
+        }
+        
+        // If no pending work, this is a zombie job - auto-finalize it
+        if (!pendingChunks || pendingChunks.length === 0) {
+          // Check if any chunks completed successfully
+          const { count: completedCount } = await supabase
+            .from('pco_sync_queue')
+            .select('id', { count: 'exact', head: true })
+            .eq('sync_job_id', job.id)
+            .eq('status', 'completed');
+          
+          const hasCompletedWork = (completedCount ?? 0) > 0;
+          const finalStatus = hasCompletedWork ? 'completed' : 'cancelled';
+          
+          console.log(`🧟 Auto-finalizing zombie job ${job.id} as '${finalStatus}' (completed chunks: ${completedCount ?? 0})`);
+          
+          await supabase
+            .from('pco_sync_jobs')
+            .update({
+              status: finalStatus,
+              completed_at: new Date().toISOString(),
+              error_message: 'Auto-finalized: job had no pending work items'
+            })
+            .eq('id', job.id);
+          
+          // Track PCO sync if job had completed work
+          if (hasCompletedWork && job.integration_id) {
+            const { data: integration } = await supabase
+              .from('integrations')
+              .select('organization_id')
+              .eq('id', job.integration_id)
+              .single();
+            
+            if (integration?.organization_id) {
+              const syncType = job.list_mapping_id ? 'list_sync' : 'full_people_sync';
+              await supabase.rpc('track_pco_sync', {
+                p_org_id: integration.organization_id,
+                p_sync_type: syncType
+              });
+            }
+          }
+        }
+      }
+    }
+    // === END ZOMBIE JOB AUTO-FINALIZE SWEEP ===
+
     // === STUCK CHUNK RECOVERY ===
     // Reset chunks that have been in "processing" status for more than 10 minutes
     const stuckThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
