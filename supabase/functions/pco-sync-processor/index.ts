@@ -137,6 +137,44 @@ Deno.serve(async (req) => {
     }
     // === END ZOMBIE JOB AUTO-FINALIZE SWEEP ===
 
+    // === STALLED JOB CLEANUP (jobs stuck for 2+ hours regardless of queue state) ===
+    const stalledThreshold = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 hours
+    
+    const { data: stalledJobs, error: stalledError } = await supabase
+      .from('pco_sync_jobs')
+      .select('id, status, started_at, processed_contacts, total_contacts')
+      .in('status', ['pending', 'processing'])
+      .lt('started_at', stalledThreshold);
+    
+    if (stalledJobs && stalledJobs.length > 0) {
+      console.log(`⏰ Found ${stalledJobs.length} stalled jobs older than 2 hours - cancelling`);
+      
+      for (const job of stalledJobs) {
+        console.log(`🛑 Cancelling stalled job ${job.id} (started at ${job.started_at}, progress: ${job.processed_contacts}/${job.total_contacts})`);
+        
+        // Cancel the job
+        await supabase
+          .from('pco_sync_jobs')
+          .update({
+            status: 'cancelled',
+            completed_at: new Date().toISOString(),
+            error_message: 'Auto-cancelled: job stalled for over 2 hours'
+          })
+          .eq('id', job.id);
+        
+        // Cancel any remaining queue items
+        await supabase
+          .from('pco_sync_queue')
+          .update({
+            status: 'cancelled',
+            updated_at: new Date().toISOString()
+          })
+          .eq('sync_job_id', job.id)
+          .in('status', ['pending', 'processing', 'retrying']);
+      }
+    }
+    // === END STALLED JOB CLEANUP ===
+
     // === STUCK CHUNK RECOVERY ===
     // Reset chunks that have been in "processing" status for more than 10 minutes
     const stuckThreshold = new Date(Date.now() - 10 * 60 * 1000).toISOString();
