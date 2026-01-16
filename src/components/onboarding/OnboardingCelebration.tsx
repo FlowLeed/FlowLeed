@@ -29,7 +29,14 @@ export const OnboardingCelebration = ({
       });
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onComplete();
+      }
+    };
+
     window.addEventListener("resize", handleResize);
+    window.addEventListener("keydown", handleKeyDown);
 
     // Stop confetti after 5 seconds
     const timer = setTimeout(() => {
@@ -38,9 +45,10 @@ export const OnboardingCelebration = ({
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("keydown", handleKeyDown);
       clearTimeout(timer);
     };
-  }, []);
+  }, [onComplete]);
 
   return (
     <>
@@ -53,7 +61,7 @@ export const OnboardingCelebration = ({
           gravity={0.3}
         />
       )}
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
+      <div className="fixed inset-0 md:left-[var(--sidebar-width)] z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-fade-in">
         <Card className="max-w-md w-full mx-4 animate-scale-in">
           <CardContent className="pt-6 text-center space-y-6">
             <div className="flex justify-center">
