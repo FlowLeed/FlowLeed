@@ -118,3 +118,6 @@ verify_jwt = false
 
 [functions.church-online-test-connection]
 verify_jwt = false
+
+[functions.check-org-slug]
+verify_jwt = false
