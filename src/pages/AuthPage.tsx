@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import flowleedLogo from '@/assets/flowleed_logo_2-3.png';
+import { Check, AlertTriangle, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+type SlugStatus = 'idle' | 'checking' | 'available' | 'taken';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
@@ -25,6 +29,11 @@ const AuthPage = () => {
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // Slug availability state
+  const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle');
+  const [slugSuggestions, setSlugSuggestions] = useState<string[]>([]);
+  const [currentSlug, setCurrentSlug] = useState('');
   
   const { signIn, signUp, resetPassword, updatePassword } = useAuth();
   const { toast } = useToast();
@@ -46,6 +55,60 @@ const AuthPage = () => {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Debounced slug check
+  const checkSlugAvailability = useCallback(async (name: string) => {
+    if (!name || name.trim().length < 2) {
+      setSlugStatus('idle');
+      setSlugSuggestions([]);
+      setCurrentSlug('');
+      return;
+    }
+
+    setSlugStatus('checking');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('check-org-slug', {
+        body: { organizationName: name.trim() },
+      });
+
+      if (error) {
+        console.error('Error checking slug:', error);
+        setSlugStatus('idle');
+        return;
+      }
+
+      setCurrentSlug(data.slug);
+      if (data.available) {
+        setSlugStatus('available');
+        setSlugSuggestions([]);
+      } else {
+        setSlugStatus('taken');
+        setSlugSuggestions(data.suggestions || []);
+      }
+    } catch (err) {
+      console.error('Error checking slug:', err);
+      setSlugStatus('idle');
+    }
+  }, []);
+
+  // Debounce organization name changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      checkSlugAvailability(organizationName);
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [organizationName, checkSlugAvailability]);
+
+  const handleSuggestionClick = (suggestion: string) => {
+    // Convert slug back to readable name (e.g., "my-church-1" -> "My Church 1")
+    const readableName = suggestion
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    setOrganizationName(readableName);
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +132,13 @@ const AuthPage = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent submission if slug is taken
+    if (slugStatus === 'taken') {
+      setError('Please choose an available organization name before continuing.');
+      return;
+    }
+    
     setLoading(true);
     setError('');
 
@@ -154,6 +224,57 @@ const AuthPage = () => {
     
     setLoading(false);
   };
+
+  const renderSlugStatus = () => {
+    if (slugStatus === 'idle' || !organizationName.trim()) {
+      return null;
+    }
+
+    if (slugStatus === 'checking') {
+      return (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>Checking availability...</span>
+        </div>
+      );
+    }
+
+    if (slugStatus === 'available') {
+      return (
+        <div className="flex items-center gap-2 text-sm text-green-600 mt-1">
+          <Check className="h-3 w-3" />
+          <span>"{currentSlug}" is available!</span>
+        </div>
+      );
+    }
+
+    if (slugStatus === 'taken') {
+      return (
+        <div className="mt-2 space-y-2">
+          <div className="flex items-center gap-2 text-sm text-destructive">
+            <AlertTriangle className="h-3 w-3" />
+            <span>This name is taken. Try one of these:</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {slugSuggestions.map((suggestion) => (
+              <Badge
+                key={suggestion}
+                variant="outline"
+                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                onClick={() => handleSuggestionClick(suggestion)}
+              >
+                {suggestion}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const isSignUpDisabled = loading || slugStatus === 'taken' || slugStatus === 'checking';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -346,6 +467,7 @@ const AuthPage = () => {
                     onChange={(e) => setOrganizationName(e.target.value)}
                     required
                   />
+                  {renderSlugStatus()}
                 </div>
                 
                 <div className="space-y-2">
@@ -371,7 +493,7 @@ const AuthPage = () => {
                   />
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full" disabled={isSignUpDisabled}>
                   {loading ? 'Creating account...' : 'Create Account'}
                 </Button>
               </form>
