@@ -1,138 +1,218 @@
 
 
-## Plan: Fix Contact Saving on the People/Contacts Page
+## Add "Add to Flow" Option When Creating New Contacts
 
-### Problem Confirmed
-The "Add New Contact" dialog collects all the form data correctly and calls `onSave(contact)` with the full contact object. However, `ContactsPage.tsx` ignores this data completely:
+### Overview
+Add an optional flow/stage selection to the "Add New Contact" dialog, allowing users to immediately place a new contact into a flow when creating them.
 
-```tsx
-// Line 94 - Current broken code
-onSave={() => setShowAddDialog(false)}  // Data is discarded!
+### Current Behavior
+- The ContactFormDialog collects contact info (name, email, phone, demographics, tags)
+- After saving, users must navigate to the contact profile and manually add them to a flow using a separate dialog
+
+### Proposed UX
+Add a collapsible "Add to Flow" section at the bottom of the contact form (before the Save button):
+- A checkbox or toggle: "Add to a flow" (unchecked by default)
+- When checked, show a dropdown to select a flow
+- When a flow is selected, show a second dropdown to select a starting stage
+- The flow selection defaults to the first (start) stage but allows choosing any stage
+
+### Technical Implementation
+
+#### 1. Modify ContactFormDialog Props & State
+
+Add new state variables and an optional callback prop for flow enrollment:
+
+```typescript
+interface ContactFormDialogProps {
+  // ... existing props
+  onSaveWithFlow?: (contact: Contact, flowData: { pipelineId: string; stageId: string; stageOrder: number; defaultAssigneeUserId?: string | null } | null) => void;
+}
+
+// New state in component
+const [addToFlow, setAddToFlow] = useState(false);
+const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
+const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+const [stages, setStages] = useState<Stage[]>([]);
 ```
 
-**Result:** When you click "Save", the dialog closes but nothing is saved to the database.
+#### 2. Fetch Available Pipelines
 
----
+Add a query to fetch organization's pipelines when the "Add to Flow" checkbox is checked:
 
-### Solution: Add Database Save Logic
+```typescript
+const { data: pipelines } = useQuery({
+  queryKey: ['org-pipelines', organization?.id],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('pipelines')
+      .select('id, name, description, icon')
+      .eq('organization_id', organization!.id)
+      .order('name');
+    return data;
+  },
+  enabled: open && addToFlow && !!organization
+});
+```
 
-**File:** `src/pages/ContactsPage.tsx`
+#### 3. Fetch Stages When Pipeline Selected
 
-#### Changes Required:
+```typescript
+const { data: stages } = useQuery({
+  queryKey: ['pipeline-stages', selectedPipelineId],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('pipeline_stages')
+      .select('id, name, color, stage_order, default_assignee_user_id, is_start_step')
+      .eq('pipeline_id', selectedPipelineId)
+      .order('stage_order');
+    return data;
+  },
+  enabled: !!selectedPipelineId
+});
+```
 
-1. **Add Imports:**
-   - `supabase` from integrations
-   - `useProfile` hook to get organization
-   - `toast` from sonner for feedback
-   - `useQueryClient` to refresh the list
-   - `Contact` type from `@/types/crm`
+#### 4. Add UI Section in the Form
 
-2. **Add State/Hooks:**
-   - Get `organization` from `useProfile()`
-   - Get `queryClient` from `useQueryClient()`
+Add a new section before the Save button:
 
-3. **Create `handleSaveContact` Function:**
-   ```tsx
-   const handleSaveContact = async (contact: Contact) => {
-     if (!organization) {
-       toast.error("Organization not found");
-       return;
-     }
+```tsx
+{/* Add to Flow Section - Only for new contacts */}
+{!contact && (
+  <div className="space-y-4 pt-4 border-t">
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        id="addToFlow"
+        checked={addToFlow}
+        onCheckedChange={(checked) => {
+          setAddToFlow(!!checked);
+          if (!checked) {
+            setSelectedPipelineId(null);
+            setSelectedStageId(null);
+          }
+        }}
+      />
+      <Label htmlFor="addToFlow" className="text-sm font-medium cursor-pointer">
+        Add to a flow
+      </Label>
+    </div>
 
-     try {
-       // Resolve assigned user ID from assignee name
-       let assignedUserId: string | null = null;
-       if (contact.assignedTo?.name) {
-         const { data: profiles } = await supabase
-           .from('profiles')
-           .select('user_id')
-           .or(`full_name.ilike.${contact.assignedTo.name},email.ilike.${contact.assignedTo.name}`)
-           .limit(1);
-         
-         if (profiles?.[0]) {
-           assignedUserId = profiles[0].user_id;
-         }
-       }
+    {addToFlow && (
+      <div className="space-y-3 pl-6">
+        <div className="space-y-2">
+          <Label>Select Flow</Label>
+          <Select value={selectedPipelineId || ""} onValueChange={setSelectedPipelineId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose a flow..." />
+            </SelectTrigger>
+            <SelectContent>
+              {pipelines?.map((pipeline) => (
+                <SelectItem key={pipeline.id} value={pipeline.id}>
+                  {pipeline.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-       // Insert contact
-       const { data: newContact, error } = await supabase
-         .from('contacts')
-         .insert({
-           name: contact.name,
-           email: contact.email || null,
-           phone: contact.phone || null,
-           status: contact.status || 'active',
-           organization_id: organization.id,
-           assigned_to_user_id: assignedUserId,
-           source_type: 'manual'
-         })
-         .select()
-         .single();
+        {selectedPipelineId && stages && stages.length > 0 && (
+          <div className="space-y-2">
+            <Label>Select Stage</Label>
+            <Select value={selectedStageId || ""} onValueChange={setSelectedStageId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a stage..." />
+              </SelectTrigger>
+              <SelectContent>
+                {stages.map((stage) => (
+                  <SelectItem key={stage.id} value={stage.id}>
+                    {stage.name} {stage.is_start_step && "(Start)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+)}
+```
 
-       if (error) throw error;
+#### 5. Modify handleSubmit to Include Flow Data
 
-       // Insert tags if present
-       if (contact.tags?.length) {
-         await supabase.from('contact_tags').insert(
-           contact.tags.map(tag => ({
-             contact_id: newContact.id,
-             tag: tag
-           }))
-         );
-       }
+Update the submit handler to pass flow enrollment data:
 
-       // Insert demographics if any fields are filled
-       const demo = contact as any;
-       if (demo.birthday || demo.occupation || demo.maritalStatus || 
-           demo.streetAddress || demo.city || demo.state || demo.zipCode) {
-         await supabase.from('contact_demographics').insert({
-           contact_id: newContact.id,
-           birthday: demo.birthday || null,
-           occupation: demo.occupation || null,
-           marital_status: demo.maritalStatus || null,
-           street_address: demo.streetAddress || null,
-           city: demo.city || null,
-           state: demo.state || null,
-           zip_code: demo.zipCode || null
-         });
-       }
+```typescript
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  const finalContact = {
+    id: contact?.id || Math.random().toString(36).substring(2, 10),
+    ...formData
+  } as Contact;
+  
+  // Include flow data if selected
+  const flowData = addToFlow && selectedPipelineId && selectedStageId
+    ? {
+        pipelineId: selectedPipelineId,
+        stageId: selectedStageId,
+        stageOrder: stages?.find(s => s.id === selectedStageId)?.stage_order || 0,
+        defaultAssigneeUserId: stages?.find(s => s.id === selectedStageId)?.default_assignee_user_id
+      }
+    : null;
+  
+  onSave(finalContact, flowData);
+};
+```
 
-       toast.success(`Contact "${contact.name}" added successfully!`);
-       queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
-       setShowAddDialog(false);
-       
-     } catch (error) {
-       console.error('Error saving contact:', error);
-       toast.error(`Failed to save contact: ${error.message}`);
-     }
-   };
-   ```
+#### 6. Update ContactsPage.tsx Save Handler
 
-4. **Update the Dialog Component:**
-   ```tsx
-   <ContactFormDialog
-     open={showAddDialog}
-     onOpenChange={setShowAddDialog}
-     contact={null}
-     onSave={handleSaveContact}  // Use new function
-   />
-   ```
+Modify `handleSaveContact` to also insert into `pipeline_contacts` if flow data is provided:
 
----
+```typescript
+const handleSaveContact = async (contact: Contact, flowData?: { 
+  pipelineId: string; 
+  stageId: string; 
+  stageOrder: number;
+  defaultAssigneeUserId?: string | null;
+} | null) => {
+  // ... existing contact save logic ...
 
-### Summary
+  // After successfully creating the contact, add to flow if requested
+  if (flowData && newContact) {
+    const { error: flowError } = await supabase
+      .from('pipeline_contacts')
+      .insert({
+        contact_id: newContact.id,
+        pipeline_id: flowData.pipelineId,
+        stage_id: flowData.stageId,
+        stage_order: flowData.stageOrder,
+        assigned_to_user_id: flowData.defaultAssigneeUserId || null,
+        source_type: 'manual'
+      });
 
-| File | Change |
-|------|--------|
-| `src/pages/ContactsPage.tsx` | Add imports for `supabase`, `useProfile`, `toast`, `useQueryClient`, `Contact` |
-| `src/pages/ContactsPage.tsx` | Add `handleSaveContact` function to save contact + tags + demographics to database |
-| `src/pages/ContactsPage.tsx` | Replace empty `onSave` callback with `handleSaveContact` |
+    if (flowError) {
+      console.error('Error adding contact to flow:', flowError);
+      // Contact was created but flow enrollment failed - show partial success
+      toast.warning(`Contact "${contact.name}" created, but failed to add to flow`);
+    } else {
+      toast.success(`Contact "${contact.name}" added and enrolled in flow!`);
+    }
+  }
+};
+```
 
-### Expected Result
-After this fix:
-- New contacts will be saved to the `contacts` table with `source_type: 'manual'`
-- Tags will be saved to `contact_tags`
-- Demographics will be saved to `contact_demographics`
-- The contacts list will refresh immediately
-- "Matthew Riveras" will appear when you add them and search for them
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/crm/ContactFormDialog.tsx` | Add flow selection UI, state, queries, and update submit handler |
+| `src/pages/ContactsPage.tsx` | Update `handleSaveContact` to accept flow data and insert into `pipeline_contacts` |
+
+### Edge Cases Handled
+- Flow selection is optional (checkbox unchecked by default)
+- Only shown for new contacts, not when editing existing ones
+- Auto-selects start stage when a flow is chosen (if `is_start_step` is set)
+- Respects stage's `default_assignee_user_id` for auto-assignment
+- Graceful handling if flow enrollment fails after contact creation
 
