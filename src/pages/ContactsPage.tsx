@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { ContactFilters } from "@/components/contacts/ContactFilters";
-import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
+import { ContactFormDialog, FlowEnrollmentData } from "@/components/crm/ContactFormDialog";
 import { useContacts } from "@/hooks/useContacts";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
@@ -61,7 +61,7 @@ const ContactsPage = () => {
     filters.flowId !== "all" ||
     filters.lastInteractionDays !== "all";
 
-  const handleSaveContact = async (contact: Contact) => {
+  const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null) => {
     if (!organization) {
       toast.error("Organization not found");
       return;
@@ -134,7 +134,32 @@ const ContactsPage = () => {
         }
       }
 
-      toast.success(`Contact "${contact.name}" added successfully!`);
+      // Add to flow if requested
+      if (flowData && newContact) {
+        const { error: flowError } = await supabase
+          .from('pipeline_contacts')
+          .insert({
+            contact_id: newContact.id,
+            pipeline_id: flowData.pipelineId,
+            stage_id: flowData.stageId,
+            stage_order: flowData.stageOrder,
+            assigned_to_user_id: flowData.defaultAssigneeUserId || assignedUserId || null,
+            source_type: 'manual'
+          });
+
+        if (flowError) {
+          console.error('Error adding contact to flow:', flowError);
+          toast.warning(`Contact "${contact.name}" created, but failed to add to flow`);
+          queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
+          setShowAddDialog(false);
+          return;
+        }
+        
+        toast.success(`Contact "${contact.name}" added and enrolled in flow!`);
+      } else {
+        toast.success(`Contact "${contact.name}" added successfully!`);
+      }
+
       queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
       setShowAddDialog(false);
       

@@ -16,6 +16,14 @@ import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { TagManager } from "@/components/contact/TagManager";
 import { useOrgTagSuggestions } from "@/hooks/useContactTags";
+import { useQuery } from "@tanstack/react-query";
+
+export interface FlowEnrollmentData {
+  pipelineId: string;
+  stageId: string;
+  stageOrder: number;
+  defaultAssigneeUserId?: string | null;
+}
 
 interface OrganizationMember {
   user_id: string;
@@ -29,7 +37,7 @@ interface ContactFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contact: Contact | null;
-  onSave: (contact: Contact) => void;
+  onSave: (contact: Contact, flowData?: FlowEnrollmentData | null) => void;
   flowId?: string; // Optional flow ID to filter team members
 }
 
@@ -44,8 +52,53 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   
+  // Flow enrollment state
+  const [addToFlow, setAddToFlow] = useState(false);
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
+  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+  
   // Get tag suggestions for the organization
   const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
+
+  // Fetch pipelines for the organization
+  const { data: pipelines } = useQuery({
+    queryKey: ['org-pipelines', organization?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pipelines')
+        .select('id, name, description, icon')
+        .eq('organization_id', organization!.id)
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && addToFlow && !!organization
+  });
+
+  // Fetch stages when a pipeline is selected
+  const { data: stages } = useQuery({
+    queryKey: ['pipeline-stages', selectedPipelineId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pipeline_stages')
+        .select('id, name, color, stage_order, default_assignee_user_id, is_start_step')
+        .eq('pipeline_id', selectedPipelineId!)
+        .order('stage_order');
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedPipelineId
+  });
+
+  // Auto-select start stage when pipeline changes
+  useEffect(() => {
+    if (stages && stages.length > 0) {
+      const startStage = stages.find(s => s.is_start_step);
+      setSelectedStageId(startStage?.id || stages[0].id);
+    } else {
+      setSelectedStageId(null);
+    }
+  }, [stages]);
   const [formData, setFormData] = useState<Partial<Contact & {
     birthday?: string;
     occupation?: string;
@@ -172,6 +225,10 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         state: extendedContact.state || "",
         zipCode: extendedContact.zipCode || "",
       });
+      // Reset flow state when editing existing contact
+      setAddToFlow(false);
+      setSelectedPipelineId(null);
+      setSelectedStageId(null);
     } else {
       setFormData({
         name: "",
@@ -192,6 +249,10 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         state: "",
         zipCode: "",
       });
+      // Reset flow state for new contact
+      setAddToFlow(false);
+      setSelectedPipelineId(null);
+      setSelectedStageId(null);
     }
   }, [contact, profile]);
 
@@ -224,7 +285,17 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
       ...formData
     } as Contact;
     
-    onSave(finalContact);
+    // Include flow data if selected (only for new contacts)
+    const flowData = !contact && addToFlow && selectedPipelineId && selectedStageId
+      ? {
+          pipelineId: selectedPipelineId,
+          stageId: selectedStageId,
+          stageOrder: stages?.find(s => s.id === selectedStageId)?.stage_order || 0,
+          defaultAssigneeUserId: stages?.find(s => s.id === selectedStageId)?.default_assignee_user_id
+        }
+      : null;
+    
+    onSave(finalContact, flowData);
   };
 
   return (
@@ -374,6 +445,72 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Add to Flow Section - Only for new contacts */}
+          {!contact && (
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="addToFlow"
+                  checked={addToFlow}
+                  onCheckedChange={(checked) => {
+                    setAddToFlow(!!checked);
+                    if (!checked) {
+                      setSelectedPipelineId(null);
+                      setSelectedStageId(null);
+                    }
+                  }}
+                />
+                <Label htmlFor="addToFlow" className="text-sm font-medium cursor-pointer">
+                  Add to a flow
+                </Label>
+              </div>
+
+              {addToFlow && (
+                <div className="space-y-3 pl-6">
+                  <div className="space-y-2">
+                    <Label>Select Flow</Label>
+                    <Select 
+                      value={selectedPipelineId || ""} 
+                      onValueChange={setSelectedPipelineId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a flow..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pipelines?.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id}>
+                            {pipeline.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {selectedPipelineId && stages && stages.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Select Stage</Label>
+                      <Select 
+                        value={selectedStageId || ""} 
+                        onValueChange={setSelectedStageId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a stage..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stages.map((stage) => (
+                            <SelectItem key={stage.id} value={stage.id}>
+                              {stage.name} {stage.is_start_step && "(Start)"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button 
