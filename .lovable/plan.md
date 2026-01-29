@@ -1,218 +1,67 @@
 
 
-## Add "Add to Flow" Option When Creating New Contacts
+## Fix: Flow View Not Updating After Adding Contact from People Page
 
-### Overview
-Add an optional flow/stage selection to the "Add New Contact" dialog, allowing users to immediately place a new contact into a flow when creating them.
+### Problem Identified
+The database confirms the contact "TEST" was correctly added to the "Online Made Decision" flow in the "Decision Made" stage. The issue is that the **FlowContext doesn't refresh** when contacts are added from the People page.
 
-### Current Behavior
-- The ContactFormDialog collects contact info (name, email, phone, demographics, tags)
-- After saving, users must navigate to the contact profile and manually add them to a flow using a separate dialog
+The FlowContext only listens for these events:
+- `pco-sync-complete` (PCO sync)
+- `flow-assignment-updated` (assignment changes)
+- `flows-created` (new flows created)
 
-### Proposed UX
-Add a collapsible "Add to Flow" section at the bottom of the contact form (before the Save button):
-- A checkbox or toggle: "Add to a flow" (unchecked by default)
-- When checked, show a dropdown to select a flow
-- When a flow is selected, show a second dropdown to select a starting stage
-- The flow selection defaults to the first (start) stage but allows choosing any stage
+There's no event for "contact added to flow from external page."
 
-### Technical Implementation
+### Solution: Dispatch Custom Event After Flow Enrollment
 
-#### 1. Modify ContactFormDialog Props & State
+When a contact is added to a flow from the Contacts page, dispatch a custom event that the FlowContext is already set up to handle.
 
-Add new state variables and an optional callback prop for flow enrollment:
+### Implementation
 
-```typescript
-interface ContactFormDialogProps {
-  // ... existing props
-  onSaveWithFlow?: (contact: Contact, flowData: { pipelineId: string; stageId: string; stageOrder: number; defaultAssigneeUserId?: string | null } | null) => void;
-}
+#### 1. Add Event Dispatch in ContactsPage.tsx
 
-// New state in component
-const [addToFlow, setAddToFlow] = useState(false);
-const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
-const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
-const [pipelines, setPipelines] = useState<Pipeline[]>([]);
-const [stages, setStages] = useState<Stage[]>([]);
-```
-
-#### 2. Fetch Available Pipelines
-
-Add a query to fetch organization's pipelines when the "Add to Flow" checkbox is checked:
+After successfully adding a contact to a flow, dispatch the `flow-assignment-updated` event to trigger a FlowContext refresh:
 
 ```typescript
-const { data: pipelines } = useQuery({
-  queryKey: ['org-pipelines', organization?.id],
-  queryFn: async () => {
-    const { data } = await supabase
-      .from('pipelines')
-      .select('id, name, description, icon')
-      .eq('organization_id', organization!.id)
-      .order('name');
-    return data;
-  },
-  enabled: open && addToFlow && !!organization
-});
-```
+// In handleSaveContact, after successful pipeline_contacts insert:
+if (flowData && newContact) {
+  const { error: flowError } = await supabase
+    .from('pipeline_contacts')
+    .insert({ ... });
 
-#### 3. Fetch Stages When Pipeline Selected
-
-```typescript
-const { data: stages } = useQuery({
-  queryKey: ['pipeline-stages', selectedPipelineId],
-  queryFn: async () => {
-    const { data } = await supabase
-      .from('pipeline_stages')
-      .select('id, name, color, stage_order, default_assignee_user_id, is_start_step')
-      .eq('pipeline_id', selectedPipelineId)
-      .order('stage_order');
-    return data;
-  },
-  enabled: !!selectedPipelineId
-});
-```
-
-#### 4. Add UI Section in the Form
-
-Add a new section before the Save button:
-
-```tsx
-{/* Add to Flow Section - Only for new contacts */}
-{!contact && (
-  <div className="space-y-4 pt-4 border-t">
-    <div className="flex items-center space-x-2">
-      <Checkbox
-        id="addToFlow"
-        checked={addToFlow}
-        onCheckedChange={(checked) => {
-          setAddToFlow(!!checked);
-          if (!checked) {
-            setSelectedPipelineId(null);
-            setSelectedStageId(null);
-          }
-        }}
-      />
-      <Label htmlFor="addToFlow" className="text-sm font-medium cursor-pointer">
-        Add to a flow
-      </Label>
-    </div>
-
-    {addToFlow && (
-      <div className="space-y-3 pl-6">
-        <div className="space-y-2">
-          <Label>Select Flow</Label>
-          <Select value={selectedPipelineId || ""} onValueChange={setSelectedPipelineId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a flow..." />
-            </SelectTrigger>
-            <SelectContent>
-              {pipelines?.map((pipeline) => (
-                <SelectItem key={pipeline.id} value={pipeline.id}>
-                  {pipeline.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {selectedPipelineId && stages && stages.length > 0 && (
-          <div className="space-y-2">
-            <Label>Select Stage</Label>
-            <Select value={selectedStageId || ""} onValueChange={setSelectedStageId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a stage..." />
-              </SelectTrigger>
-              <SelectContent>
-                {stages.map((stage) => (
-                  <SelectItem key={stage.id} value={stage.id}>
-                    {stage.name} {stage.is_start_step && "(Start)"}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </div>
-    )}
-  </div>
-)}
-```
-
-#### 5. Modify handleSubmit to Include Flow Data
-
-Update the submit handler to pass flow enrollment data:
-
-```typescript
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  const finalContact = {
-    id: contact?.id || Math.random().toString(36).substring(2, 10),
-    ...formData
-  } as Contact;
-  
-  // Include flow data if selected
-  const flowData = addToFlow && selectedPipelineId && selectedStageId
-    ? {
-        pipelineId: selectedPipelineId,
-        stageId: selectedStageId,
-        stageOrder: stages?.find(s => s.id === selectedStageId)?.stage_order || 0,
-        defaultAssigneeUserId: stages?.find(s => s.id === selectedStageId)?.default_assignee_user_id
-      }
-    : null;
-  
-  onSave(finalContact, flowData);
-};
-```
-
-#### 6. Update ContactsPage.tsx Save Handler
-
-Modify `handleSaveContact` to also insert into `pipeline_contacts` if flow data is provided:
-
-```typescript
-const handleSaveContact = async (contact: Contact, flowData?: { 
-  pipelineId: string; 
-  stageId: string; 
-  stageOrder: number;
-  defaultAssigneeUserId?: string | null;
-} | null) => {
-  // ... existing contact save logic ...
-
-  // After successfully creating the contact, add to flow if requested
-  if (flowData && newContact) {
-    const { error: flowError } = await supabase
-      .from('pipeline_contacts')
-      .insert({
-        contact_id: newContact.id,
-        pipeline_id: flowData.pipelineId,
-        stage_id: flowData.stageId,
-        stage_order: flowData.stageOrder,
-        assigned_to_user_id: flowData.defaultAssigneeUserId || null,
-        source_type: 'manual'
-      });
-
-    if (flowError) {
-      console.error('Error adding contact to flow:', flowError);
-      // Contact was created but flow enrollment failed - show partial success
-      toast.warning(`Contact "${contact.name}" created, but failed to add to flow`);
-    } else {
-      toast.success(`Contact "${contact.name}" added and enrolled in flow!`);
-    }
+  if (!flowError) {
+    // Dispatch event to refresh FlowContext
+    window.dispatchEvent(new CustomEvent('flow-assignment-updated'));
+    toast.success(`Contact "${contact.name}" added and enrolled in flow!`);
   }
-};
+}
 ```
+
+#### 2. Alternative: Add Query Invalidation for Flow Data
+
+We could also add React Query invalidation for flow-related queries, but since FlowContext uses its own state management (not React Query), the custom event approach is the cleanest solution that works with the existing architecture.
 
 ### Files to Modify
 
-| File | Changes |
-|------|---------|
-| `src/components/crm/ContactFormDialog.tsx` | Add flow selection UI, state, queries, and update submit handler |
-| `src/pages/ContactsPage.tsx` | Update `handleSaveContact` to accept flow data and insert into `pipeline_contacts` |
+| File | Change |
+|------|--------|
+| `src/pages/ContactsPage.tsx` | Add `window.dispatchEvent(new CustomEvent('flow-assignment-updated'))` after successful flow enrollment |
 
-### Edge Cases Handled
-- Flow selection is optional (checkbox unchecked by default)
-- Only shown for new contacts, not when editing existing ones
-- Auto-selects start stage when a flow is chosen (if `is_start_step` is set)
-- Respects stage's `default_assignee_user_id` for auto-assignment
-- Graceful handling if flow enrollment fails after contact creation
+### Technical Details
+
+- The FlowContext already listens for `flow-assignment-updated` events (line 402 in FlowContext.tsx)
+- When this event fires, it calls `refreshFlows()` which reloads all pipeline data from the database
+- This ensures the Flow page will show newly added contacts without requiring a manual page refresh
+
+### Expected Behavior After Fix
+1. User opens "Add New Contact" dialog on People page
+2. User fills in contact details and checks "Add to a flow"
+3. User selects "Online Made Decision" flow and "Decision Made" stage
+4. User clicks Save
+5. Contact is saved to database AND `flow-assignment-updated` event is dispatched
+6. If FlowContext is mounted (user navigates to Flows), it will have fresh data
+7. If user is already on a Flow page in another tab, that page will refresh automatically
+
+### Immediate Workaround
+The "TEST" contact IS in the database. Simply **refresh the Flow page** (F5 or Cmd+R) and the contact will appear in the "Decision Made" stage.
 
