@@ -155,6 +155,8 @@ const ContactsPage = () => {
           return;
         }
         
+        // Dispatch event to refresh FlowContext so the contact appears in the flow view
+        window.dispatchEvent(new CustomEvent('flow-assignment-updated'));
         toast.success(`Contact "${contact.name}" added and enrolled in flow!`);
       } else {
         toast.success(`Contact "${contact.name}" added successfully!`);
