@@ -121,3 +121,6 @@ verify_jwt = false
 
 [functions.check-org-slug]
 verify_jwt = false
+
+[functions.send-daily-digest]
+verify_jwt = false

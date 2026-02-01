@@ -1604,6 +1604,8 @@ export type Database = {
         Row: {
           contact_id: string | null
           created_at: string | null
+          email_digest_sent: boolean | null
+          email_digest_sent_at: string | null
           id: string
           interaction_id: string | null
           message: string
@@ -1620,6 +1622,8 @@ export type Database = {
         Insert: {
           contact_id?: string | null
           created_at?: string | null
+          email_digest_sent?: boolean | null
+          email_digest_sent_at?: string | null
           id?: string
           interaction_id?: string | null
           message: string
@@ -1636,6 +1640,8 @@ export type Database = {
         Update: {
           contact_id?: string | null
           created_at?: string | null
+          email_digest_sent?: boolean | null
+          email_digest_sent_at?: string | null
           id?: string
           interaction_id?: string | null
           message?: string
@@ -2486,6 +2492,7 @@ export type Database = {
           id: string
           job_title: string | null
           location: string | null
+          notification_preferences: Json | null
           onboarding_completed: boolean | null
           onboarding_dismissed: boolean | null
           onboarding_progress: Json | null
@@ -2504,6 +2511,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           location?: string | null
+          notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           onboarding_dismissed?: boolean | null
           onboarding_progress?: Json | null
@@ -2522,6 +2530,7 @@ export type Database = {
           id?: string
           job_title?: string | null
           location?: string | null
+          notification_preferences?: Json | null
           onboarding_completed?: boolean | null
           onboarding_dismissed?: boolean | null
           onboarding_progress?: Json | null
