@@ -1,67 +1,194 @@
 
 
-## Fix: Flow View Not Updating After Adding Contact from People Page
+## Daily Email Digest for Assignment Notifications
 
-### Problem Identified
-The database confirms the contact "TEST" was correctly added to the "Online Made Decision" flow in the "Decision Made" stage. The issue is that the **FlowContext doesn't refresh** when contacts are added from the People page.
+### Overview
+Add a daily email digest feature that sends users a summary of all people assigned to them in the past 24 hours. This will complement the existing in-app notifications.
 
-The FlowContext only listens for these events:
-- `pco-sync-complete` (PCO sync)
-- `flow-assignment-updated` (assignment changes)
-- `flows-created` (new flows created)
+### Architecture
 
-There's no event for "contact added to flow from external page."
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Daily Email Digest System                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────┐    ┌──────────────────┐    ┌─────────────────────┐        │
+│  │   pg_cron    │───►│ send-daily-digest│───►│  Resend API         │        │
+│  │  (8 AM UTC)  │    │  Edge Function   │    │  (flowleed.com)     │        │
+│  └──────────────┘    └────────┬─────────┘    └─────────────────────┘        │
+│                               │                                              │
+│                               ▼                                              │
+│                    ┌──────────────────────┐                                  │
+│                    │   notifications      │                                  │
+│                    │  + email_digest_sent │                                  │
+│                    └──────────────────────┘                                  │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────┐     │
+│  │                    User Preferences                                 │     │
+│  │  profiles.notification_preferences: {                               │     │
+│  │    email_digest_enabled: true,                                      │     │
+│  │    email_digest_time: "08:00"                                       │     │
+│  │  }                                                                  │     │
+│  └────────────────────────────────────────────────────────────────────┘     │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-### Solution: Dispatch Custom Event After Flow Enrollment
+### Implementation Plan
 
-When a contact is added to a flow from the Contacts page, dispatch a custom event that the FlowContext is already set up to handle.
+#### 1. Database Changes
 
-### Implementation
+**Add notification preferences to profiles table:**
+```sql
+ALTER TABLE profiles 
+ADD COLUMN IF NOT EXISTS notification_preferences jsonb 
+DEFAULT '{"email_digest_enabled": true}'::jsonb;
+```
 
-#### 1. Add Event Dispatch in ContactsPage.tsx
+**Add tracking column to notifications table:**
+```sql
+ALTER TABLE notifications 
+ADD COLUMN IF NOT EXISTS email_digest_sent boolean DEFAULT false,
+ADD COLUMN IF NOT EXISTS email_digest_sent_at timestamptz;
+```
 
-After successfully adding a contact to a flow, dispatch the `flow-assignment-updated` event to trigger a FlowContext refresh:
+#### 2. Create Edge Function: `send-daily-digest`
+
+**File: `supabase/functions/send-daily-digest/index.ts`**
+
+The function will:
+1. Query all users with `email_digest_enabled: true`
+2. For each user, get unread `person_assigned` notifications not yet sent in a digest
+3. Group notifications by user and generate HTML email with the digest
+4. Send via Resend API
+5. Mark notifications as `email_digest_sent = true`
 
 ```typescript
-// In handleSaveContact, after successful pipeline_contacts insert:
-if (flowData && newContact) {
-  const { error: flowError } = await supabase
-    .from('pipeline_contacts')
-    .insert({ ... });
+// Key logic pseudocode
+const usersWithDigest = await supabase
+  .from('profiles')
+  .select('user_id, email, full_name, notification_preferences')
+  .filter('notification_preferences->email_digest_enabled', 'eq', true);
 
-  if (!flowError) {
-    // Dispatch event to refresh FlowContext
-    window.dispatchEvent(new CustomEvent('flow-assignment-updated'));
-    toast.success(`Contact "${contact.name}" added and enrolled in flow!`);
+for (const user of usersWithDigest) {
+  const { data: unsentNotifications } = await supabase
+    .from('notifications')
+    .select('*, contacts(name), pipelines(name)')
+    .eq('user_id', user.user_id)
+    .eq('email_digest_sent', false)
+    .in('type', ['person_assigned', 'person_unassigned'])
+    .order('created_at', { ascending: false });
+
+  if (unsentNotifications?.length > 0) {
+    // Generate and send digest email
+    await resend.emails.send({
+      from: 'Flowleed <noreply@flowleed.com>',
+      to: [user.email],
+      subject: `Daily Assignment Digest: ${count} new assignments`,
+      html: generateDigestHTML(unsentNotifications)
+    });
+
+    // Mark as sent
+    await supabase
+      .from('notifications')
+      .update({ email_digest_sent: true, email_digest_sent_at: new Date() })
+      .in('id', unsentNotifications.map(n => n.id));
   }
 }
 ```
 
-#### 2. Alternative: Add Query Invalidation for Flow Data
+#### 3. Set Up Cron Job
 
-We could also add React Query invalidation for flow-related queries, but since FlowContext uses its own state management (not React Query), the custom event approach is the cleanest solution that works with the existing architecture.
+**Using pg_cron to run daily at 8 AM UTC:**
+```sql
+SELECT cron.schedule(
+  'send-daily-digest',
+  '0 8 * * *', -- 8 AM UTC daily
+  $$
+  SELECT net.http_post(
+    url:='https://lghamvpolwebtjwaxned.supabase.co/functions/v1/send-daily-digest',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer [ANON_KEY]"}'::jsonb,
+    body:='{}'::jsonb
+  );
+  $$
+);
+```
 
-### Files to Modify
+#### 4. Add User Preference UI
 
-| File | Change |
-|------|--------|
-| `src/pages/ContactsPage.tsx` | Add `window.dispatchEvent(new CustomEvent('flow-assignment-updated'))` after successful flow enrollment |
+**Modify: `src/components/profile/NotificationSettings.tsx`** (new file)
 
-### Technical Details
+Add a settings section where users can:
+- Toggle email digest on/off
+- (Future: Select preferred digest time)
 
-- The FlowContext already listens for `flow-assignment-updated` events (line 402 in FlowContext.tsx)
-- When this event fires, it calls `refreshFlows()` which reloads all pipeline data from the database
-- This ensures the Flow page will show newly added contacts without requiring a manual page refresh
+#### 5. Update Config
 
-### Expected Behavior After Fix
-1. User opens "Add New Contact" dialog on People page
-2. User fills in contact details and checks "Add to a flow"
-3. User selects "Online Made Decision" flow and "Decision Made" stage
-4. User clicks Save
-5. Contact is saved to database AND `flow-assignment-updated` event is dispatched
-6. If FlowContext is mounted (user navigates to Flows), it will have fresh data
-7. If user is already on a Flow page in another tab, that page will refresh automatically
+**File: `supabase/config.toml`**
+```toml
+[functions.send-daily-digest]
+verify_jwt = false
+```
 
-### Immediate Workaround
-The "TEST" contact IS in the database. Simply **refresh the Flow page** (F5 or Cmd+R) and the contact will appear in the "Decision Made" stage.
+### Email Template Design
+
+The digest email will include:
+- Header with Flowleed branding
+- Summary count ("You have 5 new assignments")
+- Table of assignments grouped by flow:
+  - Contact name (linked to profile)
+  - Flow name
+  - Stage name
+  - When assigned
+- Footer with unsubscribe link (toggles the preference)
+
+```html
+<!-- Email preview -->
+Subject: Daily Assignment Digest: 5 new assignments
+
+┌─────────────────────────────────────────────┐
+│  🔔 Daily Assignment Digest                 │
+│                                             │
+│  You have 5 new people assigned to you      │
+│                                             │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│                                             │
+│  NEW GUEST FOLLOW-UP                        │
+│  ├─ John Smith - Welcome Call              │
+│  ├─ Mary Johnson - Thank You Text          │
+│  └─ Bob Williams - Follow Up               │
+│                                             │
+│  BAPTISM                                    │
+│  ├─ Sarah Davis - Interest                 │
+│  └─ Mike Brown - Info Sent                 │
+│                                             │
+│  [View All in Flowleed →]                   │
+│                                             │
+│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│  Manage notification preferences            │
+└─────────────────────────────────────────────┘
+```
+
+### Files to Create/Modify
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `supabase/functions/send-daily-digest/index.ts` | Create | Edge function to send digest emails |
+| `src/pages/ProfilePage.tsx` | Modify | Add notification preferences section |
+| `supabase/config.toml` | Modify | Add function config |
+| SQL Migration | Create | Add preference columns to profiles and tracking to notifications |
+
+### Technical Considerations
+
+1. **Rate Limiting**: Resend has rate limits; the function processes users sequentially to avoid hitting limits
+2. **Time Zones**: Initially UTC-based; future enhancement could respect user time zones
+3. **Empty Digests**: Skip users with no new notifications (no email sent)
+4. **Retry Logic**: Failed emails are logged but don't block other users
+5. **Opt-out by Default**: Users start with digest enabled but can disable in settings
+
+### Security
+
+- Edge function uses `SERVICE_ROLE_KEY` to query across users
+- JWT verification disabled since it's called by cron (internal)
+- Resend API key stored in Supabase secrets (already configured ✓)
 
