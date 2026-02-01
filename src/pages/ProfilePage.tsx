@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
 import { SecuritySettings } from "@/components/profile/SecuritySettings";
+import { NotificationSettings } from "@/components/profile/NotificationSettings";
 const ProfilePage = () => {
   const navigate = useNavigate();
   const {
@@ -49,6 +50,7 @@ const ProfilePage = () => {
     department: ""
   });
   const [useTwilioIntegration, setUseTwilioIntegration] = useState(true);
+  const [emailDigestEnabled, setEmailDigestEnabled] = useState(true);
 
   // Update form data when profile loads
   useEffect(() => {
@@ -66,6 +68,10 @@ const ProfilePage = () => {
         department: (profile as any).department || ''
       });
       setUseTwilioIntegration(profile.use_twilio_integration ?? true);
+      
+      // Set email digest preference from profile
+      const notifPrefs = (profile as any).notification_preferences;
+      setEmailDigestEnabled(notifPrefs?.email_digest_enabled !== false);
     }
   }, [profile, user]);
   const [notifications, setNotifications] = useState({
@@ -96,7 +102,10 @@ const ProfilePage = () => {
         location: formData.location || null,
         bio: formData.bio || null,
         job_title: formData.jobTitle || null,
-        department: formData.department || null
+        department: formData.department || null,
+        notification_preferences: {
+          email_digest_enabled: emailDigestEnabled
+        }
       }).eq('user_id', user.id);
       if (error) throw error;
       
@@ -447,6 +456,11 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
         */}
+
+        <NotificationSettings 
+          emailDigestEnabled={emailDigestEnabled}
+          onEmailDigestChange={setEmailDigestEnabled}
+        />
 
         <SecuritySettings />
       </div>
