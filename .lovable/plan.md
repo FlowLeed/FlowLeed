@@ -1,194 +1,150 @@
 
 
-## Daily Email Digest for Assignment Notifications
+## Fix: Bulk Reassign Dialog Not Showing Team Members
 
-### Overview
-Add a daily email digest feature that sends users a summary of all people assigned to them in the past 24 hours. This will complement the existing in-app notifications.
+### Problem Identified
+The "Reassign People" dialog is only showing the "Unassigned" option, with no team members visible. After investigation:
 
-### Architecture
+1. **Database confirms 1 team member exists**: Alex Yarmolatii is correctly stored in `pipeline_team_members` for this flow
+2. **Profile data is valid**: Alex's profile exists with `full_name` and `email`
+3. **Session replay shows**: "Alex Yarmolatii" element was removed from DOM after a "Team member added successfully" toast
 
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         Daily Email Digest System                            │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌──────────────┐    ┌──────────────────┐    ┌─────────────────────┐        │
-│  │   pg_cron    │───►│ send-daily-digest│───►│  Resend API         │        │
-│  │  (8 AM UTC)  │    │  Edge Function   │    │  (flowleed.com)     │        │
-│  └──────────────┘    └────────┬─────────┘    └─────────────────────┘        │
-│                               │                                              │
-│                               ▼                                              │
-│                    ┌──────────────────────┐                                  │
-│                    │   notifications      │                                  │
-│                    │  + email_digest_sent │                                  │
-│                    └──────────────────────┘                                  │
-│                                                                              │
-│  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │                    User Preferences                                 │     │
-│  │  profiles.notification_preferences: {                               │     │
-│  │    email_digest_enabled: true,                                      │     │
-│  │    email_digest_time: "08:00"                                       │     │
-│  │  }                                                                  │     │
-│  └────────────────────────────────────────────────────────────────────┘     │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+### Root Cause
+The `teamMembers` array is empty when passed to `BulkReassignDialog`. This appears to be a timing/state issue where:
+- The `useFlowTeamMembers` hook fetches data asynchronously
+- The `loading` state from the hook is NOT being used to prevent rendering
+- When a new team member is added, the `flowTeamMembers` state isn't refreshed
 
-### Implementation Plan
+Additionally, there's a broader UX issue: the dialog currently shows only **flow team members**, but users may expect to see **all organization members** they can assign to.
 
-#### 1. Database Changes
+### Solution
 
-**Add notification preferences to profiles table:**
-```sql
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS notification_preferences jsonb 
-DEFAULT '{"email_digest_enabled": true}'::jsonb;
-```
+#### 1. Add Loading State Handling
+Prevent the dialog from rendering team members before data is loaded.
 
-**Add tracking column to notifications table:**
-```sql
-ALTER TABLE notifications 
-ADD COLUMN IF NOT EXISTS email_digest_sent boolean DEFAULT false,
-ADD COLUMN IF NOT EXISTS email_digest_sent_at timestamptz;
-```
-
-#### 2. Create Edge Function: `send-daily-digest`
-
-**File: `supabase/functions/send-daily-digest/index.ts`**
-
-The function will:
-1. Query all users with `email_digest_enabled: true`
-2. For each user, get unread `person_assigned` notifications not yet sent in a digest
-3. Group notifications by user and generate HTML email with the digest
-4. Send via Resend API
-5. Mark notifications as `email_digest_sent = true`
-
+**File: `src/components/crm/FlowView.tsx`**
+Pass the loading state to `BulkActionsToolbar`:
 ```typescript
-// Key logic pseudocode
-const usersWithDigest = await supabase
-  .from('profiles')
-  .select('user_id, email, full_name, notification_preferences')
-  .filter('notification_preferences->email_digest_enabled', 'eq', true);
+<BulkActionsToolbar
+  ...
+  teamMembers={teamMembers}
+  teamMembersLoading={teamMembersLoading}  // Add this
+  ...
+/>
+```
 
-for (const user of usersWithDigest) {
-  const { data: unsentNotifications } = await supabase
-    .from('notifications')
-    .select('*, contacts(name), pipelines(name)')
-    .eq('user_id', user.user_id)
-    .eq('email_digest_sent', false)
-    .in('type', ['person_assigned', 'person_unassigned'])
-    .order('created_at', { ascending: false });
-
-  if (unsentNotifications?.length > 0) {
-    // Generate and send digest email
-    await resend.emails.send({
-      from: 'Flowleed <noreply@flowleed.com>',
-      to: [user.email],
-      subject: `Daily Assignment Digest: ${count} new assignments`,
-      html: generateDigestHTML(unsentNotifications)
-    });
-
-    // Mark as sent
-    await supabase
-      .from('notifications')
-      .update({ email_digest_sent: true, email_digest_sent_at: new Date() })
-      .in('id', unsentNotifications.map(n => n.id));
-  }
+**File: `src/components/crm/BulkActionsToolbar.tsx`**
+Accept and pass the loading state:
+```typescript
+interface BulkActionsToolbarProps {
+  ...
+  teamMembersLoading?: boolean;
 }
 ```
 
-#### 3. Set Up Cron Job
+**File: `src/components/crm/BulkReassignDialog.tsx`**
+Show a loading skeleton when data is loading:
+```typescript
+interface BulkReassignDialogProps {
+  ...
+  isLoading?: boolean;
+}
 
-**Using pg_cron to run daily at 8 AM UTC:**
-```sql
-SELECT cron.schedule(
-  'send-daily-digest',
-  '0 8 * * *', -- 8 AM UTC daily
-  $$
-  SELECT net.http_post(
-    url:='https://lghamvpolwebtjwaxned.supabase.co/functions/v1/send-daily-digest',
-    headers:='{"Content-Type": "application/json", "Authorization": "Bearer [ANON_KEY]"}'::jsonb,
-    body:='{}'::jsonb
-  );
-  $$
-);
+// In the render:
+{isLoading ? (
+  <div className="space-y-2">
+    <Skeleton className="h-14 w-full" />
+    <Skeleton className="h-14 w-full" />
+  </div>
+) : (
+  // existing team member buttons
+)}
 ```
 
-#### 4. Add User Preference UI
+#### 2. Refresh Team Members After Adding
+When a new team member is added in FlowSettingsDialog, dispatch an event to refresh the team members.
 
-**Modify: `src/components/profile/NotificationSettings.tsx`** (new file)
-
-Add a settings section where users can:
-- Toggle email digest on/off
-- (Future: Select preferred digest time)
-
-#### 5. Update Config
-
-**File: `supabase/config.toml`**
-```toml
-[functions.send-daily-digest]
-verify_jwt = false
+**File: `src/components/crm/FlowSettingsDialog.tsx`**
+After successfully adding a team member:
+```typescript
+// After successful insert
+window.dispatchEvent(new CustomEvent('flow-team-updated'));
 ```
 
-### Email Template Design
-
-The digest email will include:
-- Header with Flowleed branding
-- Summary count ("You have 5 new assignments")
-- Table of assignments grouped by flow:
-  - Contact name (linked to profile)
-  - Flow name
-  - Stage name
-  - When assigned
-- Footer with unsubscribe link (toggles the preference)
-
-```html
-<!-- Email preview -->
-Subject: Daily Assignment Digest: 5 new assignments
-
-┌─────────────────────────────────────────────┐
-│  🔔 Daily Assignment Digest                 │
-│                                             │
-│  You have 5 new people assigned to you      │
-│                                             │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                             │
-│  NEW GUEST FOLLOW-UP                        │
-│  ├─ John Smith - Welcome Call              │
-│  ├─ Mary Johnson - Thank You Text          │
-│  └─ Bob Williams - Follow Up               │
-│                                             │
-│  BAPTISM                                    │
-│  ├─ Sarah Davis - Interest                 │
-│  └─ Mike Brown - Info Sent                 │
-│                                             │
-│  [View All in Flowleed →]                   │
-│                                             │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│  Manage notification preferences            │
-└─────────────────────────────────────────────┘
+**File: `src/hooks/useFlowTeamMembers.tsx`**
+Listen for the refresh event:
+```typescript
+useEffect(() => {
+  const handleRefresh = () => fetchTeamMembers();
+  window.addEventListener('flow-team-updated', handleRefresh);
+  return () => window.removeEventListener('flow-team-updated', handleRefresh);
+}, [flowId]);
 ```
 
-### Files to Create/Modify
+#### 3. (Optional Enhancement) Show All Organization Members
+For better UX, consider changing the reassign dialog to show all organization members, not just flow team members. This allows reassigning to anyone in the org, even if they're not explicitly on the flow's team.
 
-| File | Action | Purpose |
-|------|--------|---------|
-| `supabase/functions/send-daily-digest/index.ts` | Create | Edge function to send digest emails |
-| `src/pages/ProfilePage.tsx` | Modify | Add notification preferences section |
-| `supabase/config.toml` | Modify | Add function config |
-| SQL Migration | Create | Add preference columns to profiles and tracking to notifications |
+This would require:
+- Fetching organization members in `FlowView` (similar to `FlowSettingsDialog`)
+- Passing org members to `BulkReassignDialog`
+- Adding the user to `pipeline_team_members` automatically when assigned
 
-### Technical Considerations
+### Files to Modify
 
-1. **Rate Limiting**: Resend has rate limits; the function processes users sequentially to avoid hitting limits
-2. **Time Zones**: Initially UTC-based; future enhancement could respect user time zones
-3. **Empty Digests**: Skip users with no new notifications (no email sent)
-4. **Retry Logic**: Failed emails are logged but don't block other users
-5. **Opt-out by Default**: Users start with digest enabled but can disable in settings
+| File | Change |
+|------|--------|
+| `src/components/crm/FlowView.tsx` | Pass `teamMembersLoading` prop |
+| `src/components/crm/BulkActionsToolbar.tsx` | Accept and pass loading state |
+| `src/components/crm/BulkReassignDialog.tsx` | Add loading skeleton UI |
+| `src/hooks/useFlowTeamMembers.tsx` | Add event listener for refresh |
+| `src/components/crm/FlowSettingsDialog.tsx` | Dispatch event after adding member |
 
-### Security
+### Technical Flow
 
-- Edge function uses `SERVICE_ROLE_KEY` to query across users
-- JWT verification disabled since it's called by cron (internal)
-- Resend API key stored in Supabase secrets (already configured ✓)
+```text
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Current Flow (Broken)                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  FlowView mounts                                                        │
+│       │                                                                 │
+│       ▼                                                                 │
+│  useFlowTeamMembers fetches... (async)                                  │
+│       │                                                                 │
+│       ▼                                                                 │
+│  User opens BulkReassignDialog ◄── teamMembers may still be []         │
+│       │                                                                 │
+│       ▼                                                                 │
+│  Dialog shows only "Unassigned" ✗                                       │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Fixed Flow                                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  FlowView mounts                                                        │
+│       │                                                                 │
+│       ▼                                                                 │
+│  useFlowTeamMembers fetches... (async, loading=true)                   │
+│       │                                                                 │
+│       ▼                                                                 │
+│  User opens BulkReassignDialog                                          │
+│       │                                                                 │
+│       ├─► If loading=true: Show skeleton                               │
+│       │                                                                 │
+│       ├─► When loading=false: Show team members ✓                      │
+│       │                                                                 │
+│       ▼                                                                 │
+│  Data loads → Dialog re-renders with team members ✓                    │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Expected Behavior After Fix
+1. User clicks "Reassign" button
+2. Dialog opens with loading skeleton (brief moment)
+3. Team members load and display (Alex Yarmolatii visible)
+4. User can select a team member or "Unassigned"
+5. When new team members are added in settings, the list refreshes
 
