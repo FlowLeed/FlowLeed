@@ -1,150 +1,143 @@
 
 
-## Fix: Bulk Reassign Dialog Not Showing Team Members
+## Investigation Complete: PCO Sync Stuck in Endless Loop
 
-### Problem Identified
-The "Reassign People" dialog is only showing the "Unassigned" option, with no team members visible. After investigation:
+### Problem Summary
 
-1. **Database confirms 1 team member exists**: Alex Yarmolatii is correctly stored in `pipeline_team_members` for this flow
-2. **Profile data is valid**: Alex's profile exists with `full_name` and `email`
-3. **Session replay shows**: "Alex Yarmolatii" element was removed from DOM after a "Team member added successfully" toast
+The sync is stuck showing "Preparing to sync 14967 people..." because **90 duplicate sync jobs** are queued up, and new jobs keep being created every minute.
 
-### Root Cause
-The `teamMembers` array is empty when passed to `BulkReassignDialog`. This appears to be a timing/state issue where:
-- The `useFlowTeamMembers` hook fetches data asynchronously
-- The `loading` state from the hook is NOT being used to prevent rendering
-- When a new team member is added, the `flowTeamMembers` state isn't refreshed
+### Root Causes Identified
 
-Additionally, there's a broader UX issue: the dialog currently shows only **flow team members**, but users may expect to see **all organization members** they can assign to.
+| Issue | Current State | Impact |
+|-------|---------------|--------|
+| Cron schedule too aggressive | `* * * * *` (every minute) | Creates new jobs every 60 seconds |
+| `last_full_sync_completed_at` never set | Always `NULL` | `shouldSyncNow()` always returns `true` |
+| Timestamp updated before completion | `metadata.last_full_sync_at` set immediately on trigger | Doesn't prevent duplicate jobs |
+| Legacy sync frequency | `every_15_minutes` still active | Not in allowed list, defaults incorrectly |
+| Race condition in duplicate check | Check happens before job is created | Multiple invocations can pass the check simultaneously |
+
+### Current State
+
+```text
+Integrations for "The Promise Center":
+- ID: 5ae01ba0... → sync_frequency: daily, last_full_sync_completed_at: NULL
+- ID: 60f84e00... → sync_frequency: every_15_minutes (legacy), last_full_sync_completed_at: NULL
+
+Cron Jobs:
+- planning-center-auto-sync: * * * * * (EVERY MINUTE - too aggressive!)
+- pco-sync-processor: * * * * * (correct - processes queue)
+
+Pending Jobs: 90 jobs, all status "pending"
+Pending Queue Items: 100+ chunks waiting to process
+```
 
 ### Solution
 
-#### 1. Add Loading State Handling
-Prevent the dialog from rendering team members before data is loaded.
+#### Phase 1: Immediate Cleanup (Database)
 
-**File: `src/components/crm/FlowView.tsx`**
-Pass the loading state to `BulkActionsToolbar`:
-```typescript
-<BulkActionsToolbar
-  ...
-  teamMembers={teamMembers}
-  teamMembersLoading={teamMembersLoading}  // Add this
-  ...
-/>
+Run these SQL commands manually in Supabase SQL Editor:
+
+```sql
+-- 1. Cancel all duplicate pending jobs (keep only the most recent)
+UPDATE pco_sync_jobs 
+SET status = 'cancelled', 
+    error_message = 'Cancelled: duplicate job cleanup'
+WHERE list_mapping_id IS NULL 
+AND status = 'pending'
+AND id NOT IN (
+  SELECT DISTINCT ON (organization_id) id 
+  FROM pco_sync_jobs 
+  WHERE list_mapping_id IS NULL AND status = 'pending'
+  ORDER BY organization_id, started_at DESC
+);
+
+-- 2. Cancel orphaned queue items from cancelled jobs
+UPDATE pco_sync_queue 
+SET status = 'cancelled'
+WHERE sync_job_id IN (
+  SELECT id FROM pco_sync_jobs WHERE status = 'cancelled'
+) AND status = 'pending';
+
+-- 3. Fix legacy sync frequencies
+UPDATE integrations 
+SET sync_frequency = 'daily' 
+WHERE sync_frequency NOT IN ('daily', 'twice_daily', 'manual');
+
+-- 4. Update cron to run every 15 minutes instead of every minute
+SELECT cron.unschedule('planning-center-auto-sync');
+SELECT cron.schedule(
+  'planning-center-auto-sync',
+  '*/15 * * * *',
+  $$
+  SELECT net.http_post(
+    url:='https://lghamvpolwebtjwaxned.supabase.co/functions/v1/planning-center-lists',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxnaGFtdnBvbHdlYnRqd2F4bmVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MjE0OTEsImV4cCI6MjA3MTQ5NzQ5MX0.yrtGMayjKCu0-K41XWanNe7U3zM0z39cK1fy1OgN7E4"}'::jsonb,
+    body:='{"action": "autoSync"}'::jsonb
+  );
+  $$
+);
 ```
 
-**File: `src/components/crm/BulkActionsToolbar.tsx`**
-Accept and pass the loading state:
+#### Phase 2: Code Fixes
+
+**File: `supabase/functions/planning-center-lists/index.ts`**
+
+1. **Update timestamp correctly**: Set `last_full_sync_completed_at` in the database only after the job is fully created and queued (at end of `triggerAutoFullPeopleSync`), not just in metadata
+
+2. **Add locking mechanism**: Use a database advisory lock or a "sync_in_progress" flag on the integration to prevent race conditions
+
+3. **Use `last_full_sync_completed_at` for frequency check**: The function should check this column, not the metadata field
+
+**Key code changes:**
+
 ```typescript
-interface BulkActionsToolbarProps {
-  ...
-  teamMembersLoading?: boolean;
-}
+// In triggerAutoFullPeopleSync - at the END (after queue items created)
+await supabase
+  .from('integrations')
+  .update({ 
+    last_sync_at: new Date().toISOString(),
+    // Only set completed_at once job is fully ready to process
+    last_full_sync_completed_at: new Date().toISOString()
+  })
+  .eq('id', integrationId);
 ```
 
-**File: `src/components/crm/BulkReassignDialog.tsx`**
-Show a loading skeleton when data is loading:
 ```typescript
-interface BulkReassignDialogProps {
-  ...
-  isLoading?: boolean;
-}
-
-// In the render:
-{isLoading ? (
-  <div className="space-y-2">
-    <Skeleton className="h-14 w-full" />
-    <Skeleton className="h-14 w-full" />
-  </div>
-) : (
-  // existing team member buttons
-)}
+// In autoSyncAllMappings - REMOVE the early metadata update (lines 977-988)
+// The timestamp should only be set after successful job creation
 ```
 
-#### 2. Refresh Team Members After Adding
-When a new team member is added in FlowSettingsDialog, dispatch an event to refresh the team members.
+**File: `supabase/functions/pco-sync-processor/index.ts`**
 
-**File: `src/components/crm/FlowSettingsDialog.tsx`**
-After successfully adding a team member:
+Ensure the processor updates `last_full_sync_completed_at` on the integration when a job completes:
+
 ```typescript
-// After successful insert
-window.dispatchEvent(new CustomEvent('flow-team-updated'));
+// When job status is set to 'completed'
+await supabase
+  .from('integrations')
+  .update({ last_full_sync_completed_at: new Date().toISOString() })
+  .eq('id', job.integration_id);
 ```
-
-**File: `src/hooks/useFlowTeamMembers.tsx`**
-Listen for the refresh event:
-```typescript
-useEffect(() => {
-  const handleRefresh = () => fetchTeamMembers();
-  window.addEventListener('flow-team-updated', handleRefresh);
-  return () => window.removeEventListener('flow-team-updated', handleRefresh);
-}, [flowId]);
-```
-
-#### 3. (Optional Enhancement) Show All Organization Members
-For better UX, consider changing the reassign dialog to show all organization members, not just flow team members. This allows reassigning to anyone in the org, even if they're not explicitly on the flow's team.
-
-This would require:
-- Fetching organization members in `FlowView` (similar to `FlowSettingsDialog`)
-- Passing org members to `BulkReassignDialog`
-- Adding the user to `pipeline_team_members` automatically when assigned
 
 ### Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/components/crm/FlowView.tsx` | Pass `teamMembersLoading` prop |
-| `src/components/crm/BulkActionsToolbar.tsx` | Accept and pass loading state |
-| `src/components/crm/BulkReassignDialog.tsx` | Add loading skeleton UI |
-| `src/hooks/useFlowTeamMembers.tsx` | Add event listener for refresh |
-| `src/components/crm/FlowSettingsDialog.tsx` | Dispatch event after adding member |
-
-### Technical Flow
-
-```text
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    Current Flow (Broken)                                │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  FlowView mounts                                                        │
-│       │                                                                 │
-│       ▼                                                                 │
-│  useFlowTeamMembers fetches... (async)                                  │
-│       │                                                                 │
-│       ▼                                                                 │
-│  User opens BulkReassignDialog ◄── teamMembers may still be []         │
-│       │                                                                 │
-│       ▼                                                                 │
-│  Dialog shows only "Unassigned" ✗                                       │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    Fixed Flow                                           │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                         │
-│  FlowView mounts                                                        │
-│       │                                                                 │
-│       ▼                                                                 │
-│  useFlowTeamMembers fetches... (async, loading=true)                   │
-│       │                                                                 │
-│       ▼                                                                 │
-│  User opens BulkReassignDialog                                          │
-│       │                                                                 │
-│       ├─► If loading=true: Show skeleton                               │
-│       │                                                                 │
-│       ├─► When loading=false: Show team members ✓                      │
-│       │                                                                 │
-│       ▼                                                                 │
-│  Data loads → Dialog re-renders with team members ✓                    │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+| `supabase/functions/planning-center-lists/index.ts` | Fix timestamp logic, remove early metadata update |
+| `supabase/functions/pco-sync-processor/index.ts` | Set `last_full_sync_completed_at` on job completion |
+| Manual SQL | Clean up existing jobs, fix cron schedule |
 
 ### Expected Behavior After Fix
-1. User clicks "Reassign" button
-2. Dialog opens with loading skeleton (brief moment)
-3. Team members load and display (Alex Yarmolatii visible)
-4. User can select a team member or "Unassigned"
-5. When new team members are added in settings, the list refreshes
+
+1. Cron runs every 15 minutes instead of every minute
+2. `shouldSyncNow()` correctly uses `last_full_sync_completed_at` (set only after job completes)
+3. No duplicate jobs can be created due to proper timestamp tracking
+4. UI shows actual progress instead of being stuck in "Preparing" state
+
+### Immediate Action Required
+
+Before code changes, run the SQL cleanup commands to:
+- Cancel 89 of 90 duplicate jobs
+- Fix the cron schedule to prevent more duplicates
+- Fix legacy sync frequencies
 
