@@ -236,6 +236,8 @@ export const FlowSettingsDialog = ({
       });
       fetchTeamMembers();
       setSelectedUserId("");
+      // Dispatch event to notify other components (like BulkReassignDialog) to refresh
+      window.dispatchEvent(new CustomEvent('flow-team-updated'));
     }
     setLoading(false);
   };

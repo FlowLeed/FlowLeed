@@ -13,66 +13,76 @@ export const useFlowTeamMembers = (flowId: string | undefined) => {
   const [teamMembers, setTeamMembers] = useState<FlowTeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchTeamMembers = async () => {
     if (!flowId) {
       setTeamMembers([]);
       setLoading(false);
       return;
     }
 
-    const fetchTeamMembers = async () => {
-      setLoading(true);
-      
-      // Step 1: Fetch pipeline team members
-      const { data: teamData, error: teamError } = await supabase
-        .from("pipeline_team_members")
-        .select("user_id, role")
-        .eq("pipeline_id", flowId);
+    setLoading(true);
+    
+    // Step 1: Fetch pipeline team members
+    const { data: teamData, error: teamError } = await supabase
+      .from("pipeline_team_members")
+      .select("user_id, role")
+      .eq("pipeline_id", flowId);
 
-      if (teamError) {
-        console.error("Error fetching flow team members:", teamError);
-        setTeamMembers([]);
-        setLoading(false);
-        return;
-      }
-
-      if (!teamData || teamData.length === 0) {
-        setTeamMembers([]);
-        setLoading(false);
-        return;
-      }
-
-      // Step 2: Fetch profiles separately
-      const userIds = teamData.map(m => m.user_id);
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, email, avatar_url")
-        .in("user_id", userIds);
-
-      if (profilesError) {
-        console.error("Error fetching profiles:", profilesError);
-        setTeamMembers([]);
-        setLoading(false);
-        return;
-      }
-
-      // Step 3: Combine the data and filter out invalid members
-      const members = teamData.map((m) => {
-        const profile = profilesData?.find(p => p.user_id === m.user_id);
-        return {
-          user_id: m.user_id,
-          role: m.role,
-          full_name: profile?.full_name || null,
-          email: profile?.email || "",
-          avatar_url: profile?.avatar_url || null,
-        };
-      }).filter(member => member.full_name || member.email); // Only include members with identifying info
-      
-      setTeamMembers(members);
+    if (teamError) {
+      console.error("Error fetching flow team members:", teamError);
+      setTeamMembers([]);
       setLoading(false);
-    };
+      return;
+    }
 
+    if (!teamData || teamData.length === 0) {
+      setTeamMembers([]);
+      setLoading(false);
+      return;
+    }
+
+    // Step 2: Fetch profiles separately
+    const userIds = teamData.map(m => m.user_id);
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("user_id, full_name, email, avatar_url")
+      .in("user_id", userIds);
+
+    if (profilesError) {
+      console.error("Error fetching profiles:", profilesError);
+      setTeamMembers([]);
+      setLoading(false);
+      return;
+    }
+
+    // Step 3: Combine the data and filter out invalid members
+    const members = teamData.map((m) => {
+      const profile = profilesData?.find(p => p.user_id === m.user_id);
+      return {
+        user_id: m.user_id,
+        role: m.role,
+        full_name: profile?.full_name || null,
+        email: profile?.email || "",
+        avatar_url: profile?.avatar_url || null,
+      };
+    }).filter(member => member.full_name || member.email); // Only include members with identifying info
+    
+    setTeamMembers(members);
+    setLoading(false);
+  };
+
+  useEffect(() => {
     fetchTeamMembers();
+  }, [flowId]);
+
+  // Listen for team updates to refresh the list
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchTeamMembers();
+    };
+    
+    window.addEventListener('flow-team-updated', handleRefresh);
+    return () => window.removeEventListener('flow-team-updated', handleRefresh);
   }, [flowId]);
 
   return { teamMembers, loading };
