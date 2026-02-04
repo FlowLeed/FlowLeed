@@ -28,6 +28,7 @@ interface BulkActionsToolbarProps {
   onMoveToFlow: (targetPipelineId: string, targetStageId: string) => Promise<void>;
   stages: FlowStage[];
   teamMembers: Array<{ id: string; name: string; avatar?: string }>;
+  teamMembersLoading?: boolean;
   currentPipelineId: string;
   currentPipelineName: string;
   isLoading?: boolean;
@@ -44,6 +45,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
   onMoveToFlow,
   stages,
   teamMembers,
+  teamMembersLoading = false,
   currentPipelineId,
   currentPipelineName,
   isLoading = false,
@@ -186,6 +188,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
         open={reassignDialogOpen}
         onOpenChange={setReassignDialogOpen}
         teamMembers={teamMembers}
+        isLoading={teamMembersLoading}
         onConfirm={handleReassign}
       />
 

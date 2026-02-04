@@ -568,6 +568,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
           onMoveToFlow={handleBulkMoveToFlow}
           stages={flow.stages}
           teamMembers={teamMembers}
+          teamMembersLoading={teamMembersLoading}
           currentPipelineId={flow.id}
           currentPipelineName={flow.name}
           isLoading={bulkLoading}
