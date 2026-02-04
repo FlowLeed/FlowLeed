@@ -972,20 +972,9 @@ async function autoSyncAllMappings() {
           
           try {
             // Trigger the full sync using the existing function logic
+            // Note: last_full_sync_completed_at is set inside triggerAutoFullPeopleSync
+            // AFTER job and queue items are created, not before, to prevent race conditions
             await triggerAutoFullPeopleSync(integration.id, integration.organization_id, integration.last_full_sync_completed_at);
-            
-            // Update last_full_sync_at in metadata
-            const newMetadata = { 
-              ...(integration.metadata as object || {}), 
-              last_full_sync_at: new Date().toISOString() 
-            };
-            await supabase
-              .from('integrations')
-              .update({ 
-                metadata: newMetadata,
-                last_sync_at: new Date().toISOString()
-              })
-              .eq('id', integration.id);
             
             console.log(`Successfully triggered auto full sync for integration ${integration.id}`);
           } catch (syncError) {
@@ -1302,5 +1291,15 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     p_sync_type: isIncrementalSync ? 'auto_incremental_sync' : 'auto_full_people_sync'
   });
 
-  console.log(`[Auto-sync] ${isIncrementalSync ? 'Incremental' : 'Full'} people sync job ${job.id} created with ${chunks.length} chunks`);
+  // IMPORTANT: Set last_full_sync_completed_at AFTER job and queue items are successfully created
+  // This prevents race conditions where shouldSyncNow() returns true while a job is being created
+  await supabase
+    .from('integrations')
+    .update({ 
+      last_sync_at: new Date().toISOString(),
+      last_full_sync_completed_at: new Date().toISOString()
+    })
+    .eq('id', integrationId);
+
+  console.log(`[Auto-sync] ${isIncrementalSync ? 'Incremental' : 'Full'} people sync job ${job.id} created with ${chunks.length} chunks. Set last_full_sync_completed_at.`);
 }
