@@ -1252,6 +1252,20 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
 
   console.log(`[Auto-sync] Created sync job: ${job.id}`);
 
+  // CRITICAL: Set last_full_sync_completed_at IMMEDIATELY after job creation
+  // This ensures incremental sync works even if edge function times out during chunk creation
+  // Without this, large orgs (15k+ contacts) never complete chunk creation before timeout,
+  // leaving last_full_sync_completed_at NULL and causing endless full syncs
+  await supabase
+    .from('integrations')
+    .update({ 
+      last_sync_at: new Date().toISOString(),
+      last_full_sync_completed_at: new Date().toISOString()
+    })
+    .eq('id', integrationId);
+
+  console.log(`[Auto-sync] Set last_full_sync_completed_at immediately after job creation`);
+
   // Chunk contacts into batches
   const CHUNK_SIZE = 25;
   const chunks = [];
@@ -1291,15 +1305,5 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     p_sync_type: isIncrementalSync ? 'auto_incremental_sync' : 'auto_full_people_sync'
   });
 
-  // IMPORTANT: Set last_full_sync_completed_at AFTER job and queue items are successfully created
-  // This prevents race conditions where shouldSyncNow() returns true while a job is being created
-  await supabase
-    .from('integrations')
-    .update({ 
-      last_sync_at: new Date().toISOString(),
-      last_full_sync_completed_at: new Date().toISOString()
-    })
-    .eq('id', integrationId);
-
-  console.log(`[Auto-sync] ${isIncrementalSync ? 'Incremental' : 'Full'} people sync job ${job.id} created with ${chunks.length} chunks. Set last_full_sync_completed_at.`);
+  console.log(`[Auto-sync] ${isIncrementalSync ? 'Incremental' : 'Full'} people sync job ${job.id} created with ${chunks.length} chunks`);
 }
