@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { Button } from "@/components/ui/button";
-import { Plus, Users } from "lucide-react";
+import { ExternalLink, Plus, Users } from "lucide-react";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,10 +52,18 @@ const GroupsPage = () => {
               Manage your small groups, serving teams, and classes
             </p>
           </div>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Group
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" asChild>
+              <a href="/groups/directory" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Public Directory
+              </a>
+            </Button>
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Group
+            </Button>
+          </div>
         </div>
 
         {/* Group Type Tabs */}
