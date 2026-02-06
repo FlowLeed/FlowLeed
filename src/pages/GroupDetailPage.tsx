@@ -10,11 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Users, Calendar, Settings, UserPlus, MoreVertical, Edit, Trash2, CheckCircle2, User } from "lucide-react";
+import { ArrowLeft, Users, Calendar, Settings, UserPlus, MoreVertical, Edit, Trash2, CheckCircle2, User, UserCheck } from "lucide-react";
 import { AddGroupMemberDialog } from "@/components/groups/AddGroupMemberDialog";
 import { EditGroupDialog } from "@/components/groups/EditGroupDialog";
 import { CreateMeetingDialog } from "@/components/groups/CreateMeetingDialog";
 import { TakeAttendanceDialog } from "@/components/groups/TakeAttendanceDialog";
+import { SignupRequestsDialog } from "@/components/groups/SignupRequestsDialog";
+import { useGroupSignupRequests } from "@/hooks/useGroupSignupRequests";
 
 const groupTypeLabels: Record<string, string> = {
   small_group: "Small Group",
@@ -35,8 +37,11 @@ const GroupDetailPage = () => {
   const [editGroupOpen, setEditGroupOpen] = useState(false);
   const [createMeetingOpen, setCreateMeetingOpen] = useState(false);
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [signupRequestsOpen, setSignupRequestsOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+
+  const { pendingCount } = useGroupSignupRequests(groupId);
 
   const group = groups.find((g) => g.id === groupId);
   const existingMemberIds = members.map((m) => m.contact_id);
@@ -85,10 +90,28 @@ const GroupDetailPage = () => {
               )}
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setEditGroupOpen(true)}>
-            <Settings className="h-4 w-4 mr-2" />
-            Edit Group
-          </Button>
+          <div className="flex items-center gap-2">
+            {group.allow_public_signup && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setSignupRequestsOpen(true)}
+                className="relative"
+              >
+                <UserCheck className="h-4 w-4 mr-2" />
+                Signup Requests
+                {pendingCount > 0 && (
+                  <Badge className="ml-2 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                    {pendingCount}
+                  </Badge>
+                )}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setEditGroupOpen(true)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Edit Group
+            </Button>
+          </div>
         </div>
 
         {/* Group Info Cards */}
@@ -325,6 +348,14 @@ const GroupDetailPage = () => {
               open={createMeetingOpen}
               onOpenChange={setCreateMeetingOpen}
             />
+            {organization && (
+              <SignupRequestsDialog
+                groupId={groupId!}
+                organizationId={organization.id}
+                open={signupRequestsOpen}
+                onOpenChange={setSignupRequestsOpen}
+              />
+            )}
           </>
         )}
 

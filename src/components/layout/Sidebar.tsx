@@ -446,8 +446,7 @@ export const Sidebar = () => {
   }, {
     title: "Groups",
     icon: UsersRound,
-    path: "/groups",
-    comingSoon: true
+    path: "/groups"
   }, {
     title: "Tasks",
     icon: CheckSquare,
