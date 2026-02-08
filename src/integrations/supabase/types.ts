@@ -1129,6 +1129,7 @@ export type Database = {
           description: string | null
           group_type: string
           id: string
+          image_url: string | null
           leader_user_id: string | null
           location: string | null
           meeting_day: string | null
@@ -1152,6 +1153,7 @@ export type Database = {
           description?: string | null
           group_type?: string
           id?: string
+          image_url?: string | null
           leader_user_id?: string | null
           location?: string | null
           meeting_day?: string | null
@@ -1175,6 +1177,7 @@ export type Database = {
           description?: string | null
           group_type?: string
           id?: string
+          image_url?: string | null
           leader_user_id?: string | null
           location?: string | null
           meeting_day?: string | null

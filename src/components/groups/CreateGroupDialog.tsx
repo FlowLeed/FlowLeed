@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useGroups } from "@/hooks/useGroups";
+import { GroupImageUpload } from "./GroupImageUpload";
 
 const groupSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -54,6 +55,7 @@ export const CreateGroupDialog = ({
 }: CreateGroupDialogProps) => {
   const { createGroup } = useGroups(organizationId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const form = useForm<GroupFormValues>({
     resolver: zodResolver(groupSchema),
@@ -81,13 +83,17 @@ export const CreateGroupDialog = ({
         capacity: values.capacity,
         organization_id: organizationId,
         status: "active",
+        image_url: imageUrl,
       });
       form.reset();
+      setImageUrl(null);
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const watchedName = form.watch("name");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -98,6 +104,12 @@ export const CreateGroupDialog = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <GroupImageUpload
+              groupName={watchedName}
+              currentImageUrl={imageUrl}
+              onImageChange={setImageUrl}
+            />
+
             <FormField
               control={form.control}
               name="name"

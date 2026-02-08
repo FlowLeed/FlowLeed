@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { GroupAvatar } from "./GroupAvatar";
 
 interface GroupCardProps {
   group: Group;
@@ -37,21 +38,24 @@ export const GroupCard = ({ group }: GroupCardProps) => {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge
-                variant="secondary"
-                className={groupTypeColors[group.group_type] || ""}
-              >
-                {groupTypeLabels[group.group_type] || group.group_type}
-              </Badge>
-              {group.status === "inactive" && (
-                <Badge variant="outline">Inactive</Badge>
-              )}
+          <div className="flex items-start gap-3 flex-1">
+            <GroupAvatar name={group.name} imageUrl={group.image_url} size="lg" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge
+                  variant="secondary"
+                  className={groupTypeColors[group.group_type] || ""}
+                >
+                  {groupTypeLabels[group.group_type] || group.group_type}
+                </Badge>
+                {group.status === "inactive" && (
+                  <Badge variant="outline">Inactive</Badge>
+                )}
+              </div>
+              <h3 className="text-lg font-semibold group-hover:text-primary transition-colors truncate">
+                {group.name}
+              </h3>
             </div>
-            <h3 className="text-lg font-semibold group-hover:text-primary transition-colors">
-              {group.name}
-            </h3>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
