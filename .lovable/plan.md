@@ -1,41 +1,101 @@
 
 
-## Add Public Group Directory Link to Groups Page
+## Add Share Signup Link Button to Group Detail Page
 
 ### Overview
 
-Add a button/link in the Groups page header that opens the public group directory (`/groups/directory`) in a new tab. This allows staff to easily share or preview what the public sees.
+Add a prominent "Share Link" button on the Group Detail page header so group leaders can quickly copy and share the public signup link without having to open the Edit dialog.
 
 ---
 
 ### Change
 
-**File:** `src/pages/GroupsPage.tsx`
+**File:** `src/pages/GroupDetailPage.tsx`
 
-Add an "External Link" icon import and a secondary button next to "Create Group":
+Add a "Share Link" button in the header next to "Signup Requests" when public signup is enabled and a token exists.
 
-```text
-Header section (lines 48-59) will become:
+#### 1. Add new imports
 
-<div className="flex items-center justify-between">
-  <div>
-    <h1>Groups</h1>
-    <p>Manage your small groups, serving teams, and classes</p>
-  </div>
-  <div className="flex items-center gap-2">
-    <Button variant="outline" asChild>
-      <a href="/groups/directory" target="_blank" rel="noopener noreferrer">
-        <ExternalLink className="h-4 w-4 mr-2" />
-        Public Directory
-      </a>
+```typescript
+import { Share2, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+```
+
+#### 2. Add state and helper function
+
+```typescript
+const { toast } = useToast();
+const [linkCopied, setLinkCopied] = useState(false);
+
+const copySignupLink = async () => {
+  if (!group?.public_signup_token) return;
+  const link = `${window.location.origin}/groups/join/${group.public_signup_token}`;
+  
+  try {
+    await navigator.clipboard.writeText(link);
+    setLinkCopied(true);
+    toast({
+      title: "Link copied!",
+      description: "Public signup link copied to clipboard",
+    });
+    setTimeout(() => setLinkCopied(false), 2000);
+  } catch (err) {
+    toast({
+      title: "Failed to copy",
+      description: "Please try again",
+      variant: "destructive",
+    });
+  }
+};
+```
+
+#### 3. Add button in header (lines 93-114)
+
+Add a new button before "Signup Requests":
+
+```tsx
+<div className="flex items-center gap-2">
+  {group.allow_public_signup && group.public_signup_token && (
+    <Button 
+      variant="outline" 
+      size="sm" 
+      onClick={copySignupLink}
+    >
+      {linkCopied ? (
+        <Check className="h-4 w-4 mr-2" />
+      ) : (
+        <Share2 className="h-4 w-4 mr-2" />
+      )}
+      {linkCopied ? "Copied!" : "Share Link"}
     </Button>
-    <Button onClick={() => setCreateDialogOpen(true)}>
-      <Plus className="h-4 w-4 mr-2" />
-      Create Group
+  )}
+  {group.allow_public_signup && (
+    <Button 
+      variant="outline" 
+      size="sm" 
+      onClick={() => setSignupRequestsOpen(true)}
+      className="relative"
+    >
+      ...existing signup requests button...
     </Button>
-  </div>
+  )}
+  <Button variant="outline" size="sm" onClick={() => setEditGroupOpen(true)}>
+    <Settings className="h-4 w-4 mr-2" />
+    Edit Group
+  </Button>
 </div>
 ```
+
+---
+
+### Behavior
+
+| Condition | Button Shows |
+|-----------|--------------|
+| `allow_public_signup = false` | Hidden |
+| `allow_public_signup = true` but no token | Hidden |
+| `allow_public_signup = true` with token | Shows "Share Link" button |
+| After click | Changes to "Copied!" with checkmark for 2 seconds |
 
 ---
 
@@ -43,11 +103,11 @@ Header section (lines 48-59) will become:
 
 | File | Change |
 |------|--------|
-| `src/pages/GroupsPage.tsx` | Add `ExternalLink` import from lucide-react, add "Public Directory" button that opens `/groups/directory` in new tab |
+| `src/pages/GroupDetailPage.tsx` | Add Share2/Check icons, toast hook, linkCopied state, copySignupLink function, and Share Link button |
 
 ---
 
 ### Result
 
-Staff will see a "Public Directory" button next to "Create Group" that opens the public-facing group directory in a new browser tab, making it easy to preview or share.
+Group leaders will see a "Share Link" button in the header that instantly copies the public signup link to their clipboard, making it easy to share via text, email, or social media.
 
