@@ -172,24 +172,35 @@ export default function GroupDirectoryPage() {
         ) : filteredGroups && filteredGroups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredGroups.map((group) => (
-              <Card key={group.id} className="flex flex-col hover:shadow-md transition-shadow">
+              <Card key={group.id} className="flex flex-col hover:shadow-md transition-shadow overflow-hidden">
+                {/* Wide image/avatar at top */}
+                <div className="w-full h-32 bg-muted flex items-center justify-center">
+                  {group.image_url ? (
+                    <img 
+                      src={group.image_url} 
+                      alt={group.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-3xl font-semibold text-muted-foreground">
+                      {group.name.trim().split(/\s+/).length >= 2
+                        ? (group.name.trim().split(/\s+/)[0][0] + group.name.trim().split(/\s+/)[1][0]).toUpperCase()
+                        : group.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
                 <CardHeader className="pb-3">
-                  <div className="flex items-start gap-3">
-                    <GroupAvatar name={group.name} imageUrl={group.image_url} size="lg" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-lg line-clamp-1">{group.name}</CardTitle>
-                        <Badge className={groupTypeColors[group.group_type] || groupTypeColors.other}>
-                          {groupTypeLabels[group.group_type] || group.group_type}
-                        </Badge>
-                      </div>
-                      {group.description && (
-                        <CardDescription className="line-clamp-2 mt-1">
-                          {group.description}
-                        </CardDescription>
-                      )}
-                    </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-lg line-clamp-1">{group.name}</CardTitle>
+                    <Badge className={groupTypeColors[group.group_type] || groupTypeColors.other}>
+                      {groupTypeLabels[group.group_type] || group.group_type}
+                    </Badge>
                   </div>
+                  {group.description && (
+                    <CardDescription className="line-clamp-2">
+                      {group.description}
+                    </CardDescription>
+                  )}
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between gap-4">
                   <div className="space-y-2 text-sm text-muted-foreground">
