@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, MapPin, Calendar, Clock, Search, ArrowRight } from "lucide-react";
-
+import { GroupAvatar } from "@/components/groups/GroupAvatar";
 interface PublicGroup {
   id: string;
   name: string;
@@ -22,6 +22,7 @@ interface PublicGroup {
   public_signup_token: string | null;
   allow_public_signup: boolean;
   member_count: number;
+  image_url: string | null;
 }
 
 const groupTypeLabels: Record<string, string> = {
@@ -64,6 +65,7 @@ export default function GroupDirectoryPage() {
           capacity,
           public_signup_token,
           allow_public_signup,
+          image_url,
           member_count:group_members(count)
         `)
         .eq("allow_public_signup", true)
@@ -172,17 +174,22 @@ export default function GroupDirectoryPage() {
             {filteredGroups.map((group) => (
               <Card key={group.id} className="flex flex-col hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-lg line-clamp-1">{group.name}</CardTitle>
-                    <Badge className={groupTypeColors[group.group_type] || groupTypeColors.other}>
-                      {groupTypeLabels[group.group_type] || group.group_type}
-                    </Badge>
+                  <div className="flex items-start gap-3">
+                    <GroupAvatar name={group.name} imageUrl={group.image_url} size="lg" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-lg line-clamp-1">{group.name}</CardTitle>
+                        <Badge className={groupTypeColors[group.group_type] || groupTypeColors.other}>
+                          {groupTypeLabels[group.group_type] || group.group_type}
+                        </Badge>
+                      </div>
+                      {group.description && (
+                        <CardDescription className="line-clamp-2 mt-1">
+                          {group.description}
+                        </CardDescription>
+                      )}
+                    </div>
                   </div>
-                  {group.description && (
-                    <CardDescription className="line-clamp-2">
-                      {group.description}
-                    </CardDescription>
-                  )}
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between gap-4">
                   <div className="space-y-2 text-sm text-muted-foreground">
