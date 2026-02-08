@@ -118,15 +118,15 @@ const GroupDetailPage = () => {
             {group.allow_public_signup && group.public_signup_token && (
               <Button 
                 variant="outline" 
-                size="sm" 
+                size="icon"
                 onClick={copySignupLink}
+                title="Share signup link"
               >
                 {linkCopied ? (
-                  <Check className="h-4 w-4 mr-2" />
+                  <Check className="h-4 w-4" />
                 ) : (
-                  <Share2 className="h-4 w-4 mr-2" />
+                  <Share2 className="h-4 w-4" />
                 )}
-                {linkCopied ? "Copied!" : "Share Link"}
               </Button>
             )}
             {group.allow_public_signup && (
@@ -137,7 +137,7 @@ const GroupDetailPage = () => {
                 className="relative"
               >
                 <UserCheck className="h-4 w-4 mr-2" />
-                Signup Requests
+                Requests
                 {pendingCount > 0 && (
                   <Badge className="ml-2 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
                     {pendingCount}
@@ -145,9 +145,8 @@ const GroupDetailPage = () => {
                 )}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => setEditGroupOpen(true)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Edit Group
+            <Button variant="outline" size="icon" onClick={() => setEditGroupOpen(true)} title="Edit group">
+              <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
