@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, MapPin, Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { GroupAvatar } from "@/components/groups/GroupAvatar";
 
 interface GroupDetails {
   id: string;
@@ -21,6 +22,7 @@ interface GroupDetails {
   capacity: number | null;
   member_count: number;
   is_full: boolean;
+  image_url: string | null;
 }
 
 const groupTypeLabels: Record<string, string> = {
@@ -197,19 +199,24 @@ export default function GroupPublicSignupPage() {
         </Button>
         <Card>
           <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="secondary">
-              {groupTypeLabels[group.group_type] || group.group_type}
-            </Badge>
-            {group.is_full && (
-              <Badge variant="destructive">Full</Badge>
-            )}
-          </div>
-          <CardTitle className="text-2xl">{group.name}</CardTitle>
-          {group.description && (
-            <CardDescription className="text-base">{group.description}</CardDescription>
-          )}
-        </CardHeader>
+            <div className="flex items-start gap-4">
+              <GroupAvatar name={group.name} imageUrl={group.image_url} size="xl" />
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="secondary">
+                    {groupTypeLabels[group.group_type] || group.group_type}
+                  </Badge>
+                  {group.is_full && (
+                    <Badge variant="destructive">Full</Badge>
+                  )}
+                </div>
+                <CardTitle className="text-2xl">{group.name}</CardTitle>
+                {group.description && (
+                  <CardDescription className="text-base mt-1">{group.description}</CardDescription>
+                )}
+              </div>
+            </div>
+          </CardHeader>
         <CardContent className="space-y-6">
           {/* Group Details */}
           <div className="grid grid-cols-2 gap-4 text-sm">
