@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Users, Calendar, Settings, UserPlus, MoreVertical, Edit, Trash2, CheckCircle2, User, UserCheck } from "lucide-react";
+import { ArrowLeft, Users, Calendar, Settings, UserPlus, MoreVertical, Edit, Trash2, CheckCircle2, User, UserCheck, Share2, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { AddGroupMemberDialog } from "@/components/groups/AddGroupMemberDialog";
 import { EditGroupDialog } from "@/components/groups/EditGroupDialog";
 import { CreateMeetingDialog } from "@/components/groups/CreateMeetingDialog";
@@ -33,6 +34,7 @@ const GroupDetailPage = () => {
   const { members, isLoading: membersLoading, updateMember, removeMember } = useGroupMembers(groupId);
   const { meetings, meetingsLoading } = useGroupAttendance(groupId);
 
+  const { toast } = useToast();
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [editGroupOpen, setEditGroupOpen] = useState(false);
   const [createMeetingOpen, setCreateMeetingOpen] = useState(false);
@@ -40,6 +42,28 @@ const GroupDetailPage = () => {
   const [signupRequestsOpen, setSignupRequestsOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const copySignupLink = async () => {
+    if (!group?.public_signup_token) return;
+    const link = `${window.location.origin}/groups/join/${group.public_signup_token}`;
+    
+    try {
+      await navigator.clipboard.writeText(link);
+      setLinkCopied(true);
+      toast({
+        title: "Link copied!",
+        description: "Public signup link copied to clipboard",
+      });
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
 
   const { pendingCount } = useGroupSignupRequests(groupId);
 
@@ -91,6 +115,20 @@ const GroupDetailPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {group.allow_public_signup && group.public_signup_token && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={copySignupLink}
+              >
+                {linkCopied ? (
+                  <Check className="h-4 w-4 mr-2" />
+                ) : (
+                  <Share2 className="h-4 w-4 mr-2" />
+                )}
+                {linkCopied ? "Copied!" : "Share Link"}
+              </Button>
+            )}
             {group.allow_public_signup && (
               <Button 
                 variant="outline" 
