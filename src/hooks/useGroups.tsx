@@ -25,6 +25,7 @@ export interface Group {
   visibility?: string;
   public_signup_token?: string;
   allow_public_signup?: boolean;
+  image_url?: string | null;
 }
 
 export const useGroups = (organizationId: string | undefined) => {

@@ -18,6 +18,7 @@ import { CreateMeetingDialog } from "@/components/groups/CreateMeetingDialog";
 import { TakeAttendanceDialog } from "@/components/groups/TakeAttendanceDialog";
 import { SignupRequestsDialog } from "@/components/groups/SignupRequestsDialog";
 import { useGroupSignupRequests } from "@/hooks/useGroupSignupRequests";
+import { GroupAvatar } from "@/components/groups/GroupAvatar";
 
 const groupTypeLabels: Record<string, string> = {
   small_group: "Small Group",
@@ -104,6 +105,7 @@ const GroupDetailPage = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
+            <GroupAvatar name={group.name} imageUrl={group.image_url} size="xl" />
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h1 className="text-3xl font-bold tracking-tight">{group.name}</h1>

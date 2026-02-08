@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useGroups, Group } from "@/hooks/useGroups";
-import { Save, Copy, Check, Link } from "lucide-react";
+import { Save, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { GroupImageUpload } from "./GroupImageUpload";
 
 interface EditGroupDialogProps {
   group: Group;
@@ -20,6 +21,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
   const { updateGroup } = useGroups(group.organization_id);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(group.image_url || null);
   
   const [formData, setFormData] = useState({
     name: group.name,
@@ -48,6 +50,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         visibility: group.visibility || "private",
         allow_public_signup: group.allow_public_signup || false,
       });
+      setImageUrl(group.image_url || null);
       setCopied(false);
     }
   }, [open, group]);
@@ -68,6 +71,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         location: formData.location || null,
         visibility: formData.visibility,
         allow_public_signup: formData.allow_public_signup,
+        image_url: imageUrl,
       },
     });
 
@@ -109,6 +113,13 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <GroupImageUpload
+            groupName={formData.name}
+            currentImageUrl={imageUrl}
+            onImageChange={setImageUrl}
+            groupId={group.id}
+          />
+
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 space-y-2">
               <Label htmlFor="name">Group Name *</Label>
