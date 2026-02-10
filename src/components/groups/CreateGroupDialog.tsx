@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useGroups } from "@/hooks/useGroups";
 import { GroupImageUpload } from "./GroupImageUpload";
+import { LeaderSelector } from "./LeaderSelector";
 
 const groupSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -56,6 +57,7 @@ export const CreateGroupDialog = ({
   const { createGroup } = useGroups(organizationId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [leaderUserId, setLeaderUserId] = useState<string | null>(null);
 
   const form = useForm<GroupFormValues>({
     resolver: zodResolver(groupSchema),
@@ -84,9 +86,11 @@ export const CreateGroupDialog = ({
         organization_id: organizationId,
         status: "active",
         image_url: imageUrl,
+        leader_user_id: leaderUserId,
       });
       form.reset();
       setImageUrl(null);
+      setLeaderUserId(null);
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
@@ -260,6 +264,14 @@ export const CreateGroupDialog = ({
                 </FormItem>
               )}
             />
+
+            {organizationId && (
+              <LeaderSelector
+                organizationId={organizationId}
+                value={leaderUserId}
+                onChange={setLeaderUserId}
+              />
+            )}
 
             <div className="flex gap-2 justify-end">
               <Button

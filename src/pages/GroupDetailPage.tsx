@@ -4,9 +4,12 @@ import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupAttendance } from "@/hooks/useGroupAttendance";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -71,6 +74,20 @@ const GroupDetailPage = () => {
   const group = groups.find((g) => g.id === groupId);
   const existingMemberIds = members.map((m) => m.contact_id);
 
+  const { data: leaderProfile } = useQuery({
+    queryKey: ["leader-profile", group?.leader_user_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("user_id", group!.leader_user_id!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!group?.leader_user_id,
+  });
+
   if (groupsLoading) {
     return (
       <div className="flex-1 overflow-y-auto p-6">
@@ -113,6 +130,15 @@ const GroupDetailPage = () => {
               </div>
               {group.description && (
                 <p className="text-muted-foreground">{group.description}</p>
+              )}
+              {leaderProfile && (
+                <div className="flex items-center gap-2 mt-1">
+                  <Avatar className="h-5 w-5">
+                    <AvatarImage src={leaderProfile.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px]">{leaderProfile.full_name?.[0]}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-muted-foreground">Led by {leaderProfile.full_name}</span>
+                </div>
               )}
             </div>
           </div>
