@@ -133,7 +133,7 @@ export default function GroupPublicSignupPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="h-screen overflow-y-auto bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">
           <CardHeader>
             <Skeleton className="h-8 w-48" />
@@ -151,7 +151,7 @@ export default function GroupPublicSignupPage() {
 
   if (error && !group) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="h-screen overflow-y-auto bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
@@ -165,7 +165,7 @@ export default function GroupPublicSignupPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="h-screen overflow-y-auto bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">
           <CardContent className="pt-6 text-center">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -189,7 +189,7 @@ export default function GroupPublicSignupPage() {
   if (!group) return null;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="h-screen overflow-y-auto bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg space-y-4">
         <Button variant="ghost" asChild className="mb-2">
           <Link to="/groups/directory">
