@@ -102,7 +102,7 @@ export default function GroupDirectoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-y-auto bg-background">
       {/* Header */}
       <div className="bg-primary text-primary-foreground py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
