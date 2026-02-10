@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
           meeting_frequency,
           location,
           capacity,
+          image_url,
           visibility,
           allow_public_signup,
           member_count:group_members(count)
@@ -74,6 +75,7 @@ Deno.serve(async (req) => {
             meeting_frequency: group.meeting_frequency,
             location: group.location,
             capacity: group.capacity,
+            image_url: group.image_url,
             member_count: memberCount,
             is_full: isFull,
           }
