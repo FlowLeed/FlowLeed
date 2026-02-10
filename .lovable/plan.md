@@ -1,113 +1,40 @@
 
 
-## Add Share Signup Link Button to Group Detail Page
+## Assign Group Leader
 
-### Overview
+Add a searchable leader assignment field to the Edit Group dialog, allowing users to search for organization team members by name and assign them as the group leader.
 
-Add a prominent "Share Link" button on the Group Detail page header so group leaders can quickly copy and share the public signup link without having to open the Edit dialog.
+### What will change
 
----
+1. **Edit Group Dialog** - A new "Group Leader" section will be added with a searchable dropdown (using the existing `Command` component pattern from `AddGroupMemberDialog`). Users can search organization members by name, see their avatar, and select one as the leader. A "Remove" option will allow unsetting the leader.
 
-### Change
+2. **Group Detail Page** - The leader's name will be displayed in the group header area so it's visible at a glance.
 
-**File:** `src/pages/GroupDetailPage.tsx`
+3. **Create Group Dialog** - The same leader selector will be available when creating a new group.
 
-Add a "Share Link" button in the header next to "Signup Requests" when public signup is enabled and a token exists.
+### Technical Details
 
-#### 1. Add new imports
+**Leader Selector Component** (`src/components/groups/LeaderSelector.tsx`)
+- New reusable component that queries `organization_members` joined with `profiles` to get team members
+- Supports search by name (using `ilike` on `profiles.full_name`)
+- Shows avatar, name, and role for each team member
+- Selected leader displayed with avatar and a "Change" button
+- Stores the selected `user_id` value
 
-```typescript
-import { Share2, Check } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-```
+**Edit Group Dialog changes** (`src/components/groups/EditGroupDialog.tsx`)
+- Add `leader_user_id` to the form state, initialized from `group.leader_user_id`
+- Render the `LeaderSelector` component between the Location field and Public Access Settings
+- Include `leader_user_id` in the update payload
 
-#### 2. Add state and helper function
+**Group Detail Page changes** (`src/pages/GroupDetailPage.tsx`)
+- Fetch the leader's profile (name, avatar) when `group.leader_user_id` is set
+- Display the leader info in the header or info cards section
 
-```typescript
-const { toast } = useToast();
-const [linkCopied, setLinkCopied] = useState(false);
+**Create Group Dialog changes** (`src/components/groups/CreateGroupDialog.tsx`)
+- Add the same `LeaderSelector` for new groups
 
-const copySignupLink = async () => {
-  if (!group?.public_signup_token) return;
-  const link = `${window.location.origin}/groups/join/${group.public_signup_token}`;
-  
-  try {
-    await navigator.clipboard.writeText(link);
-    setLinkCopied(true);
-    toast({
-      title: "Link copied!",
-      description: "Public signup link copied to clipboard",
-    });
-    setTimeout(() => setLinkCopied(false), 2000);
-  } catch (err) {
-    toast({
-      title: "Failed to copy",
-      description: "Please try again",
-      variant: "destructive",
-    });
-  }
-};
-```
-
-#### 3. Add button in header (lines 93-114)
-
-Add a new button before "Signup Requests":
-
-```tsx
-<div className="flex items-center gap-2">
-  {group.allow_public_signup && group.public_signup_token && (
-    <Button 
-      variant="outline" 
-      size="sm" 
-      onClick={copySignupLink}
-    >
-      {linkCopied ? (
-        <Check className="h-4 w-4 mr-2" />
-      ) : (
-        <Share2 className="h-4 w-4 mr-2" />
-      )}
-      {linkCopied ? "Copied!" : "Share Link"}
-    </Button>
-  )}
-  {group.allow_public_signup && (
-    <Button 
-      variant="outline" 
-      size="sm" 
-      onClick={() => setSignupRequestsOpen(true)}
-      className="relative"
-    >
-      ...existing signup requests button...
-    </Button>
-  )}
-  <Button variant="outline" size="sm" onClick={() => setEditGroupOpen(true)}>
-    <Settings className="h-4 w-4 mr-2" />
-    Edit Group
-  </Button>
-</div>
-```
-
----
-
-### Behavior
-
-| Condition | Button Shows |
-|-----------|--------------|
-| `allow_public_signup = false` | Hidden |
-| `allow_public_signup = true` but no token | Hidden |
-| `allow_public_signup = true` with token | Shows "Share Link" button |
-| After click | Changes to "Copied!" with checkmark for 2 seconds |
-
----
-
-### Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/pages/GroupDetailPage.tsx` | Add Share2/Check icons, toast hook, linkCopied state, copySignupLink function, and Share Link button |
-
----
-
-### Result
-
-Group leaders will see a "Share Link" button in the header that instantly copies the public signup link to their clipboard, making it easy to share via text, email, or social media.
+**Data flow:**
+- Query: `organization_members` joined with `profiles` table, filtered by `organization_id`
+- Write: `groups.leader_user_id` column (already exists in schema)
+- No database migrations needed
 
