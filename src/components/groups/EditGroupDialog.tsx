@@ -10,6 +10,7 @@ import { useGroups, Group } from "@/hooks/useGroups";
 import { Save, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GroupImageUpload } from "./GroupImageUpload";
+import { LeaderSelector } from "./LeaderSelector";
 
 interface EditGroupDialogProps {
   group: Group;
@@ -34,6 +35,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
     location: group.location || "",
     visibility: group.visibility || "private",
     allow_public_signup: group.allow_public_signup || false,
+    leader_user_id: group.leader_user_id || null,
   });
 
   useEffect(() => {
@@ -49,6 +51,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         location: group.location || "",
         visibility: group.visibility || "private",
         allow_public_signup: group.allow_public_signup || false,
+        leader_user_id: group.leader_user_id || null,
       });
       setImageUrl(group.image_url || null);
       setCopied(false);
@@ -72,6 +75,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         visibility: formData.visibility,
         allow_public_signup: formData.allow_public_signup,
         image_url: imageUrl,
+        leader_user_id: formData.leader_user_id,
       },
     });
 
@@ -227,6 +231,15 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 placeholder="Meeting location"
+              />
+            </div>
+
+            {/* Leader Assignment */}
+            <div className="col-span-2">
+              <LeaderSelector
+                organizationId={group.organization_id}
+                value={formData.leader_user_id}
+                onChange={(userId) => setFormData({ ...formData, leader_user_id: userId })}
               />
             </div>
 
