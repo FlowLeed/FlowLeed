@@ -197,25 +197,36 @@ export default function GroupPublicSignupPage() {
             Browse All Groups
           </Link>
         </Button>
-        <Card>
+        <Card className="overflow-hidden">
+          {/* Wide image/avatar banner */}
+          <div className="w-full h-40 bg-muted flex items-center justify-center">
+            {group.image_url ? (
+              <img 
+                src={group.image_url} 
+                alt={group.name} 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-4xl font-semibold text-muted-foreground">
+                {group.name.trim().split(/\s+/).length >= 2
+                  ? (group.name.trim().split(/\s+/)[0][0] + group.name.trim().split(/\s+/)[1][0]).toUpperCase()
+                  : group.name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+          </div>
           <CardHeader>
-            <div className="flex items-start gap-4">
-              <GroupAvatar name={group.name} imageUrl={group.image_url} size="xl" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary">
-                    {groupTypeLabels[group.group_type] || group.group_type}
-                  </Badge>
-                  {group.is_full && (
-                    <Badge variant="destructive">Full</Badge>
-                  )}
-                </div>
-                <CardTitle className="text-2xl">{group.name}</CardTitle>
-                {group.description && (
-                  <CardDescription className="text-base mt-1">{group.description}</CardDescription>
-                )}
-              </div>
+            <div className="flex items-center gap-2 mb-1">
+              <Badge variant="secondary">
+                {groupTypeLabels[group.group_type] || group.group_type}
+              </Badge>
+              {group.is_full && (
+                <Badge variant="destructive">Full</Badge>
+              )}
             </div>
+            <CardTitle className="text-2xl">{group.name}</CardTitle>
+            {group.description && (
+              <CardDescription className="text-base mt-1">{group.description}</CardDescription>
+            )}
           </CardHeader>
         <CardContent className="space-y-6">
           {/* Group Details */}
