@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -25,8 +25,8 @@ export const LeaderSelector = ({ organizationId, value, onChange }: LeaderSelect
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(!value);
 
-  const { data: members, isLoading } = useQuery({
-    queryKey: ["org-team-members", organizationId, searchTerm],
+  const { data: allMembers = [], isLoading } = useQuery({
+    queryKey: ["org-team-members", organizationId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("organization_members")
@@ -36,29 +36,28 @@ export const LeaderSelector = ({ organizationId, value, onChange }: LeaderSelect
 
       if (error) throw error;
 
-      let results: TeamMember[] = (data || []).map((m: any) => ({
+      return (data || []).map((m: any) => ({
         user_id: m.user_id,
         role: m.role,
         full_name: m.profiles?.full_name || "Unknown",
         avatar_url: m.profiles?.avatar_url || null,
         email: m.profiles?.email || null,
       }));
-
-      if (searchTerm) {
-        const lower = searchTerm.toLowerCase();
-        results = results.filter(
-          (m) =>
-            m.full_name.toLowerCase().includes(lower) ||
-            (m.email && m.email.toLowerCase().includes(lower))
-        );
-      }
-
-      return results;
     },
     enabled: !!organizationId,
   });
 
-  const selectedMember = members?.find((m) => m.user_id === value);
+  const members = useMemo(() => {
+    if (!searchTerm) return allMembers;
+    const lower = searchTerm.toLowerCase();
+    return allMembers.filter(
+      (m) =>
+        m.full_name.toLowerCase().includes(lower) ||
+        (m.email && m.email.toLowerCase().includes(lower))
+    );
+  }, [allMembers, searchTerm]);
+
+  const selectedMember = allMembers.find((m) => m.user_id === value);
 
   if (value && selectedMember && !isSearching) {
     return (
