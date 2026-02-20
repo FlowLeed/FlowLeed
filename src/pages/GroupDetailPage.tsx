@@ -115,6 +115,12 @@ const GroupDetailPage = () => {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="space-y-6">
+        {/* Back Button */}
+        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => navigate("/groups")}>
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Back
+        </Button>
+
         {/* Hero Banner */}
         <Card className="overflow-hidden">
           <div className="w-full h-48 bg-muted flex items-center justify-center">
@@ -131,12 +137,6 @@ const GroupDetailPage = () => {
           <div className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Button variant="ghost" size="sm" className="h-7 px-2 -ml-2" onClick={() => navigate("/groups")}>
-                    <ArrowLeft className="h-4 w-4 mr-1" />
-                    Back
-                  </Button>
-                </div>
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl font-bold tracking-tight">{group.name}</h1>
                   <Badge variant="secondary">{groupTypeLabels[group.group_type]}</Badge>
