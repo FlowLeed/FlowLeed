@@ -203,14 +203,7 @@ export default function GroupDirectoryPage() {
                   )}
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between gap-4">
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      <span>
-                        {group.member_count} member{group.member_count !== 1 ? "s" : ""}
-                        {group.capacity && ` / ${group.capacity} capacity`}
-                      </span>
-                    </div>
+                    <div className="space-y-2 text-sm text-muted-foreground">
                     {group.meeting_day && (
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />

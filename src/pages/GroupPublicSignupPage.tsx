@@ -249,13 +249,6 @@ export default function GroupPublicSignupPage() {
                 <span>{group.location}</span>
               </div>
             )}
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Users className="h-4 w-4" />
-              <span>
-                {group.member_count} member{group.member_count !== 1 ? 's' : ''}
-                {group.capacity && ` / ${group.capacity} max`}
-              </span>
-            </div>
           </div>
 
           {/* Signup Form */}
