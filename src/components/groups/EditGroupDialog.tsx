@@ -11,6 +11,7 @@ import { Save, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GroupImageUpload } from "./GroupImageUpload";
 import { LeaderSelector } from "./LeaderSelector";
+import { AIGroupDescriptionSuggestions } from "./AIGroupDescriptionSuggestions";
 
 interface EditGroupDialogProps {
   group: Group;
@@ -142,6 +143,16 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={3}
+              />
+              <AIGroupDescriptionSuggestions
+                groupName={formData.name}
+                groupType={formData.group_type}
+                meetingDay={formData.meeting_day}
+                meetingFrequency={formData.meeting_frequency}
+                location={formData.location}
+                currentDescription={formData.description}
+                organizationId={group.organization_id}
+                onSelect={(desc) => setFormData({ ...formData, description: desc })}
               />
             </div>
 
