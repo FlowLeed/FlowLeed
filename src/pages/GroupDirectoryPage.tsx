@@ -230,8 +230,7 @@ export default function GroupDirectoryPage() {
                     onClick={() => handleJoinGroup(group.public_signup_token)}
                     className="w-full group"
                   >
-                    Request to Join
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    Learn More...
                   </Button>
                 </CardContent>
               </Card>
