@@ -115,69 +115,69 @@ const GroupDetailPage = () => {
   return (
     <div className="flex-1 overflow-y-auto p-6">
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/groups")}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <GroupAvatar name={group.name} imageUrl={group.image_url} size="xl" />
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-3xl font-bold tracking-tight">{group.name}</h1>
-                <Badge variant="secondary">{groupTypeLabels[group.group_type]}</Badge>
-              </div>
-              {group.description && (
-                <p className="text-muted-foreground">{group.description}</p>
-              )}
-              {leaderProfile && (
-                <div className="flex items-center gap-2 mt-1">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={leaderProfile.avatar_url || undefined} />
-                    <AvatarFallback className="text-[10px]">{leaderProfile.full_name?.[0]}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm text-muted-foreground">Led by {leaderProfile.full_name}</span>
+        {/* Hero Banner */}
+        <Card className="overflow-hidden">
+          <div className="w-full h-48 bg-muted flex items-center justify-center">
+            {group.image_url ? (
+              <img src={group.image_url} alt={group.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-5xl font-semibold text-muted-foreground">
+                {group.name.trim().split(/\s+/).length >= 2
+                  ? (group.name.trim().split(/\s+/)[0][0] + group.name.trim().split(/\s+/)[1][0]).toUpperCase()
+                  : group.name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div className="p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Button variant="ghost" size="sm" className="h-7 px-2 -ml-2" onClick={() => navigate("/groups")}>
+                    <ArrowLeft className="h-4 w-4 mr-1" />
+                    Back
+                  </Button>
                 </div>
-              )}
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold tracking-tight">{group.name}</h1>
+                  <Badge variant="secondary">{groupTypeLabels[group.group_type]}</Badge>
+                </div>
+                {group.description && (
+                  <p className="text-muted-foreground mb-2">{group.description}</p>
+                )}
+                {leaderProfile && (
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={leaderProfile.avatar_url || undefined} />
+                      <AvatarFallback className="text-[10px]">{leaderProfile.full_name?.[0]}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm text-muted-foreground">Led by {leaderProfile.full_name}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {group.allow_public_signup && group.public_signup_token && (
+                  <Button variant="outline" size="icon" onClick={copySignupLink} title="Share signup link">
+                    {linkCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+                  </Button>
+                )}
+                {group.allow_public_signup && (
+                  <Button variant="outline" size="sm" onClick={() => setSignupRequestsOpen(true)} className="relative">
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Requests
+                    {pendingCount > 0 && (
+                      <Badge className="ml-2 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
+                        {pendingCount}
+                      </Badge>
+                    )}
+                  </Button>
+                )}
+                <Button variant="outline" size="icon" onClick={() => setEditGroupOpen(true)} title="Edit group">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {group.allow_public_signup && group.public_signup_token && (
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={copySignupLink}
-                title="Share signup link"
-              >
-                {linkCopied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Share2 className="h-4 w-4" />
-                )}
-              </Button>
-            )}
-            {group.allow_public_signup && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setSignupRequestsOpen(true)}
-                className="relative"
-              >
-                <UserCheck className="h-4 w-4 mr-2" />
-                Requests
-                {pendingCount > 0 && (
-                  <Badge className="ml-2 h-5 min-w-5 flex items-center justify-center p-0 text-xs">
-                    {pendingCount}
-                  </Badge>
-                )}
-              </Button>
-            )}
-            <Button variant="outline" size="icon" onClick={() => setEditGroupOpen(true)} title="Edit group">
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        </Card>
 
         {/* Group Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
