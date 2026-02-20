@@ -28,21 +28,37 @@ export const LeaderSelector = ({ organizationId, value, onChange }: LeaderSelect
   const { data: allMembers = [], isLoading } = useQuery({
     queryKey: ["org-team-members", organizationId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get organization members
+      const { data: orgMembers, error: membersError } = await supabase
         .from("organization_members")
-        .select("user_id, role, profiles(full_name, avatar_url, email)")
+        .select("user_id, role")
         .eq("organization_id", organizationId)
         .order("role");
 
-      if (error) throw error;
+      if (membersError) throw membersError;
+      if (!orgMembers || orgMembers.length === 0) return [];
 
-      return (data || []).map((m: any) => ({
-        user_id: m.user_id,
-        role: m.role,
-        full_name: m.profiles?.full_name || "Unknown",
-        avatar_url: m.profiles?.avatar_url || null,
-        email: m.profiles?.email || null,
-      }));
+      // Then get profiles for those users
+      const userIds = orgMembers.map((m) => m.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url, email")
+        .in("user_id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+
+      return orgMembers.map((m) => {
+        const profile = profileMap.get(m.user_id);
+        return {
+          user_id: m.user_id,
+          role: m.role,
+          full_name: profile?.full_name || "Unknown",
+          avatar_url: profile?.avatar_url || null,
+          email: profile?.email || null,
+        };
+      });
     },
     enabled: !!organizationId,
   });
