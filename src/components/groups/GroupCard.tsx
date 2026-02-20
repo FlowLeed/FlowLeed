@@ -75,7 +75,10 @@ export const GroupCard = ({ group }: GroupCardProps) => {
                     <Badge variant="outline">Inactive</Badge>
                   )}
                 </div>
-                <h3 className="text-lg font-semibold group-hover:text-primary transition-colors truncate">
+                <h3 
+                  className="text-lg font-semibold hover:text-primary transition-colors truncate cursor-pointer"
+                  onClick={() => navigate(`/groups/${group.id}`)}
+                >
                   {group.name}
                 </h3>
               </div>
