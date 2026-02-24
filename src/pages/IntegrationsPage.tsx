@@ -385,6 +385,10 @@ const IntegrationsPage = () => {
         toast.success("Sync started", {
           description: `Queued ${data.totalContacts || 0} people for processing`
         });
+      } else if (data?.totalContacts === 0) {
+        toast.success("Everything is up to date", {
+          description: "No new or updated people found since the last sync"
+        });
       } else {
         toast.success("Sync completed", {
           description: `Synced ${data?.totalContacts || 0} people`
