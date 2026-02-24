@@ -1,14 +1,26 @@
 
 
-## Fix Leader Selector Search
+## Improve Sync Toast Message
 
-The search is stuck on "Searching..." because every keystroke triggers a full database re-fetch. The Supabase query fetches all organization members regardless of the search term, and filtering happens client-side -- but `searchTerm` is included in the React Query cache key, causing a new loading state on each keystroke.
+**Goal**: Show a friendlier "Everything is up to date" message instead of "Synced 0 people" when no changes are found.
 
-### Changes
+### Change
 
-**File: `src/components/groups/LeaderSelector.tsx`**
+**File: `src/pages/IntegrationsPage.tsx`** (around line 388-392)
 
-1. Remove `searchTerm` from the `queryKey` so the member list is fetched once and cached
-2. Move the client-side filtering outside the query function, using `useMemo` to derive filtered results from the cached data
-3. This way, typing in the search box instantly filters the already-loaded list without any loading flicker
+Update the toast logic in the `else` branch to check if `totalContacts` is 0:
+
+```
+if (data?.totalContacts === 0) {
+  toast.success("Everything is up to date", {
+    description: "No new or updated people found since the last sync"
+  });
+} else {
+  toast.success("Sync completed", {
+    description: `Synced ${data?.totalContacts || 0} people`
+  });
+}
+```
+
+This is a single conditional check -- no other files need to change.
 
