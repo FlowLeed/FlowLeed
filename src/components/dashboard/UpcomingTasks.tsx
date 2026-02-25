@@ -74,7 +74,7 @@ export const UpcomingTasks = ({ tasks, loading }: UpcomingTasksProps) => {
           </Link>
         ))}
         <div className="pt-2">
-          <Link to="/contacts">
+          <Link to="/tasks">
             <Button variant="ghost" className="w-full justify-between">
               View All
               <ArrowRight className="h-4 w-4" />
