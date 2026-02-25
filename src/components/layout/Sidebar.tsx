@@ -450,8 +450,7 @@ export const Sidebar = () => {
   }, {
     title: "Tasks",
     icon: CheckSquare,
-    path: "/tasks",
-    comingSoon: true
+    path: "/tasks"
   }];
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
