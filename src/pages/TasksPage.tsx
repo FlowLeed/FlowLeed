@@ -48,7 +48,7 @@ const TasksPage = () => {
         rightContent={
           <Button size="sm" onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            New Task
+            Add to Flow
           </Button>
         }
       />
