@@ -1,40 +1,40 @@
 import { useState } from "react";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover, PopoverContent, PopoverTrigger,
-} from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { FlowSelectionStep } from "@/components/contact/FlowSelectionStep";
+import { StageSelectionStep } from "@/components/contact/StageSelectionStep";
+import { ArrowLeft, Search } from "lucide-react";
 
 interface CreateTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const INTERACTION_TYPES = [
-  { value: "call", label: "Call" },
-  { value: "email", label: "Email" },
-  { value: "text", label: "Text" },
-  { value: "visit", label: "Visit" },
-  { value: "meeting", label: "Meeting" },
-  { value: "other", label: "Other" },
-];
+interface Pipeline {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+}
+
+interface Stage {
+  id: string;
+  name: string;
+  color?: string;
+  stage_order: number;
+  default_assignee_user_id?: string | null;
+}
+
+type Step = "contact" | "pipeline" | "stage";
 
 export const CreateTaskDialog = ({ open, onOpenChange }: CreateTaskDialogProps) => {
   const { user } = useAuth();
@@ -42,13 +42,11 @@ export const CreateTaskDialog = ({ open, onOpenChange }: CreateTaskDialogProps) 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [step, setStep] = useState<Step>("contact");
   const [contactSearch, setContactSearch] = useState("");
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [selectedContactName, setSelectedContactName] = useState("");
-  const [subject, setSubject] = useState("");
-  const [interactionType, setInteractionType] = useState("call");
-  const [dueDate, setDueDate] = useState<Date>();
-  const [notes, setNotes] = useState("");
+  const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
 
   // Search contacts
   const { data: searchResults } = useQuery({
@@ -66,55 +64,112 @@ export const CreateTaskDialog = ({ open, onOpenChange }: CreateTaskDialogProps) 
     enabled: !!contactSearch && contactSearch.length >= 2 && !!organization?.id,
   });
 
-  const createTask = useMutation({
-    mutationFn: async () => {
-      if (!selectedContactId || !user?.id || !dueDate) throw new Error("Missing required fields");
-      const { error } = await supabase.from("contact_interactions").insert({
+  // Fetch pipelines
+  const { data: pipelines, isLoading: loadingPipelines } = useQuery({
+    queryKey: ["task-pipelines"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pipelines")
+        .select("id, name, description, icon")
+        .order("name");
+      if (error) throw error;
+      return data as Pipeline[];
+    },
+    enabled: step === "pipeline",
+  });
+
+  // Fetch stages for selected pipeline
+  const { data: stages, isLoading: loadingStages } = useQuery({
+    queryKey: ["task-pipeline-stages", selectedPipeline?.id],
+    queryFn: async () => {
+      if (!selectedPipeline) return [];
+      const { data, error } = await supabase
+        .from("pipeline_stages")
+        .select("id, name, color, stage_order, default_assignee_user_id")
+        .eq("pipeline_id", selectedPipeline.id)
+        .order("stage_order");
+      if (error) throw error;
+      return data as Stage[];
+    },
+    enabled: !!selectedPipeline,
+  });
+
+  // Insert into pipeline_contacts
+  const addToFlowMutation = useMutation({
+    mutationFn: async (stage: Stage) => {
+      if (!selectedContactId || !selectedPipeline || !user?.id) throw new Error("Missing data");
+
+      const { error } = await supabase.from("pipeline_contacts").insert({
         contact_id: selectedContactId,
-        created_by_user_id: user.id,
+        pipeline_id: selectedPipeline.id,
+        stage_id: stage.id,
+        stage_order: stage.stage_order,
         assigned_to_user_id: user.id,
-        interaction_type: interactionType,
-        subject: subject || "Follow up",
-        details: notes || null,
-        scheduled_at: dueDate.toISOString(),
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Task created", description: `Follow-up scheduled for ${selectedContactName}` });
-      queryClient.invalidateQueries({ queryKey: ["all-scheduled-tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["my-upcoming-tasks"] });
-      resetForm();
-      onOpenChange(false);
+      toast({
+        title: "Added to flow",
+        description: `${selectedContactName} added to ${selectedPipeline?.name}`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["tasks-page-contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["pipelines"] });
+      // Dispatch custom event for flow sync
+      window.dispatchEvent(new CustomEvent("flow-assignment-updated"));
+      handleClose();
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
 
-  const resetForm = () => {
+  const handleClose = () => {
+    setStep("contact");
     setContactSearch("");
     setSelectedContactId(null);
     setSelectedContactName("");
-    setSubject("");
-    setInteractionType("call");
-    setDueDate(undefined);
-    setNotes("");
+    setSelectedPipeline(null);
+    onOpenChange(false);
+  };
+
+  const handleBack = () => {
+    if (step === "stage") {
+      setSelectedPipeline(null);
+      setStep("pipeline");
+    } else if (step === "pipeline") {
+      setStep("contact");
+    }
+  };
+
+  const stepTitle = () => {
+    switch (step) {
+      case "contact": return "Add to Flow — Select Contact";
+      case "pipeline": return "Add to Flow — Select Flow";
+      case "stage": return `Add to Flow — ${selectedPipeline?.name}`;
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New Follow-Up Task</DialogTitle>
+          <div className="flex items-center gap-3">
+            {step !== "contact" && (
+              <Button variant="ghost" size="sm" onClick={handleBack}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            )}
+            <DialogTitle>{stepTitle()}</DialogTitle>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Contact search */}
-          <div className="space-y-2">
+        {/* Step 1: Search & select contact */}
+        {step === "contact" && (
+          <div className="space-y-3">
             <Label>Contact</Label>
             {selectedContactId ? (
-              <div className="flex items-center justify-between p-2 border rounded-md">
+              <div className="flex items-center justify-between p-3 border rounded-md">
                 <span className="font-medium">{selectedContactName}</span>
                 <Button variant="ghost" size="sm" onClick={() => { setSelectedContactId(null); setSelectedContactName(""); }}>
                   Change
@@ -122,10 +177,12 @@ export const CreateTaskDialog = ({ open, onOpenChange }: CreateTaskDialogProps) 
               </div>
             ) : (
               <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search contacts..."
                   value={contactSearch}
                   onChange={(e) => setContactSearch(e.target.value)}
+                  className="pl-9"
                 />
                 {searchResults && searchResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border rounded-md shadow-md max-h-48 overflow-y-auto">
@@ -146,69 +203,47 @@ export const CreateTaskDialog = ({ open, onOpenChange }: CreateTaskDialogProps) 
                 )}
               </div>
             )}
-          </div>
 
-          {/* Subject */}
-          <div className="space-y-2">
-            <Label>Subject</Label>
-            <Input placeholder="Follow up about..." value={subject} onChange={(e) => setSubject(e.target.value)} />
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+              <Button disabled={!selectedContactId} onClick={() => setStep("pipeline")}>
+                Next
+              </Button>
+            </div>
           </div>
+        )}
 
-          {/* Type */}
-          <div className="space-y-2">
-            <Label>Type</Label>
-            <Select value={interactionType} onValueChange={setInteractionType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {INTERACTION_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Step 2: Select flow */}
+        {step === "pipeline" && (
+          <>
+            <FlowSelectionStep
+              pipelines={pipelines || []}
+              loading={loadingPipelines}
+              onSelect={(pipeline) => {
+                setSelectedPipeline(pipeline);
+                setStep("stage");
+              }}
+            />
+            <div className="flex justify-end pt-2">
+              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            </div>
+          </>
+        )}
 
-          {/* Due date */}
-          <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dueDate ? format(dueDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={setDueDate}
-                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label>Notes (optional)</Label>
-            <Textarea placeholder="Any notes..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button
-            onClick={() => createTask.mutate()}
-            disabled={!selectedContactId || !dueDate || createTask.isPending}
-          >
-            {createTask.isPending ? "Creating..." : "Create Task"}
-          </Button>
-        </DialogFooter>
+        {/* Step 3: Select stage */}
+        {step === "stage" && selectedPipeline && (
+          <>
+            <StageSelectionStep
+              stages={stages || []}
+              loading={loadingStages}
+              onSelect={(stage) => addToFlowMutation.mutate(stage)}
+              adding={addToFlowMutation.isPending}
+            />
+            <div className="flex justify-end pt-2">
+              <Button variant="outline" onClick={handleClose}>Cancel</Button>
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
