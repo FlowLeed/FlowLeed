@@ -458,6 +458,70 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_engagement_scores: {
+        Row: {
+          contact_id: string
+          engagement_level: string | null
+          last_checkin_at: string | null
+          organization_id: string
+          score: number | null
+          streak_weeks: number | null
+          total_checkins_30d: number | null
+          total_checkins_90d: number | null
+          updated_at: string
+          volunteer_checkins_90d: number | null
+          weeks_attended_last_12: number | null
+        }
+        Insert: {
+          contact_id: string
+          engagement_level?: string | null
+          last_checkin_at?: string | null
+          organization_id: string
+          score?: number | null
+          streak_weeks?: number | null
+          total_checkins_30d?: number | null
+          total_checkins_90d?: number | null
+          updated_at?: string
+          volunteer_checkins_90d?: number | null
+          weeks_attended_last_12?: number | null
+        }
+        Update: {
+          contact_id?: string
+          engagement_level?: string | null
+          last_checkin_at?: string | null
+          organization_id?: string
+          score?: number | null
+          streak_weeks?: number | null
+          total_checkins_30d?: number | null
+          total_checkins_90d?: number | null
+          updated_at?: string
+          volunteer_checkins_90d?: number | null
+          weeks_attended_last_12?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_engagement_scores_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_engagement_scores_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_engagement_scores_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_family_members: {
         Row: {
           avatar: string | null
@@ -1968,6 +2032,76 @@ export type Database = {
           },
         ]
       }
+      pco_checkins: {
+        Row: {
+          checked_in_at: string | null
+          checked_out_at: string | null
+          checkin_kind: string | null
+          contact_id: string | null
+          created_at: string
+          event_name: string | null
+          event_time_name: string | null
+          id: string
+          location_name: string | null
+          metadata: Json | null
+          organization_id: string
+          pc_person_id: string
+          pco_checkin_id: string
+        }
+        Insert: {
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          checkin_kind?: string | null
+          contact_id?: string | null
+          created_at?: string
+          event_name?: string | null
+          event_time_name?: string | null
+          id?: string
+          location_name?: string | null
+          metadata?: Json | null
+          organization_id: string
+          pc_person_id: string
+          pco_checkin_id: string
+        }
+        Update: {
+          checked_in_at?: string | null
+          checked_out_at?: string | null
+          checkin_kind?: string | null
+          contact_id?: string | null
+          created_at?: string
+          event_name?: string | null
+          event_time_name?: string | null
+          id?: string
+          location_name?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          pc_person_id?: string
+          pco_checkin_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pco_checkins_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_checkins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_checkins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pco_moment_mappings: {
         Row: {
           created_at: string
@@ -2843,6 +2977,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_engagement_scores: {
+        Args: { p_org_id: string }
+        Returns: undefined
+      }
       calculate_health_score_v2: { Args: { org_id: string }; Returns: Json }
       calculate_organization_health_score: {
         Args: { org_id: string }
