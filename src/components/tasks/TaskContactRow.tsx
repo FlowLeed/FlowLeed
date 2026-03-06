@@ -3,6 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { iconMap } from "@/lib/flowIcons";
 import type { TaskContact } from "@/hooks/useTasksPageData";
+import { useEngagementScore } from "@/hooks/useCheckinData";
+import { EngagementBadge } from "@/components/contact/EngagementBadge";
 
 const getInitials = (name: string) => {
   const parts = name.split(" ");
@@ -12,6 +14,7 @@ const getInitials = (name: string) => {
 
 export const TaskContactRow = ({ contact }: { contact: TaskContact }) => {
   const FlowIcon = contact.flowIcon && iconMap[contact.flowIcon] ? iconMap[contact.flowIcon] : null;
+  const { data: engagementScore } = useEngagementScore(contact.id);
 
   return (
     <Link
@@ -44,6 +47,7 @@ export const TaskContactRow = ({ contact }: { contact: TaskContact }) => {
             {contact.nextStageName && (
               <span className="text-xs text-muted-foreground">→ {contact.nextStageName}</span>
             )}
+            <EngagementBadge score={engagementScore} compact />
           </div>
         </div>
       </div>

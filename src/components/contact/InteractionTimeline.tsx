@@ -63,6 +63,8 @@ const getInteractionIcon = (type: string) => {
       return <MessageSquare className="h-4 w-4" />;
     case 'meeting':
       return <Calendar className="h-4 w-4" />;
+    case 'checkin':
+      return <UserCheck className="h-4 w-4" />;
     case 'flow_stage_changed':
       return <ArrowRight className="h-4 w-4" />;
     case 'flow_assignment_changed':
@@ -93,6 +95,8 @@ const getInteractionColor = (type: string) => {
       return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300';
     case 'meeting':
       return 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300';
+    case 'checkin':
+      return 'bg-teal-100 text-teal-800 dark:bg-teal-900/20 dark:text-teal-300';
     case 'flow_stage_changed':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300';
     case 'flow_assignment_changed':
