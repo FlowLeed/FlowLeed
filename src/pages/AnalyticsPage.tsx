@@ -6,6 +6,7 @@ import { OverviewSection } from "@/components/analytics/OverviewSection";
 import { FlowsSection } from "@/components/analytics/FlowsSection";
 import { TeamSection } from "@/components/analytics/TeamSection";
 import { PeopleSection } from "@/components/analytics/PeopleSection";
+import { AttendanceSection } from "@/components/analytics/AttendanceSection";
 import { DateRange, DateRangePreset, getDateRangeFromPreset } from "@/hooks/useAnalytics";
 const AnalyticsPage = () => {
   const [preset, setPreset] = useState<DateRangePreset>("month");
@@ -31,6 +32,7 @@ const AnalyticsPage = () => {
         <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="flows">Flows</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
           <TabsTrigger value="people">People</TabsTrigger>
@@ -38,6 +40,9 @@ const AnalyticsPage = () => {
 
         <TabsContent value="overview" className="space-y-6">
           <OverviewSection dateRange={dateRange} />
+        </TabsContent>
+        <TabsContent value="attendance" className="space-y-6">
+          <AttendanceSection />
         </TabsContent>
 
         <TabsContent value="flows" className="space-y-6">

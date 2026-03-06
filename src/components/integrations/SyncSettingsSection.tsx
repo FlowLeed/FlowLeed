@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Clock, RefreshCw } from "lucide-react";
+import { Clock, RefreshCw, CheckSquare } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSyncCheckins } from "@/hooks/useCheckinData";
 
 interface SyncSettingsSectionProps {
   integrationId: string;
@@ -34,6 +35,7 @@ export function SyncSettingsSection({
   const [autoSyncAll, setAutoSyncAll] = useState(autoSyncAllEnabled);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const syncCheckins = useSyncCheckins();
 
   const updateFrequencyMutation = useMutation({
     mutationFn: async (frequency: string) => {
@@ -116,6 +118,16 @@ export function SyncSettingsSection({
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
           {isSyncing ? 'Syncing...' : 'Sync All People'}
+        </Button>
+        <Button
+          onClick={() => syncCheckins.mutate(integrationId)}
+          disabled={syncCheckins.isPending}
+          size="sm"
+          variant="outline"
+          className="shrink-0"
+        >
+          <CheckSquare className={`h-4 w-4 mr-2 ${syncCheckins.isPending ? 'animate-spin' : ''}`} />
+          {syncCheckins.isPending ? 'Syncing...' : 'Sync Check-Ins'}
         </Button>
       </div>
 
