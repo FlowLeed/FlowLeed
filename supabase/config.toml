@@ -124,3 +124,6 @@ verify_jwt = false
 
 [functions.send-daily-digest]
 verify_jwt = false
+
+[functions.pco-sync-checkins]
+verify_jwt = false
