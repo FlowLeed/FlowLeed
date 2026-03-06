@@ -21,8 +21,8 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 export function AttendanceSection() {
-  const { data: profile } = useProfile();
-  const orgId = profile?.organization_id;
+  const { organization } = useProfile();
+  const orgId = organization?.id;
   const { data: stats, isLoading } = useOrgCheckinStats(orgId);
 
   if (isLoading) {
