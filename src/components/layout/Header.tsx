@@ -418,6 +418,8 @@ export const Header: React.FC<HeaderProps> = ({
             showCompleted={showCompleted ?? false}
             onShowCompletedChange={onShowCompletedChange ?? (() => {})}
             completedCount={completedCount ?? 0}
+            selectedEngagementFilter={selectedEngagementFilter}
+            onEngagementFilterChange={onEngagementFilterChange}
           />
         )}
         
