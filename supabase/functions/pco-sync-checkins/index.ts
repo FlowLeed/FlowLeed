@@ -51,17 +51,21 @@ Deno.serve(async (req) => {
 
     const { integrationId } = await req.json();
 
-    // Authenticate user
+    // Authenticate user OR allow service-role calls (from auto-sync cron)
     const authHeader = req.headers.get('Authorization');
+    const isServiceRole = authHeader?.includes(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '___none___');
+    
     if (!authHeader) {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    const { data: userData, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-    if (authError || !userData.user) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+    if (!isServiceRole) {
+      const { data: userData, error: authError } = await supabase.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      );
+      if (authError || !userData.user) {
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+      }
     }
 
     if (!integrationId) {
