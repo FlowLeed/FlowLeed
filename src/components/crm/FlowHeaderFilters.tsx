@@ -47,9 +47,16 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
   contactCounts,
   showCompleted,
   onShowCompletedChange,
-  completedCount
+  completedCount,
+  selectedEngagementFilter,
+  onEngagementFilterChange
 }) => {
-  const hasActiveFilter = selectedFilter !== null || showCompleted;
+  const activeFilterCount = [
+    selectedFilter !== null,
+    showCompleted,
+    selectedEngagementFilter != null,
+  ].filter(Boolean).length;
+  const hasActiveFilter = activeFilterCount > 0;
 
   return (
     <Popover>
