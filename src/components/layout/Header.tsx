@@ -94,6 +94,8 @@ interface HeaderProps {
   onDocsClick?: () => void;
   flowType?: 'linear' | 'recurring';
   cycleDays?: number;
+  selectedEngagementFilter?: string | null;
+  onEngagementFilterChange?: (level: string | null) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
