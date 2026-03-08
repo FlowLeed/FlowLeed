@@ -134,15 +134,46 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
             </div>
           </div>
 
-          {(selectedFilter !== null) && (
+          {/* Engagement Level filter */}
+          {onEngagementFilterChange && (
+            <div className="border-t pt-4 space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                Engagement Level
+              </label>
+              <div className="space-y-1">
+                {ENGAGEMENT_LEVELS.map((level) => (
+                  <Button
+                    key={level.value}
+                    variant={selectedEngagementFilter === level.value ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() =>
+                      onEngagementFilterChange(
+                        selectedEngagementFilter === level.value ? null : level.value
+                      )
+                    }
+                    className="w-full justify-start gap-2"
+                  >
+                    <span className={cn("text-xs font-bold", level.color)}>●</span>
+                    {level.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(selectedFilter !== null || selectedEngagementFilter != null) && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => onFilterChange(null)} 
+              onClick={() => {
+                onFilterChange(null);
+                onEngagementFilterChange?.(null);
+              }} 
               className="w-full"
             >
               <X className="mr-2 h-4 w-4" />
-              Clear Assignment Filter
+              Clear All Filters
             </Button>
           )}
         </div>
