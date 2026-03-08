@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Filter, UserX, X, CheckCircle2 } from "lucide-react";
+import { Filter, UserX, X, CheckCircle2, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TeamMember {
@@ -13,6 +13,16 @@ interface TeamMember {
   avatar?: string;
   email: string;
 }
+
+type EngagementLevel = 'highly_engaged' | 'active' | 'at_risk' | 'inactive' | 'new';
+
+const ENGAGEMENT_LEVELS: { value: EngagementLevel; label: string; color: string }[] = [
+  { value: 'highly_engaged', label: 'Highly Engaged', color: 'text-emerald-600' },
+  { value: 'active', label: 'Active', color: 'text-blue-600' },
+  { value: 'at_risk', label: 'At Risk', color: 'text-amber-600' },
+  { value: 'inactive', label: 'Inactive', color: 'text-red-600' },
+  { value: 'new', label: 'New', color: 'text-purple-600' },
+];
 
 interface FlowHeaderFiltersProps {
   teamMembers: TeamMember[];
@@ -26,6 +36,8 @@ interface FlowHeaderFiltersProps {
   showCompleted: boolean;
   onShowCompletedChange: (show: boolean) => void;
   completedCount: number;
+  selectedEngagementFilter?: string | null;
+  onEngagementFilterChange?: (level: string | null) => void;
 }
 
 export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
@@ -35,9 +47,16 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
   contactCounts,
   showCompleted,
   onShowCompletedChange,
-  completedCount
+  completedCount,
+  selectedEngagementFilter,
+  onEngagementFilterChange
 }) => {
-  const hasActiveFilter = selectedFilter !== null || showCompleted;
+  const activeFilterCount = [
+    selectedFilter !== null,
+    showCompleted,
+    selectedEngagementFilter != null,
+  ].filter(Boolean).length;
+  const hasActiveFilter = activeFilterCount > 0;
 
   return (
     <Popover>
@@ -115,15 +134,46 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
             </div>
           </div>
 
-          {(selectedFilter !== null) && (
+          {/* Engagement Level filter */}
+          {onEngagementFilterChange && (
+            <div className="border-t pt-4 space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Activity className="h-4 w-4 text-muted-foreground" />
+                Engagement Level
+              </label>
+              <div className="space-y-1">
+                {ENGAGEMENT_LEVELS.map((level) => (
+                  <Button
+                    key={level.value}
+                    variant={selectedEngagementFilter === level.value ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() =>
+                      onEngagementFilterChange(
+                        selectedEngagementFilter === level.value ? null : level.value
+                      )
+                    }
+                    className="w-full justify-start gap-2"
+                  >
+                    <span className={cn("text-xs font-bold", level.color)}>●</span>
+                    {level.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(selectedFilter !== null || selectedEngagementFilter != null) && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => onFilterChange(null)} 
+              onClick={() => {
+                onFilterChange(null);
+                onEngagementFilterChange?.(null);
+              }} 
               className="w-full"
             >
               <X className="mr-2 h-4 w-4" />
-              Clear Assignment Filter
+              Clear All Filters
             </Button>
           )}
         </div>

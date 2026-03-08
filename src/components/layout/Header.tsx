@@ -94,6 +94,8 @@ interface HeaderProps {
   onDocsClick?: () => void;
   flowType?: 'linear' | 'recurring';
   cycleDays?: number;
+  selectedEngagementFilter?: string | null;
+  onEngagementFilterChange?: (level: string | null) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -121,7 +123,9 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectAll,
   onDocsClick,
   flowType,
-  cycleDays
+  cycleDays,
+  selectedEngagementFilter,
+  onEngagementFilterChange
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
@@ -414,6 +418,8 @@ export const Header: React.FC<HeaderProps> = ({
             showCompleted={showCompleted ?? false}
             onShowCompletedChange={onShowCompletedChange ?? (() => {})}
             completedCount={completedCount ?? 0}
+            selectedEngagementFilter={selectedEngagementFilter}
+            onEngagementFilterChange={onEngagementFilterChange}
           />
         )}
         

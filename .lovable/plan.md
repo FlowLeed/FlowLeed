@@ -21,6 +21,6 @@
 - `AttendanceSection` in Analytics page with check-in metrics + engagement distribution pie chart
 - `useCheckinData` hook with `useEngagementScore`, `useContactCheckins`, `useSyncCheckins`, `useOrgCheckinStats`
 
-### Remaining (Phase 4)
-- Cron-based auto-sync for check-ins
-- Flow filtering by engagement level
+### Completed (Phase 4)
+- Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
+- Flow filtering by engagement level (filter popover in FlowHeaderFilters)
