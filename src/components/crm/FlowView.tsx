@@ -66,7 +66,37 @@ export const FlowView: React.FC<FlowViewProps> = ({
   }));
 
 
-  // Filter contacts based on selected filter and showCompleted toggle
+  // Fetch engagement scores for all contacts in this flow when engagement filter is active
+  const allContactIds = useMemo(() => 
+    flow.stages.flatMap(s => s.contacts.map(c => c.id)),
+    [flow]
+  );
+
+  const { data: engagementScores } = useQuery({
+    queryKey: ['flow-engagement-scores', flow.id, allContactIds.length],
+    queryFn: async () => {
+      if (allContactIds.length === 0) return {};
+      const batchSize = 100;
+      const scores: Record<string, string> = {};
+      for (let i = 0; i < allContactIds.length; i += batchSize) {
+        const batch = allContactIds.slice(i, i + batchSize);
+        const { data } = await supabase
+          .from('contact_engagement_scores')
+          .select('contact_id, engagement_level')
+          .in('contact_id', batch);
+        if (data) {
+          for (const row of data) {
+            scores[row.contact_id] = row.engagement_level || 'new';
+          }
+        }
+      }
+      return scores;
+    },
+    enabled: selectedEngagementFilter != null,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Filter contacts based on selected filter, engagement filter, and showCompleted toggle
   const filteredFlow = useMemo(() => {
     const filteredStages = flow.stages.map(stage => ({
       ...stage,
@@ -74,6 +104,12 @@ export const FlowView: React.FC<FlowViewProps> = ({
         // Filter out completed contacts if showCompleted is false
         if (!showCompleted && contact.completedEndAt) {
           return false;
+        }
+
+        // Apply engagement level filter
+        if (selectedEngagementFilter && engagementScores) {
+          const level = engagementScores[contact.id];
+          if (level !== selectedEngagementFilter) return false;
         }
 
         // Apply assignment filter
@@ -99,7 +135,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
       ...flow,
       stages: filteredStages
     };
-  }, [flow, selectedFilter, teamMembers, showCompleted]);
+  }, [flow, selectedFilter, selectedEngagementFilter, engagementScores, teamMembers, showCompleted]);
 
   // Calculate contact counts for filter badges (only count active, non-completed contacts)
   const contactCounts = useMemo(() => {
