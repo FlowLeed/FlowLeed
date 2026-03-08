@@ -36,8 +36,8 @@ interface FlowHeaderFiltersProps {
   showCompleted: boolean;
   onShowCompletedChange: (show: boolean) => void;
   completedCount: number;
-  selectedEngagementFilter?: EngagementLevel | null;
-  onEngagementFilterChange?: (level: EngagementLevel | null) => void;
+  selectedEngagementFilter?: string | null;
+  onEngagementFilterChange?: (level: string | null) => void;
 }
 
 export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
