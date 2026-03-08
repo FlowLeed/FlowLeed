@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
 import { useBulkActions } from "@/hooks/useBulkActions";
 
