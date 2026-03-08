@@ -558,6 +558,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
         showCompleted={showCompleted}
         onShowCompletedChange={setShowCompleted}
         completedCount={completedCount}
+        selectedEngagementFilter={selectedEngagementFilter}
+        onEngagementFilterChange={setSelectedEngagementFilter}
       />
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
         {viewMode === 'kanban' ? (
