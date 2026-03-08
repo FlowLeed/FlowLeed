@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Filter, UserX, X, CheckCircle2 } from "lucide-react";
+import { Filter, UserX, X, CheckCircle2, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TeamMember {
