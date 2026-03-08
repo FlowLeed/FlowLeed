@@ -14,6 +14,16 @@ interface TeamMember {
   email: string;
 }
 
+type EngagementLevel = 'highly_engaged' | 'active' | 'at_risk' | 'inactive' | 'new';
+
+const ENGAGEMENT_LEVELS: { value: EngagementLevel; label: string; color: string }[] = [
+  { value: 'highly_engaged', label: 'Highly Engaged', color: 'text-emerald-600' },
+  { value: 'active', label: 'Active', color: 'text-blue-600' },
+  { value: 'at_risk', label: 'At Risk', color: 'text-amber-600' },
+  { value: 'inactive', label: 'Inactive', color: 'text-red-600' },
+  { value: 'new', label: 'New', color: 'text-purple-600' },
+];
+
 interface FlowHeaderFiltersProps {
   teamMembers: TeamMember[];
   selectedFilter: string | null;
@@ -26,6 +36,8 @@ interface FlowHeaderFiltersProps {
   showCompleted: boolean;
   onShowCompletedChange: (show: boolean) => void;
   completedCount: number;
+  selectedEngagementFilter?: EngagementLevel | null;
+  onEngagementFilterChange?: (level: EngagementLevel | null) => void;
 }
 
 export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
