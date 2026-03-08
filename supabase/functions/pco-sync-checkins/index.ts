@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -51,17 +51,21 @@ Deno.serve(async (req) => {
 
     const { integrationId } = await req.json();
 
-    // Authenticate user
+    // Authenticate user OR allow service-role calls (from auto-sync cron)
     const authHeader = req.headers.get('Authorization');
+    const isServiceRole = authHeader?.includes(Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '___none___');
+    
     if (!authHeader) {
       return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
-    const { data: userData, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-    if (authError || !userData.user) {
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+    if (!isServiceRole) {
+      const { data: userData, error: authError } = await supabase.auth.getUser(
+        authHeader.replace('Bearer ', '')
+      );
+      if (authError || !userData.user) {
+        return new Response('Unauthorized', { status: 401, headers: corsHeaders });
+      }
     }
 
     if (!integrationId) {

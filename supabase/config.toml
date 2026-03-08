@@ -127,3 +127,6 @@ verify_jwt = false
 
 [functions.pco-sync-checkins]
 verify_jwt = false
+
+[functions.pco-checkin-auto-sync]
+verify_jwt = false
