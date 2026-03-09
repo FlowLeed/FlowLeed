@@ -142,10 +142,13 @@ export const useContacts = (filters: ContactFilters) => {
         }
       }
 
-      // Apply search filter
+      // Apply search filter — sanitize to avoid PostgREST syntax issues with parens/commas
       if (filters.searchTerm) {
+        const sanitized = filters.searchTerm.replace(/[(),]/g, '').trim();
+        const digitsOnly = filters.searchTerm.replace(/\D/g, '');
+        const phonePart = digitsOnly.length >= 3 ? `,phone.ilike.%${digitsOnly}%` : '';
         query = query.or(
-          `name.ilike.%${filters.searchTerm}%,email.ilike.%${filters.searchTerm}%,phone.ilike.%${filters.searchTerm}%`
+          `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`
         );
       }
 

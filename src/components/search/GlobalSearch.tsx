@@ -115,7 +115,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             )
           `)
           .eq('organization_id', organization.id)
-          .or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)
+          .or(`name.ilike.%${searchQuery.replace(/[(),]/g, '').trim()}%,email.ilike.%${searchQuery.replace(/[(),]/g, '').trim()}%${searchQuery.replace(/\D/g, '').length >= 3 ? `,phone.ilike.%${searchQuery.replace(/\D/g, '')}%` : ''}`)
           .limit(8);
 
         if (error) throw error;
