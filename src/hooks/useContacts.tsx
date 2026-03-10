@@ -146,7 +146,8 @@ export const useContacts = (filters: ContactFilters) => {
       if (filters.searchTerm) {
         const sanitized = filters.searchTerm.replace(/[(),]/g, '').trim();
         const digitsOnly = filters.searchTerm.replace(/\D/g, '');
-        const phonePart = digitsOnly.length >= 3 ? `,phone.ilike.%${digitsOnly}%` : '';
+        const phonePattern = digitsOnly.split('').join('%');
+        const phonePart = digitsOnly.length >= 3 ? `,phone.ilike.%${phonePattern}%` : '';
         query = query.or(
           `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`
         );
