@@ -1,29 +1,26 @@
 
 
-## Add Automatic Cleanup for Old `pco_sync_jobs` Records
 
-### What
-Add a cleanup step in `supabase/functions/pco-sync-processor/index.ts` to delete `pco_sync_jobs` records in terminal states (`completed`, `failed`, `cancelled`) older than 30 days. This mirrors the existing queue cleanup pattern already in the file (lines 69-78).
+## PCO Check-Ins Integration
 
-### How
-Insert a new cleanup block right after the existing `pco_sync_queue` cleanup (~line 82), deleting from `pco_sync_jobs` where status is terminal and `started_at` is older than 30 days:
+### Completed (Phase 1-3)
 
-```typescript
-// === CLEANUP OLD TERMINAL SYNC JOBS (prevent table bloat) ===
-try {
-  const jobsCleanupCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const { count: deletedJobsCount } = await supabase
-    .from('pco_sync_jobs')
-    .delete({ count: 'exact' })
-    .in('status', ['completed', 'cancelled', 'failed'])
-    .lt('started_at', jobsCleanupCutoff);
-  if (deletedJobsCount && deletedJobsCount > 0) {
-    console.log(`🧹 Cleaned up ${deletedJobsCount} old sync jobs (>30d, terminal state)`);
-  }
-} catch (cleanupError) {
-  console.warn('⚠️ Jobs cleanup failed (non-fatal):', cleanupError);
-}
-```
+**Database:**
+- `pco_checkins` table with RLS, dedup on `pco_checkin_id`
+- `contact_engagement_scores` table with RLS
+- `calculate_engagement_scores(p_org_id)` DB function (scoring 0-100 with engagement levels)
 
-Single file change, follows the exact same pattern as the existing queue cleanup.
+**Edge Function:**
+- `pco-sync-checkins` - fetches from PCO Check-Ins API, matches contacts, upserts check-ins, calculates engagement scores
+- Supports incremental sync via `last_checkin_sync_at` in integration metadata
 
+**UI:**
+- "Sync Check-Ins" button in SyncSettingsSection (PCO integration settings)
+- `EngagementBadge` component on TaskContactRow (compact score) and contact profiles
+- Check-in entries in InteractionTimeline (`checkin` type with teal styling)
+- `AttendanceSection` in Analytics page with check-in metrics + engagement distribution pie chart
+- `useCheckinData` hook with `useEngagementScore`, `useContactCheckins`, `useSyncCheckins`, `useOrgCheckinStats`
+
+### Completed (Phase 4)
+- Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
+- Flow filtering by engagement level (filter popover in FlowHeaderFilters)

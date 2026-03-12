@@ -81,6 +81,21 @@ Deno.serve(async (req) => {
       console.warn('Queue cleanup failed (non-fatal):', cleanupErr);
     }
 
+    // === CLEANUP OLD TERMINAL SYNC JOBS (prevent table bloat) ===
+    try {
+      const jobsCleanupCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { count: deletedJobsCount } = await supabase
+        .from('pco_sync_jobs')
+        .delete({ count: 'exact' })
+        .in('status', ['completed', 'cancelled', 'failed'])
+        .lt('started_at', jobsCleanupCutoff);
+      if (deletedJobsCount && deletedJobsCount > 0) {
+        console.log(`🧹 Cleaned up ${deletedJobsCount} old sync jobs (>30d, terminal state)`);
+      }
+    } catch (cleanupError) {
+      console.warn('⚠️ Jobs cleanup failed (non-fatal):', cleanupError);
+    }
+
     // === ZOMBIE JOB AUTO-FINALIZE SWEEP ===
     // Clean up jobs that are stuck in pending/processing but have no pending queue items
     const zombieThreshold = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // 30 minutes
