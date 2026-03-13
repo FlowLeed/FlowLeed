@@ -1,50 +1,26 @@
 
 
-## Database Cleanup Plan
 
-### Current State
-| Table | Size | Rows | Status |
-|-------|------|------|--------|
-| `pco_sync_queue` | **3,671 MB** | 135,560 (all terminal) | Still bloated despite REINDEX |
-| `cron.job_run_details` | **314 MB** | 433,219 | 7 months of history |
-| `pco_sync_jobs` | **9 MB** | 25,866 (all terminal) | Moderate |
+## PCO Check-Ins Integration
 
-The `VACUUM FULL` via psql did not take effect — the table is still 3.6 GB. All 135,560 rows in `pco_sync_queue` are in terminal states (cancelled/completed/failed), so every single row can be deleted.
+### Completed (Phase 1-3)
 
-### Plan
+**Database:**
+- `pco_checkins` table with RLS, dedup on `pco_checkin_id`
+- `contact_engagement_scores` table with RLS
+- `calculate_engagement_scores(p_org_id)` DB function (scoring 0-100 with engagement levels)
 
-**Step 1: Delete all rows from `pco_sync_queue`** (reclaims data pages)
-```sql
--- All rows are terminal, safe to delete everything
-DELETE FROM pco_sync_queue WHERE id IN (
-  SELECT id FROM pco_sync_queue LIMIT 50000
-);
--- Repeat until 0 rows affected, then:
-TRUNCATE pco_sync_queue;
-```
-Since every row is terminal, `TRUNCATE` is the fastest option — it releases all pages immediately without needing `VACUUM FULL`. Will use `TRUNCATE` if possible, otherwise batch delete.
+**Edge Function:**
+- `pco-sync-checkins` - fetches from PCO Check-Ins API, matches contacts, upserts check-ins, calculates engagement scores
+- Supports incremental sync via `last_checkin_sync_at` in integration metadata
 
-**Step 2: Purge old cron history**
-```sql
-DELETE FROM cron.job_run_details WHERE end_time < NOW() - INTERVAL '7 days';
-```
+**UI:**
+- "Sync Check-Ins" button in SyncSettingsSection (PCO integration settings)
+- `EngagementBadge` component on TaskContactRow (compact score) and contact profiles
+- Check-in entries in InteractionTimeline (`checkin` type with teal styling)
+- `AttendanceSection` in Analytics page with check-in metrics + engagement distribution pie chart
+- `useCheckinData` hook with `useEngagementScore`, `useContactCheckins`, `useSyncCheckins`, `useOrgCheckinStats`
 
-**Step 3: Clean terminal `pco_sync_jobs`** (keep last 7 days)
-```sql
-DELETE FROM pco_sync_jobs 
-WHERE status IN ('completed', 'cancelled', 'failed') 
-AND started_at < NOW() - INTERVAL '7 days';
-```
-
-**Step 4: Add scheduled cron cleanup** for `cron.job_run_details` to prevent regrowth — create a pg_cron job:
-```sql
-SELECT cron.schedule(
-  'cleanup-cron-history',
-  '0 3 * * *',
-  $$DELETE FROM cron.job_run_details WHERE end_time < NOW() - INTERVAL '7 days'$$
-);
-```
-
-### Expected Result
-~3.9 GB reclaimed across the three tables. The existing edge function cleanup (added earlier) handles `pco_sync_queue` and `pco_sync_jobs` going forward; the new cron job handles `cron.job_run_details`.
-
+### Completed (Phase 4)
+- Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
+- Flow filtering by engagement level (filter popover in FlowHeaderFilters)
