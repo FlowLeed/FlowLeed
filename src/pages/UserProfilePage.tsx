@@ -671,6 +671,9 @@ const UserProfilePage = () => {
               </Avatar>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{contact.name}</h1>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <EngagementBadge score={engagementScore} />
+                </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <Tags className="h-3.5 w-3.5 text-muted-foreground" />
                   {tags.map((tag, index) => (
