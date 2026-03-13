@@ -1,28 +1,34 @@
 
 
-## Add Check-in Data to Contact Profile
+## PCO Check-Ins Integration
 
-The contact profile page (`UserProfilePage.tsx`) currently has no check-in information, even though the hooks (`useEngagementScore`, `useContactCheckins`) and the `EngagementBadge` component already exist.
+### Completed (Phase 1-3)
 
-### Changes
+**Database:**
+- `pco_checkins` table with RLS, dedup on `pco_checkin_id`
+- `contact_engagement_scores` table with RLS
+- `calculate_engagement_scores(p_org_id)` DB function (scoring 0-100 with engagement levels)
 
-**1. Add EngagementBadge to the profile header area**
-- Import `useEngagementScore` and `EngagementBadge` into `UserProfilePage.tsx`
-- Display the badge next to the contact's name/tags area, showing their engagement level (Highly Engaged, Active, At Risk, etc.)
+**Edge Function:**
+- `pco-sync-checkins` - fetches from PCO Check-Ins API, matches contacts, upserts check-ins, calculates engagement scores
+- Supports incremental sync via `last_checkin_sync_at` in integration metadata
 
-**2. Create a new `ContactCheckinsCard` component** (`src/components/contact/ContactCheckinsCard.tsx`)
-- Uses `useContactCheckins` and `useEngagementScore` hooks
-- Shows:
-  - **Engagement score** (0-100) with level badge
-  - **Key stats row**: check-ins last 30d, last 90d, weeks attended (last 12), streak, last check-in date
-  - **Recent check-ins list**: event name, date/time, location, kind (regular/volunteer) — last 10 entries in a compact table/list
-- Renders nothing if there's no check-in data (doesn't clutter profiles for orgs without PCO)
+**UI:**
+- "Sync Check-Ins" button in SyncSettingsSection (PCO integration settings)
+- `EngagementBadge` component on TaskContactRow (compact score) and contact profiles
+- Check-in entries in InteractionTimeline (`checkin` type with teal styling)
+- `AttendanceSection` in Analytics page with check-in metrics + engagement distribution pie chart
+- `useCheckinData` hook with `useEngagementScore`, `useContactCheckins`, `useSyncCheckins`, `useOrgCheckinStats`
 
-**3. Add the card to the profile page**
-- Place it after the Flow Moments card and before the AI Suggestions block — a natural spot for attendance data
-- Pass `contactId` as the only required prop
+### Completed (Phase 4)
+- Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
+- Flow filtering by engagement level (filter popover in FlowHeaderFilters)
 
-### Files Changed
-- `src/components/contact/ContactCheckinsCard.tsx` — new component
-- `src/pages/UserProfilePage.tsx` — import and render `EngagementBadge` in header + `ContactCheckinsCard` in content area
-
+### Completed (Phase 5 - Chunked Sync)
+- **Problem**: Large orgs (13k+ check-ins) caused timeout before upsert phase — zero data written
+- **Fix**: Chunked pagination (max 30 pages / ~3k records per invocation) with cursor-based resume
+- `pco-sync-checkins` saves cursor in `integrations.metadata.checkin_sync_cursor` and returns `hasMore`
+- `pco-checkin-auto-sync` loops up to 10 rounds per org until `hasMore: false`
+- `useSyncCheckins` hook auto-continues up to 15 rounds with progress toasts
+- Stale cursor cleanup (>2 hours) in auto-sync
+- Reset `last_checkin_sync_at` for orgs with 0 checkin data via migration

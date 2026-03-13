@@ -24,6 +24,9 @@ import { AISuggestions } from "@/components/contact/AISuggestions";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
 import { TagManager } from "@/components/contact/TagManager";
 import { FlowMomentsCard } from "@/components/contact/FlowMomentsCard";
+import { ContactCheckinsCard } from "@/components/contact/ContactCheckinsCard";
+import { EngagementBadge } from "@/components/contact/EngagementBadge";
+import { useEngagementScore } from "@/hooks/useCheckinData";
 
 import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
@@ -64,6 +67,7 @@ const UserProfilePage = () => {
   
   // Get tag suggestions for the organization
   const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
+  const { data: engagementScore } = useEngagementScore(contactId);
   // Fetch comprehensive contact data
   const { data: contactData, isLoading, error } = useQuery({
     queryKey: ["contact-comprehensive", contactId],
@@ -667,6 +671,9 @@ const UserProfilePage = () => {
               </Avatar>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{contact.name}</h1>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <EngagementBadge score={engagementScore} />
+                </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <Tags className="h-3.5 w-3.5 text-muted-foreground" />
                   {tags.map((tag, index) => (
@@ -947,6 +954,9 @@ const UserProfilePage = () => {
 
       {/* Flow Moments */}
       <FlowMomentsCard contactId={contactId!} />
+
+      {/* Attendance / Check-ins */}
+      <ContactCheckinsCard contactId={contactId!} />
 
       {/* AI Suggestions Block */}
       <AISuggestions 
