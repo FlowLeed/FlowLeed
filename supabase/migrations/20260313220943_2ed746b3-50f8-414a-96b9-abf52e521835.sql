@@ -1,0 +1,1 @@
+UPDATE integrations SET metadata = metadata - 'last_checkin_sync_at' - 'last_checkin_count' - 'checkin_sync_cursor' - 'checkin_sync_started_at' WHERE service_name = 'planning_center' AND status = 'active' AND NOT EXISTS (SELECT 1 FROM pco_checkins WHERE pco_checkins.organization_id = integrations.organization_id LIMIT 1)

@@ -38,6 +38,7 @@ async function fetchWithRetry(
 }
 
 const API_CALL_DELAY = 500;
+const DEFAULT_MAX_PAGES = 30; // ~3000 records, well within 60s timeout
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -102,36 +103,41 @@ Deno.serve(async (req) => {
 
     const auth = btoa(`${application_id}:${secret}`);
     const orgId = integration.organization_id;
-
-    // Check for last check-in sync timestamp for incremental sync
     const metadata = (integration.metadata as any) || {};
+
+    // Check for a saved cursor (resuming a chunked sync)
+    const savedCursor = metadata.checkin_sync_cursor || null;
     const lastCheckinSync = metadata.last_checkin_sync_at;
-    const isIncremental = !!lastCheckinSync;
+    const isIncremental = !savedCursor && !!lastCheckinSync;
 
-    console.log(`Starting check-in sync for org ${orgId}. Mode: ${isIncremental ? 'INCREMENTAL' : 'FULL'}`);
+    console.log(`Starting check-in sync for org ${orgId}. Mode: ${savedCursor ? 'RESUME' : isIncremental ? 'INCREMENTAL' : 'FULL'}`);
 
-    // Fetch check-ins from PCO Check-Ins API
-    // The check-ins endpoint: /check-ins/v2/check_ins
-    let allCheckins: any[] = [];
-    let baseUrl = 'https://api.planningcenteronline.com/check-ins/v2/check_ins?per_page=100&include=event_times,locations,event';
-
-    if (isIncremental && lastCheckinSync) {
-      baseUrl += `&where[updated_at][gte]=${encodeURIComponent(new Date(lastCheckinSync).toISOString())}`;
-      console.log(`Incremental: fetching check-ins updated since ${lastCheckinSync}`);
+    // Determine start URL
+    let startUrl: string;
+    if (savedCursor) {
+      startUrl = savedCursor;
+      console.log(`Resuming from cursor: ${savedCursor}`);
+    } else {
+      startUrl = 'https://api.planningcenteronline.com/check-ins/v2/check_ins?per_page=100&include=event_times,locations,event';
+      if (isIncremental && lastCheckinSync) {
+        startUrl += `&where[updated_at][gte]=${encodeURIComponent(new Date(lastCheckinSync).toISOString())}`;
+        console.log(`Incremental: fetching check-ins updated since ${lastCheckinSync}`);
+      }
     }
 
-    let nextUrl: string | null = baseUrl;
+    // Fetch check-ins with page cap
+    let allCheckins: any[] = [];
+    let nextUrl: string | null = startUrl;
     let pageCount = 0;
-    const maxPages = 500; // Safety limit
 
     const fetchHeaders = {
       'Authorization': `Basic ${auth}`,
       'Content-Type': 'application/json',
     };
 
-    while (nextUrl && pageCount < maxPages) {
+    while (nextUrl && pageCount < DEFAULT_MAX_PAGES) {
       pageCount++;
-      console.log(`Fetching check-ins page ${pageCount}...`);
+      console.log(`Fetching check-ins page ${pageCount}/${DEFAULT_MAX_PAGES}...`);
 
       const response = await fetchWithRetry(nextUrl, { headers: fetchHeaders });
 
@@ -155,7 +161,6 @@ Deno.serve(async (req) => {
         const attrs = checkin.attributes || {};
         const relationships = checkin.relationships || {};
 
-        // Find related event_time and location from included
         const eventTimeId = relationships.event_times?.data?.[0]?.id ||
           relationships.event_time?.data?.id;
         const locationId = relationships.locations?.data?.[0]?.id ||
@@ -166,12 +171,8 @@ Deno.serve(async (req) => {
         const location = included.find((i: any) => i.type === 'Location' && i.id === locationId);
         const event = included.find((i: any) => i.type === 'Event' && i.id === eventId);
 
-        // Get person_id from the check-in
         const personId = relationships.person?.data?.id || attrs.person_id;
-
-        if (!personId) {
-          continue; // Skip check-ins without a person
-        }
+        if (!personId) continue;
 
         allCheckins.push({
           pco_checkin_id: checkin.id,
@@ -190,128 +191,135 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Follow pagination
       nextUrl = data.links?.next || data.meta?.next?.href || null;
-
       if (nextUrl) {
         await sleep(API_CALL_DELAY);
       }
     }
 
-    console.log(`Fetched ${allCheckins.length} check-ins across ${pageCount} pages`);
+    const hasMore = !!nextUrl;
+    console.log(`Fetched ${allCheckins.length} check-ins across ${pageCount} pages. hasMore: ${hasMore}`);
 
-    if (allCheckins.length === 0) {
-      // Update last sync timestamp even if no new data
+    // --- Upsert this chunk ---
+    let upsertedCount = 0;
+    let matchedCount = 0;
+
+    if (allCheckins.length > 0) {
+      // Match pc_person_id to contact_id
+      const uniquePersonIds = [...new Set(allCheckins.map(c => c.pc_person_id))];
+      console.log(`Matching ${uniquePersonIds.length} unique PCO person IDs to contacts...`);
+
+      const contactMap = new Map<string, string>();
+      const batchSize = 100;
+      for (let i = 0; i < uniquePersonIds.length; i += batchSize) {
+        const batch = uniquePersonIds.slice(i, i + batchSize);
+        const { data: contacts } = await supabase
+          .from('contacts')
+          .select('id, pc_person_id')
+          .eq('organization_id', orgId)
+          .in('pc_person_id', batch);
+
+        if (contacts) {
+          for (const c of contacts) {
+            if (c.pc_person_id) contactMap.set(c.pc_person_id, c.id);
+          }
+        }
+      }
+
+      matchedCount = contactMap.size;
+      console.log(`Matched ${matchedCount} of ${uniquePersonIds.length} person IDs to contacts`);
+
+      // Upsert check-ins in batches
+      const upsertBatch = 50;
+      for (let i = 0; i < allCheckins.length; i += upsertBatch) {
+        const batch = allCheckins.slice(i, i + upsertBatch).map(checkin => ({
+          organization_id: orgId,
+          contact_id: contactMap.get(checkin.pc_person_id) || null,
+          pc_person_id: checkin.pc_person_id,
+          event_name: checkin.event_name,
+          event_time_name: checkin.event_time_name,
+          location_name: checkin.location_name,
+          checkin_kind: checkin.checkin_kind?.toLowerCase() || 'regular',
+          checked_in_at: checkin.checked_in_at,
+          checked_out_at: checkin.checked_out_at,
+          pco_checkin_id: checkin.pco_checkin_id,
+          metadata: checkin.metadata,
+        }));
+
+        const { error: upsertError } = await supabase
+          .from('pco_checkins')
+          .upsert(batch, { onConflict: 'pco_checkin_id' });
+
+        if (upsertError) {
+          console.error(`Upsert error for batch ${i / upsertBatch + 1}:`, upsertError.message);
+        } else {
+          upsertedCount += batch.length;
+        }
+      }
+
+      console.log(`Upserted ${upsertedCount} check-ins`);
+    }
+
+    // --- Handle cursor / finalization ---
+    if (hasMore) {
+      // Save cursor for next invocation
+      console.log('More pages remain. Saving cursor...');
       await supabase
         .from('integrations')
         .update({
           metadata: {
             ...metadata,
-            last_checkin_sync_at: new Date().toISOString(),
+            checkin_sync_cursor: nextUrl,
+            checkin_sync_started_at: metadata.checkin_sync_started_at || new Date().toISOString(),
           },
         })
         .eq('id', integrationId);
 
       return new Response(JSON.stringify({
         success: true,
-        message: 'No new check-ins found',
-        synced: 0,
+        hasMore: true,
+        synced: upsertedCount,
+        matched: matchedCount,
+        pages: pageCount,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } else {
+      // Final chunk — calculate engagement scores and update timestamps
+      console.log('All pages fetched. Calculating engagement scores...');
+      const { error: scoreError } = await supabase.rpc('calculate_engagement_scores', {
+        p_org_id: orgId,
+      });
+
+      if (scoreError) {
+        console.error('Error calculating engagement scores:', scoreError.message);
+      } else {
+        console.log('Engagement scores updated successfully');
+      }
+
+      // Clear cursor, update last sync timestamp
+      const { checkin_sync_cursor, checkin_sync_started_at, ...cleanMetadata } = metadata;
+      await supabase
+        .from('integrations')
+        .update({
+          metadata: {
+            ...cleanMetadata,
+            last_checkin_sync_at: new Date().toISOString(),
+            last_checkin_count: allCheckins.length,
+          },
+        })
+        .eq('id', integrationId);
+
+      return new Response(JSON.stringify({
+        success: true,
+        hasMore: false,
+        synced: upsertedCount,
+        matched: matchedCount,
+        pages: pageCount,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // Match pc_person_id to contact_id
-    const uniquePersonIds = [...new Set(allCheckins.map(c => c.pc_person_id))];
-    console.log(`Matching ${uniquePersonIds.length} unique PCO person IDs to contacts...`);
-
-    // Fetch contacts in batches
-    const contactMap = new Map<string, string>();
-    const batchSize = 100;
-    for (let i = 0; i < uniquePersonIds.length; i += batchSize) {
-      const batch = uniquePersonIds.slice(i, i + batchSize);
-      const { data: contacts } = await supabase
-        .from('contacts')
-        .select('id, pc_person_id')
-        .eq('organization_id', orgId)
-        .in('pc_person_id', batch);
-
-      if (contacts) {
-        for (const c of contacts) {
-          if (c.pc_person_id) {
-            contactMap.set(c.pc_person_id, c.id);
-          }
-        }
-      }
-    }
-
-    console.log(`Matched ${contactMap.size} of ${uniquePersonIds.length} person IDs to contacts`);
-
-    // Upsert check-ins in batches
-    let upsertedCount = 0;
-    const upsertBatch = 50;
-
-    for (let i = 0; i < allCheckins.length; i += upsertBatch) {
-      const batch = allCheckins.slice(i, i + upsertBatch).map(checkin => ({
-        organization_id: orgId,
-        contact_id: contactMap.get(checkin.pc_person_id) || null,
-        pc_person_id: checkin.pc_person_id,
-        event_name: checkin.event_name,
-        event_time_name: checkin.event_time_name,
-        location_name: checkin.location_name,
-        checkin_kind: checkin.checkin_kind?.toLowerCase() || 'regular',
-        checked_in_at: checkin.checked_in_at,
-        checked_out_at: checkin.checked_out_at,
-        pco_checkin_id: checkin.pco_checkin_id,
-        metadata: checkin.metadata,
-      }));
-
-      const { error: upsertError } = await supabase
-        .from('pco_checkins')
-        .upsert(batch, { onConflict: 'pco_checkin_id' });
-
-      if (upsertError) {
-        console.error(`Upsert error for batch ${i / upsertBatch + 1}:`, upsertError.message);
-      } else {
-        upsertedCount += batch.length;
-      }
-    }
-
-    console.log(`Upserted ${upsertedCount} check-ins`);
-
-    // Calculate engagement scores
-    console.log('Calculating engagement scores...');
-    const { error: scoreError } = await supabase.rpc('calculate_engagement_scores', {
-      p_org_id: orgId,
-    });
-
-    if (scoreError) {
-      console.error('Error calculating engagement scores:', scoreError.message);
-    } else {
-      console.log('Engagement scores updated successfully');
-    }
-
-    // Update last sync timestamp
-    await supabase
-      .from('integrations')
-      .update({
-        metadata: {
-          ...metadata,
-          last_checkin_sync_at: new Date().toISOString(),
-          last_checkin_count: allCheckins.length,
-        },
-      })
-      .eq('id', integrationId);
-
-    return new Response(JSON.stringify({
-      success: true,
-      synced: upsertedCount,
-      matched: contactMap.size,
-      total_person_ids: uniquePersonIds.length,
-      pages: pageCount,
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
     console.error('Error in pco-sync-checkins:', error);
     return new Response(JSON.stringify({

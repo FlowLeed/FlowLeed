@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useRef } from 'react';
 
 export interface EngagementScore {
   contact_id: string;
@@ -69,15 +70,39 @@ export function useContactCheckins(contactId: string | undefined, limit = 20) {
 export function useSyncCheckins() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const toastIdRef = useRef<string | undefined>();
 
   return useMutation({
     mutationFn: async (integrationId: string) => {
-      const { data, error } = await supabase.functions.invoke('pco-sync-checkins', {
-        body: { integrationId },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+      let totalSynced = 0;
+      let totalMatched = 0;
+      let round = 0;
+      const maxRounds = 15;
+      let hasMore = true;
+
+      while (hasMore && round < maxRounds) {
+        round++;
+
+        // Show progress toast on subsequent rounds
+        if (round > 1) {
+          toast({
+            title: 'Syncing check-ins...',
+            description: `Processing batch ${round} (${totalSynced} synced so far)`,
+          });
+        }
+
+        const { data, error } = await supabase.functions.invoke('pco-sync-checkins', {
+          body: { integrationId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        totalSynced += data.synced || 0;
+        totalMatched = data.matched || totalMatched;
+        hasMore = data.hasMore === true;
+      }
+
+      return { synced: totalSynced, matched: totalMatched, rounds: round };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['contact-checkins'] });
@@ -85,7 +110,7 @@ export function useSyncCheckins() {
       queryClient.invalidateQueries({ queryKey: ['org-checkin-stats'] });
       toast({
         title: 'Check-ins synced',
-        description: `Synced ${data.synced} check-ins, matched ${data.matched} contacts.`,
+        description: `Synced ${data.synced} check-ins, matched ${data.matched} contacts${data.rounds > 1 ? ` (${data.rounds} batches)` : ''}.`,
       });
     },
     onError: (error) => {
