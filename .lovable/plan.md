@@ -1,6 +1,5 @@
 
 
-
 ## PCO Check-Ins Integration
 
 ### Completed (Phase 1-3)
@@ -24,3 +23,12 @@
 ### Completed (Phase 4)
 - Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
 - Flow filtering by engagement level (filter popover in FlowHeaderFilters)
+
+### Completed (Phase 5 - Chunked Sync)
+- **Problem**: Large orgs (13k+ check-ins) caused timeout before upsert phase — zero data written
+- **Fix**: Chunked pagination (max 30 pages / ~3k records per invocation) with cursor-based resume
+- `pco-sync-checkins` saves cursor in `integrations.metadata.checkin_sync_cursor` and returns `hasMore`
+- `pco-checkin-auto-sync` loops up to 10 rounds per org until `hasMore: false`
+- `useSyncCheckins` hook auto-continues up to 15 rounds with progress toasts
+- Stale cursor cleanup (>2 hours) in auto-sync
+- Reset `last_checkin_sync_at` for orgs with 0 checkin data via migration
