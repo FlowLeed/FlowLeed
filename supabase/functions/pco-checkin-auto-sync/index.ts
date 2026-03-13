@@ -5,6 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const MAX_ROUNDS = 10;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -17,7 +19,7 @@ Deno.serve(async (req) => {
 
     console.log('[checkin-auto-sync] Starting cron check-in sync...');
 
-    // Find all active PCO integrations that have auto_sync_all_people enabled
+    // Find all active PCO integrations with auto-sync enabled
     const { data: integrations, error: intError } = await supabase
       .from('integrations')
       .select('id, organization_id, metadata, sync_frequency')
@@ -47,10 +49,27 @@ Deno.serve(async (req) => {
       const lastCheckinSync = metadata.last_checkin_sync_at;
       const frequency = integration.sync_frequency || 'daily';
 
+      // Skip if a sync is already in progress (cursor exists)
+      if (metadata.checkin_sync_cursor) {
+        // Check if it's stale (>2 hours old)
+        const startedAt = metadata.checkin_sync_started_at;
+        if (startedAt && (now.getTime() - new Date(startedAt).getTime()) > 2 * 60 * 60 * 1000) {
+          console.log(`[checkin-auto-sync] Clearing stale cursor for org ${integration.organization_id}`);
+          const { checkin_sync_cursor, checkin_sync_started_at, ...cleanMeta } = metadata;
+          await supabase
+            .from('integrations')
+            .update({ metadata: cleanMeta })
+            .eq('id', integration.id);
+        } else {
+          console.log(`[checkin-auto-sync] Skipping org ${integration.organization_id} (sync in progress)`);
+          continue;
+        }
+      }
+
       // Determine if sync is due based on frequency
       let shouldSync = false;
       if (!lastCheckinSync) {
-        shouldSync = true; // Never synced before
+        shouldSync = true;
       } else {
         const lastSync = new Date(lastCheckinSync);
         const hoursSinceLastSync = (now.getTime() - lastSync.getTime()) / (1000 * 60 * 60);
@@ -60,7 +79,6 @@ Deno.serve(async (req) => {
         } else if (frequency === 'twice_daily' && hoursSinceLastSync >= 12) {
           shouldSync = true;
         }
-        // 'manual' frequency never auto-syncs
       }
 
       if (!shouldSync) {
@@ -70,24 +88,36 @@ Deno.serve(async (req) => {
 
       console.log(`[checkin-auto-sync] Triggering check-in sync for org ${integration.organization_id}`);
 
-      // Invoke the pco-sync-checkins function
+      // Loop: invoke pco-sync-checkins until hasMore is false
       try {
-        const { error: invokeError } = await supabase.functions.invoke('pco-sync-checkins', {
-          body: { integrationId: integration.id },
-        });
+        let round = 0;
+        let hasMore = true;
 
-        if (invokeError) {
-          console.error(`[checkin-auto-sync] Error invoking sync for org ${integration.organization_id}:`, invokeError.message);
-        } else {
-          triggeredCount++;
-          console.log(`[checkin-auto-sync] Successfully triggered sync for org ${integration.organization_id}`);
+        while (hasMore && round < MAX_ROUNDS) {
+          round++;
+          console.log(`[checkin-auto-sync] Org ${integration.organization_id} round ${round}/${MAX_ROUNDS}`);
+
+          const { data, error: invokeError } = await supabase.functions.invoke('pco-sync-checkins', {
+            body: { integrationId: integration.id },
+          });
+
+          if (invokeError) {
+            console.error(`[checkin-auto-sync] Error invoking sync round ${round}:`, invokeError.message);
+            break;
+          }
+
+          hasMore = data?.hasMore === true;
+          console.log(`[checkin-auto-sync] Round ${round} done. synced=${data?.synced}, hasMore=${hasMore}`);
         }
+
+        triggeredCount++;
+        console.log(`[checkin-auto-sync] Completed sync for org ${integration.organization_id} in ${round} round(s)`);
       } catch (err) {
-        console.error(`[checkin-auto-sync] Failed to trigger sync for org ${integration.organization_id}:`, err);
+        console.error(`[checkin-auto-sync] Failed sync for org ${integration.organization_id}:`, err);
       }
     }
 
-    console.log(`[checkin-auto-sync] Done. Triggered ${triggeredCount} of ${integrations.length} integrations`);
+    console.log(`[checkin-auto-sync] Done. Synced ${triggeredCount} of ${integrations.length} integrations`);
 
     return new Response(JSON.stringify({
       success: true,
