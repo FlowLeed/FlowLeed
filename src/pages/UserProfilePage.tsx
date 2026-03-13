@@ -955,6 +955,9 @@ const UserProfilePage = () => {
       {/* Flow Moments */}
       <FlowMomentsCard contactId={contactId!} />
 
+      {/* Attendance / Check-ins */}
+      <ContactCheckinsCard contactId={contactId!} />
+
       {/* AI Suggestions Block */}
       <AISuggestions 
         contactId={contactId!}
