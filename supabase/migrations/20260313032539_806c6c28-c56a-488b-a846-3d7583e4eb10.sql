@@ -1,0 +1,1 @@
+DELETE FROM pco_sync_jobs WHERE status IN ('completed', 'cancelled', 'failed') AND started_at < NOW() - INTERVAL '7 days'

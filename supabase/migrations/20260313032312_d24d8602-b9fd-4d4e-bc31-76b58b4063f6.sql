@@ -1,0 +1,1 @@
+TRUNCATE pco_sync_queue

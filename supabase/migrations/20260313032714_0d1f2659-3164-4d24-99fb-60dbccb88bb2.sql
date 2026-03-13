@@ -1,0 +1,1 @@
+DELETE FROM cron.job_run_details WHERE runid IN (SELECT runid FROM cron.job_run_details WHERE end_time < NOW() - INTERVAL '7 days' LIMIT 10000)
