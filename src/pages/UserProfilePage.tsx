@@ -67,6 +67,7 @@ const UserProfilePage = () => {
   
   // Get tag suggestions for the organization
   const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
+  const { data: engagementScore } = useEngagementScore(contactId);
   // Fetch comprehensive contact data
   const { data: contactData, isLoading, error } = useQuery({
     queryKey: ["contact-comprehensive", contactId],
