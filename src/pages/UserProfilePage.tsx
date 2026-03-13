@@ -24,6 +24,9 @@ import { AISuggestions } from "@/components/contact/AISuggestions";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
 import { TagManager } from "@/components/contact/TagManager";
 import { FlowMomentsCard } from "@/components/contact/FlowMomentsCard";
+import { ContactCheckinsCard } from "@/components/contact/ContactCheckinsCard";
+import { EngagementBadge } from "@/components/contact/EngagementBadge";
+import { useEngagementScore } from "@/hooks/useCheckinData";
 
 import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
