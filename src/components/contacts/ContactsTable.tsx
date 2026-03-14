@@ -155,7 +155,11 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
                   {contact.phone || "—"}
                 </TableCell>
                 <TableCell>
-                  <EngagementBadge score={engagementScore} />
+                  {engagementScore ? (
+                    <EngagementBadge score={engagementScore} />
+                  ) : (
+                    <span className="text-muted-foreground text-sm">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   {contact.profiles ? (
