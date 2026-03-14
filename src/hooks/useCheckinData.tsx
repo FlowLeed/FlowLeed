@@ -30,6 +30,8 @@ export interface CheckinRecord {
   pco_checkin_id: string;
   metadata: any;
   created_at: string;
+  checked_in_by?: string | null; // name of household member if from household
+  is_household?: boolean;
 }
 
 export function useEngagementScore(contactId: string | undefined) {
