@@ -111,6 +111,7 @@ export const useContacts = (filters: ContactFilters) => {
       let query = supabase
         .from("contacts")
         .select(`
+          contact_engagement_scores(score, engagement_level, weeks_attended_last_12, streak_weeks, last_checkin_at, volunteer_checkins_90d),
           *,
           contact_tags(tag),
           pipeline_contacts(
