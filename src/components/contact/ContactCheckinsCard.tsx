@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { EngagementBadge } from '@/components/contact/EngagementBadge';
 import { useEngagementScore, useContactCheckins } from '@/hooks/useCheckinData';
-import { Activity, Calendar, Flame, Clock } from 'lucide-react';
+import { Activity, Calendar, Flame, Clock, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ContactCheckinsCardProps {
@@ -12,12 +12,14 @@ interface ContactCheckinsCardProps {
 
 export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
   const { data: score, isLoading: scoreLoading } = useEngagementScore(contactId);
-  const { data: checkins, isLoading: checkinsLoading } = useContactCheckins(contactId, 10);
+  const { data: checkinData, isLoading: checkinsLoading } = useContactCheckins(contactId, 10);
 
+  const checkins = checkinData?.checkins || [];
+  const hasHousehold = checkinData?.hasHousehold || false;
   const isLoading = scoreLoading || checkinsLoading;
 
   // Don't render anything if no check-in data exists
-  if (!isLoading && !score && (!checkins || checkins.length === 0)) {
+  if (!isLoading && !score && checkins.length === 0) {
     return null;
   }
 
@@ -47,6 +49,12 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
           <span className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Attendance
+            {hasHousehold && (
+              <Badge variant="outline" className="text-[10px] font-normal gap-1">
+                <Users className="h-3 w-3" />
+                Includes household
+              </Badge>
+            )}
           </span>
           <EngagementBadge score={score} />
         </CardTitle>
@@ -96,7 +104,7 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
         )}
 
         {/* Recent Check-ins Table */}
-        {checkins && checkins.length > 0 && (
+        {checkins.length > 0 && (
           <div>
             <h4 className="text-sm font-medium mb-2">Recent Check-ins</h4>
             <div className="rounded-md border">
@@ -106,12 +114,15 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
                     <TableHead className="text-xs">Event</TableHead>
                     <TableHead className="text-xs">Date</TableHead>
                     <TableHead className="text-xs hidden sm:table-cell">Location</TableHead>
+                    {hasHousehold && (
+                      <TableHead className="text-xs hidden sm:table-cell">Checked in by</TableHead>
+                    )}
                     <TableHead className="text-xs">Type</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {checkins.map((checkin) => (
-                    <TableRow key={checkin.id}>
+                    <TableRow key={checkin.id} className={checkin.is_household ? 'opacity-80' : ''}>
                       <TableCell className="text-xs py-2">
                         <div>
                           <div className="font-medium">{checkin.event_name || 'Unknown Event'}</div>
@@ -128,6 +139,15 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
                       <TableCell className="text-xs py-2 text-muted-foreground hidden sm:table-cell">
                         {checkin.location_name || '—'}
                       </TableCell>
+                      {hasHousehold && (
+                        <TableCell className="text-xs py-2 hidden sm:table-cell">
+                          {checkin.is_household ? (
+                            <span className="text-muted-foreground italic">{checkin.checked_in_by}</span>
+                          ) : (
+                            <span className="text-foreground">Self</span>
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell className="text-xs py-2">
                         <Badge
                           variant="outline"

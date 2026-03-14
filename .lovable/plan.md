@@ -1,33 +1,41 @@
 
 
-## Household Check-ins on Contact Profiles
+## PCO Check-Ins Integration
 
-**Problem**: When a child is checked in at a service, the parent's profile shows no attendance data — even though the parent was clearly present. Currently, check-ins only show for the exact person who was checked in.
+### Completed (Phase 1-3)
 
-**Solution**: Expand the `useContactCheckins` hook to also fetch check-ins from all household members (using the `pc_household_id` on the contacts table). The UI will show both the contact's own check-ins and their household members' check-ins, with a label indicating who was checked in.
+**Database:**
+- `pco_checkins` table with RLS, dedup on `pco_checkin_id`
+- `contact_engagement_scores` table with RLS
+- `calculate_engagement_scores(p_org_id)` DB function (scoring 0-100 with engagement levels)
 
-### Changes
+**Edge Function:**
+- `pco-sync-checkins` - fetches from PCO Check-Ins API, matches contacts, upserts check-ins, calculates engagement scores
+- Supports incremental sync via `last_checkin_sync_at` in integration metadata
 
-**1. Update `useContactCheckins` hook** (`src/hooks/useCheckinData.tsx`)
-- After fetching the contact's own check-ins, look up the contact's `pc_household_id`
-- If a household ID exists, find all other contacts in the same household
-- Fetch their check-ins too, tagging each with the household member's name
-- Merge, deduplicate by event+date (avoid double-counting if both parent and child checked in at the same event), and sort by date
-- Add a `checked_in_by` field to the `CheckinRecord` interface (name of the person who was actually checked in)
+**UI:**
+- "Sync Check-Ins" button in SyncSettingsSection (PCO integration settings)
+- `EngagementBadge` component on TaskContactRow (compact score) and contact profiles
+- Check-in entries in InteractionTimeline (`checkin` type with teal styling)
+- `AttendanceSection` in Analytics page with check-in metrics + engagement distribution pie chart
+- `useCheckinData` hook with `useEngagementScore`, `useContactCheckins`, `useSyncCheckins`, `useOrgCheckinStats`
 
-**2. Update `ContactCheckinsCard`** (`src/components/contact/ContactCheckinsCard.tsx`)
-- Add a "Checked in by" column to the table showing who was actually checked in (e.g., "Emma Smith" for a child's check-in appearing on the parent's profile)
-- Use a subtle visual indicator (different badge or lighter text) to distinguish household check-ins from the contact's own check-ins
-- Add a label like "Includes household" next to the card title when household data is present
+### Completed (Phase 4)
+- Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
+- Flow filtering by engagement level (filter popover in FlowHeaderFilters)
 
-**3. Update `useEngagementScore` hook** — no changes needed here initially. The engagement score stays personal. The household check-ins are informational only (showing the parent was present), not used to inflate their score.
+### Completed (Phase 5 - Chunked Sync)
+- **Problem**: Large orgs (13k+ check-ins) caused timeout before upsert phase — zero data written
+- **Fix**: Chunked pagination (max 30 pages / ~3k records per invocation) with cursor-based resume
+- `pco-sync-checkins` saves cursor in `integrations.metadata.checkin_sync_cursor` and returns `hasMore`
+- `pco-checkin-auto-sync` loops up to 10 rounds per org until `hasMore: false`
+- `useSyncCheckins` hook auto-continues up to 15 rounds with progress toasts
+- Stale cursor cleanup (>2 hours) in auto-sync
+- Reset `last_checkin_sync_at` for orgs with 0 checkin data via migration
 
-### Technical approach
-- Query flow: `contacts.pc_household_id` → find sibling contacts → fetch their `pco_checkins`
-- All done client-side with 2-3 additional Supabase queries (lightweight)
-- Deduplication: group by `(event_name, checked_in_at date)` — if the contact AND a household member both checked in at the same event on the same day, show it once as the contact's own check-in
-
-### Files changed
-- `src/hooks/useCheckinData.tsx` — expand `useContactCheckins` to include household
-- `src/components/contact/ContactCheckinsCard.tsx` — show "checked in by" info in the table
-
+### Completed (Phase 6 - Household Check-ins)
+- `useContactCheckins` expanded to fetch check-ins from all household members via `pc_household_id`
+- Deduplication by event+date (own check-in preferred over household)
+- `ContactCheckinsCard` shows "Includes household" badge and "Checked in by" column
+- Household rows rendered with subtle opacity to distinguish from own check-ins
+- Engagement scores remain personal (not inflated by household data)
