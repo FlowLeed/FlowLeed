@@ -91,11 +91,11 @@ export function useContactCheckins(contactId: string | undefined, limit = 20) {
       const familyMembers = familyRes.data || [];
 
       // 3. Find household members from contacts table
-      let householdContacts: { id: string; name: string }[] = [];
+      let householdContacts: { id: string; name: string; pc_person_id: string | null }[] = [];
       if (householdId) {
         const { data } = await supabase
           .from('contacts')
-          .select('id, name')
+          .select('id, name, pc_person_id')
           .eq('pc_household_id', householdId)
           .neq('id', contactId);
         householdContacts = data || [];
@@ -123,7 +123,6 @@ export function useContactCheckins(contactId: string | undefined, limit = 20) {
       }
 
       // 5. Fetch family member check-ins by pc_person_id (for kids/spouse not in contacts table)
-      const existingHouseholdPersonIds = new Set(householdContacts.map(c => c.id));
       const familyWithCheckins = familyMembers.filter(fm => fm.pc_person_id);
       let familyCheckins: (CheckinRecord & { checked_in_by: string; is_household: true })[] = [];
 
@@ -134,18 +133,9 @@ export function useContactCheckins(contactId: string | undefined, limit = 20) {
         );
 
         // Exclude pc_person_ids already covered by household contacts
-        const alreadyCoveredPersonIds = new Set<string>();
-        for (const hc of householdContacts) {
-          // Look up pc_person_id for household contacts we already fetched
-          const { data: hcContact } = await supabase
-            .from('contacts')
-            .select('pc_person_id')
-            .eq('id', hc.id)
-            .maybeSingle();
-          if (hcContact?.pc_person_id) {
-            alreadyCoveredPersonIds.add(hcContact.pc_person_id);
-          }
-        }
+        const alreadyCoveredPersonIds = new Set<string>(
+          householdContacts.filter(c => c.pc_person_id).map(c => c.pc_person_id!)
+        );
 
         const uncoveredPersonIds = familyPersonIds.filter(pid => !alreadyCoveredPersonIds.has(pid));
 
