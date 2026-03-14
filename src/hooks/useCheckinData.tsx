@@ -55,15 +55,87 @@ export function useContactCheckins(contactId: string | undefined, limit = 20) {
   return useQuery({
     queryKey: ['contact-checkins', contactId, limit],
     queryFn: async () => {
-      if (!contactId) return [];
-      const { data, error } = await supabase
+      if (!contactId) return { checkins: [] as CheckinRecord[], hasHousehold: false };
+
+      // 1. Fetch own check-ins
+      const { data: ownCheckins, error: ownErr } = await supabase
         .from('pco_checkins')
         .select('*')
         .eq('contact_id', contactId)
         .order('checked_in_at', { ascending: false })
         .limit(limit);
-      if (error) throw error;
-      return (data || []) as unknown as CheckinRecord[];
+      if (ownErr) throw ownErr;
+
+      const own = ((ownCheckins || []) as unknown as CheckinRecord[]).map(c => ({
+        ...c,
+        checked_in_by: null,
+        is_household: false,
+      }));
+
+      // 2. Look up household ID
+      const { data: contact } = await supabase
+        .from('contacts')
+        .select('pc_household_id, name')
+        .eq('id', contactId)
+        .maybeSingle();
+
+      const householdId = contact?.pc_household_id;
+      if (!householdId) {
+        return { checkins: own.slice(0, limit), hasHousehold: false };
+      }
+
+      // 3. Find household members
+      const { data: householdContacts } = await supabase
+        .from('contacts')
+        .select('id, name')
+        .eq('pc_household_id', householdId)
+        .neq('id', contactId);
+
+      if (!householdContacts || householdContacts.length === 0) {
+        return { checkins: own.slice(0, limit), hasHousehold: false };
+      }
+
+      // 4. Fetch household check-ins
+      const householdIds = householdContacts.map(c => c.id);
+      const nameMap = Object.fromEntries(householdContacts.map(c => [c.id, c.name]));
+
+      const { data: householdCheckins, error: hhErr } = await supabase
+        .from('pco_checkins')
+        .select('*')
+        .in('contact_id', householdIds)
+        .order('checked_in_at', { ascending: false })
+        .limit(limit * 2);
+      if (hhErr) throw hhErr;
+
+      const household = ((householdCheckins || []) as unknown as CheckinRecord[]).map(c => ({
+        ...c,
+        checked_in_by: nameMap[c.contact_id || ''] || 'Household member',
+        is_household: true,
+      }));
+
+      // 5. Merge & deduplicate (prefer own check-in over household for same event+date)
+      const ownKeys = new Set(
+        own.map(c => {
+          const date = c.checked_in_at ? c.checked_in_at.substring(0, 10) : '';
+          return `${c.event_name}|${date}`;
+        })
+      );
+
+      const uniqueHousehold = household.filter(c => {
+        const date = c.checked_in_at ? c.checked_in_at.substring(0, 10) : '';
+        const key = `${c.event_name}|${date}`;
+        return !ownKeys.has(key);
+      });
+
+      const merged = [...own, ...uniqueHousehold]
+        .sort((a, b) => {
+          const da = a.checked_in_at || '';
+          const db = b.checked_in_at || '';
+          return db.localeCompare(da);
+        })
+        .slice(0, limit);
+
+      return { checkins: merged, hasHousehold: true };
     },
     enabled: !!contactId,
   });
