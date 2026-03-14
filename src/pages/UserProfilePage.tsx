@@ -663,12 +663,45 @@ const UserProfilePage = () => {
                 <Edit className="h-4 w-4" />
               </Button>
               
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={contact.avatar} alt={contact.name} />
-                <AvatarFallback>
-                  {getInitials(contact.name)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="flex flex-col items-center gap-3">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={contact.avatar} alt={contact.name} />
+                  <AvatarFallback>
+                    {getInitials(contact.name)}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Engagement Stats under avatar */}
+                <div className="grid grid-cols-2 gap-2 w-full min-w-[200px]">
+                  <div className="flex flex-col gap-0.5 p-1.5 rounded-md bg-muted/50 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Activity className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Score</span>
+                    </div>
+                    <span className="text-xs font-medium">{engagementScore?.score ?? 0}/100</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 p-1.5 rounded-md bg-muted/50 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">12 Weeks</span>
+                    </div>
+                    <span className="text-xs font-medium">{engagementScore?.weeks_attended_last_12 ?? 0}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 p-1.5 rounded-md bg-muted/50 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Flame className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Streak</span>
+                    </div>
+                    <span className="text-xs font-medium">{engagementScore?.streak_weeks ? `${engagementScore.streak_weeks}w` : '—'}</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 p-1.5 rounded-md bg-muted/50 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-[10px] text-muted-foreground">Last</span>
+                    </div>
+                    <span className="text-xs font-medium">{engagementScore?.last_checkin_at ? new Date(engagementScore.last_checkin_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—'}</span>
+                  </div>
+                </div>
+              </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-bold">{contact.name}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
