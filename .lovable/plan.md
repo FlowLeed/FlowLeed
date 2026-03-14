@@ -1,41 +1,19 @@
 
 
-## PCO Check-Ins Integration
+## Plan: Show Engagement Levels on the People Page
 
-### Completed (Phase 1-3)
+### What changes
 
-**Database:**
-- `pco_checkins` table with RLS, dedup on `pco_checkin_id`
-- `contact_engagement_scores` table with RLS
-- `calculate_engagement_scores(p_org_id)` DB function (scoring 0-100 with engagement levels)
+1. **`src/hooks/useContacts.tsx`** — Join `contact_engagement_scores` in the existing contacts query by adding it to the select statement:
+   ```
+   contact_engagement_scores(score, engagement_level, weeks_attended_last_12, streak_weeks, last_checkin_at, volunteer_checkins_90d)
+   ```
 
-**Edge Function:**
-- `pco-sync-checkins` - fetches from PCO Check-Ins API, matches contacts, upserts check-ins, calculates engagement scores
-- Supports incremental sync via `last_checkin_sync_at` in integration metadata
+2. **`src/components/contacts/ContactsTable.tsx`** — Add an "Engagement" column to the table that displays the `EngagementBadge` component (already built) for each contact. Pull the score from `contact.contact_engagement_scores[0]`. Add sorting support for the engagement score field.
 
-**UI:**
-- "Sync Check-Ins" button in SyncSettingsSection (PCO integration settings)
-- `EngagementBadge` component on TaskContactRow (compact score) and contact profiles
-- Check-in entries in InteractionTimeline (`checkin` type with teal styling)
-- `AttendanceSection` in Analytics page with check-in metrics + engagement distribution pie chart
-- `useCheckinData` hook with `useEngagementScore`, `useContactCheckins`, `useSyncCheckins`, `useOrgCheckinStats`
+### Technical details
 
-### Completed (Phase 4)
-- Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
-- Flow filtering by engagement level (filter popover in FlowHeaderFilters)
+- The `contact_engagement_scores` table has a foreign key to `contacts` via `contact_id`, so Supabase's PostgREST join should work directly.
+- Reuse the existing `EngagementBadge` component from `src/components/contact/EngagementBadge.tsx` which already handles all engagement levels with color-coded badges and tooltips.
+- The new column will be sortable by numeric score value and placed after the "Phone" column.
 
-### Completed (Phase 5 - Chunked Sync)
-- **Problem**: Large orgs (13k+ check-ins) caused timeout before upsert phase — zero data written
-- **Fix**: Chunked pagination (max 30 pages / ~3k records per invocation) with cursor-based resume
-- `pco-sync-checkins` saves cursor in `integrations.metadata.checkin_sync_cursor` and returns `hasMore`
-- `pco-checkin-auto-sync` loops up to 10 rounds per org until `hasMore: false`
-- `useSyncCheckins` hook auto-continues up to 15 rounds with progress toasts
-- Stale cursor cleanup (>2 hours) in auto-sync
-- Reset `last_checkin_sync_at` for orgs with 0 checkin data via migration
-
-### Completed (Phase 6 - Household Check-ins)
-- `useContactCheckins` expanded to fetch check-ins from all household members via `pc_household_id`
-- Deduplication by event+date (own check-in preferred over household)
-- `ContactCheckinsCard` shows "Includes household" badge and "Checked in by" column
-- Household rows rendered with subtle opacity to distinguish from own check-ins
-- Engagement scores remain personal (not inflated by household data)
