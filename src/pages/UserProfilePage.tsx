@@ -671,7 +671,7 @@ const UserProfilePage = () => {
                   </AvatarFallback>
                 </Avatar>
                 {/* Engagement Stats under avatar */}
-                <div className="grid grid-cols-2 gap-2 w-full min-w-[200px]">
+                <div className="grid grid-cols-4 gap-2 w-full">
                   <div className="flex flex-col gap-0.5 p-1.5 rounded-md bg-muted/50 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Activity className="h-3 w-3 text-muted-foreground" />
