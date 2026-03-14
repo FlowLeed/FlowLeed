@@ -128,7 +128,8 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
         </TableHeader>
         <TableBody>
           {sortedContacts.map((contact, index) => {
-            const engagementScore = contact.contact_engagement_scores?.[0] || null;
+            const scores = contact.contact_engagement_scores;
+            const engagementScore = Array.isArray(scores) ? scores[0] : scores;
             return (
               <TableRow
                 key={contact.id}
