@@ -18,10 +18,20 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
   const hasHousehold = checkinData?.hasHousehold || false;
   const isLoading = scoreLoading || checkinsLoading;
 
-  // Don't render anything if no check-in data exists
-  if (!isLoading && !score && checkins.length === 0) {
-    return null;
-  }
+  // Build a fallback score object when no data exists
+  const displayScore = score || {
+    score: 0,
+    weeks_attended_last_12: 0,
+    streak_weeks: 0,
+    last_checkin_at: null,
+    total_checkins_30d: 0,
+    total_checkins_90d: 0,
+    volunteer_checkins_90d: 0,
+    engagement_level: 'new' as const,
+    contact_id: contactId,
+    organization_id: '',
+    updated_at: '',
+  };
 
   if (isLoading) {
     return (
