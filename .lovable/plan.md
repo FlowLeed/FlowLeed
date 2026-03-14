@@ -32,3 +32,10 @@
 - `useSyncCheckins` hook auto-continues up to 15 rounds with progress toasts
 - Stale cursor cleanup (>2 hours) in auto-sync
 - Reset `last_checkin_sync_at` for orgs with 0 checkin data via migration
+
+### Completed (Phase 6 - Household Check-ins)
+- `useContactCheckins` expanded to fetch check-ins from all household members via `pc_household_id`
+- Deduplication by event+date (own check-in preferred over household)
+- `ContactCheckinsCard` shows "Includes household" badge and "Checked in by" column
+- Household rows rendered with subtle opacity to distinguish from own check-ins
+- Engagement scores remain personal (not inflated by household data)
