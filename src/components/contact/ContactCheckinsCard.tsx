@@ -66,7 +66,7 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
               </Badge>
             )}
           </span>
-          <EngagementBadge score={score} />
+          <EngagementBadge score={displayScore} />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
