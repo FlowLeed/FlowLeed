@@ -50,8 +50,10 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
       aVal = a.profiles?.full_name?.toLowerCase() || '';
       bVal = b.profiles?.full_name?.toLowerCase() || '';
     } else if (sortField === 'engagement') {
-      aVal = a.contact_engagement_scores?.[0]?.score ?? -1;
-      bVal = b.contact_engagement_scores?.[0]?.score ?? -1;
+      const aScores = a.contact_engagement_scores;
+      const bScores = b.contact_engagement_scores;
+      aVal = (Array.isArray(aScores) ? aScores[0]?.score : aScores?.score) ?? -1;
+      bVal = (Array.isArray(bScores) ? bScores[0]?.score : bScores?.score) ?? -1;
     }
     
     if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -126,7 +128,8 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
         </TableHeader>
         <TableBody>
           {sortedContacts.map((contact, index) => {
-            const engagementScore = contact.contact_engagement_scores?.[0] || null;
+            const scores = contact.contact_engagement_scores;
+            const engagementScore = Array.isArray(scores) ? scores[0] : scores;
             return (
               <TableRow
                 key={contact.id}
