@@ -70,44 +70,6 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatItem
-              icon={<Activity className="h-3.5 w-3.5 text-muted-foreground" />}
-              label="Score"
-              value={`${displayScore.score}/100`}
-            />
-            <StatItem
-              icon={<Calendar className="h-3.5 w-3.5 text-muted-foreground" />}
-              label="Last 12 Weeks"
-              value={`${displayScore.weeks_attended_last_12} attended`}
-            />
-            <StatItem
-              icon={<Flame className="h-3.5 w-3.5 text-muted-foreground" />}
-              label="Streak"
-              value={displayScore.streak_weeks > 0 ? `${displayScore.streak_weeks} weeks` : '—'}
-            />
-            <StatItem
-              icon={<Clock className="h-3.5 w-3.5 text-muted-foreground" />}
-              label="Last Check-in"
-              value={displayScore.last_checkin_at
-                ? new Date(displayScore.last_checkin_at).toLocaleDateString()
-                : '—'}
-            />
-          </div>
-
-          {/* Additional metrics */}
-          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span>{displayScore.total_checkins_30d} check-ins (30d)</span>
-            <span>·</span>
-            <span>{displayScore.total_checkins_90d} check-ins (90d)</span>
-            {displayScore.volunteer_checkins_90d > 0 && (
-              <>
-                <span>·</span>
-                <span>{displayScore.volunteer_checkins_90d} volunteer (90d)</span>
-              </>
-            )}
-          </div>
 
         {/* Recent Check-ins Table */}
         {checkins.length > 0 && (
