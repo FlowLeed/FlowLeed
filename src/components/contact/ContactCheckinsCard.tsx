@@ -18,10 +18,20 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
   const hasHousehold = checkinData?.hasHousehold || false;
   const isLoading = scoreLoading || checkinsLoading;
 
-  // Don't render anything if no check-in data exists
-  if (!isLoading && !score && checkins.length === 0) {
-    return null;
-  }
+  // Build a fallback score object when no data exists
+  const displayScore = score || {
+    score: 0,
+    weeks_attended_last_12: 0,
+    streak_weeks: 0,
+    last_checkin_at: null,
+    total_checkins_30d: 0,
+    total_checkins_90d: 0,
+    volunteer_checkins_90d: 0,
+    engagement_level: 'new' as const,
+    contact_id: contactId,
+    organization_id: '',
+    updated_at: '',
+  };
 
   if (isLoading) {
     return (
@@ -56,52 +66,48 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
               </Badge>
             )}
           </span>
-          <EngagementBadge score={score} />
+          <EngagementBadge score={displayScore} />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Stats Row */}
-        {score && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatItem
               icon={<Activity className="h-3.5 w-3.5 text-muted-foreground" />}
               label="Score"
-              value={`${score.score}/100`}
+              value={`${displayScore.score}/100`}
             />
             <StatItem
               icon={<Calendar className="h-3.5 w-3.5 text-muted-foreground" />}
               label="Last 12 Weeks"
-              value={`${score.weeks_attended_last_12} attended`}
+              value={`${displayScore.weeks_attended_last_12} attended`}
             />
             <StatItem
               icon={<Flame className="h-3.5 w-3.5 text-muted-foreground" />}
               label="Streak"
-              value={score.streak_weeks > 0 ? `${score.streak_weeks} weeks` : '—'}
+              value={displayScore.streak_weeks > 0 ? `${displayScore.streak_weeks} weeks` : '—'}
             />
             <StatItem
               icon={<Clock className="h-3.5 w-3.5 text-muted-foreground" />}
               label="Last Check-in"
-              value={score.last_checkin_at
-                ? new Date(score.last_checkin_at).toLocaleDateString()
+              value={displayScore.last_checkin_at
+                ? new Date(displayScore.last_checkin_at).toLocaleDateString()
                 : '—'}
             />
           </div>
-        )}
 
-        {/* Additional metrics */}
-        {score && (
+          {/* Additional metrics */}
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span>{score.total_checkins_30d} check-ins (30d)</span>
+            <span>{displayScore.total_checkins_30d} check-ins (30d)</span>
             <span>·</span>
-            <span>{score.total_checkins_90d} check-ins (90d)</span>
-            {score.volunteer_checkins_90d > 0 && (
+            <span>{displayScore.total_checkins_90d} check-ins (90d)</span>
+            {displayScore.volunteer_checkins_90d > 0 && (
               <>
                 <span>·</span>
-                <span>{score.volunteer_checkins_90d} volunteer (90d)</span>
+                <span>{displayScore.volunteer_checkins_90d} volunteer (90d)</span>
               </>
             )}
           </div>
-        )}
 
         {/* Recent Check-ins Table */}
         {checkins.length > 0 && (
