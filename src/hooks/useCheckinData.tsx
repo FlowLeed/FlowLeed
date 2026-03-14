@@ -51,6 +51,7 @@ export function useEngagementScore(contactId: string | undefined) {
   });
 }
 
+/** Fetches check-ins for the contact and their household members */
 export function useContactCheckins(contactId: string | undefined, limit = 20) {
   return useQuery({
     queryKey: ['contact-checkins', contactId, limit],
