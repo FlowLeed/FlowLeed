@@ -20,10 +20,14 @@ const LEVEL_LABELS: Record<string, string> = {
   new: 'New',
 };
 
-export function AttendanceSection() {
+interface AttendanceSectionProps {
+  campusId?: string | null;
+}
+
+export function AttendanceSection({ campusId }: AttendanceSectionProps) {
   const { organization } = useProfile();
   const orgId = organization?.id;
-  const { data: stats, isLoading } = useOrgCheckinStats(orgId);
+  const { data: stats, isLoading } = useOrgCheckinStats(orgId, campusId);
 
   if (isLoading) {
     return (
