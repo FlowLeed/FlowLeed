@@ -301,7 +301,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                 <TableBody>
                   {contacts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={isSelectMode ? 6 : 5} className="text-center text-muted-foreground py-4">
+                      <TableCell colSpan={isSelectMode ? 7 : 6} className="text-center text-muted-foreground py-4">
                         No contacts in this stage
                       </TableCell>
                     </TableRow>
