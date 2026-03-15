@@ -33,6 +33,7 @@ interface ContactDemographicsProps {
   demographics?: Demographics;
   addresses: Address[];
   familyMembers: FamilyMember[];
+  campusName?: string;
 }
 
 export const ContactDemographics: React.FC<ContactDemographicsProps> = ({
