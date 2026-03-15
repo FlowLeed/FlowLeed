@@ -25,9 +25,9 @@ export const getDateRangeFromPreset = (preset: DateRangePreset): DateRange => {
   }
 };
 
-export const useOverviewMetrics = (dateRange: DateRange) => {
+export const useOverviewMetrics = (dateRange: DateRange, campusId?: string | null) => {
   return useQuery({
-    queryKey: ["overview-metrics", dateRange],
+    queryKey: ["overview-metrics", dateRange, campusId],
     queryFn: async () => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
