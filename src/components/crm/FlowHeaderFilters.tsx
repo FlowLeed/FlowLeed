@@ -39,6 +39,8 @@ interface FlowHeaderFiltersProps {
   completedCount: number;
   selectedEngagementFilter?: string | null;
   onEngagementFilterChange?: (level: string | null) => void;
+  selectedCampusFilter?: string | null;
+  onCampusFilterChange?: (campusId: string | null) => void;
 }
 
 export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
