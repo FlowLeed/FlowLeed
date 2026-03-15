@@ -13,6 +13,7 @@ interface ContactCheckinsCardProps {
 }
 
 export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const { data: score, isLoading: scoreLoading } = useEngagementScore(contactId);
   const { data: checkinData, isLoading: checkinsLoading } = useContactCheckins(contactId, 10);
 
