@@ -123,6 +123,12 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
             </TableHead>
             <TableHead 
               className="cursor-pointer select-none group"
+              onClick={() => handleSort('campus')}
+            >
+              Campus{getSortIcon('campus')}
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer select-none group"
               onClick={() => handleSort('assignedTo')}
             >
               Assigned To{getSortIcon('assignedTo')}
