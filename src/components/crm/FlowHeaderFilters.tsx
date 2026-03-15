@@ -170,13 +170,41 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
             </div>
           )}
 
-          {(selectedFilter !== null || selectedEngagementFilter != null) && (
+          {/* Campus filter */}
+          {onCampusFilterChange && campuses && campuses.length > 0 && (
+            <div className="border-t pt-4 space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                Campus
+              </label>
+              <div className="space-y-1">
+                {campuses.map((campus) => (
+                  <Button
+                    key={campus.id}
+                    variant={selectedCampusFilter === campus.id ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() =>
+                      onCampusFilterChange(
+                        selectedCampusFilter === campus.id ? null : campus.id
+                      )
+                    }
+                    className="w-full justify-start gap-2"
+                  >
+                    {campus.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(selectedFilter !== null || selectedEngagementFilter != null || selectedCampusFilter != null) && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => {
                 onFilterChange(null);
                 onEngagementFilterChange?.(null);
+                onCampusFilterChange?.(null);
               }} 
               className="w-full"
             >
