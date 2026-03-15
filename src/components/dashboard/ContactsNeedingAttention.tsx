@@ -83,6 +83,12 @@ export const ContactsNeedingAttention = ({
               </Avatar>
               <div className="flex-1">
                 <p className="font-medium">{contact.name}</p>
+                {contact.campusName && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Building2 className="h-3 w-3" />
+                    <span>{contact.campusName}</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="text-right">

@@ -61,6 +61,7 @@ export const useMyContactsNeedingAttention = (
           lastInteractionDate: lastInteraction?.created_at || null,
           daysSinceLastContact,
           flow: pipelineContact?.pipelines || null,
+          campusName: (contact as any).campuses?.name || null,
         });
       });
 
