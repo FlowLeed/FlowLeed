@@ -294,6 +294,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                     <SortableHeader field="email">Email</SortableHeader>
                     <SortableHeader field="phone">Phone</SortableHeader>
                     <SortableHeader field="assignedTo">Assigned To</SortableHeader>
+                    <TableHead>Campus</TableHead>
                     <TableHead>Tags</TableHead>
                   </TableRow>
                 </TableHeader>
