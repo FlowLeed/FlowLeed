@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, MapPin, User, Users } from 'lucide-react';
+import { Calendar, MapPin, User, Users, Building2 } from 'lucide-react';
 
 interface Demographics {
   birthday?: string;
