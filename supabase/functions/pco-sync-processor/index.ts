@@ -597,10 +597,30 @@ async function processPersonData(
     contactData.phone = phoneNumber;
   }
 
+  // Resolve campus_id from primary_campus_id
+  const pcoCampusId = attributes.primary_campus?.data?.id 
+    || person.relationships?.primary_campus?.data?.id
+    || attributes.primary_campus_id
+    || null;
+  
+  if (pcoCampusId) {
+    const { data: campus } = await supabase
+      .from('campuses')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('pco_campus_id', String(pcoCampusId))
+      .single();
+    
+    if (campus) {
+      contactData.campus_id = campus.id;
+    }
+  }
+
   console.log(`Syncing contact ${attributes.name} (PC ID: ${pcPersonId}, Household: ${householdId || 'none'}):`, {
     email: contactData.email,
     phone: contactData.phone,
-    has_campus: !!attributes.primary_campus_id
+    has_campus: !!pcoCampusId,
+    campus_id: contactData.campus_id || null
   });
 
   const { data: contact, error: contactError } = await supabase
