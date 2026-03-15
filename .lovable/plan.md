@@ -1,41 +1,55 @@
 
 
-## PCO Check-Ins Integration
+## Plan: PCO Campus Integration
 
-### Completed (Phase 1-3)
+### Overview
+PCO supports multiple campuses (locations/sites). We need to pull campus data during sync and surface it across the app for filtering, grouping, and reporting.
 
-**Database:**
-- `pco_checkins` table with RLS, dedup on `pco_checkin_id`
-- `contact_engagement_scores` table with RLS
-- `calculate_engagement_scores(p_org_id)` DB function (scoring 0-100 with engagement levels)
+### Data Layer
 
-**Edge Function:**
-- `pco-sync-checkins` - fetches from PCO Check-Ins API, matches contacts, upserts check-ins, calculates engagement scores
-- Supports incremental sync via `last_checkin_sync_at` in integration metadata
+1. **New `campuses` table** -- stores campus records per organization (synced from PCO)
+   - `id`, `organization_id`, `pco_campus_id`, `name`, `address`, `city`, `state`, `is_primary`, `created_at`
+   - RLS: org members can read their org's campuses
 
-**UI:**
-- "Sync Check-Ins" button in SyncSettingsSection (PCO integration settings)
-- `EngagementBadge` component on TaskContactRow (compact score) and contact profiles
-- Check-in entries in InteractionTimeline (`checkin` type with teal styling)
-- `AttendanceSection` in Analytics page with check-in metrics + engagement distribution pie chart
-- `useCheckinData` hook with `useEngagementScore`, `useContactCheckins`, `useSyncCheckins`, `useOrgCheckinStats`
+2. **Add `campus_id` column to `contacts` table** -- FK to `campuses.id`, nullable
+   - Populated during PCO sync from `primary_campus_id` on each person
 
-### Completed (Phase 4)
-- Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
-- Flow filtering by engagement level (filter popover in FlowHeaderFilters)
+3. **Edge function: `pco-sync-processor`** -- update to:
+   - Fetch `/campuses` from PCO API on each sync and upsert into `campuses` table
+   - Map each person's `primary_campus_id` to the local `campus_id` when upserting contacts
 
-### Completed (Phase 5 - Chunked Sync)
-- **Problem**: Large orgs (13k+ check-ins) caused timeout before upsert phase — zero data written
-- **Fix**: Chunked pagination (max 30 pages / ~3k records per invocation) with cursor-based resume
-- `pco-sync-checkins` saves cursor in `integrations.metadata.checkin_sync_cursor` and returns `hasMore`
-- `pco-checkin-auto-sync` loops up to 10 rounds per org until `hasMore: false`
-- `useSyncCheckins` hook auto-continues up to 15 rounds with progress toasts
-- Stale cursor cleanup (>2 hours) in auto-sync
-- Reset `last_checkin_sync_at` for orgs with 0 checkin data via migration
+### Where Campus Shows Up (Surface Areas)
 
-### Completed (Phase 6 - Household Check-ins)
-- `useContactCheckins` expanded to fetch check-ins from all household members via `pc_household_id`
-- Deduplication by event+date (own check-in preferred over household)
-- `ContactCheckinsCard` shows "Includes household" badge and "Checked in by" column
-- Household rows rendered with subtle opacity to distinguish from own check-ins
-- Engagement scores remain personal (not inflated by household data)
+| Location | What to show |
+|---|---|
+| **Contact Profile** (`ContactDemographics`) | Campus name badge next to address/location info |
+| **People Page** (`ContactsTable`) | New "Campus" column (sortable) |
+| **People Filters** (`ContactFilters`) | Campus dropdown filter (populated from `campuses` table) |
+| **Flow Board** (`FlowHeaderFilters`) | Campus filter in the flow filter popover |
+| **Flow Table View** (`FlowTableView`) | Campus column |
+| **Contact Cards** (`ContactCard`) | Small campus label beneath name |
+| **Analytics - Overview** (`OverviewSection`) | Campus breakdown filter or selector |
+| **Analytics - Attendance** (`AttendanceSection`) | Filter check-in stats by campus |
+| **Analytics - People** (`PeopleSection`) | Campus distribution chart |
+| **Dashboard** (`ContactsNeedingAttention`) | Campus context on contact rows |
+| **Groups** (`GroupCard`/`GroupDetailPage`) | Associate groups with a campus |
+
+### Implementation Steps
+
+1. **Migration**: Create `campuses` table + add `campus_id` FK to `contacts` + RLS policies
+2. **Sync**: Update `pco-sync-processor` to fetch campuses from PCO API (`/campuses` endpoint) and store `primary_campus_id` mapping on contacts
+3. **Hook**: Create `useCampuses` hook to fetch org campuses for dropdowns/filters
+4. **Contact Profile**: Show campus badge in `ContactDemographics`
+5. **People Page**: Add Campus column to `ContactsTable` + Campus filter to `ContactFilters`
+6. **Flow Views**: Add campus filter to `FlowHeaderFilters` and campus column to `FlowTableView`
+7. **Analytics**: Add campus filter/selector to Attendance and People sections
+8. **Contact Cards**: Show campus label on `ContactCard` in flow board view
+
+### Technical Details
+
+- PCO API endpoint: `GET /people/v2/campuses` returns all campuses with name, address, city, state, zip
+- Each person has `primary_campus_id` in their attributes (already logged but not stored)
+- The `campuses` table uses a unique constraint on `(organization_id, pco_campus_id)` for safe upserts
+- Campus filter will be a simple `Select` dropdown populated by the `useCampuses` hook
+- Sorting/filtering on campus will be done at the query level via `.eq('campus_id', selectedCampusId)`
+
