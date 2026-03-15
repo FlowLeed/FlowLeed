@@ -62,7 +62,8 @@ const ContactsPage = () => {
     filters.searchTerm !== "" ||
     filters.assignedToUserId !== "all" ||
     filters.flowId !== "all" ||
-    filters.lastInteractionDays !== "all";
+    filters.lastInteractionDays !== "all" ||
+    filters.engagementLevel !== "all";
 
   const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null) => {
     if (!organization) {

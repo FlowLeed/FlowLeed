@@ -207,6 +207,27 @@ export const ContactFilters = ({
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Engagement</label>
+              <Select
+                value={filters.engagementLevel}
+                onValueChange={(value) => onFilterChange("engagementLevel", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Engagement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="highly_engaged">Highly Engaged</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="at_risk">At Risk</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="none">No Score</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={onClearFilters} className="w-full">
                 <X className="mr-2 h-4 w-4" />
