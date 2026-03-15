@@ -160,6 +160,15 @@ export const useContacts = (filters: ContactFilters) => {
         query = query.is("assigned_to_user_id", null);
       }
 
+      // Apply campus filter
+      if (filters.campusId && filters.campusId !== "all") {
+        if (filters.campusId === "no-campus") {
+          query = query.is("campus_id", null);
+        } else {
+          query = query.eq("campus_id", filters.campusId);
+        }
+      }
+
       const { data, error } = await query;
       
       console.log('📊 Query result:', { 
