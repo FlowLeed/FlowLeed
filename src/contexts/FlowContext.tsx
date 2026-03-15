@@ -32,7 +32,7 @@ interface FlowProviderProps {
 }
 
 // Convert database contact format to frontend format
-const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile?: any, pipelineContactData?: any): any => ({
+const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile?: any, pipelineContactData?: any, campusMap?: Map<string, string>): any => ({
   id: dbContact.id,
   name: dbContact.name,
   email: dbContact.email,
@@ -47,11 +47,13 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile
     avatar: assignedProfile.avatar_url
   } : undefined,
   stageEnteredAt: pipelineContactData?.stage_entered_at,
-  completedEndAt: pipelineContactData?.completed_end_at
+  completedEndAt: pipelineContactData?.completed_end_at,
+  campusId: dbContact.campus_id || undefined,
+  campusName: dbContact.campus_id && campusMap ? campusMap.get(dbContact.campus_id) : undefined,
 });
 
 // Convert database pipeline format to frontend format (keeping database names for data compatibility)
-const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[]): Flow => {
+const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[], campusMap?: Map<string, string>): Flow => {
   const safeStages = (stages || []).filter(Boolean);
   const safeContacts = (contacts || []).filter(Boolean);
   const safeTags = (contactTags || []).filter(Boolean);
@@ -91,7 +93,7 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
               const assignedProfile = pc.assigned_to_user_id 
                 ? safeProfiles.find(p => p && p.user_id === pc.assigned_to_user_id)
                 : undefined;
-              return convertDbContactToFrontend(contact, tags, assignedProfile, pc);
+              return convertDbContactToFrontend(contact, tags, assignedProfile, pc, campusMap);
             })
         };
       })
@@ -371,6 +373,26 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       allProfiles = [];
     }
 
+    // Fetch campus names for contacts that have campus_id
+    const campusMap = new Map<string, string>();
+    const allCampusIds = [...new Set(
+      allFlowContacts
+        ?.map(pc => (pc.contacts as any)?.campus_id)
+        .filter(Boolean) || []
+    )];
+
+    if (allCampusIds.length > 0) {
+      try {
+        const { data: campuses } = await supabase
+          .from('campuses')
+          .select('id, name')
+          .in('id', allCampusIds);
+        campuses?.forEach(c => campusMap.set(c.id, c.name));
+      } catch (err) {
+        console.warn('[FlowContext] Failed to load campuses:', err);
+      }
+    }
+
     // Group data by pipeline_id in memory
     for (const pipeline of pipelinesList) {
       const pipelineStages = allStages?.filter(s => s.pipeline_id === pipeline.id) || [];
@@ -381,7 +403,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         pipelineStages,
         pipelineContacts,
         allContactTags,
-        allProfiles
+        allProfiles,
+        campusMap
       );
 
       flowsData[pipeline.id] = convertedFlow;

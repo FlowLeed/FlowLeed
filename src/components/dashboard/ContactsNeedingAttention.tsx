@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Building2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Contact {
@@ -12,6 +12,7 @@ interface Contact {
   avatar: string | null;
   daysSinceLastContact: number;
   flow: { name: string; icon?: string } | null;
+  campusName?: string | null;
 }
 
 interface ContactsNeedingAttentionProps {
@@ -82,6 +83,12 @@ export const ContactsNeedingAttention = ({
               </Avatar>
               <div className="flex-1">
                 <p className="font-medium">{contact.name}</p>
+                {contact.campusName && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Building2 className="h-3 w-3" />
+                    <span>{contact.campusName}</span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="text-right">

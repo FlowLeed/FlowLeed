@@ -96,6 +96,8 @@ interface HeaderProps {
   cycleDays?: number;
   selectedEngagementFilter?: string | null;
   onEngagementFilterChange?: (level: string | null) => void;
+  selectedCampusFilter?: string | null;
+  onCampusFilterChange?: (campusId: string | null) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -125,7 +127,9 @@ export const Header: React.FC<HeaderProps> = ({
   flowType,
   cycleDays,
   selectedEngagementFilter,
-  onEngagementFilterChange
+  onEngagementFilterChange,
+  selectedCampusFilter,
+  onCampusFilterChange
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
@@ -420,6 +424,8 @@ export const Header: React.FC<HeaderProps> = ({
             completedCount={completedCount ?? 0}
             selectedEngagementFilter={selectedEngagementFilter}
             onEngagementFilterChange={onEngagementFilterChange}
+            selectedCampusFilter={selectedCampusFilter}
+            onCampusFilterChange={onCampusFilterChange}
           />
         )}
         

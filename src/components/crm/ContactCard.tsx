@@ -1,7 +1,7 @@
 import React from "react";
 import { Contact } from "@/types/crm";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MoreVertical, MessageSquare, Mail, Phone, UserX, CheckCircle2 } from "lucide-react";
+import { MoreVertical, MessageSquare, Mail, Phone, UserX, CheckCircle2, Building2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -114,6 +114,13 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             </span>
           ))}
         </div>}
+
+      {contact.campusName && (
+        <div className="flex items-center gap-1 mb-2 text-xs text-muted-foreground">
+          <Building2 className="h-3 w-3" />
+          <span>{contact.campusName}</span>
+        </div>
+      )}
 
       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
         {assignedTo ? <div className="flex gap-2 items-center min-w-0 flex-1">

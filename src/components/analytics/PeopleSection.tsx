@@ -9,8 +9,12 @@ import { AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
-export const PeopleSection = () => {
-  const { data: atRiskContacts, isLoading } = useAtRiskContacts(30);
+interface PeopleSectionProps {
+  campusId?: string | null;
+}
+
+export const PeopleSection = ({ campusId }: PeopleSectionProps) => {
+  const { data: atRiskContacts, isLoading } = useAtRiskContacts(30, campusId);
   const navigate = useNavigate();
 
   if (isLoading) {

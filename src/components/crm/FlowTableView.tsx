@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus, MoreVertical, Check, CheckCircle2 } from "lucide-react";
+import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus, MoreVertical, Check, CheckCircle2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
@@ -294,13 +294,14 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                     <SortableHeader field="email">Email</SortableHeader>
                     <SortableHeader field="phone">Phone</SortableHeader>
                     <SortableHeader field="assignedTo">Assigned To</SortableHeader>
+                    <TableHead>Campus</TableHead>
                     <TableHead>Tags</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {contacts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={isSelectMode ? 6 : 5} className="text-center text-muted-foreground py-4">
+                      <TableCell colSpan={isSelectMode ? 7 : 6} className="text-center text-muted-foreground py-4">
                         No contacts in this stage
                       </TableCell>
                     </TableRow>
@@ -364,6 +365,16 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                           )}
                         </TableCell>
                         <TableCell>
+                          {contact.campusName ? (
+                            <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                              <Building2 className="h-3 w-3" />
+                              {contact.campusName}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex gap-1 flex-wrap max-w-[200px]">
                             {contact.tags.length > 0 ? (
                               contact.tags.slice(0, 3).map((tag, idx) => (
@@ -387,7 +398,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                   
                   {/* Add Item Row */}
                   <TableRow className="hover:bg-muted/30 border-t">
-                    <TableCell colSpan={isSelectMode ? 6 : 5}>
+                    <TableCell colSpan={isSelectMode ? 7 : 6}>
                       <button 
                         className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 w-full py-1"
                         onClick={() => {

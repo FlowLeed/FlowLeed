@@ -25,9 +25,9 @@ export const getDateRangeFromPreset = (preset: DateRangePreset): DateRange => {
   }
 };
 
-export const useOverviewMetrics = (dateRange: DateRange) => {
+export const useOverviewMetrics = (dateRange: DateRange, campusId?: string | null) => {
   return useQuery({
-    queryKey: ["overview-metrics", dateRange],
+    queryKey: ["overview-metrics", dateRange, campusId],
     queryFn: async () => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
@@ -46,18 +46,22 @@ export const useOverviewMetrics = (dateRange: DateRange) => {
       const organizationId = orgMembers[0].organization_id;
 
       // Total contacts
-      const { count: totalContacts } = await supabase
+      let totalContactsQuery = supabase
         .from("contacts")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", organizationId);
+      if (campusId) totalContactsQuery = totalContactsQuery.eq("campus_id", campusId);
+      const { count: totalContacts } = await totalContactsQuery;
 
       // Contacts added in range
-      const { count: contactsAdded } = await supabase
+      let contactsAddedQuery = supabase
         .from("contacts")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", organizationId)
         .gte("created_at", dateRange.from.toISOString())
         .lte("created_at", dateRange.to.toISOString());
+      if (campusId) contactsAddedQuery = contactsAddedQuery.eq("campus_id", campusId);
+      const { count: contactsAdded } = await contactsAddedQuery;
 
       // Active flows (pipelines with at least one contact)
       const { data: activeFlows } = await supabase
@@ -269,14 +273,13 @@ export const useTeamPerformance = (dateRange: DateRange) => {
   });
 };
 
-export const useAtRiskContacts = (daysInactive: number = 30) => {
+export const useAtRiskContacts = (daysInactive: number = 30, campusId?: string | null) => {
   return useQuery({
-    queryKey: ["at-risk-contacts", daysInactive],
+    queryKey: ["at-risk-contacts", daysInactive, campusId],
     queryFn: async () => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
-      // SECURITY FIX: Always get organization from server-validated membership
       const { data: orgMembers } = await supabase
         .from("organization_members")
         .select("organization_id")
@@ -292,11 +295,13 @@ export const useAtRiskContacts = (daysInactive: number = 30) => {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysInactive);
 
-      // Get all contacts
-      const { data: contacts } = await supabase
+      // Get all contacts (optionally filtered by campus)
+      let contactsQuery = supabase
         .from("contacts")
-        .select("id, name, email, avatar")
+        .select("id, name, email, avatar, campus_id")
         .eq("organization_id", organizationId);
+      if (campusId) contactsQuery = contactsQuery.eq("campus_id", campusId);
+      const { data: contacts } = await contactsQuery;
 
       const atRiskContacts = await Promise.all(
         (contacts || []).map(async (contact) => {

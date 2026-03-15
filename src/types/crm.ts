@@ -18,6 +18,8 @@ export interface Contact {
   phone?: string;
   stageEnteredAt?: string;
   completedEndAt?: string;
+  campusId?: string;
+  campusName?: string;
 }
 
 export interface FlowStage {

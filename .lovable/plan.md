@@ -72,10 +72,27 @@
 **UI - ContactDemographics component:**
 - Campus badge shown at top of demographics card (Building2 icon)
 
-### Pending (Phase 2)
-- Wire `selectedCampusFilter` state in `FlowView.tsx` and filter contacts by campus
-- Add campus column to `FlowTableView`
-- Show campus label on `ContactCard` in flow board
-- Analytics campus filtering (Attendance, People, Overview sections)
-- Groups association with campus
-- Dashboard `ContactsNeedingAttention` campus context
+### Completed (Phase 2 - UI Wiring)
+
+**Flow Views:**
+- `FlowView.tsx`: `selectedCampusFilter` state wired, contacts filtered by `campusId`
+- `FlowHeaderFilters` → `Header` → `FlowView`: Full campus filter prop chain connected
+- `FlowTableView`: New "Campus" column with Building2 icon
+- `ContactCard`: Campus label shown beneath tags
+
+**Analytics:**
+- Global `CampusFilter` component added to AnalyticsPage header
+- `OverviewSection`: Total/added contacts filtered by campus
+- `AttendanceSection`: Check-in stats and engagement scores filtered by campus contacts
+- `PeopleSection`: At-risk contacts filtered by campus
+
+**Dashboard:**
+- `ContactsNeedingAttention`: Campus name shown on each contact row
+- `useMyContactsNeedingAttention`: Fetches campus name via join
+
+**Data Layer:**
+- `FlowContext`: Fetches campus names for all flow contacts, passes via `campusMap`
+- `Contact` type: Added `campusId` and `campusName` fields
+
+### Pending (Phase 3)
+- Groups association with campus (campus_id FK on groups table)

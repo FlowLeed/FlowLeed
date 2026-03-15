@@ -39,6 +39,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [selectedEngagementFilter, setSelectedEngagementFilter] = useState<string | null>(null);
+  const [selectedCampusFilter, setSelectedCampusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
     const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
     return (saved === 'table' || saved === 'kanban') ? saved : 'kanban';
@@ -112,6 +113,11 @@ export const FlowView: React.FC<FlowViewProps> = ({
           if (level !== selectedEngagementFilter) return false;
         }
 
+        // Apply campus filter
+        if (selectedCampusFilter) {
+          if (contact.campusId !== selectedCampusFilter) return false;
+        }
+
         // Apply assignment filter
         if (selectedFilter) {
           if (selectedFilter === "unassigned") {
@@ -135,7 +141,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
       ...flow,
       stages: filteredStages
     };
-  }, [flow, selectedFilter, selectedEngagementFilter, engagementScores, teamMembers, showCompleted]);
+  }, [flow, selectedFilter, selectedEngagementFilter, selectedCampusFilter, engagementScores, teamMembers, showCompleted]);
 
   // Calculate contact counts for filter badges (only count active, non-completed contacts)
   const contactCounts = useMemo(() => {
@@ -560,6 +566,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
         completedCount={completedCount}
         selectedEngagementFilter={selectedEngagementFilter}
         onEngagementFilterChange={setSelectedEngagementFilter}
+        selectedCampusFilter={selectedCampusFilter}
+        onCampusFilterChange={setSelectedCampusFilter}
       />
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
         {viewMode === 'kanban' ? (

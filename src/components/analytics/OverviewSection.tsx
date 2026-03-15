@@ -4,10 +4,11 @@ import { useOverviewMetrics, DateRange } from "@/hooks/useAnalytics";
 
 interface OverviewSectionProps {
   dateRange: DateRange;
+  campusId?: string | null;
 }
 
-export const OverviewSection = ({ dateRange }: OverviewSectionProps) => {
-  const { data: metrics, isLoading } = useOverviewMetrics(dateRange);
+export const OverviewSection = ({ dateRange, campusId }: OverviewSectionProps) => {
+  const { data: metrics, isLoading } = useOverviewMetrics(dateRange, campusId);
 
   return (
     <div className="space-y-6">
