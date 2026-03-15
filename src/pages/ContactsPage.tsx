@@ -66,7 +66,8 @@ const ContactsPage = () => {
     filters.assignedToUserId !== "all" ||
     filters.flowId !== "all" ||
     filters.lastInteractionDays !== "all" ||
-    filters.engagementLevel !== "all";
+    filters.engagementLevel !== "all" ||
+    filters.campusId !== "all";
 
   const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null) => {
     if (!organization) {
