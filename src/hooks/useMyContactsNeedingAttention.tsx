@@ -29,7 +29,7 @@ export const useMyContactsNeedingAttention = (
       // Get contact details
       const { data: contacts } = await supabase
         .from("contacts")
-        .select("id, name, avatar, email")
+        .select("id, name, avatar, email, campus_id, campuses(name)")
         .in("id", contactIds);
 
       // Get last interaction for each contact
