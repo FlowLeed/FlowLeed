@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus, MoreVertical, Check, CheckCircle2 } from "lucide-react";
+import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus, MoreVertical, Check, CheckCircle2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
