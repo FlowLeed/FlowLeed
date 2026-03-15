@@ -46,18 +46,22 @@ export const useOverviewMetrics = (dateRange: DateRange, campusId?: string | nul
       const organizationId = orgMembers[0].organization_id;
 
       // Total contacts
-      const { count: totalContacts } = await supabase
+      let totalContactsQuery = supabase
         .from("contacts")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", organizationId);
+      if (campusId) totalContactsQuery = totalContactsQuery.eq("campus_id", campusId);
+      const { count: totalContacts } = await totalContactsQuery;
 
       // Contacts added in range
-      const { count: contactsAdded } = await supabase
+      let contactsAddedQuery = supabase
         .from("contacts")
         .select("*", { count: "exact", head: true })
         .eq("organization_id", organizationId)
         .gte("created_at", dateRange.from.toISOString())
         .lte("created_at", dateRange.to.toISOString());
+      if (campusId) contactsAddedQuery = contactsAddedQuery.eq("campus_id", campusId);
+      const { count: contactsAdded } = await contactsAddedQuery;
 
       // Active flows (pipelines with at least one contact)
       const { data: activeFlows } = await supabase
