@@ -17,6 +17,7 @@ export interface ContactFilters {
   assignedToUserId: string;
   flowId: string;
   lastInteractionDays: string;
+  engagementLevel: string;
 }
 
 const ContactsPage = () => {
@@ -26,6 +27,7 @@ const ContactsPage = () => {
     assignedToUserId: "all",
     flowId: "all",
     lastInteractionDays: "all",
+    engagementLevel: "all",
   });
 
   const { organization } = useProfile();
@@ -52,6 +54,7 @@ const ContactsPage = () => {
       assignedToUserId: "all",
       flowId: "all",
       lastInteractionDays: "all",
+      engagementLevel: "all",
     });
   };
 
@@ -59,7 +62,8 @@ const ContactsPage = () => {
     filters.searchTerm !== "" ||
     filters.assignedToUserId !== "all" ||
     filters.flowId !== "all" ||
-    filters.lastInteractionDays !== "all";
+    filters.lastInteractionDays !== "all" ||
+    filters.engagementLevel !== "all";
 
   const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null) => {
     if (!organization) {

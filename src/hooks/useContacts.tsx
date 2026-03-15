@@ -175,6 +175,19 @@ export const useContacts = (filters: ContactFilters) => {
       let filteredData = data || [];
       console.log('Initial data count:', filteredData.length);
 
+      // Apply engagement level filter
+      if (filters.engagementLevel && filters.engagementLevel !== "all") {
+        filteredData = filteredData.filter(contact => {
+          const scores = contact.contact_engagement_scores;
+          const score = Array.isArray(scores) ? scores[0] : scores;
+          if (filters.engagementLevel === "none") {
+            return !score || !score.engagement_level;
+          }
+          return score?.engagement_level === filters.engagementLevel;
+        });
+        console.log('After engagement filter:', filteredData.length);
+      }
+
       // Apply "no-flows" filter client-side (exclude contacts that are in flows)
       if (contactIdsNotInFlows !== null && contactIdsNotInFlows.length > 0) {
         const idsToExclude = new Set(contactIdsNotInFlows);

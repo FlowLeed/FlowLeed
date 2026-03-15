@@ -117,6 +117,7 @@ export const ContactFilters = ({
     filters.assignedToUserId !== "all",
     filters.flowId !== "all",
     filters.lastInteractionDays !== "all",
+    filters.engagementLevel !== "all",
   ].filter(Boolean).length;
 
   return (
@@ -202,6 +203,27 @@ export const ContactFilters = ({
                   <SelectItem value="30">Last 30 days</SelectItem>
                   <SelectItem value="90">Last 90 days</SelectItem>
                   <SelectItem value="never">Never contacted</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Engagement</label>
+              <Select
+                value={filters.engagementLevel}
+                onValueChange={(value) => onFilterChange("engagementLevel", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Engagement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="highly_engaged">Highly Engaged</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="at_risk">At Risk</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="none">No Score</SelectItem>
                 </SelectContent>
               </Select>
             </div>
