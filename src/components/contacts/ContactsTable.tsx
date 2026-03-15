@@ -173,6 +173,14 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
                     <span className="text-muted-foreground text-sm">—</span>
                   )}
                 </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {contact.campuses?.name ? (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {contact.campuses.name}
+                    </span>
+                  ) : "—"}
+                </TableCell>
                 <TableCell>
                   {contact.profiles ? (
                     <div className="flex items-center gap-2">
