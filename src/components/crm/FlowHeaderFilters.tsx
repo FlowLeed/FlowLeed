@@ -52,8 +52,12 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
   onShowCompletedChange,
   completedCount,
   selectedEngagementFilter,
-  onEngagementFilterChange
+  onEngagementFilterChange,
+  selectedCampusFilter,
+  onCampusFilterChange
 }) => {
+  const { data: campuses } = useCampuses();
+  
   const activeFilterCount = [
     selectedFilter !== null,
     showCompleted,
