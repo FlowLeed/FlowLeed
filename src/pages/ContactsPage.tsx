@@ -29,6 +29,7 @@ const ContactsPage = () => {
     flowId: "all",
     lastInteractionDays: "all",
     engagementLevel: "all",
+    campusId: "all",
   });
 
   const { organization } = useProfile();
