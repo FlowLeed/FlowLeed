@@ -373,6 +373,26 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
       allProfiles = [];
     }
 
+    // Fetch campus names for contacts that have campus_id
+    const campusMap = new Map<string, string>();
+    const allCampusIds = [...new Set(
+      allFlowContacts
+        ?.map(pc => (pc.contacts as any)?.campus_id)
+        .filter(Boolean) || []
+    )];
+
+    if (allCampusIds.length > 0) {
+      try {
+        const { data: campuses } = await supabase
+          .from('campuses')
+          .select('id, name')
+          .in('id', allCampusIds);
+        campuses?.forEach(c => campusMap.set(c.id, c.name));
+      } catch (err) {
+        console.warn('[FlowContext] Failed to load campuses:', err);
+      }
+    }
+
     // Group data by pipeline_id in memory
     for (const pipeline of pipelinesList) {
       const pipelineStages = allStages?.filter(s => s.pipeline_id === pipeline.id) || [];
@@ -383,7 +403,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
         pipelineStages,
         pipelineContacts,
         allContactTags,
-        allProfiles
+        allProfiles,
+        campusMap
       );
 
       flowsData[pipeline.id] = convertedFlow;
