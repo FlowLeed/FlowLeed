@@ -113,6 +113,11 @@ export const FlowView: React.FC<FlowViewProps> = ({
           if (level !== selectedEngagementFilter) return false;
         }
 
+        // Apply campus filter
+        if (selectedCampusFilter) {
+          if (contact.campusId !== selectedCampusFilter) return false;
+        }
+
         // Apply assignment filter
         if (selectedFilter) {
           if (selectedFilter === "unassigned") {
@@ -136,7 +141,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
       ...flow,
       stages: filteredStages
     };
-  }, [flow, selectedFilter, selectedEngagementFilter, engagementScores, teamMembers, showCompleted]);
+  }, [flow, selectedFilter, selectedEngagementFilter, selectedCampusFilter, engagementScores, teamMembers, showCompleted]);
 
   // Calculate contact counts for filter badges (only count active, non-completed contacts)
   const contactCounts = useMemo(() => {
