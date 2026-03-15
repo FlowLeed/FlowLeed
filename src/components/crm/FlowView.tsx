@@ -39,6 +39,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [selectedEngagementFilter, setSelectedEngagementFilter] = useState<string | null>(null);
+  const [selectedCampusFilter, setSelectedCampusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
     const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
     return (saved === 'table' || saved === 'kanban') ? saved : 'kanban';
