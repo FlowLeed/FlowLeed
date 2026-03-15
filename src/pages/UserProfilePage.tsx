@@ -857,7 +857,14 @@ const UserProfilePage = () => {
                   {/* Demographics Information */}
                   <div className="pt-2 border-t border-border/40">
                     <div className="flex items-start justify-between">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm flex-1">
+                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm flex-1">
+                        {/* Campus */}
+                        {contact.campuses?.name && (
+                          <div>
+                            <span className="text-muted-foreground">Campus: </span>
+                            <span>{contact.campuses.name}</span>
+                          </div>
+                        )}
                         {/* Demographics */}
                         {demographics && (
                           <>
