@@ -32,7 +32,7 @@ interface FlowProviderProps {
 }
 
 // Convert database contact format to frontend format
-const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile?: any, pipelineContactData?: any): any => ({
+const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile?: any, pipelineContactData?: any, campusMap?: Map<string, string>): any => ({
   id: dbContact.id,
   name: dbContact.name,
   email: dbContact.email,
@@ -47,7 +47,9 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile
     avatar: assignedProfile.avatar_url
   } : undefined,
   stageEnteredAt: pipelineContactData?.stage_entered_at,
-  completedEndAt: pipelineContactData?.completed_end_at
+  completedEndAt: pipelineContactData?.completed_end_at,
+  campusId: dbContact.campus_id || undefined,
+  campusName: dbContact.campus_id && campusMap ? campusMap.get(dbContact.campus_id) : undefined,
 });
 
 // Convert database pipeline format to frontend format (keeping database names for data compatibility)
