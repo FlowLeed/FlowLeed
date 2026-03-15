@@ -54,6 +54,7 @@ const ContactsPage = () => {
       assignedToUserId: "all",
       flowId: "all",
       lastInteractionDays: "all",
+      engagementLevel: "all",
     });
   };
 
