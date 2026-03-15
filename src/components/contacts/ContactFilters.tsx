@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCampuses } from "@/hooks/useCampuses";
 import type { ContactFilters as Filters } from "@/pages/ContactsPage";
 
 interface ContactFiltersProps {
