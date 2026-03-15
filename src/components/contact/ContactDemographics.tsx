@@ -39,7 +39,8 @@ interface ContactDemographicsProps {
 export const ContactDemographics: React.FC<ContactDemographicsProps> = ({
   demographics,
   addresses,
-  familyMembers
+  familyMembers,
+  campusName
 }) => {
   const primaryAddress = addresses.find(addr => addr.is_primary) || addresses[0];
   
