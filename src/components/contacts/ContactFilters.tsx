@@ -231,6 +231,30 @@ export const ContactFilters = ({
               </Select>
             </div>
 
+            {/* Campus filter - only show if campuses exist */}
+            {campuses && campuses.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Campus</label>
+                <Select
+                  value={filters.campusId}
+                  onValueChange={(value) => onFilterChange("campusId", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Campus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Campuses</SelectItem>
+                    <SelectItem value="no-campus">No Campus</SelectItem>
+                    {campuses.map((campus) => (
+                      <SelectItem key={campus.id} value={campus.id}>
+                        {campus.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={onClearFilters} className="w-full">
                 <X className="mr-2 h-4 w-4" />
