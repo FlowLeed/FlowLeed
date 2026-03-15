@@ -74,10 +74,10 @@ const UserProfilePage = () => {
     queryFn: async () => {
       if (!contactId) throw new Error("Contact ID is required");
 
-      // Fetch basic contact details
+      // Fetch basic contact details with campus
       const { data: contact, error: contactError } = await supabase
         .from("contacts")
-        .select("*")
+        .select("*, campuses(id, name)")
         .eq("id", contactId)
         .single();
 
