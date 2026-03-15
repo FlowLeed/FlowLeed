@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { User, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from "lucide-react";
 import { useState } from "react";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 
@@ -49,6 +49,9 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
     } else if (sortField === 'assignedTo') {
       aVal = a.profiles?.full_name?.toLowerCase() || '';
       bVal = b.profiles?.full_name?.toLowerCase() || '';
+    } else if (sortField === 'campus') {
+      aVal = a.campuses?.name?.toLowerCase() || '';
+      bVal = b.campuses?.name?.toLowerCase() || '';
     } else if (sortField === 'engagement') {
       const aScores = a.contact_engagement_scores;
       const bScores = b.contact_engagement_scores;
@@ -120,6 +123,12 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
             </TableHead>
             <TableHead 
               className="cursor-pointer select-none group"
+              onClick={() => handleSort('campus')}
+            >
+              Campus{getSortIcon('campus')}
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer select-none group"
               onClick={() => handleSort('assignedTo')}
             >
               Assigned To{getSortIcon('assignedTo')}
@@ -163,6 +172,14 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
                   ) : (
                     <span className="text-muted-foreground text-sm">—</span>
                   )}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-sm">
+                  {contact.campuses?.name ? (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {contact.campuses.name}
+                    </span>
+                  ) : "—"}
                 </TableCell>
                 <TableCell>
                   {contact.profiles ? (

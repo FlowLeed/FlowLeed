@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCampuses } from "@/hooks/useCampuses";
 import type { ContactFilters as Filters } from "@/pages/ContactsPage";
 
 interface ContactFiltersProps {
@@ -35,6 +36,7 @@ export const ContactFilters = ({
 }: ContactFiltersProps) => {
   const { user } = useAuth();
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
+  const { data: campuses } = useCampuses();
 
   // Debounce search
   useEffect(() => {
@@ -118,6 +120,7 @@ export const ContactFilters = ({
     filters.flowId !== "all",
     filters.lastInteractionDays !== "all",
     filters.engagementLevel !== "all",
+    filters.campusId !== "all",
   ].filter(Boolean).length;
 
   return (
@@ -227,6 +230,30 @@ export const ContactFilters = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Campus filter - only show if campuses exist */}
+            {campuses && campuses.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Campus</label>
+                <Select
+                  value={filters.campusId}
+                  onValueChange={(value) => onFilterChange("campusId", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Campus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Campuses</SelectItem>
+                    <SelectItem value="no-campus">No Campus</SelectItem>
+                    {campuses.map((campus) => (
+                      <SelectItem key={campus.id} value={campus.id}>
+                        {campus.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={onClearFilters} className="w-full">

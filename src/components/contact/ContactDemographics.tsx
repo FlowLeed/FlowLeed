@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, MapPin, User, Users } from 'lucide-react';
+import { Calendar, MapPin, User, Users, Building2 } from 'lucide-react';
 
 interface Demographics {
   birthday?: string;
@@ -33,12 +33,14 @@ interface ContactDemographicsProps {
   demographics?: Demographics;
   addresses: Address[];
   familyMembers: FamilyMember[];
+  campusName?: string;
 }
 
 export const ContactDemographics: React.FC<ContactDemographicsProps> = ({
   demographics,
   addresses,
-  familyMembers
+  familyMembers,
+  campusName
 }) => {
   const primaryAddress = addresses.find(addr => addr.is_primary) || addresses[0];
   
@@ -57,6 +59,23 @@ export const ContactDemographics: React.FC<ContactDemographicsProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Campus */}
+      {campusName && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Campus
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Badge variant="secondary" className="text-sm">
+              {campusName}
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Demographics */}
       <Card>
         <CardHeader>

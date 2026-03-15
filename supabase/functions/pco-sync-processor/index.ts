@@ -357,6 +357,11 @@ Deno.serve(async (req) => {
         const secret = integration.credentials.secret;
         const auth = btoa(`${applicationId}:${secret}`);
 
+        // Sync campuses once per org (on first chunk)
+        if (chunk.chunk_number === 0) {
+          await syncCampuses(integration.organization_id, auth, supabase);
+        }
+
         // Process each person in the chunk with delay between API calls
         for (let i = 0; i < people.length; i++) {
           const person = people[i];
@@ -597,10 +602,30 @@ async function processPersonData(
     contactData.phone = phoneNumber;
   }
 
+  // Resolve campus_id from primary_campus_id
+  const pcoCampusId = attributes.primary_campus?.data?.id 
+    || person.relationships?.primary_campus?.data?.id
+    || attributes.primary_campus_id
+    || null;
+  
+  if (pcoCampusId) {
+    const { data: campus } = await supabase
+      .from('campuses')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('pco_campus_id', String(pcoCampusId))
+      .single();
+    
+    if (campus) {
+      contactData.campus_id = campus.id;
+    }
+  }
+
   console.log(`Syncing contact ${attributes.name} (PC ID: ${pcPersonId}, Household: ${householdId || 'none'}):`, {
     email: contactData.email,
     phone: contactData.phone,
-    has_campus: !!attributes.primary_campus_id
+    has_campus: !!pcoCampusId,
+    campus_id: contactData.campus_id || null
   });
 
   const { data: contact, error: contactError } = await supabase
@@ -1314,7 +1339,70 @@ async function checkAndCompleteJob(supabase: any, jobId: string) {
           .from('integration_list_mappings')
           .update({ last_sync_at: new Date().toISOString() })
           .eq('id', job.list_mapping_id);
+}
+
+// Helper function to sync campuses from PCO
+async function syncCampuses(
+  organizationId: string,
+  auth: string,
+  supabase: any
+) {
+  try {
+    console.log(`🏛️ Syncing campuses for org ${organizationId}`);
+    
+    const response = await fetchWithRetry(
+      'https://api.planningcenteronline.com/people/v2/campuses',
+      {
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
       }
+    );
+    
+    if (!response.ok) {
+      console.warn(`Failed to fetch campuses: ${response.status}`);
+      return;
+    }
+    
+    const data = await response.json();
+    const campuses = data.data || [];
+    
+    if (campuses.length === 0) {
+      console.log('No campuses found in PCO');
+      return;
+    }
+    
+    console.log(`Found ${campuses.length} campuses in PCO`);
+    
+    for (const campus of campuses) {
+      const attrs = campus.attributes || {};
+      const { error } = await supabase
+        .from('campuses')
+        .upsert({
+          organization_id: organizationId,
+          pco_campus_id: campus.id,
+          name: attrs.name || 'Unknown Campus',
+          address: attrs.street || null,
+          city: attrs.city || null,
+          state: attrs.state || null,
+          zip_code: attrs.zip || null,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'organization_id,pco_campus_id',
+          ignoreDuplicates: false,
+        });
+      
+      if (error) {
+        console.error(`Error upserting campus ${campus.id}:`, error);
+      } else {
+        console.log(`✅ Campus synced: ${attrs.name}`);
+      }
+    }
+  } catch (error) {
+    console.warn('Campus sync failed (non-fatal):', error);
+  }
+}
       
       // Update last_full_sync_completed_at for full people syncs
       if (!job.list_mapping_id) {

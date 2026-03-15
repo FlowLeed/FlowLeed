@@ -221,6 +221,63 @@ export type Database = {
           },
         ]
       }
+      campuses: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          name: string
+          organization_id: string
+          pco_campus_id: string
+          state: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          name: string
+          organization_id: string
+          pco_campus_id: string
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          name?: string
+          organization_id?: string
+          pco_campus_id?: string
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campuses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campuses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       church_online_events: {
         Row: {
           contact_id: string | null
@@ -729,6 +786,7 @@ export type Database = {
         Row: {
           assigned_to_user_id: string | null
           avatar: string | null
+          campus_id: string | null
           created_at: string
           email: string | null
           id: string
@@ -746,6 +804,7 @@ export type Database = {
         Insert: {
           assigned_to_user_id?: string | null
           avatar?: string | null
+          campus_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -763,6 +822,7 @@ export type Database = {
         Update: {
           assigned_to_user_id?: string | null
           avatar?: string | null
+          campus_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -777,7 +837,15 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contacts_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_verification_tokens: {
         Row: {

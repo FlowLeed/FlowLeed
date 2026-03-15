@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Filter, UserX, X, CheckCircle2, Activity } from "lucide-react";
+import { Filter, UserX, X, CheckCircle2, Activity, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCampuses } from "@/hooks/useCampuses";
 
 interface TeamMember {
   id: string;
@@ -38,6 +39,8 @@ interface FlowHeaderFiltersProps {
   completedCount: number;
   selectedEngagementFilter?: string | null;
   onEngagementFilterChange?: (level: string | null) => void;
+  selectedCampusFilter?: string | null;
+  onCampusFilterChange?: (campusId: string | null) => void;
 }
 
 export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
@@ -49,12 +52,17 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
   onShowCompletedChange,
   completedCount,
   selectedEngagementFilter,
-  onEngagementFilterChange
+  onEngagementFilterChange,
+  selectedCampusFilter,
+  onCampusFilterChange
 }) => {
+  const { data: campuses } = useCampuses();
+  
   const activeFilterCount = [
     selectedFilter !== null,
     showCompleted,
     selectedEngagementFilter != null,
+    selectedCampusFilter != null,
   ].filter(Boolean).length;
   const hasActiveFilter = activeFilterCount > 0;
 
@@ -162,13 +170,41 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
             </div>
           )}
 
-          {(selectedFilter !== null || selectedEngagementFilter != null) && (
+          {/* Campus filter */}
+          {onCampusFilterChange && campuses && campuses.length > 0 && (
+            <div className="border-t pt-4 space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                Campus
+              </label>
+              <div className="space-y-1">
+                {campuses.map((campus) => (
+                  <Button
+                    key={campus.id}
+                    variant={selectedCampusFilter === campus.id ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() =>
+                      onCampusFilterChange(
+                        selectedCampusFilter === campus.id ? null : campus.id
+                      )
+                    }
+                    className="w-full justify-start gap-2"
+                  >
+                    {campus.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(selectedFilter !== null || selectedEngagementFilter != null || selectedCampusFilter != null) && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => {
                 onFilterChange(null);
                 onEngagementFilterChange?.(null);
+                onCampusFilterChange?.(null);
               }} 
               className="w-full"
             >
