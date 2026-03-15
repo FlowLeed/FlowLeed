@@ -143,6 +143,7 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
           </div>
         )}
       </CardContent>
+      )}
     </Card>
   );
 }
