@@ -36,6 +36,7 @@ export const ContactFilters = ({
 }: ContactFiltersProps) => {
   const { user } = useAuth();
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
+  const { data: campuses } = useCampuses();
 
   // Debounce search
   useEffect(() => {
