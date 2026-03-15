@@ -365,6 +365,16 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                           )}
                         </TableCell>
                         <TableCell>
+                          {contact.campusName ? (
+                            <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                              <Building2 className="h-3 w-3" />
+                              {contact.campusName}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex gap-1 flex-wrap max-w-[200px]">
                             {contact.tags.length > 0 ? (
                               contact.tags.slice(0, 3).map((tag, idx) => (
