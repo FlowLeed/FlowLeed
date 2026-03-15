@@ -120,6 +120,7 @@ export const ContactFilters = ({
     filters.flowId !== "all",
     filters.lastInteractionDays !== "all",
     filters.engagementLevel !== "all",
+    filters.campusId !== "all",
   ].filter(Boolean).length;
 
   return (
