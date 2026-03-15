@@ -113,6 +113,7 @@ export const useContacts = (filters: ContactFilters) => {
         .select(`
           contact_engagement_scores(score, engagement_level, weeks_attended_last_12, streak_weeks, last_checkin_at, volunteer_checkins_90d),
           *,
+          campuses(id, name),
           contact_tags(tag),
           pipeline_contacts(
             pipeline_id,
