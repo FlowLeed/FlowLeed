@@ -357,6 +357,11 @@ Deno.serve(async (req) => {
         const secret = integration.credentials.secret;
         const auth = btoa(`${applicationId}:${secret}`);
 
+        // Sync campuses once per org (on first chunk)
+        if (chunk.chunk_number === 0) {
+          await syncCampuses(integration.organization_id, auth, supabase);
+        }
+
         // Process each person in the chunk with delay between API calls
         for (let i = 0; i < people.length; i++) {
           const person = people[i];
