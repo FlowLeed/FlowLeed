@@ -127,7 +127,9 @@ export const Header: React.FC<HeaderProps> = ({
   flowType,
   cycleDays,
   selectedEngagementFilter,
-  onEngagementFilterChange
+  onEngagementFilterChange,
+  selectedCampusFilter,
+  onCampusFilterChange
 }) => {
   const { user, signOut } = useAuth();
   const { profile, organization } = useProfile();
