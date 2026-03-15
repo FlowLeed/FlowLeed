@@ -1,5 +1,3 @@
-
-
 ## PCO Check-Ins Integration
 
 ### Completed (Phase 1-3)
@@ -39,3 +37,45 @@
 - `ContactCheckinsCard` shows "Includes household" badge and "Checked in by" column
 - Household rows rendered with subtle opacity to distinguish from own check-ins
 - Engagement scores remain personal (not inflated by household data)
+
+## PCO Campus Integration
+
+### Completed (Phase 1 - Foundation)
+
+**Database:**
+- `campuses` table with RLS (org members read, admins manage)
+- `campus_id` FK on `contacts` table (nullable, SET NULL on delete)
+- Unique constraint on `(organization_id, pco_campus_id)` for safe upserts
+- Indexes on `contacts.campus_id` and `campuses.organization_id`
+
+**Edge Function (`pco-sync-processor`):**
+- `syncCampuses()` function fetches `/people/v2/campuses` from PCO API
+- Called once per org on first chunk (chunk_number === 0)
+- Upserts campus data (name, address, city, state, zip)
+- `processPersonData()` resolves `primary_campus_id` → local `campus_id` on each contact
+
+**Hook:**
+- `useCampuses` hook fetches org campuses for dropdowns/filters
+
+**UI - Contact Profile (`UserProfilePage`):**
+- Campus name shown in demographics section via `contacts → campuses` join
+
+**UI - People Page:**
+- `ContactsTable`: New "Campus" column (sortable) with MapPin icon
+- `ContactFilters`: Campus dropdown filter (All / No Campus / specific campus)
+- `useContacts`: Server-side campus filtering via `.eq('campus_id', ...)` or `.is('campus_id', null)`
+
+**UI - Flow Views:**
+- `FlowHeaderFilters`: Campus filter buttons (populated from `useCampuses`)
+- Campus filter props added (`selectedCampusFilter`, `onCampusFilterChange`)
+
+**UI - ContactDemographics component:**
+- Campus badge shown at top of demographics card (Building2 icon)
+
+### Pending (Phase 2)
+- Wire `selectedCampusFilter` state in `FlowView.tsx` and filter contacts by campus
+- Add campus column to `FlowTableView`
+- Show campus label on `ContactCard` in flow board
+- Analytics campus filtering (Attendance, People, Overview sections)
+- Groups association with campus
+- Dashboard `ContactsNeedingAttention` campus context
