@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { User, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from "lucide-react";
 import { useState } from "react";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 
