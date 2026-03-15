@@ -17,6 +17,7 @@ export interface ContactFilters {
   assignedToUserId: string;
   flowId: string;
   lastInteractionDays: string;
+  engagementLevel: string;
 }
 
 const ContactsPage = () => {
