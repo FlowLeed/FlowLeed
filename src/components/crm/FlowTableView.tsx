@@ -398,7 +398,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                   
                   {/* Add Item Row */}
                   <TableRow className="hover:bg-muted/30 border-t">
-                    <TableCell colSpan={isSelectMode ? 6 : 5}>
+                    <TableCell colSpan={isSelectMode ? 7 : 6}>
                       <button 
                         className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 w-full py-1"
                         onClick={() => {
