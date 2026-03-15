@@ -62,6 +62,7 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
     selectedFilter !== null,
     showCompleted,
     selectedEngagementFilter != null,
+    selectedCampusFilter != null,
   ].filter(Boolean).length;
   const hasActiveFilter = activeFilterCount > 0;
 
