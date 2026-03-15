@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { EngagementBadge } from '@/components/contact/EngagementBadge';
 import { useEngagementScore, useContactCheckins } from '@/hooks/useCheckinData';
-import { Activity, Calendar, Flame, Clock, Users } from 'lucide-react';
+import { Activity, Calendar, Flame, Clock, Users, ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface ContactCheckinsCardProps {
   contactId: string;
