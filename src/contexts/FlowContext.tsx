@@ -53,7 +53,7 @@ const convertDbContactToFrontend = (dbContact: any, tags: any[], assignedProfile
 });
 
 // Convert database pipeline format to frontend format (keeping database names for data compatibility)
-const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[]): Flow => {
+const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: any[], contactTags: any[], profiles: any[], campusMap?: Map<string, string>): Flow => {
   const safeStages = (stages || []).filter(Boolean);
   const safeContacts = (contacts || []).filter(Boolean);
   const safeTags = (contactTags || []).filter(Boolean);
@@ -93,7 +93,7 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
               const assignedProfile = pc.assigned_to_user_id 
                 ? safeProfiles.find(p => p && p.user_id === pc.assigned_to_user_id)
                 : undefined;
-              return convertDbContactToFrontend(contact, tags, assignedProfile, pc);
+              return convertDbContactToFrontend(contact, tags, assignedProfile, pc, campusMap);
             })
         };
       })
