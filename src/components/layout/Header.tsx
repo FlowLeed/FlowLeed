@@ -424,6 +424,8 @@ export const Header: React.FC<HeaderProps> = ({
             completedCount={completedCount ?? 0}
             selectedEngagementFilter={selectedEngagementFilter}
             onEngagementFilterChange={onEngagementFilterChange}
+            selectedCampusFilter={selectedCampusFilter}
+            onCampusFilterChange={onCampusFilterChange}
           />
         )}
         
