@@ -12,6 +12,7 @@ interface Contact {
   avatar: string | null;
   daysSinceLastContact: number;
   flow: { name: string; icon?: string } | null;
+  campusName?: string | null;
 }
 
 interface ContactsNeedingAttentionProps {
