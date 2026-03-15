@@ -18,6 +18,7 @@ export interface ContactFilters {
   flowId: string;
   lastInteractionDays: string;
   engagementLevel: string;
+  campusId: string;
 }
 
 const ContactsPage = () => {
