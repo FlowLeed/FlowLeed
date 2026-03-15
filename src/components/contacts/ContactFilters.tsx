@@ -117,6 +117,7 @@ export const ContactFilters = ({
     filters.assignedToUserId !== "all",
     filters.flowId !== "all",
     filters.lastInteractionDays !== "all",
+    filters.engagementLevel !== "all",
   ].filter(Boolean).length;
 
   return (
