@@ -49,6 +49,9 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
     } else if (sortField === 'assignedTo') {
       aVal = a.profiles?.full_name?.toLowerCase() || '';
       bVal = b.profiles?.full_name?.toLowerCase() || '';
+    } else if (sortField === 'campus') {
+      aVal = a.campuses?.name?.toLowerCase() || '';
+      bVal = b.campuses?.name?.toLowerCase() || '';
     } else if (sortField === 'engagement') {
       const aScores = a.contact_engagement_scores;
       const bScores = b.contact_engagement_scores;
