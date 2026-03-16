@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
-import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus, Tags, Activity, Calendar, Flame, Clock } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow, Plus, Tags, Activity, Calendar, Flame, Clock, Building2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
@@ -860,8 +860,8 @@ const UserProfilePage = () => {
                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm flex-1">
                         {/* Campus */}
                         {contact.campuses?.name && (
-                          <div>
-                            <span className="text-muted-foreground">Campus: </span>
+                          <div className="flex items-center gap-1.5">
+                            <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                             <span>{contact.campuses.name}</span>
                           </div>
                         )}
