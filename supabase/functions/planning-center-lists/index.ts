@@ -924,6 +924,32 @@ async function autoSyncAllMappings() {
     console.log('Starting automatic sync...');
     
     // ============================================
+    // STEP 0: Always sync campuses for all active PCO integrations
+    // ============================================
+    console.log('Syncing campuses for all active PCO integrations...');
+    const { data: allActiveIntegrations } = await supabase
+      .from('integrations')
+      .select('id, credentials, organization_id')
+      .eq('service_name', 'planning_center')
+      .eq('status', 'active');
+    
+    if (allActiveIntegrations && allActiveIntegrations.length > 0) {
+      for (const integration of allActiveIntegrations) {
+        try {
+          const creds = integration.credentials as any;
+          const appId = creds?.application_id ?? creds?.app_id;
+          const secret = creds?.secret;
+          if (appId && secret) {
+            const auth = btoa(`${appId}:${secret}`);
+            await syncCampusesFromPCO(integration.organization_id, auth);
+          }
+        } catch (e) {
+          console.warn(`Campus sync failed for org ${integration.organization_id}:`, e);
+        }
+      }
+    }
+    
+    // ============================================
     // STEP 1: Auto-Sync All People (NEW FEATURE)
     // ============================================
     console.log('Checking for integrations with auto_sync_all_people enabled...');
@@ -1104,6 +1130,65 @@ async function autoSyncAllMappings() {
   }
 }
 
+// Helper to sync campuses from PCO directly
+async function syncCampusesFromPCO(organizationId: string, auth: string) {
+  try {
+    console.log(`🏛️ Syncing campuses for org ${organizationId}`);
+    
+    const response = await fetch(
+      'https://api.planningcenteronline.com/people/v2/campuses',
+      {
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      console.warn(`Failed to fetch campuses: ${response.status}`);
+      return;
+    }
+    
+    const data = await response.json();
+    const campuses = data.data || [];
+    
+    if (campuses.length === 0) {
+      console.log('No campuses found in PCO');
+      return;
+    }
+    
+    console.log(`Found ${campuses.length} campuses in PCO`);
+    
+    for (const campus of campuses) {
+      const attrs = campus.attributes || {};
+      const { error } = await supabase
+        .from('campuses')
+        .upsert({
+          organization_id: organizationId,
+          pco_campus_id: campus.id,
+          name: attrs.name || 'Unknown Campus',
+          address: attrs.street || null,
+          city: attrs.city || null,
+          state: attrs.state || null,
+          zip_code: attrs.zip || null,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'organization_id,pco_campus_id',
+          ignoreDuplicates: false,
+        });
+      
+      if (error) {
+        console.error(`Error upserting campus ${campus.id}:`, error);
+      } else {
+        console.log(`✅ Campus synced: ${attrs.name}`);
+      }
+    }
+  } catch (error) {
+    console.warn('Campus sync failed (non-fatal):', error);
+  }
+}
+
 // Trigger a full people sync for auto-sync (no user auth required)
 // Supports incremental sync by using last_full_sync_completed_at
 async function triggerAutoFullPeopleSync(integrationId: string, organizationId: string, lastFullSyncCompletedAt?: string | null) {
@@ -1221,6 +1306,9 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
   }
 
   console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
+
+  // Always sync campuses, even if no contacts changed
+  await syncCampusesFromPCO(organizationId, auth);
 
   if (allPeople.length === 0) {
     console.log('[Auto-sync] No people found/modified in Planning Center');
