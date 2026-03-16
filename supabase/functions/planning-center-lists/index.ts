@@ -1222,6 +1222,9 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
 
   console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
 
+  // Always sync campuses, even if no contacts changed
+  await syncCampusesFromPCO(organizationId, auth);
+
   if (allPeople.length === 0) {
     console.log('[Auto-sync] No people found/modified in Planning Center');
     return;
