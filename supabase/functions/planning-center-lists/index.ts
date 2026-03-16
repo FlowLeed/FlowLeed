@@ -924,6 +924,32 @@ async function autoSyncAllMappings() {
     console.log('Starting automatic sync...');
     
     // ============================================
+    // STEP 0: Always sync campuses for all active PCO integrations
+    // ============================================
+    console.log('Syncing campuses for all active PCO integrations...');
+    const { data: allActiveIntegrations } = await supabase
+      .from('integrations')
+      .select('id, credentials, organization_id')
+      .eq('service_name', 'planning_center')
+      .eq('status', 'active');
+    
+    if (allActiveIntegrations && allActiveIntegrations.length > 0) {
+      for (const integration of allActiveIntegrations) {
+        try {
+          const creds = integration.credentials as any;
+          const appId = creds?.application_id ?? creds?.app_id;
+          const secret = creds?.secret;
+          if (appId && secret) {
+            const auth = btoa(`${appId}:${secret}`);
+            await syncCampusesFromPCO(integration.organization_id, auth);
+          }
+        } catch (e) {
+          console.warn(`Campus sync failed for org ${integration.organization_id}:`, e);
+        }
+      }
+    }
+    
+    // ============================================
     // STEP 1: Auto-Sync All People (NEW FEATURE)
     // ============================================
     console.log('Checking for integrations with auto_sync_all_people enabled...');
