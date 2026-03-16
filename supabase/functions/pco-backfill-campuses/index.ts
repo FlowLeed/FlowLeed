@@ -18,7 +18,6 @@ serve(async (req) => {
   try {
     const { integrationId, cursor } = await req.json();
 
-    // Get integration credentials
     const { data: integration, error: intError } = await supabase
       .from('integrations')
       .select('credentials, organization_id')
@@ -35,7 +34,6 @@ serve(async (req) => {
     const auth = btoa(`${creds.application_id}:${creds.secret}`);
     const orgId = integration.organization_id;
 
-    // Load campus map
     const { data: campuses } = await supabase
       .from('campuses')
       .select('id, pco_campus_id')
@@ -45,18 +43,18 @@ serve(async (req) => {
     campuses?.forEach(c => campusMap.set(c.pco_campus_id, c.id));
 
     if (campusMap.size === 0) {
-      return new Response(JSON.stringify({ error: 'No campuses found. Run sync first.' }), {
+      return new Response(JSON.stringify({ error: 'No campuses found' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Fetch people from PCO with minimal fields (just need primary_campus)
-    // Process up to 30 pages per invocation to stay within wall time
+    // Collect person→campus mappings grouped by campus
+    const campusAssignments = new Map<string, string[]>(); // campusId → [pcPersonIds]
+    
     let nextUrl: string | null = cursor || 
       'https://api.planningcenteronline.com/people/v2/people?per_page=100&where[status]=active';
     let pageCount = 0;
-    let updatedCount = 0;
-    const MAX_PAGES = 30;
+    const MAX_PAGES = 50;
 
     while (nextUrl && pageCount < MAX_PAGES) {
       pageCount++;
@@ -69,46 +67,63 @@ serve(async (req) => {
       });
 
       if (!response.ok) {
-        return new Response(JSON.stringify({ error: `PCO API error: ${response.status}` }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        console.error(`PCO API error: ${response.status}`);
+        break;
       }
 
       const data = await response.json();
       const people = data.data || [];
       
-      // Batch update contacts with campus assignments
       for (const person of people) {
         const pcoCampusId = person.relationships?.primary_campus?.data?.id;
         if (!pcoCampusId) continue;
-
         const campusId = campusMap.get(String(pcoCampusId));
         if (!campusId) continue;
-
-        const pcPersonId = person.id;
         
-        // Update contact by pc_person_id
-        const { error: updateError } = await supabase
-          .from('contacts')
-          .update({ campus_id: campusId })
-          .eq('organization_id', orgId)
-          .eq('pc_person_id', pcPersonId)
-          .is('campus_id', null); // Only update if not already set
-
-        if (!updateError) {
-          updatedCount++;
+        if (!campusAssignments.has(campusId)) {
+          campusAssignments.set(campusId, []);
         }
+        campusAssignments.get(campusId)!.push(String(person.id));
       }
 
       nextUrl = data.links?.next || null;
-      console.log(`Page ${pageCount}: processed ${people.length} people, ${updatedCount} campus assignments so far`);
+      console.log(`Page ${pageCount}: ${people.length} people, collected ${[...campusAssignments.values()].reduce((s, a) => s + a.length, 0)} assignments`);
+    }
+
+    // Batch update contacts by campus (one UPDATE per campus)
+    let totalUpdated = 0;
+    for (const [campusId, pcPersonIds] of campusAssignments) {
+      // Update in batches of 500 to avoid query size limits
+      for (let i = 0; i < pcPersonIds.length; i += 500) {
+        const batch = pcPersonIds.slice(i, i + 500);
+        const { count, error } = await supabase
+          .from('contacts')
+          .update({ campus_id: campusId })
+          .eq('organization_id', orgId)
+          .in('pc_person_id', batch);
+        
+        if (error) {
+          console.error(`Error updating campus ${campusId}:`, error);
+        } else {
+          totalUpdated += count || 0;
+          console.log(`Updated ${count} contacts for campus ${campusId}`);
+        }
+      }
+    }
+
+    // Reset last_full_sync_completed_at if we're done
+    if (!nextUrl) {
+      await supabase
+        .from('integrations')
+        .update({ last_full_sync_completed_at: new Date().toISOString() })
+        .eq('id', integrationId);
     }
 
     return new Response(JSON.stringify({
       success: true,
       pagesProcessed: pageCount,
-      updatedCount,
-      nextCursor: nextUrl, // null if done
+      totalUpdated,
+      nextCursor: nextUrl,
       done: !nextUrl,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
