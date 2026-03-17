@@ -96,51 +96,53 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
             />
           </div>
 
-          <div className="border-t pt-4 space-y-2">
-            <label className="text-sm font-medium">Assigned to</label>
-            <div className="space-y-2">
-              {/* Unassigned option */}
-              <Button
-                variant={selectedFilter === "unassigned" ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => onFilterChange(selectedFilter === "unassigned" ? null : "unassigned")}
-                className="w-full justify-start gap-2"
-              >
-                <UserX className="h-4 w-4" />
-                Unassigned ({contactCounts.unassigned})
-              </Button>
+          {teamMembers.length > 0 && (
+            <div className="border-t pt-4 space-y-2">
+              <label className="text-sm font-medium">Assigned to</label>
+              <div className="space-y-2">
+                {/* Unassigned option */}
+                <Button
+                  variant={selectedFilter === "unassigned" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => onFilterChange(selectedFilter === "unassigned" ? null : "unassigned")}
+                  className="w-full justify-start gap-2"
+                >
+                  <UserX className="h-4 w-4" />
+                  Unassigned ({contactCounts.unassigned})
+                </Button>
 
-              {/* Team member options */}
-              {teamMembers.map((member) => {
-                const count = contactCounts.byMember[member.id] || 0;
-                const isSelected = selectedFilter === member.id;
-                const initials = member.name
-                  .split(' ')
-                  .map(n => n.charAt(0))
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2);
-                
-                return (
-                  <Button
-                    key={member.id}
-                    variant={isSelected ? "secondary" : "ghost"}
-                    size="sm"
-                    onClick={() => onFilterChange(isSelected ? null : member.id)}
-                    className="w-full justify-start gap-2"
-                  >
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={member.avatar} alt={member.name} />
-                      <AvatarFallback className="text-xs">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    {member.name} ({count})
-                  </Button>
-                );
-              })}
+                {/* Team member options */}
+                {teamMembers.map((member) => {
+                  const count = contactCounts.byMember[member.id] || 0;
+                  const isSelected = selectedFilter === member.id;
+                  const initials = member.name
+                    .split(' ')
+                    .map(n => n.charAt(0))
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2);
+                  
+                  return (
+                    <Button
+                      key={member.id}
+                      variant={isSelected ? "secondary" : "ghost"}
+                      size="sm"
+                      onClick={() => onFilterChange(isSelected ? null : member.id)}
+                      className="w-full justify-start gap-2"
+                    >
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage src={member.avatar} alt={member.name} />
+                        <AvatarFallback className="text-xs">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      {member.name} ({count})
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Engagement Level filter */}
           {onEngagementFilterChange && (
