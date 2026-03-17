@@ -413,7 +413,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         
         {/* Assignee Filters */}
-        {teamMembers.length > 0 && contactCounts && onFilterChange && (
+        {contactCounts && onFilterChange && (
           <FlowHeaderFilters
             teamMembers={teamMembers}
             selectedFilter={selectedFilter}
