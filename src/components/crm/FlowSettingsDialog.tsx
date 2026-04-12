@@ -718,7 +718,7 @@ export const FlowSettingsDialog = ({
                           <SelectValue>
                             <div className="flex items-center gap-2">
                               {getRoleIcon(member.role)}
-                              <span className="capitalize">{member.role}</span>
+                              <span className="capitalize">{member.role === 'member' ? 'Leader' : member.role}</span>
                             </div>
                           </SelectValue>
                         </SelectTrigger>
