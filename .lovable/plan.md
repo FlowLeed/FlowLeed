@@ -1,26 +1,19 @@
 
 
-## Move Old Dashboard Widgets to Tasks Page
+## Fix Paragraph Spacing in AI Responses
 
-The Dashboard was redesigned to be AI-chat-focused, removing the **Personal Metrics cards**, **Contacts Needing Attention**, **Upcoming Tasks**, and **Team Activity Feed**. These should now live on the Tasks page.
+The spacing CSS is already generous (`prose-p:mb-6`). The real issue is the AI model is not inserting blank lines between items like "Team Care: ..." — markdown treats consecutive lines as one paragraph.
 
 ### Changes
 
-**`src/pages/TasksPage.tsx`**
-- Import and add `PersonalMetrics` at the top (My Contacts, My Interactions, Pending Tasks, Need Attention)
-- Import and add `UpcomingTasks` section (scheduled follow-ups with checkboxes) using `useAllScheduledTasks` from `useTasksPageData.tsx`
-- Import and add `TeamActivityFeed` at the bottom
-- Use `useDashboardData` hook (already exists) to fetch metrics, upcoming tasks, and activity feed data
-- Keep existing "People I Need to Connect With" section in the middle
-- Layout order:
-  1. Personal Metrics (4 cards grid)
-  2. My Upcoming Tasks (scheduled interactions with complete/overdue)
-  3. People I Need to Connect With (existing)
-  4. Team Activity Feed
+**`supabase/functions/dashboard-ai-chat/index.ts`**
+- Add explicit instruction to the system prompt: "When listing flows or categories with descriptions, put each on its own paragraph with a blank line above it. Never stack multiple items in a single paragraph."
+- Reinforce: "After any colon-separated item (e.g. 'Team Care: ...'), always add a blank line before the next item."
 
-**`src/components/dashboard/UpcomingTasks.tsx`**
-- Minor update: replace simple circle icon with `ScheduledTaskItem` component for checkbox completion support, OR keep as-is since `ScheduledTaskItem` already exists and we can use `useAllScheduledTasks` with it directly in TasksPage
+**`src/components/dashboard/ChatThread.tsx`**
+- Add a CSS rule to increase spacing on `<strong>` or `<a>` tags that start a line (acting as pseudo-headers within paragraphs), using `[&_p+p]:mt-4` or similar to ensure even same-paragraph content gets visual separation.
+- Increase `prose-p:leading-7` to `prose-p:leading-8` for more breathing room within paragraphs.
 
-### No new components needed
-All widgets (`PersonalMetrics`, `UpcomingTasks`, `TeamActivityFeed`, `ScheduledTaskItem`) already exist. The data hooks (`useDashboardData`, `useAllScheduledTasks`) also exist. This is purely a composition change in `TasksPage.tsx`.
+### Summary
+Two-pronged fix: tell the AI to format with proper blank lines, and add CSS fallback spacing for tighter content.
 
