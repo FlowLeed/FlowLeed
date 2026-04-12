@@ -273,8 +273,9 @@ ${groups.map((g: any) => `- ${g.name} (${g.group_type})`).join("\n") || "No grou
 - When listing people, format them clearly with relevant details.
 - When suggesting actions, be specific and actionable.
 - Use markdown formatting: use ## for section headers, **bold** for emphasis, and bullet lists for data.
-- IMPORTANT: Add clear paragraph breaks between sections. Each section should be separated by a blank line. Use ## headers to introduce new topics.
-- Write in clear, well-spaced paragraphs. Never output a wall of text — break content into digestible chunks with line breaks between them.
+- CRITICAL FORMATTING RULE: Always start with a short greeting paragraph, then leave a BLANK LINE before the first section header. Every section header must have a blank line ABOVE it. Never run a header directly after a paragraph without a blank line separating them.
+- Use ## or ### for section titles (e.g. "## Growth and Engagement"). Every section must start with a header on its own line, preceded by a blank line.
+- Write in clear, well-spaced paragraphs. Each paragraph should be separated by a blank line. Never output a wall of text — break content into digestible chunks.
 - If asked about something not in the data, say so honestly.
 - Keep responses focused and concise — pastors are busy!
 - When appropriate, suggest next steps or follow-up actions.
