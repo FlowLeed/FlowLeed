@@ -1,98 +1,81 @@
-## PCO Check-Ins Integration
 
-### Completed (Phase 1-3)
 
-**Database:**
-- `pco_checkins` table with RLS, dedup on `pco_checkin_id`
-- `contact_engagement_scores` table with RLS
-- `calculate_engagement_scores(p_org_id)` DB function (scoring 0-100 with engagement levels)
+## AI-Powered Dashboard Redesign
 
-**Edge Function:**
-- `pco-sync-checkins` - fetches from PCO Check-Ins API, matches contacts, upserts check-ins, calculates engagement scores
-- Supports incremental sync via `last_checkin_sync_at` in integration metadata
+Replace the current metrics/cards dashboard with a conversational AI interface inspired by Perplexity/Claude, tailored for pastors.
 
-**UI:**
-- "Sync Check-Ins" button in SyncSettingsSection (PCO integration settings)
-- `EngagementBadge` component on TaskContactRow (compact score) and contact profiles
-- Check-in entries in InteractionTimeline (`checkin` type with teal styling)
-- `AttendanceSection` in Analytics page with check-in metrics + engagement distribution pie chart
-- `useCheckinData` hook with `useEngagementScore`, `useContactCheckins`, `useSyncCheckins`, `useOrgCheckinStats`
+### Design
 
-### Completed (Phase 4)
-- Cron-based auto-sync for check-ins (`pco-checkin-auto-sync` edge function, runs every 6 hours)
-- Flow filtering by engagement level (filter popover in FlowHeaderFilters)
+```text
+┌─────────────────────────────────────────────┐
+│  Header: "Welcome back, CJ!"               │
+├─────────────────────────────────────────────┤
+│                                             │
+│         ✨ How can I help you today?        │
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │  Ask about your people, tasks...    │    │
+│  │                                     │    │
+│  │                          [Submit ▶] │    │
+│  └─────────────────────────────────────┘    │
+│                                             │
+│  [👥 People] [📊 Numbers] [👤 Team] [🙏 Care]│
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │ 👥 People                       ✕  │    │
+│  │─────────────────────────────────────│    │
+│  │ Show me people at risk              │    │
+│  │ Who needs follow-up this week?      │    │
+│  │ Show first-time guests              │    │
+│  │ Who attended but isn't in a group?  │    │
+│  └─────────────────────────────────────┘    │
+│                                             │
+│  ── Conversation thread appears below ──    │
+│  [AI responses with markdown, cards, etc.]  │
+│                                             │
+└─────────────────────────────────────────────┘
+```
 
-### Completed (Phase 5 - Chunked Sync)
-- **Problem**: Large orgs (13k+ check-ins) caused timeout before upsert phase — zero data written
-- **Fix**: Chunked pagination (max 30 pages / ~3k records per invocation) with cursor-based resume
-- `pco-sync-checkins` saves cursor in `integrations.metadata.checkin_sync_cursor` and returns `hasMore`
-- `pco-checkin-auto-sync` loops up to 10 rounds per org until `hasMore: false`
-- `useSyncCheckins` hook auto-continues up to 15 rounds with progress toasts
-- Stale cursor cleanup (>2 hours) in auto-sync
-- Reset `last_checkin_sync_at` for orgs with 0 checkin data via migration
+### Architecture
 
-### Completed (Phase 6 - Household Check-ins)
-- `useContactCheckins` expanded to fetch check-ins from all household members via `pc_household_id`
-- Deduplication by event+date (own check-in preferred over household)
-- `ContactCheckinsCard` shows "Includes household" badge and "Checked in by" column
-- Household rows rendered with subtle opacity to distinguish from own check-ins
-- Engagement scores remain personal (not inflated by household data)
+1. **New Edge Function** (`supabase/functions/dashboard-ai-chat/index.ts`): Receives the user's question + userId/orgId, queries relevant Supabase tables (contacts, interactions, pipelines, groups, prayer requests), builds a context-rich prompt, calls Lovable AI Gateway with streaming, returns SSE stream. Uses tool-calling to return structured data (contact lists, metrics) alongside natural language.
 
-## PCO Campus Integration
+2. **New Dashboard Page** (`src/pages/Dashboard.tsx`): Complete rewrite. Shows greeting, large input box, category chips, and suggested prompts. On submit, streams AI response into a chat thread below. Preserves onboarding wizard logic for new users.
 
-### Completed (Phase 1 - Foundation)
+3. **New Components**:
+   - `src/components/dashboard/AIChatInput.tsx` -- Large input with submit button
+   - `src/components/dashboard/CategoryChips.tsx` -- People, Numbers, Team, Care chips that reveal contextual prompts
+   - `src/components/dashboard/SuggestedPrompts.tsx` -- Clickable prompt cards under each category
+   - `src/components/dashboard/ChatThread.tsx` -- Renders conversation with markdown support (react-markdown)
+   - `src/components/dashboard/AIResponseCard.tsx` -- Structured data cards (contact lists, metrics) rendered inline
 
-**Database:**
-- `campuses` table with RLS (org members read, admins manage)
-- `campus_id` FK on `contacts` table (nullable, SET NULL on delete)
-- Unique constraint on `(organization_id, pco_campus_id)` for safe upserts
-- Indexes on `contacts.campus_id` and `campuses.organization_id`
+4. **Suggested Prompts by Category**:
+   - **People**: "Show people at risk of slipping away", "Who needs follow-up this week?", "Show first-time guests from this weekend", "Who hasn't received a second contact?"
+   - **Numbers**: "Summarize church health this month", "Show attendance trends", "How many new contacts this week?"
+   - **Team**: "Show leaders who need support", "Who on my team has the most contacts?", "What follow-ups are overdue for my team?"
+   - **Care**: "Show urgent prayer requests", "Who is in hospital or crisis?", "What care follow-ups are overdue?"
 
-**Edge Function (`pco-sync-processor`):**
-- `syncCampuses()` function fetches `/people/v2/campuses` from PCO API
-- Called once per org on first chunk (chunk_number === 0)
-- Upserts campus data (name, address, city, state, zip)
-- `processPersonData()` resolves `primary_campus_id` → local `campus_id` on each contact
+5. **Edge Function Data Access**: The AI function will query the database server-side using service role, gathering contacts, pipeline_contacts, interactions, groups, prayer requests, etc. based on the user's org. It builds a system prompt with this data context, then lets the LLM answer naturally.
 
-**Hook:**
-- `useCampuses` hook fetches org campuses for dropdowns/filters
+### Files to create/edit
 
-**UI - Contact Profile (`UserProfilePage`):**
-- Campus name shown in demographics section via `contacts → campuses` join
+| File | Action |
+|------|--------|
+| `supabase/functions/dashboard-ai-chat/index.ts` | Create -- AI chat edge function with streaming |
+| `src/pages/Dashboard.tsx` | Rewrite -- AI-first layout, keep onboarding logic |
+| `src/components/dashboard/AIChatInput.tsx` | Create -- Large input box component |
+| `src/components/dashboard/CategoryChips.tsx` | Create -- Category chip selector |
+| `src/components/dashboard/SuggestedPrompts.tsx` | Create -- Prompt suggestions per category |
+| `src/components/dashboard/ChatThread.tsx` | Create -- Message thread with markdown rendering |
+| `src/hooks/useDashboardChat.tsx` | Create -- Hook for streaming chat state management |
+| `package.json` | Add `react-markdown` dependency |
 
-**UI - People Page:**
-- `ContactsTable`: New "Campus" column (sortable) with MapPin icon
-- `ContactFilters`: Campus dropdown filter (All / No Campus / specific campus)
-- `useContacts`: Server-side campus filtering via `.eq('campus_id', ...)` or `.is('campus_id', null)`
+### Technical details
 
-**UI - Flow Views:**
-- `FlowHeaderFilters`: Campus filter buttons (populated from `useCampuses`)
-- Campus filter props added (`selectedCampusFilter`, `onCampusFilterChange`)
+- Streaming uses SSE via Lovable AI Gateway (`google/gemini-3-flash-preview`)
+- System prompt includes: user's name/role, org name, summary metrics (contact counts, overdue follow-ups, recent activity), so the AI can answer data questions accurately
+- The edge function performs targeted DB queries based on detected intent (people queries vs. metrics vs. care) to keep context focused
+- Conversation history is maintained in React state (not persisted) -- each dashboard visit starts fresh
+- Onboarding wizards and celebration modals are preserved unchanged
+- Old dashboard components (`PersonalMetrics`, `ContactsNeedingAttention`, etc.) remain in codebase but are no longer imported by Dashboard
 
-**UI - ContactDemographics component:**
-- Campus badge shown at top of demographics card (Building2 icon)
-
-### Completed (Phase 2 - UI Wiring)
-
-**Flow Views:**
-- `FlowView.tsx`: `selectedCampusFilter` state wired, contacts filtered by `campusId`
-- `FlowHeaderFilters` → `Header` → `FlowView`: Full campus filter prop chain connected
-- `FlowTableView`: New "Campus" column with Building2 icon
-- `ContactCard`: Campus label shown beneath tags
-
-**Analytics:**
-- Global `CampusFilter` component added to AnalyticsPage header
-- `OverviewSection`: Total/added contacts filtered by campus
-- `AttendanceSection`: Check-in stats and engagement scores filtered by campus contacts
-- `PeopleSection`: At-risk contacts filtered by campus
-
-**Dashboard:**
-- `ContactsNeedingAttention`: Campus name shown on each contact row
-- `useMyContactsNeedingAttention`: Fetches campus name via join
-
-**Data Layer:**
-- `FlowContext`: Fetches campus names for all flow contacts, passes via `campusMap`
-- `Contact` type: Added `campusId` and `campusName` fields
-
-### Pending (Phase 3)
-- Groups association with campus (campus_id FK on groups table)
