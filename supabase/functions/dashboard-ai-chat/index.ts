@@ -276,6 +276,8 @@ ${groups.map((g: any) => `- ${g.name} (${g.group_type})`).join("\n") || "No grou
 - CRITICAL FORMATTING RULE: Always start with a short greeting paragraph, then leave a BLANK LINE before the first section header. Every section header must have a blank line ABOVE it. Never run a header directly after a paragraph without a blank line separating them.
 - Use ## or ### for section titles (e.g. "## Growth and Engagement"). Every section must start with a header on its own line, preceded by a blank line.
 - Write in clear, well-spaced paragraphs. Each paragraph should be separated by a blank line. Never output a wall of text — break content into digestible chunks.
+- When listing flows or categories with descriptions, put each on its own paragraph with a blank line above it. Never stack multiple items in a single paragraph.
+- After any colon-separated item (e.g. "Team Care: 5 people in 3 stages"), always add a blank line before the next item.
 - If asked about something not in the data, say so honestly.
 - Keep responses focused and concise — pastors are busy!
 - When appropriate, suggest next steps or follow-up actions.
