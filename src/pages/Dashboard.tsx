@@ -165,13 +165,15 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Chat Input */}
-          <AIChatInput
-            onSubmit={sendMessage}
-            isLoading={isLoading}
-            onCancel={cancelStream}
-            hasMessages={hasMessages}
-          />
+          {/* Chat Input - hero state only */}
+          {!hasMessages && (
+            <AIChatInput
+              onSubmit={sendMessage}
+              isLoading={isLoading}
+              onCancel={cancelStream}
+              hasMessages={false}
+            />
+          )}
 
           {/* Category Chips - hidden when streaming */}
           {!hasMessages && !isLoading && (
@@ -191,6 +193,18 @@ const Dashboard = () => {
           <ChatThread messages={messages} isLoading={isLoading} onClear={clearChat} />
         </div>
       </div>
+
+      {/* Sticky bottom input - shown during active conversation */}
+      {hasMessages && (
+        <div className="border-t bg-background px-6 py-4">
+          <AIChatInput
+            onSubmit={sendMessage}
+            isLoading={isLoading}
+            onCancel={cancelStream}
+            hasMessages={true}
+          />
+        </div>
+      )}
 
       {/* Onboarding Wizards (preserved) */}
       <OwnerOnboardingWizard open={showOwnerWizard} onOpenChange={setShowOwnerWizard} progress={ownerOnboarding.progress} />
