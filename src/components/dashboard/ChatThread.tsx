@@ -20,6 +20,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
   }, [messages]);
 
   const markdownComponents = useMemo(() => ({
+    p: ({ children }: any) => <p className="font-sans font-thin text-sm">{children}</p>,
     a: ({ href, children, ...props }: any) => {
       const isInternal = href?.startsWith("/");
       if (isInternal) {
