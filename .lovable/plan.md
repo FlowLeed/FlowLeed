@@ -1,26 +1,33 @@
 
 
-## Move Old Dashboard Widgets to Tasks Page
+## Improve Chat Readability and Add Clickable Links
 
-The Dashboard was redesigned to be AI-chat-focused, removing the **Personal Metrics cards**, **Contacts Needing Attention**, **Upcoming Tasks**, and **Team Activity Feed**. These should now live on the Tasks page.
+Three changes to `ChatThread.tsx` and the edge function system prompt.
 
-### Changes
+### 1. Remove border from assistant bubbles, improve spacing
 
-**`src/pages/TasksPage.tsx`**
-- Import and add `PersonalMetrics` at the top (My Contacts, My Interactions, Pending Tasks, Need Attention)
-- Import and add `UpcomingTasks` section (scheduled follow-ups with checkboxes) using `useAllScheduledTasks` from `useTasksPageData.tsx`
-- Import and add `TeamActivityFeed` at the bottom
-- Use `useDashboardData` hook (already exists) to fetch metrics, upcoming tasks, and activity feed data
-- Keep existing "People I Need to Connect With" section in the middle
-- Layout order:
-  1. Personal Metrics (4 cards grid)
-  2. My Upcoming Tasks (scheduled interactions with complete/overdue)
-  3. People I Need to Connect With (existing)
-  4. Team Activity Feed
+In `ChatThread.tsx`:
+- Remove `border` class from assistant message bubble (line 44)
+- Remove `border` from loading indicator bubble (line 72)
+- Change `space-y-1` to `space-y-4` on the container for more breathing room between messages
+- Add more prose spacing: `prose-p:my-3 prose-li:my-1 prose-headings:mt-6 prose-headings:mb-3` to the markdown wrapper for better paragraph separation
+- Increase text size from `text-sm` to `text-base` for better readability
 
-**`src/components/dashboard/UpcomingTasks.tsx`**
-- Minor update: replace simple circle icon with `ScheduledTaskItem` component for checkbox completion support, OR keep as-is since `ScheduledTaskItem` already exists and we can use `useAllScheduledTasks` with it directly in TasksPage
+### 2. Make flows and people clickable
 
-### No new components needed
-All widgets (`PersonalMetrics`, `UpcomingTasks`, `TeamActivityFeed`, `ScheduledTaskItem`) already exist. The data hooks (`useDashboardData`, `useAllScheduledTasks`) also exist. This is purely a composition change in `TasksPage.tsx`.
+Add a custom `ReactMarkdown` renderer that detects and linkifies flow names and contact names. Two approaches combined:
+
+**A. Update the edge function system prompt** (`supabase/functions/dashboard-ai-chat/index.ts`):
+- Add a guideline instructing the AI to format flow names as markdown links: `[Flow Name](/flows/{id})` and people names as `[Person Name](/contacts/{id})`
+- Include a lookup table in the system prompt mapping flow names to IDs (from pipelines data already fetched) and contact names to IDs (from contacts data already fetched)
+- Example guideline: "When mentioning a Flow, always link it: [FF New Family Follow-Up](/flows/abc-123). When mentioning a person, always link them: [John Smith](/contacts/def-456)."
+
+**B. Add link renderer in `ChatThread.tsx`**:
+- Add a custom `a` component to `ReactMarkdown` that uses `react-router-dom`'s `useNavigate` for internal links (`/flows/...`, `/contacts/...`) so navigation stays in-app
+- Style links with primary color and underline
+
+### 3. Files changed
+
+- **`src/components/dashboard/ChatThread.tsx`**: Remove borders, increase spacing, add link renderer with in-app navigation
+- **`supabase/functions/dashboard-ai-chat/index.ts`**: Add flow ID/contact ID lookup tables to system prompt; add guideline to always use markdown links for flows and people
 
