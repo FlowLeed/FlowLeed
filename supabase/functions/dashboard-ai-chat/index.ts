@@ -261,13 +261,23 @@ ${groups.map((g: any) => `- ${g.name} (${g.group_type})`).join("\n") || "No grou
 
 ## Guidelines
 - ALWAYS refer to pipelines as "Flows" — never say "pipeline" to the user.
+- **CRITICAL: Always format Flow names and people names as markdown links.** Use the lookup tables below:
+  - For Flows: \`[Flow Name](/flows/id)\`
+  - For People: \`[Person Name](/contacts/id)\`
 - When listing people, format them clearly with relevant details.
 - When suggesting actions, be specific and actionable.
 - Use markdown formatting (headers, bold, lists) for readability.
+- Use clear paragraph breaks — separate distinct ideas into their own paragraphs with blank lines between them.
 - If asked about something not in the data, say so honestly.
 - Keep responses focused and concise — pastors are busy!
 - When appropriate, suggest next steps or follow-up actions.
-- Use emojis sparingly for warmth (🙏 ❤️ ✅).`;
+- Use emojis sparingly for warmth (🙏 ❤️ ✅).
+
+## Flow ID Lookup
+${flowLookup || "No flows configured."}
+
+## Contact ID Lookup (recent)
+${contactLookup || "No contacts yet."}`;
 
     // Call Lovable AI Gateway with streaming
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
