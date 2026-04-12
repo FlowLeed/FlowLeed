@@ -261,7 +261,7 @@ const TeamPage = () => {
       case 'admin':
         return <Badge variant="default" className="bg-blue-100 text-blue-800">Admin</Badge>;
       default:
-        return <Badge variant="secondary">Member</Badge>;
+        return <Badge variant="secondary">Leader</Badge>;
     }
   };
   const canManageMembers = currentUserRole === 'owner' || currentUserRole === 'admin';
@@ -556,7 +556,7 @@ const TeamPage = () => {
                             Make Admin
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleChangeRole(member.id, 'member', member.profile.email)}>
-                            Make Member
+                            Make Leader
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleRemoveMember(member.id, member.profile.email)} className="text-red-600">
                             Remove from team

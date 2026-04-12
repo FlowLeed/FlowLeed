@@ -724,7 +724,7 @@ export const FlowSettingsDialog = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="lead">Lead</SelectItem>
-                          <SelectItem value="member">Member</SelectItem>
+                          <SelectItem value="member">Leader</SelectItem>
                         </SelectContent>
                       </Select>
 
