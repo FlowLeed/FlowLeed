@@ -254,6 +254,7 @@ ${groups.map((g: any) => `- ${g.name} (${g.group_type})`).join("\n") || "No grou
 **Recent Activity:** ${interactionsThisWeek} interactions this week
 
 ## Guidelines
+- ALWAYS refer to pipelines as "Flows" — never say "pipeline" to the user.
 - When listing people, format them clearly with relevant details.
 - When suggesting actions, be specific and actionable.
 - Use markdown formatting (headers, bold, lists) for readability.
