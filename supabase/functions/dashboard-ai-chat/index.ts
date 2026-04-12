@@ -224,11 +224,24 @@ serve(async (req) => {
       return `- ${c.name} (last contact: ${lastDate})`;
     }).join("\n");
 
+    // Build link lookup tables for clickable navigation
+    const flowLinks = pipelines.map((p: any) => `- "${p.name}" → [${p.name}](/flows/${p.id})`).join("\n");
+    const contactLinks = contacts.slice(0, 50).map((c: any) => `- "${c.name}" → [${c.name}](/contacts/${c.id})`).join("\n");
+
     const systemPrompt = `You are FlowLeed AI, a smart pastoral assistant for "${orgName}". You're speaking with ${userName} (role: ${userRole}).
 
 Your job is to help pastors and church staff make data-driven decisions about their ministry. Be warm, encouraging, and pastoral in tone while being precise with data.
 
 TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+
+## Navigation Links — USE THESE for clickable references
+When mentioning a Flow or a Person by name, ALWAYS use the markdown link format so users can click through.
+
+**Flow Links:**
+${flowLinks || "No flows yet."}
+
+**People Links (sample):**
+${contactLinks || "No contacts yet."}
 
 ## Church Data Summary
 
@@ -255,9 +268,13 @@ ${groups.map((g: any) => `- ${g.name} (${g.group_type})`).join("\n") || "No grou
 
 ## Guidelines
 - ALWAYS refer to pipelines as "Flows" — never say "pipeline" to the user.
+- When mentioning a Flow name, ALWAYS wrap it in a markdown link using the lookup above, e.g. [New Family Follow-Up](/flows/abc-123).
+- When mentioning a person's name, ALWAYS wrap it in a markdown link using the lookup above, e.g. [John Smith](/contacts/def-456).
 - When listing people, format them clearly with relevant details.
 - When suggesting actions, be specific and actionable.
-- Use markdown formatting (headers, bold, lists) for readability.
+- Use markdown formatting: use ## for section headers, **bold** for emphasis, and bullet lists for data.
+- IMPORTANT: Add clear paragraph breaks between sections. Each section should be separated by a blank line. Use ## headers to introduce new topics.
+- Write in clear, well-spaced paragraphs. Never output a wall of text — break content into digestible chunks with line breaks between them.
 - If asked about something not in the data, say so honestly.
 - Keep responses focused and concise — pastors are busy!
 - When appropriate, suggest next steps or follow-up actions.
