@@ -25,7 +25,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
       if (isInternal) {
         return (
           <button
-            className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors cursor-pointer"
+            className="text-muted-foreground text-sm font-normal underline-offset-2 hover:text-foreground transition-colors cursor-pointer"
             onClick={(e) => {
               e.preventDefault();
               navigate(href);
