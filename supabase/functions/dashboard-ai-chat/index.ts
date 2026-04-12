@@ -170,8 +170,14 @@ serve(async (req) => {
         const count = (p.pipeline_contacts || []).filter((pc: any) => pc.stage_id === s.id).length;
         return `${s.name}: ${count}`;
       }).join(", ");
-      return `- ${p.name} (${contactCount} people): ${stageBreakdown}`;
+      return `- [${p.name}](/flows/${p.id}) (${contactCount} people): ${stageBreakdown}`;
     }).join("\n");
+
+    // Build flow lookup for system prompt
+    const flowLookup = pipelines.map((p: any) => `- "${p.name}" → /flows/${p.id}`).join("\n");
+
+    // Build contact lookup (top 50) for system prompt
+    const contactLookup = contacts.slice(0, 50).map((c: any) => `- "${c.name}" → /contacts/${c.id}`).join("\n");
 
     const activePrayers = prayerRequestsResult.data || [];
     const pendingTasks = pendingTasksResult.data || [];
