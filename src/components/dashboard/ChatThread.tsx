@@ -55,7 +55,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
             `}
           >
             {msg.role === "assistant" ? (
-              <div className="<div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:my-4 prose-li:my-1 prose-headings:mt-8 prose-headings:mb-4 [&_p+p]:mt-5"> max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:my-4 prose-li:my-1.5 prose-headings:mt-8 prose-headings:mb-4 [&_p+p]:mt-5">">
+              <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:my-4 prose-li:my-1 prose-headings:mt-8 prose-headings:mb-4 [&_p+p]:mt-5">="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:my-4 prose-li:my-1 prose-headings:mt-8 prose-headings:mb-4 [&_p+p]:mt-5"> max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:my-4 prose-li:my-1.5 prose-headings:mt-8 prose-headings:mb-4 [&_p+p]:mt-5">">
                 <ReactMarkdown
                   components={{
                     a: ({ href, children, ...props }) => (
