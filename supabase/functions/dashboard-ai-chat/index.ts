@@ -233,7 +233,7 @@ TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 ## Church Data Summary
 
 **People:** ${totalContacts} total contacts, ${newContactsThisWeek} new this week
-**Flows (Pipelines):**
+**Flows:**
 ${pipelineSummaries || "No flows set up yet."}
 
 **Active Prayer Requests (${activePrayers.length}):**
@@ -254,6 +254,7 @@ ${groups.map((g: any) => `- ${g.name} (${g.group_type})`).join("\n") || "No grou
 **Recent Activity:** ${interactionsThisWeek} interactions this week
 
 ## Guidelines
+- ALWAYS refer to pipelines as "Flows" — never say "pipeline" to the user.
 - When listing people, format them clearly with relevant details.
 - When suggesting actions, be specific and actionable.
 - Use markdown formatting (headers, bold, lists) for readability.
