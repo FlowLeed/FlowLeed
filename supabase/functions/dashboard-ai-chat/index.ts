@@ -233,7 +233,7 @@ TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 ## Church Data Summary
 
 **People:** ${totalContacts} total contacts, ${newContactsThisWeek} new this week
-**Flows (Pipelines):**
+**Flows:**
 ${pipelineSummaries || "No flows set up yet."}
 
 **Active Prayer Requests (${activePrayers.length}):**
