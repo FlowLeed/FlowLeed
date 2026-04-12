@@ -76,11 +76,11 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
               <div className="prose prose-base dark:prose-invert max-w-none
                 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
                 prose-headings:font-semibold prose-headings:text-foreground
-                prose-h2:text-lg prose-h2:mt-6 prose-h2:mb-3
-                prose-h3:text-base prose-h3:mt-5 prose-h3:mb-2
-                prose-p:mb-4 prose-p:leading-7
-                prose-ul:my-3 prose-ol:my-3
-                prose-li:my-1
+                prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-4
+                prose-h3:text-base prose-h3:mt-7 prose-h3:mb-3
+                prose-p:mb-6 prose-p:leading-7
+                prose-ul:my-4 prose-ol:my-4
+                prose-li:my-1.5
                 prose-strong:text-foreground
               ">
                 <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
