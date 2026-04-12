@@ -2,46 +2,32 @@ import React, { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import { useMyFlows } from "@/hooks/useMyFlows";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
-import { PersonalMetrics } from "@/components/dashboard/PersonalMetrics";
-import { ContactsNeedingAttention } from "@/components/dashboard/ContactsNeedingAttention";
-import { UpcomingTasks } from "@/components/dashboard/UpcomingTasks";
-import { TeamActivityFeed } from "@/components/dashboard/TeamActivityFeed";
-import { MyFlowsQuickAccess } from "@/components/dashboard/MyFlowsQuickAccess";
 import { OnboardingProgressBar } from "@/components/onboarding/OnboardingProgressBar";
 import { OnboardingChecklist, ChecklistItem } from "@/components/onboarding/OnboardingChecklist";
 import { OnboardingCelebration } from "@/components/onboarding/OnboardingCelebration";
 import { OwnerOnboardingWizard } from "@/components/onboarding/OwnerOnboardingWizard";
 import { MemberOnboardingWizard } from "@/components/onboarding/MemberOnboardingWizard";
+import { AIChatInput } from "@/components/dashboard/AIChatInput";
+import { CategoryChips, type Category } from "@/components/dashboard/CategoryChips";
+import { SuggestedPrompts } from "@/components/dashboard/SuggestedPrompts";
+import { ChatThread } from "@/components/dashboard/ChatThread";
+import { useDashboardChat } from "@/hooks/useDashboardChat";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Sparkles } from "lucide-react";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, organization } = useProfile();
-  
-  console.log('[Dashboard] user?.id:', user?.id);
-  console.log('[Dashboard] profile:', profile);
-  
-  // PHASE 2: Consolidated dashboard data hook - fetches all data in parallel
-  const { data: dashboardData, isLoading: dashboardLoading, error: metricsError } = useDashboardData(user?.id);
-  const { data: myFlows, isLoading: flowsLoading } = useMyFlows(user?.id);
-  
-  // Extract data from consolidated query
-  const metrics = dashboardData?.metrics;
-  const contactsNeedingAttention = dashboardData?.contactsNeedingAttention || [];
-  const upcomingTasks = dashboardData?.upcomingTasks || [];
-  const teamActivity = dashboardData?.activityFeed || [];
-  
-  console.log('[Dashboard] metrics:', metrics);
-  console.log('[Dashboard] dashboardLoading:', dashboardLoading);
-  console.log('[Dashboard] metricsError:', metricsError);
+  const { messages, isLoading, sendMessage, cancelStream, clearChat } = useDashboardChat();
 
-  // Onboarding state
+  // Category state
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  // Onboarding state (preserved from original)
   const [isOwner, setIsOwner] = useState(false);
   const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -51,7 +37,7 @@ const Dashboard = () => {
   const ownerOnboarding = useOrgOwnerOnboarding(organization?.id);
   const memberOnboarding = useMemberOnboarding(user?.id);
 
-  // Check if user is organization owner
+  // Check if user is organization owner (preserved)
   useEffect(() => {
     const checkRole = async () => {
       if (!user?.id || !organization?.id) return;
@@ -66,7 +52,6 @@ const Dashboard = () => {
       const userIsOwner = data?.role === "owner";
       setIsOwner(userIsOwner);
 
-      // Safety check: Auto-detect PCO list mappings on dashboard load for owners
       if (userIsOwner && !ownerOnboarding.progress.pco_lists_mapped && !ownerOnboarding.isLoading) {
         const { data: integration } = await supabase
           .from("integrations")
@@ -74,25 +59,22 @@ const Dashboard = () => {
           .eq("organization_id", organization.id)
           .eq("service_name", "planning_center")
           .single();
-        
+
         if (integration) {
           const { data: mappings } = await supabase
             .from("integration_list_mappings")
             .select("id")
             .eq("integration_id", integration.id)
             .limit(1);
-          
+
           if (mappings && mappings.length > 0) {
-            // Mark as complete silently
             ownerOnboarding.updateProgress("pco_lists_mapped", true);
           }
         }
       }
 
-      // Mark initial load as complete
       setIsInitialLoadComplete(true);
 
-      // Show wizard on first visit for incomplete onboarding
       const hasSeenWizard = localStorage.getItem(`wizard-seen-${user.id}`);
       if (!hasSeenWizard) {
         if (userIsOwner && !ownerOnboarding.isCompleted && !ownerOnboarding.isLoading) {
@@ -108,7 +90,6 @@ const Dashboard = () => {
     checkRole();
   }, [user?.id, organization?.id, ownerOnboarding.isCompleted, ownerOnboarding.isLoading, memberOnboarding.isCompleted, memberOnboarding.isDismissed, memberOnboarding.isLoading]);
 
-  // Show celebration when onboarding is complete
   useEffect(() => {
     if (isOwner && ownerOnboarding.completedSteps === ownerOnboarding.totalSteps && !ownerOnboarding.isCompleted) {
       setShowCelebration(true);
@@ -117,102 +98,36 @@ const Dashboard = () => {
     }
   }, [isOwner, ownerOnboarding.completedSteps, ownerOnboarding.totalSteps, ownerOnboarding.isCompleted, memberOnboarding.completedSteps, memberOnboarding.totalSteps, memberOnboarding.isCompleted]);
 
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const handlePromptSelect = (prompt: string) => {
+    setSelectedCategory(null);
+    sendMessage(prompt);
+  };
 
-  // Owner checklist items
+  // Owner checklist items (preserved)
   const ownerChecklistItems: ChecklistItem[] = [
-    {
-      id: "first_flow_created",
-      title: "Create Your First Flow",
-      description: "Set up a flow to track contacts through different stages",
-      completed: ownerOnboarding.progress.first_flow_created,
-      action: {
-        label: "Create Flow",
-        onClick: () => navigate("/"),
-      },
-    },
-    {
-      id: "pco_connected",
-      title: "Connect Planning Center",
-      description: "Sync your PCO lists and contacts automatically",
-      completed: ownerOnboarding.progress.pco_connected,
-      action: {
-        label: "Connect",
-        onClick: () => navigate("/integrations"),
-      },
-    },
-    {
-      id: "pco_lists_mapped",
-      title: "Map PCO Lists to Flows",
-      description: "Link your lists to the right flows for automatic sync",
-      completed: ownerOnboarding.progress.pco_lists_mapped,
-      action: {
-        label: "Map Lists",
-        onClick: () => navigate("/integrations"),
-      },
-    },
-    {
-      id: "team_members_invited",
-      title: "Invite Team Members",
-      description: "Add staff and volunteers to collaborate",
-      completed: ownerOnboarding.progress.team_members_invited,
-      action: {
-        label: "Invite",
-        onClick: () => navigate("/team"),
-      },
-    },
-    {
-      id: "flow_owners_assigned",
-      title: "Assign Flow Owners",
-      description: "Designate team members to manage specific flows",
-      completed: ownerOnboarding.progress.flow_owners_assigned,
-      action: {
-        label: "Assign",
-        onClick: () => navigate("/"),
-      },
-    },
+    { id: "first_flow_created", title: "Create Your First Flow", description: "Set up a flow to track contacts through different stages", completed: ownerOnboarding.progress.first_flow_created, action: { label: "Create Flow", onClick: () => navigate("/") } },
+    { id: "pco_connected", title: "Connect Planning Center", description: "Sync your PCO lists and contacts automatically", completed: ownerOnboarding.progress.pco_connected, action: { label: "Connect", onClick: () => navigate("/integrations") } },
+    { id: "pco_lists_mapped", title: "Map PCO Lists to Flows", description: "Link your lists to the right flows for automatic sync", completed: ownerOnboarding.progress.pco_lists_mapped, action: { label: "Map Lists", onClick: () => navigate("/integrations") } },
+    { id: "team_members_invited", title: "Invite Team Members", description: "Add staff and volunteers to collaborate", completed: ownerOnboarding.progress.team_members_invited, action: { label: "Invite", onClick: () => navigate("/team") } },
+    { id: "flow_owners_assigned", title: "Assign Flow Owners", description: "Designate team members to manage specific flows", completed: ownerOnboarding.progress.flow_owners_assigned, action: { label: "Assign", onClick: () => navigate("/") } },
   ];
 
-  // Member checklist items
   const memberChecklistItems: ChecklistItem[] = [
-    {
-      id: "profile_completed",
-      title: "Complete Your Profile",
-      description: "Add your name and photo so your team recognizes you",
-      completed: memberOnboarding.progress.profile_completed,
-      action: {
-        label: "Update Profile",
-        onClick: () => navigate("/profile"),
-      },
-    },
-    {
-      id: "flows_reviewed",
-      title: "Review Your Flows",
-      description: "See which ministry areas you'll help manage",
-      completed: memberOnboarding.progress.flows_reviewed,
-    },
-    {
-      id: "first_interaction",
-      title: "Explore a People",
-      description: "Click a card to view details and next steps for that person.",
-      completed: memberOnboarding.progress.first_interaction,
-    },
+    { id: "profile_completed", title: "Complete Your Profile", description: "Add your name and photo so your team recognizes you", completed: memberOnboarding.progress.profile_completed, action: { label: "Update Profile", onClick: () => navigate("/profile") } },
+    { id: "flows_reviewed", title: "Review Your Flows", description: "See which ministry areas you'll help manage", completed: memberOnboarding.progress.flows_reviewed },
+    { id: "first_interaction", title: "Explore a People", description: "Click a card to view details and next steps for that person.", completed: memberOnboarding.progress.first_interaction },
   ];
 
-  const shouldShowOnboarding = isInitialLoadComplete && (isOwner 
+  const shouldShowOnboarding = isInitialLoadComplete && (isOwner
     ? !ownerOnboarding.isCompleted && !ownerOnboarding.isLoading
     : !memberOnboarding.isCompleted && !memberOnboarding.isDismissed && !memberOnboarding.isLoading);
+
+  const hasMessages = messages.length > 0;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
-      
-      {/* Onboarding Progress Bar */}
+
       {shouldShowOnboarding && (
         <OnboardingProgressBar
           currentStep={isOwner ? ownerOnboarding.currentStep : memberOnboarding.currentStep}
@@ -222,72 +137,65 @@ const Dashboard = () => {
         />
       )}
 
-      <div className="flex-1 overflow-auto hide-scrollbar p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Date */}
-          <p className="text-sm text-muted-foreground">{currentDate}</p>
-
+      <div className="flex-1 overflow-auto hide-scrollbar">
+        <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
           {/* Onboarding Checklist */}
           {shouldShowOnboarding && (
             <OnboardingChecklist
               title={isOwner ? "Get Your Organization Ready" : "Get Started with FlowLeed"}
-              description={
-                isOwner
-                  ? "Complete these steps to set up your organization"
-                  : "Complete these steps to start serving your community"
-              }
+              description={isOwner ? "Complete these steps to set up your organization" : "Complete these steps to start serving your community"}
               checklist={isOwner ? ownerChecklistItems : memberChecklistItems}
             />
           )}
 
-          {/* Personal Metrics */}
-          <PersonalMetrics
-            metrics={metrics || { myContacts: 0, myInteractions: 0, pendingTasks: 0, peopleNeedingAttention: 0 }}
-            loading={dashboardLoading}
+          {/* AI Hero Section - shown when no messages */}
+          {!hasMessages && (
+            <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6">
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                  How can I help you today?
+                </h2>
+                <p className="text-muted-foreground text-sm max-w-md text-center">
+                  Ask me about your people, tasks, church health, or anything else. I have access to all your FlowLeed data.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Chat Input */}
+          <AIChatInput
+            onSubmit={sendMessage}
+            isLoading={isLoading}
+            onCancel={cancelStream}
+            hasMessages={hasMessages}
           />
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* People Needing Attention */}
-            <ContactsNeedingAttention
-              contacts={contactsNeedingAttention || []}
-              loading={dashboardLoading}
+          {/* Category Chips - hidden when streaming */}
+          {!hasMessages && !isLoading && (
+            <CategoryChips selected={selectedCategory} onSelect={setSelectedCategory} />
+          )}
+
+          {/* Suggested Prompts */}
+          {!hasMessages && selectedCategory && !isLoading && (
+            <SuggestedPrompts
+              category={selectedCategory}
+              onSelect={handlePromptSelect}
+              onClose={() => setSelectedCategory(null)}
             />
+          )}
 
-            {/* Upcoming Tasks */}
-            <UpcomingTasks
-              tasks={upcomingTasks || []}
-              loading={dashboardLoading}
-            />
-          </div>
-
-          {/* Team Activity Feed */}
-          <TeamActivityFeed
-            activities={teamActivity || []}
-            loading={dashboardLoading}
-          />
-
-          {/* My Flows Quick Access */}
-          <MyFlowsQuickAccess
-            flows={myFlows || []}
-            loading={flowsLoading}
-          />
+          {/* Chat Thread */}
+          <ChatThread messages={messages} isLoading={isLoading} onClear={clearChat} />
         </div>
       </div>
 
-      {/* Onboarding Wizards */}
-      <OwnerOnboardingWizard
-        open={showOwnerWizard}
-        onOpenChange={setShowOwnerWizard}
-        progress={ownerOnboarding.progress}
-      />
-      <MemberOnboardingWizard
-        open={showMemberWizard}
-        onOpenChange={setShowMemberWizard}
-        progress={memberOnboarding.progress}
-      />
+      {/* Onboarding Wizards (preserved) */}
+      <OwnerOnboardingWizard open={showOwnerWizard} onOpenChange={setShowOwnerWizard} progress={ownerOnboarding.progress} />
+      <MemberOnboardingWizard open={showMemberWizard} onOpenChange={setShowMemberWizard} progress={memberOnboarding.progress} />
 
-      {/* Celebration */}
       {showCelebration && (
         <OnboardingCelebration
           message={isOwner ? "You're ready to flow forward! 🌊" : "You're Ready to Serve! 🎉"}
