@@ -38,6 +38,11 @@ interface SidebarSectionProps {
   title: string;
   items: SidebarItem[];
   onSettingsClick?: () => void;
+  pinnedItems?: SidebarItem[];
+  pinnedFlowIds?: Set<string>;
+  onPin?: (flowId: string) => void;
+  showAllFlows?: boolean;
+  onToggleShowAll?: () => void;
 }
 const NavItem = ({
   item,
@@ -433,9 +438,30 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
         </DialogContent>
       </Dialog>
       
+      {title === "Flows" && pinnedItems && pinnedItems.length > 0 && (
+        <>
+          <div className="px-4 pt-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Pinned</span>
+          </div>
+          {pinnedItems.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={true} onPin={onPin} />)}
+          <div className="px-4">
+            <div className="border-t border-border/40 my-1" />
+          </div>
+        </>
+      )}
+      
       <div className="space-y-1">
-        {items.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} />)}
+        {items.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />)}
       </div>
+      
+      {title === "Flows" && onToggleShowAll && (
+        <button
+          onClick={onToggleShowAll}
+          className="px-4 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+        >
+          {showAllFlows ? "Show my flows only" : "Show all flows"}
+        </button>
+      )}
     </div>;
 };
 import flowleedLogo from "@/assets/flowleed_logo_2.png";
