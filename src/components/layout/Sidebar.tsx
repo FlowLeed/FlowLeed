@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
