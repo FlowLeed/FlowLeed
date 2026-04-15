@@ -96,7 +96,12 @@ const NavItem = ({
 const SidebarSection: React.FC<SidebarSectionProps> = ({
   title,
   items,
-  onSettingsClick
+  onSettingsClick,
+  pinnedItems,
+  pinnedFlowIds,
+  onPin,
+  showAllFlows,
+  onToggleShowAll,
 }) => {
   const location = useLocation();
   const {
