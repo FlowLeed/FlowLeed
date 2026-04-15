@@ -1,19 +1,24 @@
 
 
-## Fix Paragraph Spacing in AI Responses
+## Improve AI Chat Paragraph Spacing Consistency
 
-The spacing CSS is already generous (`prose-p:mb-6`). The real issue is the AI model is not inserting blank lines between items like "Team Care: ..." — markdown treats consecutive lines as one paragraph.
+The issue: items like "Dream Team: description" and "Pastoral Note: description" run together without line breaks, while other paragraphs have proper spacing. This is a two-sided problem — the AI sometimes omits blank lines between items, and the CSS doesn't compensate enough.
 
 ### Changes
 
-**`supabase/functions/dashboard-ai-chat/index.ts`**
-- Add explicit instruction to the system prompt: "When listing flows or categories with descriptions, put each on its own paragraph with a blank line above it. Never stack multiple items in a single paragraph."
-- Reinforce: "After any colon-separated item (e.g. 'Team Care: ...'), always add a blank line before the next item."
+**1. `supabase/functions/dashboard-ai-chat/index.ts`** — Strengthen system prompt formatting rules
+- Replace the existing formatting guidelines with stricter, example-driven instructions:
+  - "When describing multiple flows, moments, or categories, use a **bold label** on its own line followed by the description on the next line, with a blank line before each label."
+  - Add a concrete example in the prompt showing the expected format (bold label → blank line → description → blank line → next label).
+  - Emphasize: "NEVER put two bold-labeled items in the same paragraph. Each must be its own paragraph."
+- Redeploy the edge function.
 
-**`src/components/dashboard/ChatThread.tsx`**
-- Add a CSS rule to increase spacing on `<strong>` or `<a>` tags that start a line (acting as pseudo-headers within paragraphs), using `[&_p+p]:mt-4` or similar to ensure even same-paragraph content gets visual separation.
-- Increase `prose-p:leading-7` to `prose-p:leading-8` for more breathing room within paragraphs.
+**2. `src/components/dashboard/ChatThread.tsx`** — CSS fallback for tighter content
+- Add a custom markdown component for `strong` that adds top margin when it appears at the start of a paragraph, creating visual separation even if the AI skips a blank line.
+- Add CSS rules to the prose container:
+  - `[&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2` — gives bold labels at paragraph starts extra breathing room.
+  - Increase `[&_p+p]:mt-4` to `[&_p+p]:mt-6` for more visible paragraph separation.
 
 ### Summary
-Two-pronged fix: tell the AI to format with proper blank lines, and add CSS fallback spacing for tighter content.
+Stricter AI prompt with concrete formatting examples + CSS rules that enforce visual spacing even when markdown is imperfect.
 
