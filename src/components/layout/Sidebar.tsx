@@ -16,6 +16,9 @@ import { calculateFlowContactCount } from "@/lib/utils";
 import { useFlowContext } from "@/contexts/FlowContext";
 import { FlowsManagementDialog } from "@/components/flows/FlowsManagementDialog";
 import { mockConversations } from "@/data/mockMessages";
+import { useAuth } from "@/hooks/useAuth";
+import { useMyFlows } from "@/hooks/useMyFlows";
+import { useFlowPreferences } from "@/hooks/useFlowPreferences";
 import type { LucideIcon } from "lucide-react";
 interface SidebarItem {
   title: string;
