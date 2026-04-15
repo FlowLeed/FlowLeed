@@ -69,7 +69,7 @@ const NavItem = ({
   }
   
   return <div className="group flex items-center">
-    <Link to={item.path} className={`flex flex-1 items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
+    <Link to={item.path} className={`flex flex-1 items-center gap-3 px-[5px] py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
       <div className="relative flex-shrink-0">
         <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
