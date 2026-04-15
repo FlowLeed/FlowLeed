@@ -465,7 +465,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
       {title === "Flows" && onToggleShowAll && (
         <button
           onClick={onToggleShowAll}
-          className="px-4 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+          className="px-4 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-center"
         >
           {showAllFlows ? "Show my flows only" : "Show all flows"}
         </button>
