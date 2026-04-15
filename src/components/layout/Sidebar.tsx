@@ -477,7 +477,12 @@ export const Sidebar = () => {
   const {
     flows
   } = useFlowContext();
+  const { user } = useAuth();
+  const { data: myFlows } = useMyFlows(user?.id);
+  const { pinnedFlowIds, togglePin } = useFlowPreferences(user?.id);
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
+  const [showAllFlows, setShowAllFlows] = useState(false);
+  
   const pageItems: SidebarItem[] = [{
     title: "Dashboard",
     icon: LayoutDashboard,
@@ -501,20 +506,16 @@ export const Sidebar = () => {
   }];
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
-  const flowItems: SidebarItem[] = Object.entries(flows).map(([key, flow]) => ({
+  const allFlowItems: SidebarItem[] = Object.entries(flows).map(([key, flow]) => ({
     flow,
     key
   })).sort((a, b) => (a.flow.flow_order || 0) - (b.flow.flow_order || 0)).map(({
     flow
   }) => {
-    // Use stored icon if available, otherwise determine icon based on flow name
     let icon = Users;
-
-    // If flow has a stored icon, try to find the matching icon component
     if (flow.icon && iconMap[flow.icon]) {
       icon = iconMap[flow.icon];
     } else {
-      // Fallback to name-based icon selection for existing flows
       const name = flow.name.toLowerCase();
       if (name.includes('pastoral') || name.includes('care')) {
         icon = MessageSquare;
@@ -530,12 +531,24 @@ export const Sidebar = () => {
       title: flow.name,
       icon,
       path: `/flows/${flow.id}`,
-      // Use flow.id instead of key for database flows
       badge: calculateFlowContactCount(flow),
       flow_type: flow.flow_type,
-      cycle_days: flow.cycle_days
+      cycle_days: flow.cycle_days,
+      flowId: flow.id,
     };
   });
+
+  // Build my flow IDs set from useMyFlows data
+  const myFlowIds = new Set<string>(myFlows?.map((f: any) => f.id).filter(Boolean) || []);
+
+  // Split into pinned and remaining
+  const pinnedItems = allFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
+  const unpinnedItems = allFlowItems.filter(item => !item.flowId || !pinnedFlowIds.has(item.flowId));
+  
+  // Filter remaining by "my flows" unless showing all
+  const filteredItems = showAllFlows 
+    ? unpinnedItems 
+    : unpinnedItems.filter(item => item.flowId && myFlowIds.has(item.flowId));
   
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
@@ -575,7 +588,16 @@ export const Sidebar = () => {
         <Logo />
         <div className="flex-1 overflow-auto py-2 px-4 space-y-6 sidebar-scroll">
           <SidebarSection title="HUB" items={pageItems} />
-          <SidebarSection title="Flows" items={flowItems} onSettingsClick={() => setShowFlowsManagement(true)} />
+          <SidebarSection 
+            title="Flows" 
+            items={filteredItems} 
+            onSettingsClick={() => setShowFlowsManagement(true)}
+            pinnedItems={pinnedItems}
+            pinnedFlowIds={pinnedFlowIds}
+            onPin={togglePin}
+            showAllFlows={showAllFlows}
+            onToggleShowAll={() => setShowAllFlows(!showAllFlows)}
+          />
           <SidebarSection title="Connect" items={connectItems} />
           <SidebarSection title="Settings" items={settingsItems} />
         </div>
