@@ -169,7 +169,16 @@ const Dashboard = () => {
 
           {/* AI Hero Section - shown when no messages */}
           {!hasMessages && (
-            <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6">
+            <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6 relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleOpenHistory}
+                className="absolute top-2 right-0 text-xs text-muted-foreground gap-1.5"
+              >
+                <History className="h-3.5 w-3.5" />
+                History
+              </Button>
               <div className="flex flex-col items-center gap-3">
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <Sparkles className="h-6 w-6 text-primary" />
@@ -209,7 +218,7 @@ const Dashboard = () => {
           )}
 
           {/* Chat Thread */}
-          <ChatThread messages={messages} isLoading={isLoading} onClear={clearChat} />
+          <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} />
         </div>
       </div>
 
@@ -243,6 +252,17 @@ const Dashboard = () => {
           }}
         />
       )}
+
+      {/* Chat History Drawer */}
+      <ChatHistoryDrawer
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        conversations={chatHistory.conversations}
+        isLoading={chatHistory.isLoading}
+        onSelect={handleSelectConversation}
+        onDelete={chatHistory.deleteConversation}
+        activeConversationId={conversationId}
+      />
     </div>
   );
 };
