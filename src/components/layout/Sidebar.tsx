@@ -484,6 +484,7 @@ export const Sidebar = () => {
   const { pinnedFlowIds, togglePin } = useFlowPreferences(user?.id);
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
   const [showAllFlows, setShowAllFlows] = useState(false);
+  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
   
   const pageItems: SidebarItem[] = [{
     title: "Dashboard",
@@ -543,14 +544,19 @@ export const Sidebar = () => {
   // Build my flow IDs set from useMyFlows data
   const myFlowIds = new Set<string>(myFlows?.map((f: any) => f.id).filter(Boolean) || []);
 
-  // Split into pinned and remaining
-  const pinnedItems = allFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
-  const unpinnedItems = allFlowItems.filter(item => !item.flowId || !pinnedFlowIds.has(item.flowId));
-  
-  // Filter remaining by "my flows" unless showing all
-  const filteredItems = showAllFlows 
-    ? unpinnedItems 
-    : unpinnedItems.filter(item => item.flowId && myFlowIds.has(item.flowId));
+  // Filtering logic
+  let displayedFlowItems: SidebarItem[];
+  if (showPinnedOnly) {
+    displayedFlowItems = allFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
+  } else if (showAllFlows) {
+    displayedFlowItems = allFlowItems;
+  } else {
+    // My flows: show flows where user is a team member + pinned flows
+    displayedFlowItems = allFlowItems.filter(item => 
+      (item.flowId && myFlowIds.has(item.flowId)) || 
+      (item.flowId && pinnedFlowIds.has(item.flowId))
+    );
+  }
   
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
@@ -592,13 +598,14 @@ export const Sidebar = () => {
           <SidebarSection title="HUB" items={pageItems} />
           <SidebarSection 
             title="Flows" 
-            items={filteredItems} 
+            items={displayedFlowItems} 
             onSettingsClick={() => setShowFlowsManagement(true)}
-            pinnedItems={pinnedItems}
             pinnedFlowIds={pinnedFlowIds}
             onPin={togglePin}
             showAllFlows={showAllFlows}
             onToggleShowAll={() => setShowAllFlows(!showAllFlows)}
+            showPinnedOnly={showPinnedOnly}
+            onTogglePinnedOnly={() => setShowPinnedOnly(!showPinnedOnly)}
           />
           <SidebarSection title="Connect" items={connectItems} />
           <SidebarSection title="Settings" items={settingsItems} />
