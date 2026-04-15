@@ -1,44 +1,62 @@
 
 
-## Redesign Flows Section Header with Filter Icons
+## Chat History with Auto-Titling (Option D — Side Panel)
 
-**Current state**: The Flows section header has "FLOWS" on the left and a settings gear icon on the right. Below flows, there's a "Show all flows" text toggle. Pinned flows have a "PINNED" label above them.
+### How it works
 
-**Proposed change**: Remove the "PINNED" label and the bottom text toggle. Instead, add two small icon buttons next to the settings gear in the "FLOWS" header row:
-
-1. **My/All toggle** (e.g., `User` / `Users` icon) — toggles between showing only my flows vs all flows. Active state uses a filled/highlighted style.
-2. **Pinned/All toggle** (e.g., `Star` icon) — when active, shows only pinned flows; when inactive, shows all (respecting the My/All filter). Active state shows a filled star.
-
-This makes sense — it consolidates three UI elements (PINNED label, divider, bottom toggle) into two compact icons in the header, keeping the sidebar clean at scale.
+A small **clock/history icon** appears next to the "New conversation" button in ChatThread (and also in the hero state). Clicking it opens a **right-side drawer** listing past conversations with AI-generated titles. Conversations are stored in a Supabase table and auto-titled after the first assistant response.
 
 ```text
-FLOWS          [👤] [⭐] [⚙]
-  Flow A
-  Flow B
-  ...
++--sidebar--+--------main-content--------+--drawer (when open)--+
+|            |  How can I help you?       |  Chat History        |
+|  FLOWS     |  [input]                   |  "Attendance Q1" 2h  |
+|  ...       |  [chips]                   |  "New members" 1d    |
+|            |                            |  "Prayer req..." 3d  |
++------------+----------------------------+----------------------+
 ```
 
-### Technical changes
+### Database
 
-**File: `src/components/layout/Sidebar.tsx`**
+**New table: `chat_conversations`**
+- `id` (uuid, PK)
+- `user_id` (uuid, references auth.users, NOT NULL)
+- `organization_id` (uuid, references organizations, NOT NULL)
+- `title` (text, nullable — null until auto-titled)
+- `messages` (jsonb, NOT NULL, default '[]')
+- `created_at`, `updated_at` (timestamptz)
+- RLS: users can only read/write their own conversations
+- Index on `(user_id, updated_at DESC)` for fast listing
 
-1. Add a new prop `showPinnedOnly` + `onTogglePinnedOnly` to `SidebarSectionProps` and the `Sidebar` component state.
+### Auto-titling
 
-2. In the header row (lines 333-341), add two icon buttons before the settings gear:
-   - `User`/`Users` icon for My/All toggle (calls `onToggleShowAll`)
-   - `Star` icon for Pinned-only filter (calls `onTogglePinnedOnly`)
-   - Both use subtle styling: ghost variant, highlighted when active.
+After the first assistant response completes, call the existing `dashboard-ai-chat` edge function (or a lightweight new one) with a prompt like: *"Summarize this conversation in 3-5 words as a title"*. Update the `title` column. This happens in the background — doesn't block the user.
 
-3. Remove the "PINNED" label block (lines 449-458) — pinned flows will just show with filled stars inline, no separate section.
+### Frontend changes
 
-4. Remove the bottom "Show all flows" text toggle (lines 465-472).
+1. **`src/hooks/useDashboardChat.tsx`** — Add:
+   - `conversationId` state (current active conversation)
+   - Auto-save messages to Supabase after each assistant response
+   - `loadConversation(id)` to restore a past conversation
+   - `deleteConversation(id)` to remove from DB
+   - Auto-title logic after first exchange
 
-5. Update filtering logic:
-   - When pinned-only is active: show only pinned flows
-   - When pinned-only is off + "my flows": show unpinned flows where user is a team member, plus pinned flows mixed in
-   - When pinned-only is off + "all flows": show all flows
-   - Pinned flows always show their filled star icon regardless of filter mode.
+2. **`src/hooks/useChatHistory.tsx`** (new) — Simple hook:
+   - Fetches list of conversations (`id, title, updated_at`) ordered by recency
+   - Provides `conversations`, `isLoading`, `deleteConversation`
+   - Limit to 50 most recent
+
+3. **`src/components/dashboard/ChatHistoryDrawer.tsx`** (new):
+   - Uses Sheet component (right side)
+   - Lists conversations with title (or truncated first message if untitled), relative timestamp
+   - Click to load, swipe/trash icon to delete
+   - Empty state: "No previous conversations"
+
+4. **`src/components/dashboard/ChatThread.tsx`** — Add a History icon button next to "New conversation"
+
+5. **`src/pages/Dashboard.tsx`** — Add History icon in the hero state too (top-right corner), wire up drawer state and `loadConversation`
+
+6. **`supabase/functions/generate-chat-title/index.ts`** (new edge function) — Lightweight call to Lovable AI Gateway asking for a 3-5 word title given the first exchange. Called once per conversation.
 
 ### Summary
-Remove the "PINNED" subsection label and bottom toggle text. Replace with two icon buttons in the FLOWS header row for compact, intuitive filtering.
+One new DB table, one new edge function for titling, one new drawer component, and updates to the chat hook to persist/restore conversations.
 
