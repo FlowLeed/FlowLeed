@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ import { calculateFlowContactCount } from "@/lib/utils";
 import { useFlowContext } from "@/contexts/FlowContext";
 import { FlowsManagementDialog } from "@/components/flows/FlowsManagementDialog";
 import { mockConversations } from "@/data/mockMessages";
+import { useAuth } from "@/hooks/useAuth";
+import { useMyFlows } from "@/hooks/useMyFlows";
+import { useFlowPreferences } from "@/hooks/useFlowPreferences";
 import type { LucideIcon } from "lucide-react";
 interface SidebarItem {
   title: string;
@@ -25,6 +28,7 @@ interface SidebarItem {
   comingSoon?: boolean;
   flow_type?: 'linear' | 'recurring';
   cycle_days?: number;
+  flowId?: string;
 }
 interface FlowStep {
   name: string;
@@ -37,13 +41,22 @@ interface SidebarSectionProps {
   title: string;
   items: SidebarItem[];
   onSettingsClick?: () => void;
+  pinnedItems?: SidebarItem[];
+  pinnedFlowIds?: Set<string>;
+  onPin?: (flowId: string) => void;
+  showAllFlows?: boolean;
+  onToggleShowAll?: () => void;
 }
 const NavItem = ({
   item,
-  isActive
+  isActive,
+  isPinned,
+  onPin,
 }: {
   item: SidebarItem;
   isActive: boolean;
+  isPinned?: boolean;
+  onPin?: (flowId: string) => void;
 }) => {
   if (item.comingSoon) {
     return (
@@ -55,7 +68,8 @@ const NavItem = ({
     );
   }
   
-  return <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
+  return <div className="group relative flex items-center">
+    <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
       <div className="relative flex-shrink-0">
         <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
@@ -70,12 +84,27 @@ const NavItem = ({
       {item.badge != null && item.badge > 0 && <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${isActive ? "bg-white text-purple-500" : "bg-purple-500 text-white"}`}>
           {item.badge}
         </span>}
-    </Link>;
+    </Link>
+    {onPin && item.flowId && (
+      <button
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin(item.flowId!); }}
+        className={`absolute right-1 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-yellow-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-yellow-500'}`}
+        title={isPinned ? "Unpin flow" : "Pin flow"}
+      >
+        <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-yellow-500' : ''}`} />
+      </button>
+    )}
+  </div>;
 };
 const SidebarSection: React.FC<SidebarSectionProps> = ({
   title,
   items,
-  onSettingsClick
+  onSettingsClick,
+  pinnedItems,
+  pinnedFlowIds,
+  onPin,
+  showAllFlows,
+  onToggleShowAll,
 }) => {
   const location = useLocation();
   const {
@@ -417,9 +446,30 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
         </DialogContent>
       </Dialog>
       
+      {title === "Flows" && pinnedItems && pinnedItems.length > 0 && (
+        <>
+          <div className="px-4 pt-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Pinned</span>
+          </div>
+          {pinnedItems.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={true} onPin={onPin} />)}
+          <div className="px-4">
+            <div className="border-t border-border/40 my-1" />
+          </div>
+        </>
+      )}
+      
       <div className="space-y-1">
-        {items.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} />)}
+        {items.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />)}
       </div>
+      
+      {title === "Flows" && onToggleShowAll && (
+        <button
+          onClick={onToggleShowAll}
+          className="px-4 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-left"
+        >
+          {showAllFlows ? "Show my flows only" : "Show all flows"}
+        </button>
+      )}
     </div>;
 };
 import flowleedLogo from "@/assets/flowleed_logo_2.png";
@@ -430,7 +480,12 @@ export const Sidebar = () => {
   const {
     flows
   } = useFlowContext();
+  const { user } = useAuth();
+  const { data: myFlows } = useMyFlows(user?.id);
+  const { pinnedFlowIds, togglePin } = useFlowPreferences(user?.id);
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
+  const [showAllFlows, setShowAllFlows] = useState(false);
+  
   const pageItems: SidebarItem[] = [{
     title: "Dashboard",
     icon: LayoutDashboard,
@@ -454,20 +509,16 @@ export const Sidebar = () => {
   }];
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
-  const flowItems: SidebarItem[] = Object.entries(flows).map(([key, flow]) => ({
+  const allFlowItems: SidebarItem[] = Object.entries(flows).map(([key, flow]) => ({
     flow,
     key
   })).sort((a, b) => (a.flow.flow_order || 0) - (b.flow.flow_order || 0)).map(({
     flow
   }) => {
-    // Use stored icon if available, otherwise determine icon based on flow name
     let icon = Users;
-
-    // If flow has a stored icon, try to find the matching icon component
     if (flow.icon && iconMap[flow.icon]) {
       icon = iconMap[flow.icon];
     } else {
-      // Fallback to name-based icon selection for existing flows
       const name = flow.name.toLowerCase();
       if (name.includes('pastoral') || name.includes('care')) {
         icon = MessageSquare;
@@ -483,12 +534,24 @@ export const Sidebar = () => {
       title: flow.name,
       icon,
       path: `/flows/${flow.id}`,
-      // Use flow.id instead of key for database flows
       badge: calculateFlowContactCount(flow),
       flow_type: flow.flow_type,
-      cycle_days: flow.cycle_days
+      cycle_days: flow.cycle_days,
+      flowId: flow.id,
     };
   });
+
+  // Build my flow IDs set from useMyFlows data
+  const myFlowIds = new Set<string>(myFlows?.map((f: any) => f.id).filter(Boolean) || []);
+
+  // Split into pinned and remaining
+  const pinnedItems = allFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
+  const unpinnedItems = allFlowItems.filter(item => !item.flowId || !pinnedFlowIds.has(item.flowId));
+  
+  // Filter remaining by "my flows" unless showing all
+  const filteredItems = showAllFlows 
+    ? unpinnedItems 
+    : unpinnedItems.filter(item => item.flowId && myFlowIds.has(item.flowId));
   
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
@@ -528,7 +591,16 @@ export const Sidebar = () => {
         <Logo />
         <div className="flex-1 overflow-auto py-2 px-4 space-y-6 sidebar-scroll">
           <SidebarSection title="HUB" items={pageItems} />
-          <SidebarSection title="Flows" items={flowItems} onSettingsClick={() => setShowFlowsManagement(true)} />
+          <SidebarSection 
+            title="Flows" 
+            items={filteredItems} 
+            onSettingsClick={() => setShowFlowsManagement(true)}
+            pinnedItems={pinnedItems}
+            pinnedFlowIds={pinnedFlowIds}
+            onPin={togglePin}
+            showAllFlows={showAllFlows}
+            onToggleShowAll={() => setShowAllFlows(!showAllFlows)}
+          />
           <SidebarSection title="Connect" items={connectItems} />
           <SidebarSection title="Settings" items={settingsItems} />
         </div>

@@ -2925,6 +2925,41 @@ export type Database = {
           },
         ]
       }
+      user_flow_preferences: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_pinned: boolean | null
+          pipeline_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          pipeline_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          pipeline_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_flow_preferences_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_login_events: {
         Row: {
           id: string
