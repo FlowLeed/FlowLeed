@@ -76,7 +76,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
             {msg.role === "assistant" ? (
               <div className="prose prose-base dark:prose-invert max-w-none
                 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-                [&_p+p]:mt-4
+                [&_p+p]:mt-6
                 prose-headings:font-semibold prose-headings:text-foreground
                 prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-4
                 prose-h3:text-base prose-h3:mt-7 prose-h3:mb-3
@@ -84,6 +84,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 prose-ul:my-4 prose-ol:my-4
                 prose-li:my-1.5
                 prose-strong:text-foreground
+                [&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2
               ">
                 <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
               </div>
