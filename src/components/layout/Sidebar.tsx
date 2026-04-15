@@ -41,11 +41,12 @@ interface SidebarSectionProps {
   title: string;
   items: SidebarItem[];
   onSettingsClick?: () => void;
-  pinnedItems?: SidebarItem[];
   pinnedFlowIds?: Set<string>;
   onPin?: (flowId: string) => void;
   showAllFlows?: boolean;
   onToggleShowAll?: () => void;
+  showPinnedOnly?: boolean;
+  onTogglePinnedOnly?: () => void;
 }
 const NavItem = ({
   item,
@@ -100,11 +101,12 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   title,
   items,
   onSettingsClick,
-  pinnedItems,
   pinnedFlowIds,
   onPin,
   showAllFlows,
   onToggleShowAll,
+  showPinnedOnly,
+  onTogglePinnedOnly,
 }) => {
   const location = useLocation();
   const {
@@ -335,9 +337,25 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
         <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           {title}
         </div>
-        {title === "Flows" && onSettingsClick && <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent" onClick={onSettingsClick}>
-            <Settings2 className="h-3 w-3" />
-          </Button>}
+        {title === "Flows" && (
+          <div className="flex items-center gap-0.5">
+            {onToggleShowAll && (
+              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showAllFlows ? 'text-foreground' : 'text-muted-foreground'}`} onClick={onToggleShowAll} title={showAllFlows ? "Showing all flows" : "Showing my flows"}>
+                {showAllFlows ? <Users className="h-3 w-3" /> : <User className="h-3 w-3" />}
+              </Button>
+            )}
+            {onTogglePinnedOnly && (
+              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showPinnedOnly ? 'text-foreground' : 'text-muted-foreground'}`} onClick={onTogglePinnedOnly} title={showPinnedOnly ? "Showing pinned only" : "Showing all"}>
+                <Star className={`h-3 w-3 ${showPinnedOnly ? 'fill-current' : ''}`} />
+              </Button>
+            )}
+            {onSettingsClick && (
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent" onClick={onSettingsClick}>
+                <Settings2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       
       {/* Create Flow Dialog */}
@@ -446,30 +464,11 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
         </DialogContent>
       </Dialog>
       
-      {title === "Flows" && pinnedItems && pinnedItems.length > 0 && (
-        <>
-          <div className="px-4 pt-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Pinned</span>
-          </div>
-          {pinnedItems.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={true} onPin={onPin} />)}
-          <div className="px-4">
-            <div className="border-t border-border/40 my-1" />
-          </div>
-        </>
-      )}
       
       <div className="space-y-1">
         {items.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />)}
       </div>
       
-      {title === "Flows" && onToggleShowAll && (
-        <button
-          onClick={onToggleShowAll}
-          className="px-4 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-center"
-        >
-          {showAllFlows ? "Show my flows only" : "Show all flows"}
-        </button>
-      )}
     </div>;
 };
 import flowleedLogo from "@/assets/flowleed_logo_2.png";
