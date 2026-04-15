@@ -1,24 +1,62 @@
 
 
-## Improve AI Chat Paragraph Spacing Consistency
+## Optimize Flows Sidebar for Scale
 
-The issue: items like "Dream Team: description" and "Pastoral Note: description" run together without line breaks, while other paragraphs have proper spacing. This is a two-sided problem — the AI sometimes omits blank lines between items, and the CSS doesn't compensate enough.
+When an org has 100+ flows, the sidebar becomes unusable. We'll add two features: **pinned/favorite flows** and a **"My Flows" default filter** with a toggle to show all.
 
-### Changes
+### How it will work
 
-**1. `supabase/functions/dashboard-ai-chat/index.ts`** — Strengthen system prompt formatting rules
-- Replace the existing formatting guidelines with stricter, example-driven instructions:
-  - "When describing multiple flows, moments, or categories, use a **bold label** on its own line followed by the description on the next line, with a blank line before each label."
-  - Add a concrete example in the prompt showing the expected format (bold label → blank line → description → blank line → next label).
-  - Emphasize: "NEVER put two bold-labeled items in the same paragraph. Each must be its own paragraph."
-- Redeploy the edge function.
+1. **My Flows vs All Flows toggle** — The sidebar defaults to showing only flows where the current user is a team member (via `pipeline_team_members`). A small toggle or link ("Show all") reveals the full list.
 
-**2. `src/components/dashboard/ChatThread.tsx`** — CSS fallback for tighter content
-- Add a custom markdown component for `strong` that adds top margin when it appears at the start of a paragraph, creating visual separation even if the AI skips a blank line.
-- Add CSS rules to the prose container:
-  - `[&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2` — gives bold labels at paragraph starts extra breathing room.
-  - Increase `[&_p+p]:mt-4` to `[&_p+p]:mt-6` for more visible paragraph separation.
+2. **Pinned flows** — Users can pin flows to always appear at the top of the sidebar, regardless of the filter. A star/pin icon on hover lets them toggle. Pinned flows appear in a separate "Pinned" subsection above the rest.
+
+3. **Visual layout** — The Flows section will show:
+   - Pinned flows (always visible, small "PINNED" label)
+   - Remaining flows (filtered to "my flows" by default)
+   - A "Show all flows" / "Show my flows" toggle at the bottom
+
+### Technical changes
+
+**Database migration** — New `user_flow_preferences` table:
+```sql
+CREATE TABLE public.user_flow_preferences (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  pipeline_id uuid NOT NULL,
+  is_pinned boolean DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(user_id, pipeline_id)
+);
+ALTER TABLE public.user_flow_preferences ENABLE ROW LEVEL SECURITY;
+-- Users can manage their own preferences
+CREATE POLICY "Users can manage own flow preferences"
+  ON public.user_flow_preferences FOR ALL
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+```
+
+**New hook: `src/hooks/useFlowPreferences.tsx`**
+- Fetches the user's pinned flow IDs from `user_flow_preferences`
+- Provides `togglePin(pipelineId)` mutation
+- Provides `pinnedFlowIds: Set<string>`
+
+**Modified: `src/components/layout/Sidebar.tsx`**
+- Import `useFlowPreferences` and `useMyFlows` (already exists)
+- Add state: `showAllFlows` (default `false`)
+- Split `flowItems` into `pinnedItems` and `filteredItems`:
+  - `pinnedItems` = flows where `pinnedFlowIds.has(flow.id)`
+  - When `showAllFlows` is false, `filteredItems` = flows where user is a team member (use `useMyFlows` data to get the IDs)
+  - When `showAllFlows` is true, `filteredItems` = all flows minus pinned
+- Render pinned flows first with a subtle "PINNED" label
+- Add a pin icon on hover for each flow item (star or pin icon)
+- Add a small toggle link at the bottom: "Show all" / "My flows only"
+
+**Modified: `src/components/layout/Sidebar.tsx` — NavItem**
+- Add an optional `onPin` callback and `isPinned` prop
+- Show a small star icon on hover (filled if pinned) that calls `onPin`
 
 ### Summary
-Stricter AI prompt with concrete formatting examples + CSS rules that enforce visual spacing even when markdown is imperfect.
+One new DB table for pin preferences, one new hook, and sidebar modifications to filter and pin flows. No changes to FlowContext or existing data loading.
 
