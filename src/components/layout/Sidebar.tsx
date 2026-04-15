@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -41,11 +41,12 @@ interface SidebarSectionProps {
   title: string;
   items: SidebarItem[];
   onSettingsClick?: () => void;
-  pinnedItems?: SidebarItem[];
   pinnedFlowIds?: Set<string>;
   onPin?: (flowId: string) => void;
   showAllFlows?: boolean;
   onToggleShowAll?: () => void;
+  showPinnedOnly?: boolean;
+  onTogglePinnedOnly?: () => void;
 }
 const NavItem = ({
   item,
@@ -100,11 +101,12 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   title,
   items,
   onSettingsClick,
-  pinnedItems,
   pinnedFlowIds,
   onPin,
   showAllFlows,
   onToggleShowAll,
+  showPinnedOnly,
+  onTogglePinnedOnly,
 }) => {
   const location = useLocation();
   const {
@@ -335,9 +337,25 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
         <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           {title}
         </div>
-        {title === "Flows" && onSettingsClick && <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent" onClick={onSettingsClick}>
-            <Settings2 className="h-3 w-3" />
-          </Button>}
+        {title === "Flows" && (
+          <div className="flex items-center gap-0.5">
+            {onToggleShowAll && (
+              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showAllFlows ? 'text-foreground' : 'text-muted-foreground'}`} onClick={onToggleShowAll} title={showAllFlows ? "Showing all flows" : "Showing my flows"}>
+                {showAllFlows ? <Users className="h-3 w-3" /> : <User className="h-3 w-3" />}
+              </Button>
+            )}
+            {onTogglePinnedOnly && (
+              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showPinnedOnly ? 'text-foreground' : 'text-muted-foreground'}`} onClick={onTogglePinnedOnly} title={showPinnedOnly ? "Showing pinned only" : "Showing all"}>
+                <Star className={`h-3 w-3 ${showPinnedOnly ? 'fill-current' : ''}`} />
+              </Button>
+            )}
+            {onSettingsClick && (
+              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent" onClick={onSettingsClick}>
+                <Settings2 className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       
       {/* Create Flow Dialog */}
@@ -446,30 +464,11 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
         </DialogContent>
       </Dialog>
       
-      {title === "Flows" && pinnedItems && pinnedItems.length > 0 && (
-        <>
-          <div className="px-4 pt-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Pinned</span>
-          </div>
-          {pinnedItems.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={true} onPin={onPin} />)}
-          <div className="px-4">
-            <div className="border-t border-border/40 my-1" />
-          </div>
-        </>
-      )}
       
       <div className="space-y-1">
         {items.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />)}
       </div>
       
-      {title === "Flows" && onToggleShowAll && (
-        <button
-          onClick={onToggleShowAll}
-          className="px-4 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full text-center"
-        >
-          {showAllFlows ? "Show my flows only" : "Show all flows"}
-        </button>
-      )}
     </div>;
 };
 import flowleedLogo from "@/assets/flowleed_logo_2.png";
@@ -485,6 +484,7 @@ export const Sidebar = () => {
   const { pinnedFlowIds, togglePin } = useFlowPreferences(user?.id);
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
   const [showAllFlows, setShowAllFlows] = useState(false);
+  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
   
   const pageItems: SidebarItem[] = [{
     title: "Dashboard",
@@ -544,14 +544,19 @@ export const Sidebar = () => {
   // Build my flow IDs set from useMyFlows data
   const myFlowIds = new Set<string>(myFlows?.map((f: any) => f.id).filter(Boolean) || []);
 
-  // Split into pinned and remaining
-  const pinnedItems = allFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
-  const unpinnedItems = allFlowItems.filter(item => !item.flowId || !pinnedFlowIds.has(item.flowId));
-  
-  // Filter remaining by "my flows" unless showing all
-  const filteredItems = showAllFlows 
-    ? unpinnedItems 
-    : unpinnedItems.filter(item => item.flowId && myFlowIds.has(item.flowId));
+  // Filtering logic
+  let displayedFlowItems: SidebarItem[];
+  if (showPinnedOnly) {
+    displayedFlowItems = allFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
+  } else if (showAllFlows) {
+    displayedFlowItems = allFlowItems;
+  } else {
+    // My flows: show flows where user is a team member + pinned flows
+    displayedFlowItems = allFlowItems.filter(item => 
+      (item.flowId && myFlowIds.has(item.flowId)) || 
+      (item.flowId && pinnedFlowIds.has(item.flowId))
+    );
+  }
   
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
@@ -593,13 +598,14 @@ export const Sidebar = () => {
           <SidebarSection title="HUB" items={pageItems} />
           <SidebarSection 
             title="Flows" 
-            items={filteredItems} 
+            items={displayedFlowItems} 
             onSettingsClick={() => setShowFlowsManagement(true)}
-            pinnedItems={pinnedItems}
             pinnedFlowIds={pinnedFlowIds}
             onPin={togglePin}
             showAllFlows={showAllFlows}
             onToggleShowAll={() => setShowAllFlows(!showAllFlows)}
+            showPinnedOnly={showPinnedOnly}
+            onTogglePinnedOnly={() => setShowPinnedOnly(!showPinnedOnly)}
           />
           <SidebarSection title="Connect" items={connectItems} />
           <SidebarSection title="Settings" items={settingsItems} />
