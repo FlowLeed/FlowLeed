@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ interface SidebarItem {
   comingSoon?: boolean;
   flow_type?: 'linear' | 'recurring';
   cycle_days?: number;
+  flowId?: string;
 }
 interface FlowStep {
   name: string;
@@ -40,10 +41,14 @@ interface SidebarSectionProps {
 }
 const NavItem = ({
   item,
-  isActive
+  isActive,
+  isPinned,
+  onPin,
 }: {
   item: SidebarItem;
   isActive: boolean;
+  isPinned?: boolean;
+  onPin?: (flowId: string) => void;
 }) => {
   if (item.comingSoon) {
     return (
@@ -55,7 +60,8 @@ const NavItem = ({
     );
   }
   
-  return <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
+  return <div className="group relative flex items-center">
+    <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
       <div className="relative flex-shrink-0">
         <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
@@ -70,7 +76,17 @@ const NavItem = ({
       {item.badge != null && item.badge > 0 && <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${isActive ? "bg-white text-purple-500" : "bg-purple-500 text-white"}`}>
           {item.badge}
         </span>}
-    </Link>;
+    </Link>
+    {onPin && item.flowId && (
+      <button
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin(item.flowId!); }}
+        className={`absolute right-1 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-yellow-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-yellow-500'}`}
+        title={isPinned ? "Unpin flow" : "Pin flow"}
+      >
+        <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-yellow-500' : ''}`} />
+      </button>
+    )}
+  </div>;
 };
 const SidebarSection: React.FC<SidebarSectionProps> = ({
   title,
