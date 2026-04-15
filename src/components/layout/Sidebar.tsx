@@ -93,7 +93,6 @@ const NavItem = ({
       >
         <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-yellow-500' : ''}`} />
       </button>
-      </button>
     )}
   </div>;
 };
