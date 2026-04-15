@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 
 export type ChatMessage = {
   role: "user" | "assistant";
@@ -8,11 +10,65 @@ export type ChatMessage = {
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dashboard-ai-chat`;
+const TITLE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-chat-title`;
 
 export const useDashboardChat = () => {
+  const { user } = useAuth();
+  const { organization } = useProfile();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const titleGeneratedRef = useRef(false);
+
+  const saveConversation = useCallback(async (msgs: ChatMessage[], convId: string | null) => {
+    if (!user?.id || !organization?.id) return convId;
+
+    if (!convId) {
+      // Create new conversation
+      const { data, error } = await supabase
+        .from("chat_conversations")
+        .insert({
+          user_id: user.id,
+          organization_id: organization.id,
+          messages: msgs as any,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("Failed to create conversation:", error);
+        return null;
+      }
+      return data.id;
+    } else {
+      // Update existing
+      await supabase
+        .from("chat_conversations")
+        .update({ messages: msgs as any })
+        .eq("id", convId);
+      return convId;
+    }
+  }, [user?.id, organization?.id]);
+
+  const generateTitle = useCallback(async (convId: string, msgs: ChatMessage[]) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      await fetch(TITLE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ conversation_id: convId, messages: msgs }),
+      });
+    } catch (e) {
+      console.error("Title generation failed:", e);
+    }
+  }, []);
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: ChatMessage = { role: "user", content: input };
@@ -125,6 +181,20 @@ export const useDashboardChat = () => {
           } catch { /* ignore */ }
         }
       }
+
+      // Save to DB after stream completes
+      if (assistantSoFar) {
+        const finalMessages = [...allMessages, { role: "assistant" as const, content: assistantSoFar }];
+        const savedId = await saveConversation(finalMessages, conversationId);
+        if (savedId) {
+          setConversationId(savedId);
+          // Auto-title on first exchange
+          if (!titleGeneratedRef.current && finalMessages.length >= 2) {
+            titleGeneratedRef.current = true;
+            generateTitle(savedId, finalMessages);
+          }
+        }
+      }
     } catch (e: any) {
       if (e.name !== "AbortError") {
         console.error("Chat error:", e);
@@ -134,7 +204,7 @@ export const useDashboardChat = () => {
       setIsLoading(false);
       abortRef.current = null;
     }
-  }, [messages]);
+  }, [messages, conversationId, saveConversation, generateTitle]);
 
   const cancelStream = useCallback(() => {
     abortRef.current?.abort();
@@ -142,7 +212,24 @@ export const useDashboardChat = () => {
 
   const clearChat = useCallback(() => {
     setMessages([]);
+    setConversationId(null);
+    titleGeneratedRef.current = false;
   }, []);
 
-  return { messages, isLoading, sendMessage, cancelStream, clearChat };
+  const loadConversation = useCallback(async (id: string) => {
+    const { data } = await supabase
+      .from("chat_conversations")
+      .select("id, messages, title")
+      .eq("id", id)
+      .single();
+
+    if (data) {
+      const msgs = (data.messages as any[]) || [];
+      setMessages(msgs);
+      setConversationId(data.id);
+      titleGeneratedRef.current = !!data.title;
+    }
+  }, []);
+
+  return { messages, isLoading, sendMessage, cancelStream, clearChat, conversationId, loadConversation };
 };
