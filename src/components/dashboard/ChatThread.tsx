@@ -2,16 +2,17 @@ import React, { useRef, useEffect, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
-import { User, Sparkles, RotateCcw } from "lucide-react";
+import { User, Sparkles, RotateCcw, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ChatThreadProps {
   messages: ChatMessage[];
   isLoading: boolean;
   onClear: () => void;
+  onOpenHistory?: () => void;
 }
 
-export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear }) => {
+export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -49,7 +50,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4 mt-6">
-      <div className="flex justify-end mb-2">
+      <div className="flex justify-end gap-1 mb-2">
+        {onOpenHistory && (
+          <Button variant="ghost" size="sm" onClick={onOpenHistory} className="text-xs text-muted-foreground gap-1.5">
+            <History className="h-3 w-3" />
+            History
+          </Button>
+        )}
         <Button variant="ghost" size="sm" onClick={onClear} className="text-xs text-muted-foreground gap-1.5">
           <RotateCcw className="h-3 w-3" />
           New conversation

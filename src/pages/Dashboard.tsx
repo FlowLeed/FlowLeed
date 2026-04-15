@@ -14,15 +14,20 @@ import { CategoryChips, type Category } from "@/components/dashboard/CategoryChi
 import { SuggestedPrompts } from "@/components/dashboard/SuggestedPrompts";
 import { ChatThread } from "@/components/dashboard/ChatThread";
 import { useDashboardChat } from "@/hooks/useDashboardChat";
+import { useChatHistory } from "@/hooks/useChatHistory";
+import { ChatHistoryDrawer } from "@/components/dashboard/ChatHistoryDrawer";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles } from "lucide-react";
+import { Sparkles, History } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, organization } = useProfile();
-  const { messages, isLoading, sendMessage, cancelStream, clearChat } = useDashboardChat();
+  const { messages, isLoading, sendMessage, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
+  const chatHistory = useChatHistory();
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Category state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -103,6 +108,20 @@ const Dashboard = () => {
     sendMessage(prompt);
   };
 
+  const handleOpenHistory = () => {
+    chatHistory.fetchConversations();
+    setHistoryOpen(true);
+  };
+
+  const handleSelectConversation = (id: string) => {
+    loadConversation(id);
+  };
+
+  const handleClearChat = () => {
+    clearChat();
+    chatHistory.fetchConversations();
+  };
+
   // Owner checklist items (preserved)
   const ownerChecklistItems: ChecklistItem[] = [
     { id: "first_flow_created", title: "Create Your First Flow", description: "Set up a flow to track contacts through different stages", completed: ownerOnboarding.progress.first_flow_created, action: { label: "Create Flow", onClick: () => navigate("/") } },
@@ -150,7 +169,16 @@ const Dashboard = () => {
 
           {/* AI Hero Section - shown when no messages */}
           {!hasMessages && (
-            <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6">
+            <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6 relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleOpenHistory}
+                className="absolute top-2 right-0 text-xs text-muted-foreground gap-1.5"
+              >
+                <History className="h-3.5 w-3.5" />
+                History
+              </Button>
               <div className="flex flex-col items-center gap-3">
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <Sparkles className="h-6 w-6 text-primary" />
@@ -190,7 +218,7 @@ const Dashboard = () => {
           )}
 
           {/* Chat Thread */}
-          <ChatThread messages={messages} isLoading={isLoading} onClear={clearChat} />
+          <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} />
         </div>
       </div>
 
@@ -224,6 +252,17 @@ const Dashboard = () => {
           }}
         />
       )}
+
+      {/* Chat History Drawer */}
+      <ChatHistoryDrawer
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        conversations={chatHistory.conversations}
+        isLoading={chatHistory.isLoading}
+        onSelect={handleSelectConversation}
+        onDelete={chatHistory.deleteConversation}
+        activeConversationId={conversationId}
+      />
     </div>
   );
 };
