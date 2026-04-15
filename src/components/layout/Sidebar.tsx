@@ -68,8 +68,8 @@ const NavItem = ({
     );
   }
   
-  return <div className="group relative flex items-center">
-    <Link to={item.path} className={`flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
+  return <div className="group flex items-center gap-0.5">
+    <Link to={item.path} className={`flex flex-1 items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
       <div className="relative flex-shrink-0">
         <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
@@ -81,14 +81,14 @@ const NavItem = ({
       <span className="font-extralight truncate whitespace-nowrap min-w-0 flex-1">
         {item.title}
       </span>
-      {item.badge != null && item.badge > 0 && <span className={`ml-auto text-xs rounded-full px-2 py-0.5 ${isActive ? "bg-white text-purple-500" : "bg-purple-500 text-white"}`}>
+      {item.badge != null && item.badge > 0 && <span className={`ml-auto text-xs rounded-full px-2 py-0.5 flex-shrink-0 ${isActive ? "bg-white text-purple-500" : "bg-purple-500 text-white"}`}>
           {item.badge}
         </span>}
     </Link>
     {onPin && item.flowId && (
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin(item.flowId!); }}
-        className={`absolute right-1 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-yellow-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-yellow-500'}`}
+        className={`flex-shrink-0 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-yellow-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-yellow-500'}`}
         title={isPinned ? "Unpin flow" : "Pin flow"}
       >
         <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-yellow-500' : ''}`} />
