@@ -1,62 +1,44 @@
 
 
-## Optimize Flows Sidebar for Scale
+## Redesign Flows Section Header with Filter Icons
 
-When an org has 100+ flows, the sidebar becomes unusable. We'll add two features: **pinned/favorite flows** and a **"My Flows" default filter** with a toggle to show all.
+**Current state**: The Flows section header has "FLOWS" on the left and a settings gear icon on the right. Below flows, there's a "Show all flows" text toggle. Pinned flows have a "PINNED" label above them.
 
-### How it will work
+**Proposed change**: Remove the "PINNED" label and the bottom text toggle. Instead, add two small icon buttons next to the settings gear in the "FLOWS" header row:
 
-1. **My Flows vs All Flows toggle** — The sidebar defaults to showing only flows where the current user is a team member (via `pipeline_team_members`). A small toggle or link ("Show all") reveals the full list.
+1. **My/All toggle** (e.g., `User` / `Users` icon) — toggles between showing only my flows vs all flows. Active state uses a filled/highlighted style.
+2. **Pinned/All toggle** (e.g., `Star` icon) — when active, shows only pinned flows; when inactive, shows all (respecting the My/All filter). Active state shows a filled star.
 
-2. **Pinned flows** — Users can pin flows to always appear at the top of the sidebar, regardless of the filter. A star/pin icon on hover lets them toggle. Pinned flows appear in a separate "Pinned" subsection above the rest.
+This makes sense — it consolidates three UI elements (PINNED label, divider, bottom toggle) into two compact icons in the header, keeping the sidebar clean at scale.
 
-3. **Visual layout** — The Flows section will show:
-   - Pinned flows (always visible, small "PINNED" label)
-   - Remaining flows (filtered to "my flows" by default)
-   - A "Show all flows" / "Show my flows" toggle at the bottom
+```text
+FLOWS          [👤] [⭐] [⚙]
+  Flow A
+  Flow B
+  ...
+```
 
 ### Technical changes
 
-**Database migration** — New `user_flow_preferences` table:
-```sql
-CREATE TABLE public.user_flow_preferences (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  pipeline_id uuid NOT NULL,
-  is_pinned boolean DEFAULT false,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, pipeline_id)
-);
-ALTER TABLE public.user_flow_preferences ENABLE ROW LEVEL SECURITY;
--- Users can manage their own preferences
-CREATE POLICY "Users can manage own flow preferences"
-  ON public.user_flow_preferences FOR ALL
-  TO authenticated
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-```
+**File: `src/components/layout/Sidebar.tsx`**
 
-**New hook: `src/hooks/useFlowPreferences.tsx`**
-- Fetches the user's pinned flow IDs from `user_flow_preferences`
-- Provides `togglePin(pipelineId)` mutation
-- Provides `pinnedFlowIds: Set<string>`
+1. Add a new prop `showPinnedOnly` + `onTogglePinnedOnly` to `SidebarSectionProps` and the `Sidebar` component state.
 
-**Modified: `src/components/layout/Sidebar.tsx`**
-- Import `useFlowPreferences` and `useMyFlows` (already exists)
-- Add state: `showAllFlows` (default `false`)
-- Split `flowItems` into `pinnedItems` and `filteredItems`:
-  - `pinnedItems` = flows where `pinnedFlowIds.has(flow.id)`
-  - When `showAllFlows` is false, `filteredItems` = flows where user is a team member (use `useMyFlows` data to get the IDs)
-  - When `showAllFlows` is true, `filteredItems` = all flows minus pinned
-- Render pinned flows first with a subtle "PINNED" label
-- Add a pin icon on hover for each flow item (star or pin icon)
-- Add a small toggle link at the bottom: "Show all" / "My flows only"
+2. In the header row (lines 333-341), add two icon buttons before the settings gear:
+   - `User`/`Users` icon for My/All toggle (calls `onToggleShowAll`)
+   - `Star` icon for Pinned-only filter (calls `onTogglePinnedOnly`)
+   - Both use subtle styling: ghost variant, highlighted when active.
 
-**Modified: `src/components/layout/Sidebar.tsx` — NavItem**
-- Add an optional `onPin` callback and `isPinned` prop
-- Show a small star icon on hover (filled if pinned) that calls `onPin`
+3. Remove the "PINNED" label block (lines 449-458) — pinned flows will just show with filled stars inline, no separate section.
+
+4. Remove the bottom "Show all flows" text toggle (lines 465-472).
+
+5. Update filtering logic:
+   - When pinned-only is active: show only pinned flows
+   - When pinned-only is off + "my flows": show unpinned flows where user is a team member, plus pinned flows mixed in
+   - When pinned-only is off + "all flows": show all flows
+   - Pinned flows always show their filled star icon regardless of filter mode.
 
 ### Summary
-One new DB table for pin preferences, one new hook, and sidebar modifications to filter and pin flows. No changes to FlowContext or existing data loading.
+Remove the "PINNED" subsection label and bottom toggle text. Replace with two icon buttons in the FLOWS header row for compact, intuitive filtering.
 
