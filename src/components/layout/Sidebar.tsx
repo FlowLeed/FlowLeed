@@ -68,7 +68,7 @@ const NavItem = ({
     );
   }
   
-  return <div className="group flex items-center gap-0.5">
+  return <div className="group flex items-center">
     <Link to={item.path} className={`flex flex-1 items-center gap-3 px-4 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0`}>
       <div className="relative flex-shrink-0">
         <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
@@ -88,10 +88,10 @@ const NavItem = ({
     {onPin && item.flowId && (
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin(item.flowId!); }}
-        className={`flex-shrink-0 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-yellow-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-yellow-500'}`}
+        className={`flex-shrink-0 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-muted-foreground' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground'}`}
         title={isPinned ? "Unpin flow" : "Pin flow"}
       >
-        <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-yellow-500' : ''}`} />
+        <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-muted-foreground' : ''}`} />
       </button>
     )}
   </div>;
