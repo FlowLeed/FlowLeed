@@ -14,15 +14,20 @@ import { CategoryChips, type Category } from "@/components/dashboard/CategoryChi
 import { SuggestedPrompts } from "@/components/dashboard/SuggestedPrompts";
 import { ChatThread } from "@/components/dashboard/ChatThread";
 import { useDashboardChat } from "@/hooks/useDashboardChat";
+import { useChatHistory } from "@/hooks/useChatHistory";
+import { ChatHistoryDrawer } from "@/components/dashboard/ChatHistoryDrawer";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles } from "lucide-react";
+import { Sparkles, History } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile, organization } = useProfile();
-  const { messages, isLoading, sendMessage, cancelStream, clearChat } = useDashboardChat();
+  const { messages, isLoading, sendMessage, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
+  const chatHistory = useChatHistory();
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   // Category state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -101,6 +106,20 @@ const Dashboard = () => {
   const handlePromptSelect = (prompt: string) => {
     setSelectedCategory(null);
     sendMessage(prompt);
+  };
+
+  const handleOpenHistory = () => {
+    chatHistory.fetchConversations();
+    setHistoryOpen(true);
+  };
+
+  const handleSelectConversation = (id: string) => {
+    loadConversation(id);
+  };
+
+  const handleClearChat = () => {
+    clearChat();
+    chatHistory.fetchConversations();
   };
 
   // Owner checklist items (preserved)
