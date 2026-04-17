@@ -89,10 +89,10 @@ const NavItem = ({
     {onPin && item.flowId && (
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin(item.flowId!); }}
-        className={`flex-shrink-0 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-muted-foreground' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground'}`}
+        className={`flex-shrink-0 p-1 rounded-full transition-all ${isPinned ? 'opacity-100 text-muted-foreground' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground'}`}
         title={isPinned ? "Unpin flow" : "Pin flow"}
       >
-        <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-muted-foreground' : ''}`} />
+        <Star className={`h-3.5 w-3.5 transition-all ${isPinned ? '' : 'group-hover:fill-muted-foreground'}`} />
       </button>
     )}
   </div>;
