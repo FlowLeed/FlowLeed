@@ -345,8 +345,8 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
               </Button>
             )}
             {onTogglePinnedOnly && (
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showPinnedOnly ? 'text-foreground' : 'text-muted-foreground'}`} onClick={onTogglePinnedOnly} title={showPinnedOnly ? "Showing pinned only" : "Showing all"}>
-                <Star className={`h-3 w-3 ${showPinnedOnly ? 'fill-current' : ''}`} />
+              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showPinnedOnly ? 'text-muted-foreground' : 'text-muted-foreground hover:text-foreground'}`} onClick={onTogglePinnedOnly} title={showPinnedOnly ? "Showing pinned only" : "Showing all"}>
+                <Star className={`h-3 w-3 transition-all ${showPinnedOnly ? '' : 'hover:fill-current'}`} />
               </Button>
             )}
             {onSettingsClick && (
