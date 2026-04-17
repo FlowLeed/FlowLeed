@@ -89,10 +89,10 @@ const NavItem = ({
     {onPin && item.flowId && (
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPin(item.flowId!); }}
-        className={`flex-shrink-0 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-muted-foreground' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground'}`}
+        className={`flex-shrink-0 p-1 rounded-full transition-all ${isPinned ? 'opacity-100 text-muted-foreground' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground'}`}
         title={isPinned ? "Unpin flow" : "Pin flow"}
       >
-        <Star className={`h-3.5 w-3.5 ${isPinned ? 'fill-muted-foreground' : ''}`} />
+        <Star className={`h-3.5 w-3.5 transition-all ${isPinned ? '' : 'group-hover:fill-muted-foreground'}`} />
       </button>
     )}
   </div>;
@@ -345,8 +345,8 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
               </Button>
             )}
             {onTogglePinnedOnly && (
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showPinnedOnly ? 'text-foreground' : 'text-muted-foreground'}`} onClick={onTogglePinnedOnly} title={showPinnedOnly ? "Showing pinned only" : "Showing all"}>
-                <Star className={`h-3 w-3 ${showPinnedOnly ? 'fill-current' : ''}`} />
+              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showPinnedOnly ? 'text-muted-foreground' : 'text-muted-foreground hover:text-foreground'}`} onClick={onTogglePinnedOnly} title={showPinnedOnly ? "Showing pinned only" : "Showing all"}>
+                <Star className={`h-3 w-3 transition-all ${showPinnedOnly ? '' : 'hover:fill-current'}`} />
               </Button>
             )}
             {onSettingsClick && (
