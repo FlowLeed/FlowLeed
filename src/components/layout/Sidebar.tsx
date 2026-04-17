@@ -92,7 +92,7 @@ const NavItem = ({
         className={`flex-shrink-0 p-1 rounded-full transition-opacity ${isPinned ? 'opacity-100 text-muted-foreground' : 'opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground'}`}
         title={isPinned ? "Unpin flow" : "Pin flow"}
       >
-        <Star className={`h-3 w-3 ${isPinned ? 'fill-current' : ''}`} />
+        <Star className="h-3 w-3" />
       </button>
     )}
   </div>;
