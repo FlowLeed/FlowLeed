@@ -1,8 +1,10 @@
 import React from "react";
-import { Bell, Search, LogOut, User, Settings } from "lucide-react";
+import { Bell, Search, LogOut, User, Settings, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +23,7 @@ interface SuperAdminHeaderProps {
 export const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({ title, icon: Icon }) => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toggle: toggleMobileSidebar } = useMobileSidebar();
 
   const handleSignOut = async () => {
     await signOut();
@@ -32,10 +35,19 @@ export const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({ title, icon:
 
   return (
     <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#FAFAFA' }}>
-      <div className="flex items-center justify-between h-14 px-4">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between h-14 px-3 md:px-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMobileSidebar}
+            className="h-8 w-8 md:hidden flex-shrink-0"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
           {Icon && <Icon className="h-5 w-5 text-sidebar-foreground" />}
-          <div className="text-lg font-extralight">{title}</div>
+          <div className="text-lg font-extralight truncate">{title}</div>
         </div>
 
         <div className="flex items-center gap-2">
