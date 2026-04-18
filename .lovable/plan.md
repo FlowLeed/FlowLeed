@@ -1,62 +1,57 @@
 
 
-## Chat History with Auto-Titling (Option D — Side Panel)
+## Mobile-Friendly Navigation Plan
 
-### How it works
+### Problem
+The sidebar is fixed at `18rem` (288px) and always visible. On screens <768px it eats most of the viewport, leaving content unusable. The Header also needs a way to open the sidebar on mobile.
 
-A small **clock/history icon** appears next to the "New conversation" button in ChatThread (and also in the hero state). Clicking it opens a **right-side drawer** listing past conversations with AI-generated titles. Conversations are stored in a Supabase table and auto-titled after the first assistant response.
+### Approach
+Convert the sidebar into a **slide-out drawer on mobile** (<768px) while preserving the existing fixed sidebar on desktop. Use a hamburger menu in the Header on mobile to toggle it.
+
+### Changes
+
+**1. `src/components/layout/Sidebar.tsx`**
+- Wrap the sidebar `<div>` in conditional rendering using `useIsMobile()`:
+  - **Desktop (≥768px)**: render as today (fixed left column).
+  - **Mobile (<768px)**: render inside a `Sheet` (shadcn) sliding from the left, full sidebar content unchanged.
+- Expose `open`/`onOpenChange` via a lightweight context (`MobileSidebarContext`) so Header can toggle it.
+- Auto-close the sheet on route change (listen to `useLocation`).
+
+**2. `src/components/layout/MainLayout.tsx`**
+- Wrap with `MobileSidebarProvider` so both Sidebar (sheet) and Header (trigger) share state.
+- On mobile, the Sidebar no longer occupies layout space — main content gets full width.
+
+**3. `src/components/layout/Header.tsx`**
+- Add a hamburger (`Menu` icon) button visible only on mobile (`md:hidden`) at the far left.
+- Clicking it opens the mobile sidebar sheet.
+
+**4. `src/components/admin/SuperAdminLayout.tsx` + `SuperAdminSidebar.tsx`**
+- Apply the same pattern (mobile sheet + hamburger in `SuperAdminHeader`) so the admin area is mobile-friendly too.
+
+**5. Small layout polish**
+- Header padding: tighten `px-6` → `px-4 md:px-6` on mobile.
+- Dashboard `max-w-4xl mx-auto px-6` already responsive — verify spacing on 375px.
+- ImpersonationBanner: ensure it stacks nicely above hamburger.
+
+### What we keep
+- Desktop layout, sidebar styling, all flow/pin logic — completely unchanged.
+- Same component tree, just wrapped differently per breakpoint.
+- Uses existing `useIsMobile` hook and `Sheet` component (already in project).
+
+### Out of scope (next phases)
+- Page content responsiveness (Dashboard chat, Flows board, Tables) — separate plans per page.
+- Bottom-nav alternative — can revisit if you prefer that pattern later.
+
+### Quick visual
 
 ```text
-+--sidebar--+--------main-content--------+--drawer (when open)--+
-|            |  How can I help you?       |  Chat History        |
-|  FLOWS     |  [input]                   |  "Attendance Q1" 2h  |
-|  ...       |  [chips]                   |  "New members" 1d    |
-|            |                            |  "Prayer req..." 3d  |
-+------------+----------------------------+----------------------+
+Mobile (<768px)                  Desktop (≥768px)
++------------------+             +--------+--------------+
+| ☰  Header   🔔  |             |  Side  | Header   🔔  |
++------------------+             |  bar   +--------------+
+| Main content     |             |  ...   | Main content |
+|                  |             |        |              |
++------------------+             +--------+--------------+
+   ↑ tap ☰ → sheet slides in from left
 ```
-
-### Database
-
-**New table: `chat_conversations`**
-- `id` (uuid, PK)
-- `user_id` (uuid, references auth.users, NOT NULL)
-- `organization_id` (uuid, references organizations, NOT NULL)
-- `title` (text, nullable — null until auto-titled)
-- `messages` (jsonb, NOT NULL, default '[]')
-- `created_at`, `updated_at` (timestamptz)
-- RLS: users can only read/write their own conversations
-- Index on `(user_id, updated_at DESC)` for fast listing
-
-### Auto-titling
-
-After the first assistant response completes, call the existing `dashboard-ai-chat` edge function (or a lightweight new one) with a prompt like: *"Summarize this conversation in 3-5 words as a title"*. Update the `title` column. This happens in the background — doesn't block the user.
-
-### Frontend changes
-
-1. **`src/hooks/useDashboardChat.tsx`** — Add:
-   - `conversationId` state (current active conversation)
-   - Auto-save messages to Supabase after each assistant response
-   - `loadConversation(id)` to restore a past conversation
-   - `deleteConversation(id)` to remove from DB
-   - Auto-title logic after first exchange
-
-2. **`src/hooks/useChatHistory.tsx`** (new) — Simple hook:
-   - Fetches list of conversations (`id, title, updated_at`) ordered by recency
-   - Provides `conversations`, `isLoading`, `deleteConversation`
-   - Limit to 50 most recent
-
-3. **`src/components/dashboard/ChatHistoryDrawer.tsx`** (new):
-   - Uses Sheet component (right side)
-   - Lists conversations with title (or truncated first message if untitled), relative timestamp
-   - Click to load, swipe/trash icon to delete
-   - Empty state: "No previous conversations"
-
-4. **`src/components/dashboard/ChatThread.tsx`** — Add a History icon button next to "New conversation"
-
-5. **`src/pages/Dashboard.tsx`** — Add History icon in the hero state too (top-right corner), wire up drawer state and `loadConversation`
-
-6. **`supabase/functions/generate-chat-title/index.ts`** (new edge function) — Lightweight call to Lovable AI Gateway asking for a 3-5 word title given the first exchange. Called once per conversation.
-
-### Summary
-One new DB table, one new edge function for titling, one new drawer component, and updates to the chat hook to persist/restore conversations.
 
