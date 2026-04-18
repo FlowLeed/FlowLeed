@@ -192,7 +192,7 @@ const SuperAdminProfilePage = () => {
     <div className="flex flex-col h-screen overflow-hidden">
       <SuperAdminHeader title="My Profile" icon={User} />
 
-      <div className="flex-1 overflow-auto p-6 space-y-6 pb-12">
+      <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6 pb-12">
         {/* Personal Information Card */}
         <Card>
           <CardHeader>
@@ -208,7 +208,7 @@ const SuperAdminProfilePage = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Avatar Section */}
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
               <Avatar className="h-20 w-20">
                 <AvatarImage src={profile?.avatar_url || ""} alt="Profile picture" />
                 <AvatarFallback className="text-lg">
@@ -243,7 +243,7 @@ const SuperAdminProfilePage = () => {
             <Separator />
 
             {/* Personal Details */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
                 <Input 
@@ -262,7 +262,7 @@ const SuperAdminProfilePage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input 
@@ -281,7 +281,7 @@ const SuperAdminProfilePage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="jobTitle">Job Title</Label>
                 <Input 
@@ -321,7 +321,7 @@ const SuperAdminProfilePage = () => {
             </div>
             
             <div className="flex justify-end pt-4">
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} className="w-full sm:w-auto">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Save Profile
               </Button>

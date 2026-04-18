@@ -639,7 +639,7 @@ const UserProfilePage = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <div className="flex-1 overflow-auto w-full p-6 space-y-6">
+      <div className="flex-1 overflow-auto w-full p-4 md:p-6 space-y-6">
         {/* Enhanced Header */}
         <div className="space-y-4">
         <div className="flex items-center gap-4">
@@ -650,7 +650,7 @@ const UserProfilePage = () => {
         </div>
         
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             <div className="flex flex-col sm:flex-row items-start gap-4 relative">
               {/* Edit button in top right corner */}
               <Button
@@ -663,15 +663,15 @@ const UserProfilePage = () => {
                 <Edit className="h-4 w-4" />
               </Button>
               
-              <div className="flex flex-col items-center gap-3">
-                <Avatar className="h-16 w-16">
+              <div className="flex flex-row sm:flex-col items-center gap-3 w-full sm:w-auto">
+                <Avatar className="h-16 w-16 shrink-0">
                   <AvatarImage src={contact.avatar} alt={contact.name} />
                   <AvatarFallback>
                     {getInitials(contact.name)}
                   </AvatarFallback>
                 </Avatar>
-                {/* Engagement Stats under avatar */}
-                <div className="grid grid-cols-1 gap-1.5 w-full">
+                {/* Engagement Stats: horizontal on mobile, vertical on desktop */}
+                <div className="grid grid-cols-4 sm:grid-cols-1 gap-1.5 flex-1 sm:flex-none w-full">
                   <div className="flex flex-col gap-0.5 p-1.5 rounded-md bg-muted/50 text-center">
                     <div className="flex items-center justify-center gap-1">
                       <Activity className="h-3 w-3 text-muted-foreground" />
@@ -702,8 +702,8 @@ const UserProfilePage = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold">{contact.name}</h1>
+              <div className="flex-1 min-w-0 w-full pr-10 sm:pr-0">
+                <h1 className="text-2xl md:text-3xl font-bold break-words">{contact.name}</h1>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <EngagementBadge score={engagementScore} />
                 </div>
@@ -805,10 +805,10 @@ const UserProfilePage = () => {
                     </div>
                   )}
                   {contact.phone && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-muted-foreground">Phone: </span>
                       <span>{contact.phone}</span>
-                      <div className="flex items-center gap-3 ml-2">
+                      <div className="flex items-center gap-2 sm:ml-2 w-full sm:w-auto">
                         <Button
                           variant="outline"
                           size="sm"
