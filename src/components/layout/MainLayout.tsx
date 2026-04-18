@@ -2,17 +2,20 @@ import React from "react";
 import { Sidebar } from "./Sidebar";
 import { Outlet } from "react-router-dom";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
+import { MobileSidebarProvider } from "@/contexts/MobileSidebarContext";
 
 export const MainLayout = () => {
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden">
-      <ImpersonationBanner />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar />
-        <div className="flex-1 flex flex-col h-full overflow-hidden">
-          <Outlet />
+    <MobileSidebarProvider>
+      <div className="flex h-screen w-full flex-col overflow-hidden">
+        <ImpersonationBanner />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar />
+          <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+            <Outlet />
+          </div>
         </div>
       </div>
-    </div>
+    </MobileSidebarProvider>
   );
 };

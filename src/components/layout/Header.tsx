@@ -1,7 +1,8 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw, RefreshCw } from "lucide-react";
+import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw, RefreshCw, Menu } from "lucide-react";
+import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { FlowHeaderFilters } from "@/components/crm/FlowHeaderFilters";
@@ -322,10 +323,20 @@ export const Header: React.FC<HeaderProps> = ({
   const initials = profile?.full_name 
     ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
+  const { toggle: toggleMobileSidebar } = useMobileSidebar();
   return (
     <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#FAFAFA' }}>
-      <div className="flex items-center justify-between h-14 px-4">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between h-14 px-3 md:px-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMobileSidebar}
+            className="h-8 w-8 md:hidden flex-shrink-0"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
           {showBackButton && onBackClick && (
             <Button variant="ghost" size="icon" onClick={onBackClick} className="h-8 w-8">
               <ArrowLeft className="h-4 w-4" />

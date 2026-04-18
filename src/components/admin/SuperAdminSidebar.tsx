@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Building2, Users, DollarSign, Settings, GitBranch, MessageCircle, Mail } from "lucide-react";
 import flowleedLogo from "@/assets/flowleed_logo.png";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import type { LucideIcon } from "lucide-react";
 
 interface NavItem {
@@ -86,18 +89,22 @@ const NavLink = ({ item, isActive }: { item: NavItem; isActive: boolean }) => {
 
 export const SuperAdminSidebar = () => {
   const location = useLocation();
+  const isMobile = useIsMobile();
+  const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
 
-  return (
-    <div className="w-60 bg-sidebar border-r border-border flex flex-col">
-      {/* Logo Section */}
+  useEffect(() => {
+    if (isMobile) setMobileOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  const content = (
+    <>
       <div className="px-8 py-6 flex flex-col">
         <img src={flowleedLogo} alt="Flowleed" className="h-5 w-auto mb-1" />
         <span className="text-xs text-sidebar-foreground/50 font-medium">FL-Admin</span>
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 px-4 space-y-6">
-        {/* Pages Section */}
+      <div className="flex-1 px-4 space-y-6 overflow-auto">
         <div className="space-y-1">
           <div className="px-4 py-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
@@ -105,15 +112,10 @@ export const SuperAdminSidebar = () => {
             </div>
           </div>
           {pagesItems.map((item) => (
-            <NavLink
-              key={item.title}
-              item={item}
-              isActive={location.pathname === item.path}
-            />
+            <NavLink key={item.title} item={item} isActive={location.pathname === item.path} />
           ))}
         </div>
 
-        {/* Flows Section */}
         <div className="space-y-1">
           <div className="px-4 py-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
@@ -121,15 +123,10 @@ export const SuperAdminSidebar = () => {
             </div>
           </div>
           {flowsItems.map((item) => (
-            <NavLink
-              key={item.title}
-              item={item}
-              isActive={location.pathname === item.path}
-            />
+            <NavLink key={item.title} item={item} isActive={location.pathname === item.path} />
           ))}
         </div>
 
-        {/* System Section */}
         <div className="space-y-1">
           <div className="px-4 py-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
@@ -137,14 +134,26 @@ export const SuperAdminSidebar = () => {
             </div>
           </div>
           {systemItems.map((item) => (
-            <NavLink
-              key={item.title}
-              item={item}
-              isActive={location.pathname === item.path}
-            />
+            <NavLink key={item.title} item={item} isActive={location.pathname === item.path} />
           ))}
         </div>
       </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="p-0 w-[240px] flex flex-col bg-sidebar">
+          {content}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  return (
+    <div className="w-60 bg-sidebar border-r border-border flex flex-col">
+      {content}
     </div>
   );
 };
