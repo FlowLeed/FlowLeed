@@ -1,5 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User } from "lucide-react";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
@@ -591,25 +594,54 @@ export const Sidebar = () => {
     icon: Puzzle,
     path: "/integrations"
   }];
+  const isMobile = useIsMobile();
+  const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
+  const location = useLocation();
+
+  // Auto-close mobile sheet on route change
+  useEffect(() => {
+    if (isMobile) setMobileOpen(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  const sidebarContent = (
+    <>
+      <Logo />
+      <div className="flex-1 overflow-auto py-2 px-4 space-y-6 sidebar-scroll">
+        <SidebarSection title="HUB" items={pageItems} />
+        <SidebarSection 
+          title="Flows" 
+          items={displayedFlowItems} 
+          onSettingsClick={() => setShowFlowsManagement(true)}
+          pinnedFlowIds={pinnedFlowIds}
+          onPin={togglePin}
+          showAllFlows={showAllFlows}
+          onToggleShowAll={() => setShowAllFlows(!showAllFlows)}
+          showPinnedOnly={showPinnedOnly}
+          onTogglePinnedOnly={() => setShowPinnedOnly(!showPinnedOnly)}
+        />
+        <SidebarSection title="Connect" items={connectItems} />
+        <SidebarSection title="Settings" items={settingsItems} />
+      </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="p-0 w-[280px] flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
+            {sidebarContent}
+          </SheetContent>
+        </Sheet>
+        <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
+      </>
+    );
+  }
+
   return <>
       <div className="h-screen w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] flex-shrink-0 flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
-        <Logo />
-        <div className="flex-1 overflow-auto py-2 px-4 space-y-6 sidebar-scroll">
-          <SidebarSection title="HUB" items={pageItems} />
-          <SidebarSection 
-            title="Flows" 
-            items={displayedFlowItems} 
-            onSettingsClick={() => setShowFlowsManagement(true)}
-            pinnedFlowIds={pinnedFlowIds}
-            onPin={togglePin}
-            showAllFlows={showAllFlows}
-            onToggleShowAll={() => setShowAllFlows(!showAllFlows)}
-            showPinnedOnly={showPinnedOnly}
-            onTogglePinnedOnly={() => setShowPinnedOnly(!showPinnedOnly)}
-          />
-          <SidebarSection title="Connect" items={connectItems} />
-          <SidebarSection title="Settings" items={settingsItems} />
-        </div>
+        {sidebarContent}
       </div>
       
       <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
