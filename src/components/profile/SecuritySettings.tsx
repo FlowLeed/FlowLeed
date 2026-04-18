@@ -130,7 +130,7 @@ export const SecuritySettings = () => {
               </p>
             </div>
             
-            <Button type="submit" disabled={emailLoading || !newEmail}>
+            <Button type="submit" disabled={emailLoading || !newEmail} className="w-full sm:w-auto">
               {emailLoading ? 'Sending verification...' : 'Change Email'}
             </Button>
           </form>
@@ -183,7 +183,7 @@ export const SecuritySettings = () => {
               />
             </div>
             
-            <Button type="submit" disabled={passwordLoading}>
+            <Button type="submit" disabled={passwordLoading} className="w-full sm:w-auto">
               {passwordLoading ? 'Changing password...' : 'Change Password'}
             </Button>
           </form>

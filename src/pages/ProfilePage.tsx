@@ -247,7 +247,7 @@ const ProfilePage = () => {
         showAddButton={false}
       />
 
-      <div className="flex-1 overflow-auto p-6 space-y-6 pb-12">
+      <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6 pb-12">
         {/* Personal Information Card */}
         <Card>
           <CardHeader>
@@ -263,7 +263,7 @@ const ProfilePage = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Avatar Section */}
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
               <Avatar className="h-20 w-20">
                 <AvatarImage src={profile?.avatar_url || ""} alt="Profile picture" />
                 <AvatarFallback className="text-lg">
@@ -287,7 +287,7 @@ const ProfilePage = () => {
             <Separator />
 
             {/* Personal Details */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
                 <Input id="firstName" value={formData.firstName} onChange={e => handleInputChange("firstName", e.target.value)} />
@@ -301,11 +301,11 @@ const ProfilePage = () => {
             {/* Twilio Phone Number Section */}
             {myTwilioNumber && (
               <div className="p-4 bg-muted/50 rounded-lg border space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="min-w-0">
                     <Label className="text-sm font-medium">Assigned Phone Number</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
                       <span className="text-sm font-mono">{myTwilioNumber.phone_number}</span>
                       {myTwilioNumber.friendly_name && (
                         <Badge variant="secondary" className="text-xs">
@@ -317,7 +317,7 @@ const ProfilePage = () => {
                       This is your dedicated phone number for calls and SMS
                     </p>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex flex-wrap gap-1">
                     {myTwilioNumber.capabilities.voice && (
                       <Badge variant="outline" className="text-xs">Voice</Badge>
                     )}
@@ -345,7 +345,7 @@ const ProfilePage = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input id="phone" value={formData.phone} onChange={e => handleInputChange("phone", e.target.value)} />
@@ -356,7 +356,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="jobTitle">Job Title</Label>
                 <Input id="jobTitle" value={formData.jobTitle} onChange={e => handleInputChange("jobTitle", e.target.value)} />
@@ -383,7 +383,7 @@ const ProfilePage = () => {
             </div>
             
             <div className="flex justify-end pt-4">
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} className="w-full sm:w-auto">
                 <CheckCircle className="h-4 w-4 mr-2" />
                 Save Profile
               </Button>
