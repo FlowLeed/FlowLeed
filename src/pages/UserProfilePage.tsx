@@ -651,20 +651,44 @@ const UserProfilePage = () => {
         
         <Card>
           <CardContent className="p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row items-start gap-4 relative">
-              {/* Edit button in top right corner */}
+            {/* Mobile-only top row: avatar + name + edit */}
+            <div className="flex sm:hidden items-start gap-3 mb-4">
+              <Avatar className="h-14 w-14 shrink-0">
+                <AvatarImage src={contact.avatar} alt={contact.name} />
+                <AvatarFallback>{getInitials(contact.name)}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl font-bold break-words leading-tight">{contact.name}</h1>
+                <div className="mt-1.5">
+                  <EngagementBadge score={engagementScore} />
+                </div>
+              </div>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="outline"
+                size="icon"
                 onClick={() => setIsEditDialogOpen(true)}
-                className="absolute top-0 right-0 p-2"
+                className="shrink-0 h-9 w-9"
                 title="Edit Contact & Demographics"
               >
                 <Edit className="h-4 w-4" />
               </Button>
-              
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start gap-4 relative">
+              {/* Edit button — desktop only, top right corner */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditDialogOpen(true)}
+                className="hidden sm:flex absolute top-0 right-0 p-2"
+                title="Edit Contact & Demographics"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+
               <div className="flex flex-row sm:flex-col items-center gap-3 w-full sm:w-auto">
-                <Avatar className="h-16 w-16 shrink-0">
+                {/* Avatar — desktop only (mobile shows it in the top row above) */}
+                <Avatar className="hidden sm:flex h-16 w-16 shrink-0">
                   <AvatarImage src={contact.avatar} alt={contact.name} />
                   <AvatarFallback>
                     {getInitials(contact.name)}
@@ -702,10 +726,13 @@ const UserProfilePage = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex-1 min-w-0 w-full pr-10 sm:pr-0">
-                <h1 className="text-2xl md:text-3xl font-bold break-words">{contact.name}</h1>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <EngagementBadge score={engagementScore} />
+              <div className="flex-1 min-w-0 w-full">
+                {/* Name + engagement badge — desktop only (mobile shows them in top row above) */}
+                <div className="hidden sm:block pr-10">
+                  <h1 className="text-3xl font-bold break-words">{contact.name}</h1>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <EngagementBadge score={engagementScore} />
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <Tags className="h-3.5 w-3.5 text-muted-foreground" />
