@@ -14,6 +14,7 @@ import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow,
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
+import { cn } from "@/lib/utils";
 
 import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
 import { InteractionTimeline } from "@/components/contact/InteractionTimeline";
