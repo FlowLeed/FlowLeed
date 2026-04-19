@@ -30,6 +30,7 @@ const AuthPage = () => {
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberMe, setRememberMeState] = useState<boolean>(() => getRememberMe());
   
   // Slug availability state
   const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle');
