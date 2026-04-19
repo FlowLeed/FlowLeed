@@ -14,6 +14,7 @@ import { ArrowLeft, Mail, Phone, MessageSquare, Edit, User, UserCheck, Workflow,
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
+import { cn } from "@/lib/utils";
 
 import { ContactFlowStatus } from "@/components/contact/ContactFlowStatus";
 import { InteractionTimeline } from "@/components/contact/InteractionTimeline";
@@ -56,6 +57,7 @@ const UserProfilePage = () => {
   const [editingTags, setEditingTags] = useState<string[]>([]);
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [activeCall, setActiveCall] = useState<CallRecord | null>(null);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   
   // Onboarding: mark "first_interaction" when a contact profile is viewed
   const { updateProgress, progress, isLoading: onboardingLoading } = useMemberOnboarding(user?.id);
@@ -653,7 +655,16 @@ const UserProfilePage = () => {
           <CardContent className="p-4 md:p-6">
             {/* Mobile-only top row: avatar + name + edit */}
             <div className="flex sm:hidden items-start gap-3 mb-4">
-              <Avatar className="h-14 w-14 shrink-0">
+              <Avatar
+                className={cn(
+                  "h-14 w-14 shrink-0",
+                  contact.avatar && "cursor-zoom-in transition-transform hover:scale-105"
+                )}
+                onClick={() => contact.avatar && setShowAvatarPreview(true)}
+                role={contact.avatar ? "button" : undefined}
+                tabIndex={contact.avatar ? 0 : undefined}
+                aria-label={contact.avatar ? `View ${contact.name}'s photo` : undefined}
+              >
                 <AvatarImage src={contact.avatar} alt={contact.name} />
                 <AvatarFallback>{getInitials(contact.name)}</AvatarFallback>
               </Avatar>
@@ -688,7 +699,16 @@ const UserProfilePage = () => {
 
               <div className="flex flex-row sm:flex-col items-center gap-3 w-full sm:w-auto">
                 {/* Avatar — desktop only (mobile shows it in the top row above) */}
-                <Avatar className="hidden sm:flex h-16 w-16 shrink-0">
+                <Avatar
+                  className={cn(
+                    "hidden sm:flex h-16 w-16 shrink-0",
+                    contact.avatar && "cursor-zoom-in transition-transform hover:scale-105"
+                  )}
+                  onClick={() => contact.avatar && setShowAvatarPreview(true)}
+                  role={contact.avatar ? "button" : undefined}
+                  tabIndex={contact.avatar ? 0 : undefined}
+                  aria-label={contact.avatar ? `View ${contact.name}'s photo` : undefined}
+                >
                   <AvatarImage src={contact.avatar} alt={contact.name} />
                   <AvatarFallback>
                     {getInitials(contact.name)}
@@ -1174,6 +1194,22 @@ const UserProfilePage = () => {
         contactAvatar={contactData?.contact.avatar}
         contactPhone={contactData?.contact.phone}
       />
+
+      {/* Avatar full-size preview */}
+      <Dialog open={showAvatarPreview} onOpenChange={setShowAvatarPreview}>
+        <DialogContent className="max-w-lg p-2 bg-transparent border-none shadow-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{contact?.name}'s photo</DialogTitle>
+          </DialogHeader>
+          {contact?.avatar && (
+            <img
+              src={contact.avatar}
+              alt={contact.name}
+              className="w-full h-auto rounded-lg object-contain max-h-[80vh]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       </div>
     </div>
