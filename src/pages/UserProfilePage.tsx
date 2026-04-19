@@ -1195,6 +1195,22 @@ const UserProfilePage = () => {
         contactPhone={contactData?.contact.phone}
       />
 
+      {/* Avatar full-size preview */}
+      <Dialog open={showAvatarPreview} onOpenChange={setShowAvatarPreview}>
+        <DialogContent className="max-w-lg p-2 bg-transparent border-none shadow-none">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{contact?.name}'s photo</DialogTitle>
+          </DialogHeader>
+          {contact?.avatar && (
+            <img
+              src={contact.avatar}
+              alt={contact.name}
+              className="w-full h-auto rounded-lg object-contain max-h-[80vh]"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       </div>
     </div>
   );
