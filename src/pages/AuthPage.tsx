@@ -117,8 +117,11 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
 
+    // Persist preference BEFORE sign-in so the storage adapter writes to the correct store
+    setRememberMe(rememberMe);
+
     const { error } = await signIn(email, password);
-    
+
     if (error) {
       setError(error.message);
     } else {
