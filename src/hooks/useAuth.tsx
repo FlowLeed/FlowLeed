@@ -82,9 +82,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Get initial session
+    // Get initial session (source of truth for initial load — restores from storage)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[useAuth] Getting initial session');
+      console.log('[useAuth] Getting initial session, hasSession:', !!session);
+      initialSessionLoaded = true;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
