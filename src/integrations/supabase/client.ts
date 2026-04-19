@@ -8,9 +8,67 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Custom storage that respects the "Remember me" preference.
+// - Remember me ON  → localStorage (persists across browser restarts)
+// - Remember me OFF → sessionStorage (cleared when the tab/window closes)
+// The preference flag itself always lives in localStorage so we know which
+// store to read from on initial page load.
+const REMEMBER_ME_KEY = 'sb-remember-me';
+
+export const setRememberMe = (remember: boolean) => {
+  try {
+    localStorage.setItem(REMEMBER_ME_KEY, remember ? 'true' : 'false');
+  } catch {
+    // ignore storage errors (private mode, etc.)
+  }
+};
+
+export const getRememberMe = (): boolean => {
+  try {
+    // Default to true so existing users keep their long-lived sessions
+    const v = localStorage.getItem(REMEMBER_ME_KEY);
+    return v === null ? true : v === 'true';
+  } catch {
+    return true;
+  }
+};
+
+const hybridStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      // Read from whichever store currently has the key.
+      // sessionStorage takes precedence so an in-tab session wins over a stale localStorage value.
+      return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      if (getRememberMe()) {
+        localStorage.setItem(key, value);
+        sessionStorage.removeItem(key);
+      } else {
+        sessionStorage.setItem(key, value);
+        localStorage.removeItem(key);
+      }
+    } catch {
+      // ignore
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    } catch {
+      // ignore
+    }
+  },
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: hybridStorage,
     persistSession: true,
     autoRefreshToken: true,
   }

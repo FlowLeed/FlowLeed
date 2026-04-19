@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, setRememberMe, getRememberMe } from '@/integrations/supabase/client';
+import { Checkbox } from '@/components/ui/checkbox';
 import flowleedLogo from '@/assets/flowleed_logo_2-3.png';
 import { Check, AlertTriangle, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ const AuthPage = () => {
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [rememberMe, setRememberMeState] = useState<boolean>(() => getRememberMe());
   
   // Slug availability state
   const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle');
@@ -115,8 +117,11 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
 
+    // Persist preference BEFORE sign-in so the storage adapter writes to the correct store
+    setRememberMe(rememberMe);
+
     const { error } = await signIn(email, password);
-    
+
     if (error) {
       setError(error.message);
     } else {
@@ -368,11 +373,25 @@ const AuthPage = () => {
                       required
                     />
                   </div>
-                  
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMeState(checked === true)}
+                    />
+                    <Label
+                      htmlFor="remember-me"
+                      className="text-sm font-normal cursor-pointer select-none"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Signing in...' : 'Sign In'}
                   </Button>
-                  
+
                   <div className="text-center">
                     <button
                       type="button"
