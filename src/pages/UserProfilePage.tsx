@@ -654,7 +654,16 @@ const UserProfilePage = () => {
           <CardContent className="p-4 md:p-6">
             {/* Mobile-only top row: avatar + name + edit */}
             <div className="flex sm:hidden items-start gap-3 mb-4">
-              <Avatar className="h-14 w-14 shrink-0">
+              <Avatar
+                className={cn(
+                  "h-14 w-14 shrink-0",
+                  contact.avatar && "cursor-zoom-in transition-transform hover:scale-105"
+                )}
+                onClick={() => contact.avatar && setShowAvatarPreview(true)}
+                role={contact.avatar ? "button" : undefined}
+                tabIndex={contact.avatar ? 0 : undefined}
+                aria-label={contact.avatar ? `View ${contact.name}'s photo` : undefined}
+              >
                 <AvatarImage src={contact.avatar} alt={contact.name} />
                 <AvatarFallback>{getInitials(contact.name)}</AvatarFallback>
               </Avatar>
