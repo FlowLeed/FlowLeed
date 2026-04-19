@@ -789,6 +789,14 @@ const UserProfilePage = () => {
                   </Popover>
                 </div>
 
+                {/* Campus / Location — surfaced high so it's visible at a glance */}
+                {contact.campuses?.name && (
+                  <div className="flex items-center gap-1.5 mt-2 text-sm">
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium">{contact.campuses.name}</span>
+                  </div>
+                )}
+
                 {/* Board Assignment - only show if we have a pipelineId context */}
                 {currentFlow && (
                   <div className="mt-3">
