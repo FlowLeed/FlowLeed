@@ -31,15 +31,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let initialSessionLoaded = false;
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('[useAuth] Auth state changed:', event);
-        
+
+        // Ignore the synthetic INITIAL_SESSION event — getSession() below is the source of truth
+        // for the initial load. Without this guard, an INITIAL_SESSION event with session=null
+        // can fire before storage is restored, causing ProtectedRoute to redirect to /auth.
+        if (event === 'INITIAL_SESSION' && !initialSessionLoaded) {
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        
+
         // Track login when user signs in
         if (event === 'SIGNED_IN' && session?.user) {
           // Check if this is an impersonation session (skip tracking for impersonation)
@@ -73,9 +82,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Get initial session
+    // Get initial session (source of truth for initial load — restores from storage)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[useAuth] Getting initial session');
+      console.log('[useAuth] Getting initial session, hasSession:', !!session);
+      initialSessionLoaded = true;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
