@@ -373,11 +373,25 @@ const AuthPage = () => {
                       required
                     />
                   </div>
-                  
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="remember-me"
+                      checked={rememberMe}
+                      onCheckedChange={(checked) => setRememberMeState(checked === true)}
+                    />
+                    <Label
+                      htmlFor="remember-me"
+                      className="text-sm font-normal cursor-pointer select-none"
+                    >
+                      Remember me
+                    </Label>
+                  </div>
+
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? 'Signing in...' : 'Sign In'}
                   </Button>
-                  
+
                   <div className="text-center">
                     <button
                       type="button"
