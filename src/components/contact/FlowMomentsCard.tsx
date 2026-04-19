@@ -177,80 +177,83 @@ export function FlowMomentsCard({ contactId }: FlowMomentsCardProps) {
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
-          Flow Moments
-        </h3>
-        {mergedMoments.length > 0 && canScrollRight && (
-          <span className="text-xs text-muted-foreground flex items-center gap-1 sm:hidden">
-            Swipe <ChevronRight className="h-3 w-3" />
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-base">
+          <span className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            Flow Moments
           </span>
+          {mergedMoments.length > 0 && canScrollRight && (
+            <span className="text-xs text-muted-foreground font-normal flex items-center gap-1 sm:hidden">
+              Swipe <ChevronRight className="h-3 w-3" />
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : mergedMoments.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            No moment types mapped to PCO fields
+          </p>
+        ) : (
+          <div className="relative">
+            <div
+              ref={scrollRef}
+              className="flex overflow-x-auto gap-6 pb-4 px-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin]"
+            >
+              {mergedMoments.map((moment) => (
+                <div key={moment.id} className="snap-start shrink-0">
+                  <MomentBadge moment={moment} />
+                </div>
+              ))}
+            </div>
+
+            {/* Left fade */}
+            <div
+              className={cn(
+                "pointer-events-none absolute left-0 top-0 bottom-4 w-8 bg-gradient-to-r from-card to-transparent transition-opacity",
+                canScrollLeft ? "opacity-100" : "opacity-0"
+              )}
+            />
+            {/* Right fade + chevron hint */}
+            <div
+              className={cn(
+                "pointer-events-none absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-card to-transparent flex items-center justify-end pr-1 transition-opacity",
+                canScrollRight ? "opacity-100" : "opacity-0"
+              )}
+            >
+              <ChevronRight className="h-5 w-5 text-muted-foreground animate-pulse" />
+            </div>
+
+            {/* Desktop arrow buttons */}
+            {canScrollLeft && (
+              <button
+                type="button"
+                onClick={() => scrollByAmount(-1)}
+                aria-label="Scroll left"
+                className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8 items-center justify-center rounded-full bg-background border shadow-sm hover:bg-accent"
+              >
+                <ChevronRight className="h-4 w-4 rotate-180" />
+              </button>
+            )}
+            {canScrollRight && (
+              <button
+                type="button"
+                onClick={() => scrollByAmount(1)}
+                aria-label="Scroll right"
+                className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 items-center justify-center rounded-full bg-background border shadow-sm hover:bg-accent"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         )}
-      </div>
-      
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : mergedMoments.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-4">
-          No moment types mapped to PCO fields
-        </p>
-      ) : (
-        <div className="relative">
-          <div
-            ref={scrollRef}
-            className="flex overflow-x-auto gap-6 pb-4 px-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin]"
-          >
-            {mergedMoments.map((moment) => (
-              <div key={moment.id} className="snap-start shrink-0">
-                <MomentBadge moment={moment} />
-              </div>
-            ))}
-          </div>
-
-          {/* Left fade */}
-          <div
-            className={cn(
-              "pointer-events-none absolute left-0 top-0 bottom-4 w-8 bg-gradient-to-r from-background to-transparent transition-opacity",
-              canScrollLeft ? "opacity-100" : "opacity-0"
-            )}
-          />
-          {/* Right fade + chevron hint */}
-          <div
-            className={cn(
-              "pointer-events-none absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-background to-transparent flex items-center justify-end pr-1 transition-opacity",
-              canScrollRight ? "opacity-100" : "opacity-0"
-            )}
-          >
-            <ChevronRight className="h-5 w-5 text-muted-foreground animate-pulse" />
-          </div>
-
-          {/* Desktop arrow buttons */}
-          {canScrollLeft && (
-            <button
-              type="button"
-              onClick={() => scrollByAmount(-1)}
-              aria-label="Scroll left"
-              className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8 items-center justify-center rounded-full bg-background border shadow-sm hover:bg-accent"
-            >
-              <ChevronRight className="h-4 w-4 rotate-180" />
-            </button>
-          )}
-          {canScrollRight && (
-            <button
-              type="button"
-              onClick={() => scrollByAmount(1)}
-              aria-label="Scroll right"
-              className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 items-center justify-center rounded-full bg-background border shadow-sm hover:bg-accent"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
