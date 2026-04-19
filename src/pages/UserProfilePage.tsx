@@ -56,6 +56,7 @@ const UserProfilePage = () => {
   const [editingTags, setEditingTags] = useState<string[]>([]);
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [activeCall, setActiveCall] = useState<CallRecord | null>(null);
+  const [showAvatarPreview, setShowAvatarPreview] = useState(false);
   
   // Onboarding: mark "first_interaction" when a contact profile is viewed
   const { updateProgress, progress, isLoading: onboardingLoading } = useMemberOnboarding(user?.id);
