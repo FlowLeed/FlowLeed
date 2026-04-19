@@ -699,7 +699,16 @@ const UserProfilePage = () => {
 
               <div className="flex flex-row sm:flex-col items-center gap-3 w-full sm:w-auto">
                 {/* Avatar — desktop only (mobile shows it in the top row above) */}
-                <Avatar className="hidden sm:flex h-16 w-16 shrink-0">
+                <Avatar
+                  className={cn(
+                    "hidden sm:flex h-16 w-16 shrink-0",
+                    contact.avatar && "cursor-zoom-in transition-transform hover:scale-105"
+                  )}
+                  onClick={() => contact.avatar && setShowAvatarPreview(true)}
+                  role={contact.avatar ? "button" : undefined}
+                  tabIndex={contact.avatar ? 0 : undefined}
+                  aria-label={contact.avatar ? `View ${contact.name}'s photo` : undefined}
+                >
                   <AvatarImage src={contact.avatar} alt={contact.name} />
                   <AvatarFallback>
                     {getInitials(contact.name)}
