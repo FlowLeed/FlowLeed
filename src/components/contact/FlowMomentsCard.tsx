@@ -1,9 +1,9 @@
 import { useFlowMoments } from "@/hooks/useFlowMoments";
 import { useFlowMomentTypes } from "@/hooks/useFlowMomentTypes";
 import { usePcoMomentMappings } from "@/hooks/usePcoMomentMappings";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, ChevronRight } from "lucide-react";
 import { iconMap } from "@/lib/flowIcons";
-import { useMemo } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
