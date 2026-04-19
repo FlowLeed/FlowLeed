@@ -789,6 +789,14 @@ const UserProfilePage = () => {
                   </Popover>
                 </div>
 
+                {/* Campus / Location — surfaced high so it's visible at a glance */}
+                {contact.campuses?.name && (
+                  <div className="flex items-center gap-1.5 mt-2 text-sm">
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium">{contact.campuses.name}</span>
+                  </div>
+                )}
+
                 {/* Board Assignment - only show if we have a pipelineId context */}
                 {currentFlow && (
                   <div className="mt-3">
@@ -885,13 +893,6 @@ const UserProfilePage = () => {
                   <div className="pt-2 border-t border-border/40">
                     <div className="flex items-start justify-between">
                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm flex-1">
-                        {/* Campus */}
-                        {contact.campuses?.name && (
-                          <div className="flex items-center gap-1.5">
-                            <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span>{contact.campuses.name}</span>
-                          </div>
-                        )}
                         {/* Demographics */}
                         {demographics && (
                           <>
