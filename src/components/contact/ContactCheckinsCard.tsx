@@ -58,22 +58,24 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
   return (
     <Card>
       <CardHeader className="pb-3 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
-        <CardTitle className="flex items-center justify-between text-base">
-          <span className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Attendance
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col gap-2 min-w-0 flex-1">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Activity className="h-4 w-4 shrink-0" />
+              Attendance
+            </CardTitle>
             {hasHousehold && (
-              <Badge variant="outline" className="text-[10px] font-normal gap-1">
+              <Badge variant="outline" className="text-[10px] font-normal gap-1 self-start">
                 <Users className="h-3 w-3" />
                 Includes household
               </Badge>
             )}
-          </span>
-          <span className="flex items-center gap-2">
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
             <EngagementBadge score={displayScore} />
             <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
-          </span>
-        </CardTitle>
+          </div>
+        </div>
       </CardHeader>
       {isOpen && (
       <CardContent className="space-y-4">
