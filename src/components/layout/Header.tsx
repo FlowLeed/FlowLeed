@@ -366,87 +366,111 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-2">
             <div className="text-lg font-extralight">{title}</div>
           </div>
-        <div className="flex gap-1">
+        <TooltipProvider delayDuration={200}>
+        <div className="flex items-center gap-1">
           {onSettingsClick && (
-            <Button variant="ghost" size="sm" onClick={onSettingsClick}>
-              <Settings2 className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={onSettingsClick} className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100">
+                  <Settings2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Settings</TooltipContent>
+            </Tooltip>
           )}
-        </div>
-        
-        {/* View Toggle and Select Mode */}
-        <div className="flex items-center gap-2">
+
           {viewMode && onViewModeChange && (
-            <div className="flex items-center gap-1 border rounded-md p-1">
-              <Button
-                variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => onViewModeChange('kanban')}
-                className="h-7 px-2"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => onViewModeChange('table')}
-                className="h-7 px-2"
-              >
-                <Table2 className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center gap-0.5 border rounded-md p-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => onViewModeChange('kanban')}
+                    className="h-7 w-7 rounded-sm text-slate-600"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Grid view</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={() => onViewModeChange('table')}
+                    className="h-7 w-7 rounded-sm text-slate-600"
+                  >
+                    <Table2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Table view</TooltipContent>
+              </Tooltip>
             </div>
           )}
-          
+
           {onToggleSelectMode && (
-            <div className="flex items-center gap-1 border rounded-md p-1">
-              <Button
-                variant={isSelectMode ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={onToggleSelectMode}
-                className="h-7 px-2"
-                title={isSelectMode ? 'Exit select mode' : 'Enter select mode'}
-              >
-                <CheckSquare className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center gap-0.5 border rounded-md p-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={isSelectMode ? 'secondary' : 'ghost'}
+                    size="icon"
+                    onClick={onToggleSelectMode}
+                    className="h-7 w-7 rounded-sm text-slate-600"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isSelectMode ? 'Exit select mode' : 'Select'}</TooltipContent>
+              </Tooltip>
               {isSelectMode && onSelectAll && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onSelectAll}
-                  className="h-7 px-2"
-                  title="Select all"
-                >
-                  <SquareCheck className="h-4 w-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onSelectAll}
+                      className="h-7 w-7 rounded-sm text-slate-600"
+                    >
+                      <SquareCheck className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Select all</TooltipContent>
+                </Tooltip>
               )}
             </div>
           )}
+
+          {contactCounts && onFilterChange && (
+            <FlowHeaderFilters
+              teamMembers={teamMembers}
+              selectedFilter={selectedFilter}
+              onFilterChange={onFilterChange}
+              contactCounts={contactCounts}
+              showCompleted={showCompleted ?? false}
+              onShowCompletedChange={onShowCompletedChange ?? (() => {})}
+              completedCount={completedCount ?? 0}
+              selectedEngagementFilter={selectedEngagementFilter}
+              onEngagementFilterChange={onEngagementFilterChange}
+              selectedCampusFilter={selectedCampusFilter}
+              onCampusFilterChange={onCampusFilterChange}
+            />
+          )}
+
+          {onDocsClick && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={onDocsClick} className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100">
+                  <BookOpen className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Docs</TooltipContent>
+            </Tooltip>
+          )}
         </div>
-        
-        {/* Assignee Filters */}
-        {contactCounts && onFilterChange && (
-          <FlowHeaderFilters
-            teamMembers={teamMembers}
-            selectedFilter={selectedFilter}
-            onFilterChange={onFilterChange}
-            contactCounts={contactCounts}
-            showCompleted={showCompleted ?? false}
-            onShowCompletedChange={onShowCompletedChange ?? (() => {})}
-            completedCount={completedCount ?? 0}
-            selectedEngagementFilter={selectedEngagementFilter}
-            onEngagementFilterChange={onEngagementFilterChange}
-            selectedCampusFilter={selectedCampusFilter}
-            onCampusFilterChange={onCampusFilterChange}
-          />
-        )}
-        
-        {/* Docs Button */}
-        {onDocsClick && (
-          <Button variant="outline" size="sm" onClick={onDocsClick} className="ml-2">
-            <BookOpen className="h-4 w-4 mr-2" />
-            Docs
-          </Button>
-        )}
+        </TooltipProvider>
       </div>
       
       {/* Right content slot for page-specific controls */}
@@ -456,17 +480,24 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
       
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        <TooltipProvider delayDuration={200}>
           <NotificationBell />
-          <button
-            className="p-1.5 rounded-full hover:bg-slate-100"
-            onClick={() => setShowGlobalSearch(true)}
-            title="Search people (Ctrl+K)"
-          >
-            <Search className="h-5 w-5 text-slate-500" />
-          </button>
-          <div className="border-l border-gray-200 h-6 mx-2" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100"
+                onClick={() => setShowGlobalSearch(true)}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Search (Ctrl+K)</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <div className="border-l border-gray-200 h-6 mx-1" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5">
@@ -501,7 +532,6 @@ export const Header: React.FC<HeaderProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
       </div>
 
       {/* Global Search */}

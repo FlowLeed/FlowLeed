@@ -1,9 +1,9 @@
 import React from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Filter, UserX, X, CheckCircle2, Activity, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCampuses } from "@/hooks/useCampuses";
@@ -68,17 +68,21 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Filter className="h-4 w-4" />
-          Filter
-          {hasActiveFilter && (
-            <Badge variant="secondary" className="ml-1 rounded-full px-2 py-0 text-xs">
-              1
-            </Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100 relative">
+                <Filter className="h-4 w-4" />
+                {hasActiveFilter && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+                )}
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Filter</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
           {/* Show Completed toggle */}
