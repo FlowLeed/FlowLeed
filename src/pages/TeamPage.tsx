@@ -419,14 +419,6 @@ const TeamPage = () => {
                       Only organization owners can change the organization name.
                     </p>}
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Organization ID</Label>
-                  <Input value={organization?.id || ""} disabled className="font-mono text-xs" />
-                  <p className="text-sm text-muted-foreground">
-                    Use this ID for API integrations and support requests.
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
