@@ -83,7 +83,7 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
           <TooltipContent>Filter</TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      <PopoverContent className="w-80" align="end">
+      <PopoverContent className="w-[calc(100vw-1.5rem)] max-w-sm" align="end">
         <div className="space-y-4">
           {/* Show Completed toggle */}
           <div className="flex items-center justify-between">

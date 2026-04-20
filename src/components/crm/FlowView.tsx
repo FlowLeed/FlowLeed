@@ -42,7 +42,10 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [selectedCampusFilter, setSelectedCampusFilter] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
     const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
-    return (saved === 'table' || saved === 'kanban') ? saved : 'kanban';
+    if (saved === 'table' || saved === 'kanban') return saved;
+    // Default to table view on mobile for readability
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return 'table';
+    return 'kanban';
   });
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
