@@ -149,6 +149,11 @@ export default function InvitePage() {
       setInvitation(invitationData);
       setEmail(invitationData.email);
 
+      // If a user already exists with this email, default to sign-in mode
+      if (invitationDataRaw.user_exists) {
+        setAuthMode('signin');
+      }
+
       // Check if user needs to create an account or sign in
       if (!user || user.email !== invitationData.email) {
         setNeedsAccount(true);
