@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw, RefreshCw, Menu } from "lucide-react";
+import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw, RefreshCw, Menu, MoreHorizontal } from "lucide-react";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
