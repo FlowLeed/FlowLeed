@@ -533,7 +533,6 @@ export const Header: React.FC<HeaderProps> = ({
           </DropdownMenu>
         </div>
       </div>
-      </div>
 
       {/* Global Search */}
       <GlobalSearch
