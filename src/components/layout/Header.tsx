@@ -320,9 +320,21 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
-  const initials = profile?.full_name 
-    ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
-    : user?.email?.charAt(0).toUpperCase() || 'U';
+  const initials = (() => {
+    if (profile?.full_name) {
+      const parts = profile.full_name.trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+      }
+      if (parts[0]) {
+        return parts[0].substring(0, 2).toUpperCase();
+      }
+    }
+    if (user?.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  })();
   const { toggle: toggleMobileSidebar } = useMobileSidebar();
   const hasToolbarActions = !!(onSettingsClick || (viewMode && onViewModeChange) || onToggleSelectMode || (contactCounts && onFilterChange) || onDocsClick);
   const hasActiveFilter = !!(selectedFilter || showCompleted || selectedEngagementFilter || selectedCampusFilter);
