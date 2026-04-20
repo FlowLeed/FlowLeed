@@ -75,7 +75,12 @@ export const StageAssigneeSelector: React.FC<StageAssigneeSelectorProps> = ({
               <Avatar className="h-5 w-5">
                 <AvatarImage src={member.profile?.avatar_url || ''} />
                 <AvatarFallback className="text-xs">
-                  {member.profile?.full_name?.charAt(0) || 'U'}
+                  {(() => {
+                    const parts = (member.profile?.full_name || '').trim().split(/\s+/).filter(Boolean);
+                    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+                    if (parts[0]) return parts[0].slice(0, 2).toUpperCase();
+                    return 'U';
+                  })()}
                 </AvatarFallback>
               </Avatar>
               <span>{member.profile?.full_name || 'Unknown'}</span>
