@@ -81,6 +81,17 @@ serve(async (req) => {
       );
     }
 
+    // Check if a user already exists with this email
+    let userExists = false;
+    try {
+      const { data: existing } = await supabase.auth.admin.listUsers();
+      userExists = !!existing?.users?.find(
+        (u: any) => u.email?.toLowerCase() === invitation.email.toLowerCase()
+      );
+    } catch (e) {
+      console.error('Failed to check existing user:', e);
+    }
+
     // Return only the necessary invitation details
     const invitationDetails = {
       id: invitation.id,
@@ -90,7 +101,8 @@ serve(async (req) => {
       expires_at: invitation.expires_at,
       accepted_at: invitation.accepted_at,
       organization_name: invitation.organizations?.name || 'Unknown Organization',
-      inviter_name: invitation.profiles?.full_name || 'Someone'
+      inviter_name: invitation.profiles?.full_name || 'Someone',
+      user_exists: userExists
     };
 
     console.log('Returning invitation details:', invitationDetails);
