@@ -324,10 +324,14 @@ export const Header: React.FC<HeaderProps> = ({
     ? profile.full_name.split(' ').map(name => name.charAt(0)).join('').toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U';
   const { toggle: toggleMobileSidebar } = useMobileSidebar();
+  const hasToolbarActions = !!(onSettingsClick || (viewMode && onViewModeChange) || onToggleSelectMode || (contactCounts && onFilterChange) || onDocsClick);
+  const hasActiveFilter = !!(selectedFilter || showCompleted || selectedEngagementFilter || selectedCampusFilter);
+
   return (
     <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#FAFAFA' }}>
-      <div className="flex items-center justify-between h-14 px-3 md:px-4">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2 h-14 px-2 md:px-4">
+        {/* Left: hamburger + flow icon + title */}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button
             variant="ghost"
             size="icon"
@@ -338,7 +342,7 @@ export const Header: React.FC<HeaderProps> = ({
             <Menu className="h-5 w-5" />
           </Button>
           {showBackButton && onBackClick && (
-            <Button variant="ghost" size="icon" onClick={onBackClick} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={onBackClick} className="h-8 w-8 flex-shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
@@ -347,7 +351,7 @@ export const Header: React.FC<HeaderProps> = ({
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       <FlowIcon className="h-5 w-5 text-sidebar-foreground" />
                       <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 flex items-center justify-center">
                         <RefreshCw className="h-2 w-2 text-white" />
@@ -360,129 +364,191 @@ export const Header: React.FC<HeaderProps> = ({
                 </Tooltip>
               </TooltipProvider>
             ) : (
-              <FlowIcon className="h-5 w-5 text-sidebar-foreground" />
+              <FlowIcon className="h-5 w-5 text-sidebar-foreground flex-shrink-0" />
             )
           )}
-          <div className="flex items-center gap-2">
-            <div className="text-lg font-extralight">{title}</div>
+          <div className="text-lg font-extralight truncate min-w-0">{title}</div>
+        </div>
+
+        {/* Right content slot for page-specific controls */}
+        {rightContent && (
+          <div className="flex justify-end">
+            {rightContent}
           </div>
-        <TooltipProvider delayDuration={200}>
-        <div className="flex items-center gap-1">
-          {onSettingsClick && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onSettingsClick} className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100">
-                  <Settings2 className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Settings</TooltipContent>
-            </Tooltip>
-          )}
+        )}
 
-          {viewMode && onViewModeChange && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onViewModeChange(viewMode === 'kanban' ? 'table' : 'kanban')}
-                  className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100"
-                >
-                  {viewMode === 'kanban' ? <Table2 className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{viewMode === 'kanban' ? 'Switch to table view' : 'Switch to grid view'}</TooltipContent>
-            </Tooltip>
-          )}
+        {/* Desktop toolbar (md+) */}
+        {hasToolbarActions && (
+          <TooltipProvider delayDuration={200}>
+            <div className="hidden md:flex items-center gap-1">
+              {onSettingsClick && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={onSettingsClick} className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100">
+                      <Settings2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Settings</TooltipContent>
+                </Tooltip>
+              )}
 
-          {onToggleSelectMode && (
-            <div className="flex items-center gap-0.5 border rounded-md p-0.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={isSelectMode ? 'secondary' : 'ghost'}
-                    size="icon"
-                    onClick={onToggleSelectMode}
-                    className="h-7 w-7 rounded-sm text-slate-600"
-                  >
-                    <CheckSquare className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{isSelectMode ? 'Exit select mode' : 'Select'}</TooltipContent>
-              </Tooltip>
-              {isSelectMode && onSelectAll && (
+              {viewMode && onViewModeChange && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={onSelectAll}
-                      className="h-7 w-7 rounded-sm text-slate-600"
+                      onClick={() => onViewModeChange(viewMode === 'kanban' ? 'table' : 'kanban')}
+                      className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100"
                     >
-                      <SquareCheck className="h-4 w-4" />
+                      {viewMode === 'kanban' ? <Table2 className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Select all</TooltipContent>
+                  <TooltipContent>{viewMode === 'kanban' ? 'Switch to table view' : 'Switch to grid view'}</TooltipContent>
+                </Tooltip>
+              )}
+
+              {onToggleSelectMode && (
+                <div className="flex items-center gap-0.5 border rounded-md p-0.5">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={isSelectMode ? 'secondary' : 'ghost'}
+                        size="icon"
+                        onClick={onToggleSelectMode}
+                        className="h-7 w-7 rounded-sm text-slate-600"
+                      >
+                        <CheckSquare className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isSelectMode ? 'Exit select mode' : 'Select'}</TooltipContent>
+                  </Tooltip>
+                  {isSelectMode && onSelectAll && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={onSelectAll}
+                          className="h-7 w-7 rounded-sm text-slate-600"
+                        >
+                          <SquareCheck className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Select all</TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              )}
+
+              {contactCounts && onFilterChange && (
+                <FlowHeaderFilters
+                  teamMembers={teamMembers}
+                  selectedFilter={selectedFilter}
+                  onFilterChange={onFilterChange}
+                  contactCounts={contactCounts}
+                  showCompleted={showCompleted ?? false}
+                  onShowCompletedChange={onShowCompletedChange ?? (() => {})}
+                  completedCount={completedCount ?? 0}
+                  selectedEngagementFilter={selectedEngagementFilter}
+                  onEngagementFilterChange={onEngagementFilterChange}
+                  selectedCampusFilter={selectedCampusFilter}
+                  onCampusFilterChange={onCampusFilterChange}
+                />
+              )}
+
+              {onDocsClick && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={onDocsClick} className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100">
+                      <BookOpen className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Docs</TooltipContent>
                 </Tooltip>
               )}
             </div>
-          )}
+          </TooltipProvider>
+        )}
 
-          {contactCounts && onFilterChange && (
-            <FlowHeaderFilters
-              teamMembers={teamMembers}
-              selectedFilter={selectedFilter}
-              onFilterChange={onFilterChange}
-              contactCounts={contactCounts}
-              showCompleted={showCompleted ?? false}
-              onShowCompletedChange={onShowCompletedChange ?? (() => {})}
-              completedCount={completedCount ?? 0}
-              selectedEngagementFilter={selectedEngagementFilter}
-              onEngagementFilterChange={onEngagementFilterChange}
-              selectedCampusFilter={selectedCampusFilter}
-              onCampusFilterChange={onCampusFilterChange}
-            />
-          )}
+        {/* Mobile overflow menu (<md) */}
+        {hasToolbarActions && (
+          <div className="flex md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100 relative">
+                  <MoreHorizontal className="h-4 w-4" />
+                  {hasActiveFilter && (
+                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {onSettingsClick && (
+                  <DropdownMenuItem onClick={onSettingsClick}>
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                )}
+                {viewMode && onViewModeChange && (
+                  <DropdownMenuItem onClick={() => onViewModeChange(viewMode === 'kanban' ? 'table' : 'kanban')}>
+                    {viewMode === 'kanban' ? <Table2 className="mr-2 h-4 w-4" /> : <LayoutGrid className="mr-2 h-4 w-4" />}
+                    {viewMode === 'kanban' ? 'Switch to table view' : 'Switch to grid view'}
+                  </DropdownMenuItem>
+                )}
+                {onToggleSelectMode && (
+                  <DropdownMenuItem onClick={onToggleSelectMode}>
+                    <CheckSquare className="mr-2 h-4 w-4" />
+                    {isSelectMode ? 'Exit select mode' : 'Select'}
+                  </DropdownMenuItem>
+                )}
+                {contactCounts && onFilterChange && (
+                  <div className="px-1 py-1">
+                    <FlowHeaderFilters
+                      teamMembers={teamMembers}
+                      selectedFilter={selectedFilter}
+                      onFilterChange={onFilterChange}
+                      contactCounts={contactCounts}
+                      showCompleted={showCompleted ?? false}
+                      onShowCompletedChange={onShowCompletedChange ?? (() => {})}
+                      completedCount={completedCount ?? 0}
+                      selectedEngagementFilter={selectedEngagementFilter}
+                      onEngagementFilterChange={onEngagementFilterChange}
+                      selectedCampusFilter={selectedCampusFilter}
+                      onCampusFilterChange={onCampusFilterChange}
+                    />
+                  </div>
+                )}
+                {onDocsClick && (
+                  <DropdownMenuItem onClick={onDocsClick}>
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Docs
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
 
-          {onDocsClick && (
+        {/* Persistent right cluster: notifications, search, avatar */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <TooltipProvider delayDuration={200}>
+            <NotificationBell />
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onDocsClick} className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100">
-                  <BookOpen className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100"
+                  onClick={() => setShowGlobalSearch(true)}
+                >
+                  <Search className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Docs</TooltipContent>
+              <TooltipContent>Search (Ctrl+K)</TooltipContent>
             </Tooltip>
-          )}
-        </div>
-        </TooltipProvider>
-      </div>
-      
-      {/* Right content slot for page-specific controls */}
-      {rightContent && (
-        <div className="flex-1 flex justify-end px-4">
-          {rightContent}
-        </div>
-      )}
-      
-      <div className="flex items-center gap-1">
-        <TooltipProvider delayDuration={200}>
-          <NotificationBell />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100"
-                onClick={() => setShowGlobalSearch(true)}
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Search (Ctrl+K)</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <div className="border-l border-gray-200 h-6 mx-1" />
+          </TooltipProvider>
+          <div className="border-l border-gray-200 h-6 mx-1" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5">
