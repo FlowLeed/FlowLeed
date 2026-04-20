@@ -380,34 +380,19 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {viewMode && onViewModeChange && (
-            <div className="flex items-center gap-0.5 border rounded-md p-0.5">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    onClick={() => onViewModeChange('kanban')}
-                    className="h-7 w-7 rounded-sm text-slate-600"
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Grid view</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                    size="icon"
-                    onClick={() => onViewModeChange('table')}
-                    className="h-7 w-7 rounded-sm text-slate-600"
-                  >
-                    <Table2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Table view</TooltipContent>
-              </Tooltip>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onViewModeChange(viewMode === 'kanban' ? 'table' : 'kanban')}
+                  className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100"
+                >
+                  {viewMode === 'kanban' ? <Table2 className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{viewMode === 'kanban' ? 'Switch to table view' : 'Switch to grid view'}</TooltipContent>
+            </Tooltip>
           )}
 
           {onToggleSelectMode && (
