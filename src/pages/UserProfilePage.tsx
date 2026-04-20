@@ -1177,7 +1177,7 @@ const UserProfilePage = () => {
                           <Avatar className="h-6 w-6">
                             <AvatarImage src={member.profiles?.avatar_url || undefined} />
                             <AvatarFallback className="text-xs">
-                              {member.profiles?.full_name?.[0] || member.profiles?.email?.[0] || 'U'}
+                              {getInitials(member.profiles?.full_name || '')}
                             </AvatarFallback>
                           </Avatar>
                           <span>
