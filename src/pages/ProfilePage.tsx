@@ -267,9 +267,15 @@ const ProfilePage = () => {
               <Avatar className="h-20 w-20">
                 <AvatarImage src={profile?.avatar_url || ""} alt="Profile picture" />
                 <AvatarFallback className="text-lg">
-                  {formData.firstName ? formData.firstName[0] : ''}
-                  {formData.lastName ? formData.lastName[0] : ''}
-                  {!formData.firstName && !formData.lastName && user?.email ? user.email[0].toUpperCase() : 'U'}
+                  {(() => {
+                    const source = `${formData.firstName} ${formData.lastName}`.trim() || user?.email?.split('@')[0] || '';
+                    const parts = source.split(/[\s._-]+/).filter(Boolean);
+                    if (parts.length >= 2) {
+                      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+                    }
+                    if (parts[0]) return parts[0].substring(0, 2).toUpperCase();
+                    return 'U';
+                  })()}
                 </AvatarFallback>
               </Avatar>
               <div>
