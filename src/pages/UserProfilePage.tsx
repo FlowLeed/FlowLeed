@@ -481,11 +481,12 @@ const UserProfilePage = () => {
 
   // Helper function to get initials from name
   const getInitials = (name: string) => {
-    const parts = name.split(" ");
+    const parts = (name || '').trim().split(/[\s._-]+/).filter(Boolean);
     if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
     }
-    return name.slice(0, 2).toUpperCase();
+    if (parts[0]) return parts[0].substring(0, 2).toUpperCase();
+    return 'U';
   };
 
   // Handle contact edit
