@@ -645,7 +645,12 @@ export const ContactFlowStatus: React.FC<ContactFlowStatusProps> = ({ flows, con
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={member.profiles?.avatar_url || undefined} />
                           <AvatarFallback className="text-xs">
-                            {member.profiles?.full_name?.[0] || member.profiles?.email?.[0] || 'U'}
+                            {(() => {
+                              const parts = (member.profiles?.full_name || '').trim().split(/\s+/).filter(Boolean);
+                              if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+                              if (parts[0]) return parts[0].slice(0, 2).toUpperCase();
+                              return 'U';
+                            })()}
                           </AvatarFallback>
                         </Avatar>
                         <span>
