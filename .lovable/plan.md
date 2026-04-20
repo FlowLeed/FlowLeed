@@ -1,31 +1,46 @@
 
-## Unify the Flow toolbar styling
 
-The toolbar above the kanban (settings, view toggles, select mode, Filter, Docs, notification bell, search, avatar) currently mixes three visual styles: bordered icon-group pills, bordered text+icon buttons (Filter, Docs), and bare ghost icon buttons (bell, search). I'll normalize them into one consistent system.
+## Improve mobile view for the Flow header
 
-### Design system for toolbar
+At 390px the header is broken: the title "New Family Follow-Up" wraps to 3 lines and crashes into the toolbar icons sitting on the same row, the icon row overflows and pushes the avatar past the edge, and the kanban columns underneath are too narrow to read.
 
-- **Single button shape**: all toolbar controls become 32×32 square icon buttons (`h-8 w-8`), `variant="ghost"`, `rounded-md`, with subtle hover (`hover:bg-slate-100`). Same color, same icon stroke (`h-4 w-4`, `text-slate-600`).
-- **Grouped controls** (kanban/table toggle, select mode) keep their bordered "segmented control" container but use the same inner button sizing as standalone buttons for visual rhythm.
-- **Filter & Docs**: drop the text labels — use only the icon (`Filter`, `BookOpen`) to match the bell/search pattern. Keep the small count badge on Filter as a tiny dot/number overlay in the corner instead of an inline pill.
-- **Tooltips**: every icon-only button gets a `Tooltip` ("Filter", "Docs", "Notifications", "Search", "Settings", "Grid view", "Table view", "Select") so discoverability isn't lost.
-- **Spacing**: replace mixed `gap-1` / `gap-2` / `ml-2` with a single `gap-1` flex row, with a thin `border-l` divider before the avatar (same divider already used before the avatar).
+### Changes
 
-### Files to change
+**1. `src/components/layout/Header.tsx` — restructure the header for mobile**
 
-1. **`src/components/layout/Header.tsx`**
-   - Wrap Settings, view toggle buttons, select toggle, NotificationBell, Search button in `Tooltip` and standardize to `h-8 w-8 ghost rounded-md`.
-   - Remove the `Docs` text — render as `<Button variant="ghost" size="icon">` with `BookOpen` icon + tooltip.
-   - Tighten the outer flex container to a single `gap-1` row.
+Today the header is one flex row containing: hamburger + flow icon + title + toolbar icons + notifications + search + avatar. On mobile this overflows.
 
-2. **`src/components/crm/FlowHeaderFilters.tsx`**
-   - Change the `PopoverTrigger` button to icon-only (`size="icon"`, `variant="ghost"`, `h-8 w-8`), remove "Filter" text.
-   - Replace inline count badge with a small absolutely-positioned dot in the top-right corner when `hasActiveFilter` is true (showing the count if >1, else just a dot).
-   - Wrap in `Tooltip` ("Filter").
+Restructure into two zones:
+- **Top row (always visible)**: hamburger, flow icon, title (truncated with `truncate` + `min-w-0`), and the persistent right cluster (notifications, search, avatar). Title takes `flex-1 min-w-0` so it never wraps — it ellipsizes.
+- **Toolbar cluster (Settings, View toggle, Select, Filter, Docs)**: on `md:` and up, render inline as today. On mobile (`<md`), collapse them into a single overflow `MoreHorizontal` icon button that opens a `DropdownMenu` listing each action with its label ("Settings", "Switch to table view", "Select", "Filter", "Docs"). Filter still shows its active-state dot on the trigger.
+- Reduce horizontal padding on mobile (`px-2`) and tighten gaps so the right cluster fits.
 
-3. **`src/components/notifications/NotificationBell.tsx`** (verify only)
-   - Confirm sizing matches `h-8 w-8`; adjust if it's currently larger so it aligns with the new row.
+**2. `src/components/crm/FlowHeaderFilters.tsx` — mobile-friendly popover**
+
+The filter popover is `w-80` (320px) which barely fits at 390px and overflows when the trigger lives inside an overflow menu. Change to `w-[calc(100vw-1.5rem)] max-w-sm` so it stays inside the viewport with margin on both sides. Keep desktop behavior unchanged via the `max-w-sm` cap.
+
+**3. `src/components/crm/FlowView.tsx` — kanban → single-column stack on mobile** (verify file then adjust)
+
+On mobile the multi-column kanban is unusable. Either:
+- (a) Force the table view as default when `useIsMobile()` is true and hide the kanban toggle, OR
+- (b) Render kanban stages as a vertical accordion stack (one stage open at a time) on `<md`.
+
+I'll go with (a) — simpler, matches existing table view, and the user can still toggle back. The view toggle button stays available in the overflow menu.
 
 ### Result
 
-The toolbar reads as one cohesive icon row: `[settings] [grid|table] [select] [filter•] [docs] [bell] [search] | [AY]` — same height, same hover, same weight — instead of today's mix of pills, text buttons, and bare icons.
+```text
+Mobile (390px):
+┌────────────────────────────────────────┐
+│ ☰  ⚙ New Family Follow-Up… ⋯ 🔔 🔍 │ AY │
+└────────────────────────────────────────┘
+                        ↑ overflow menu
+
+Desktop (≥768px):  unchanged
+┌──────────────────────────────────────────────────────────┐
+│ New Family Follow-Up  ⚙ ⊞ ☑ ▽ 📖    🔔 🔍 │ AY     │
+└──────────────────────────────────────────────────────────┘
+```
+
+Title never wraps, icons never overflow, popovers fit the screen, and the default mobile view is the readable table.
+
