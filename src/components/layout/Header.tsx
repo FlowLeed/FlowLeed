@@ -480,17 +480,24 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       )}
       
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        <TooltipProvider delayDuration={200}>
           <NotificationBell />
-          <button
-            className="p-1.5 rounded-full hover:bg-slate-100"
-            onClick={() => setShowGlobalSearch(true)}
-            title="Search people (Ctrl+K)"
-          >
-            <Search className="h-5 w-5 text-slate-500" />
-          </button>
-          <div className="border-l border-gray-200 h-6 mx-2" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100"
+                onClick={() => setShowGlobalSearch(true)}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Search (Ctrl+K)</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <div className="border-l border-gray-200 h-6 mx-1" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5">
