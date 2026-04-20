@@ -1,9 +1,9 @@
 import React from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Filter, UserX, X, CheckCircle2, Activity, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCampuses } from "@/hooks/useCampuses";
