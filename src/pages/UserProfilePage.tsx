@@ -37,6 +37,13 @@ import { useTwilioIntegration } from "@/hooks/useTwilioIntegration";
 import { useCalls, CallRecord } from "@/hooks/useCalls";
 import { CallStatusDialog } from "@/components/calls/CallStatusDialog";
 
+const getInitials = (name?: string | null) => {
+  const parts = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  if (parts[0]) return parts[0].slice(0, 2).toUpperCase();
+  return "U";
+};
+
 const UserProfilePage = () => {
   const { contactId } = useParams<{ contactId: string }>();
   const [searchParams] = useSearchParams();
@@ -833,7 +840,7 @@ const UserProfilePage = () => {
                         <Avatar className="h-5 w-5">
                           <AvatarImage src={assignedUser.profiles?.avatar_url || undefined} />
                           <AvatarFallback className="text-xs">
-                            {assignedUser.profiles?.full_name?.[0] || assignedUser.profiles?.email?.[0] || 'U'}
+                             {getInitials(assignedUser.profiles?.full_name)}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
