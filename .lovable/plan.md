@@ -1,76 +1,46 @@
 
 
-# Improved Team Member Onboarding with Flow Pre-Assignment
+## Improve mobile view for the Flow header
 
-## Overview
+At 390px the header is broken: the title "New Family Follow-Up" wraps to 3 lines and crashes into the toolbar icons sitting on the same row, the icon row overflows and pushes the avatar past the edge, and the kanban columns underneath are too narrow to read.
 
-Add a **"Add to Flows"** option in the Invite Team Member dialog. The inviter selects which flows the new teammate should join. When they accept the invite and create their account, they're auto-assigned as a team member (lead) on those flows and see them immediately on first login.
+### Changes
 
-## User Flow
+**1. `src/components/layout/Header.tsx` — restructure the header for mobile**
+
+Today the header is one flex row containing: hamburger + flow icon + title + toolbar icons + notifications + search + avatar. On mobile this overflows.
+
+Restructure into two zones:
+- **Top row (always visible)**: hamburger, flow icon, title (truncated with `truncate` + `min-w-0`), and the persistent right cluster (notifications, search, avatar). Title takes `flex-1 min-w-0` so it never wraps — it ellipsizes.
+- **Toolbar cluster (Settings, View toggle, Select, Filter, Docs)**: on `md:` and up, render inline as today. On mobile (`<md`), collapse them into a single overflow `MoreHorizontal` icon button that opens a `DropdownMenu` listing each action with its label ("Settings", "Switch to table view", "Select", "Filter", "Docs"). Filter still shows its active-state dot on the trigger.
+- Reduce horizontal padding on mobile (`px-2`) and tighten gaps so the right cluster fits.
+
+**2. `src/components/crm/FlowHeaderFilters.tsx` — mobile-friendly popover**
+
+The filter popover is `w-80` (320px) which barely fits at 390px and overflows when the trigger lives inside an overflow menu. Change to `w-[calc(100vw-1.5rem)] max-w-sm` so it stays inside the viewport with margin on both sides. Keep desktop behavior unchanged via the `max-w-sm` cap.
+
+**3. `src/components/crm/FlowView.tsx` — kanban → single-column stack on mobile** (verify file then adjust)
+
+On mobile the multi-column kanban is unusable. Either:
+- (a) Force the table view as default when `useIsMobile()` is true and hide the kanban toggle, OR
+- (b) Render kanban stages as a vertical accordion stack (one stage open at a time) on `<md`.
+
+I'll go with (a) — simpler, matches existing table view, and the user can still toggle back. The view toggle button stays available in the overflow menu.
+
+### Result
 
 ```text
-Admin clicks "Invite Team Member"
-        ↓
-Fills email + role
-        ↓
-NEW: Toggles "Add to Flows" → compact searchable list of org flows (multi-select)
-        ↓
-Sends invite (flows stored with invitation)
-        ↓
-Invitee clicks email link → creates account → accepts invite
-        ↓
-NEW: Auto-added to selected flows as 'lead'
-        ↓
-NEW: First-login welcome screen showing "You've been added to these flows" with quick links
+Mobile (390px):
+┌────────────────────────────────────────┐
+│ ☰  ⚙ New Family Follow-Up… ⋯ 🔔 🔍 │ AY │
+└────────────────────────────────────────┘
+                        ↑ overflow menu
+
+Desktop (≥768px):  unchanged
+┌──────────────────────────────────────────────────────────┐
+│ New Family Follow-Up  ⚙ ⊞ ☑ ▽ 📖    🔔 🔍 │ AY     │
+└──────────────────────────────────────────────────────────┘
 ```
 
-## Changes
-
-### 1. Database (migration)
-- Add `pipeline_ids uuid[] DEFAULT '{}'` column to `invitations` table to store pre-selected flows.
-
-### 2. Edge Function — `create-invitation`
-- Accept new `pipelineIds: string[]` field in request body.
-- Validate each pipeline belongs to the org.
-- Store on the invitation row.
-- Mention selected flow names in the invitation email ("You'll be added to: Plan Your Visit, Baptism").
-
-### 3. Edge Function — `accept-invitation`
-- After adding user to `organization_members`, loop through `invitation.pipeline_ids` and insert into `pipeline_team_members` with role `'lead'` (skip duplicates via `ON CONFLICT`).
-
-### 4. Frontend — `InviteTeamMemberDialog.tsx`
-- Add compact, searchable flow picker (Command/Checkbox list of org flows, max-height with scroll).
-- "Add to Flows" optional section, collapsed by default. Shows "X flows selected" badge.
-- Pass `pipelineIds` to the edge function call.
-
-### 5. Frontend — Welcome screen for new members
-Reuse existing `MemberOnboardingWizard.tsx`:
-- Add a new first step: **"Your Assigned Flows"** that lists the flows from `useFlowTeamMembers`/`useMyFlows` with quick-jump links.
-- Marks `flows_reviewed` complete once user clicks into any flow.
-
-## Other Onboarding Improvements (recommended)
-
-1. **Personal Welcome Email after acceptance** — separate email confirming successful join with a "Get Started" button linking to dashboard.
-2. **Inviter notification** — notify the admin via in-app notification when their invitee accepts (uses existing `notifications` table).
-3. **Default avatar prompt** — surface "Add a profile photo" as the very first onboarding step (already exists, just emphasize).
-4. **Pre-assign first contact (optional, future)** — let inviter optionally hand off 1–2 contacts during invite for an immediate "first task."
-
-## Technical Details
-
-- **Schema diagram:**
-  ```text
-  invitations
-    ├─ pipeline_ids uuid[]   (NEW)
-    └─ ... existing fields
-  
-  On accept:
-    organization_members  ← INSERT user
-    pipeline_team_members ← INSERT (pipeline_id, user_id, 'lead') for each id
-  ```
-- **Validation:** edge function filters `pipelineIds` to only those whose `organization_id` matches the invitation's org (prevents tampering).
-- **Idempotency:** `pipeline_team_members` insert uses `ON CONFLICT DO NOTHING`.
-- **UI component:** Use shadcn `Command` + `Checkbox` inside a `Popover` for the multi-select flow picker, similar to existing patterns in `BulkMoveToFlowDialog.tsx`.
-- **Email copy:** When `pipelineIds.length > 0`, append a section listing flow names so the invitee knows what they're walking into.
-
-Ready to implement once approved.
+Title never wraps, icons never overflow, popovers fit the screen, and the default mobile view is the readable table.
 

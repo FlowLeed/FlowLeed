@@ -3149,10 +3149,6 @@ export type Database = {
         Returns: string
       }
       create_default_pipelines: { Args: { org_id: string }; Returns: undefined }
-      create_personal_flow_for_user: {
-        Args: { p_org_id: string; p_user_id: string }
-        Returns: string
-      }
       end_impersonation_session: {
         Args: { _session_id: string }
         Returns: boolean
