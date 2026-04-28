@@ -49,13 +49,13 @@ serve(async (req) => {
 
     const { email, role, organizationId, pipelineAssignments = [] }: CreateInvitationRequest = await req.json()
 
-    // Validate pipeline assignments shape
+    // Validate pipeline assignments shape (role must be 'lead' or 'member')
     const cleanAssignments = Array.isArray(pipelineAssignments)
       ? pipelineAssignments
           .filter((a) => a && typeof a.pipeline_id === 'string' && typeof a.role === 'string')
           .map((a) => ({
             pipeline_id: a.pipeline_id,
-            role: ['lead', 'manager', 'contributor', 'member'].includes(a.role) ? a.role : 'contributor',
+            role: a.role === 'lead' ? 'lead' : 'member',
           }))
       : []
 
