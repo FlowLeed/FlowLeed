@@ -256,7 +256,7 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="member">Contributor</SelectItem>
-                                <SelectItem value="lead">Leader</SelectItem>
+                                <SelectItem value="lead">Flow Owner</SelectItem>
                               </SelectContent>
                             </Select>
                           )}
