@@ -113,6 +113,29 @@ serve(async (req) => {
       // Don't fail here - user was created, we can manually add them later
     }
 
+    // Add user to pre-assigned flow teams
+    const assignments = Array.isArray(invitation.pipeline_assignments) ? invitation.pipeline_assignments : [];
+    if (assignments.length > 0) {
+      const teamRows = assignments
+        .filter((a: any) => a && a.pipeline_id)
+        .map((a: any) => ({
+          pipeline_id: a.pipeline_id,
+          user_id: userData.user.id,
+          role: a.role === 'lead' ? 'lead' : 'member',
+        }));
+
+      if (teamRows.length > 0) {
+        const { error: teamError } = await supabaseAdmin
+          .from('pipeline_team_members')
+          .upsert(teamRows, { onConflict: 'pipeline_id,user_id', ignoreDuplicates: false });
+        if (teamError) {
+          console.error('Error adding user to flow teams:', teamError);
+        } else {
+          console.log(`Added user to ${teamRows.length} flow team(s)`);
+        }
+      }
+    }
+
     // Mark invitation as accepted
     const { error: updateError } = await supabaseAdmin
       .from('invitations')

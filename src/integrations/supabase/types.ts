@@ -1728,6 +1728,7 @@ export type Database = {
           id: string
           invited_by_user_id: string
           organization_id: string
+          pipeline_assignments: Json
           pipeline_ids: string[]
           role: string
           token: string
@@ -1741,6 +1742,7 @@ export type Database = {
           id?: string
           invited_by_user_id: string
           organization_id: string
+          pipeline_assignments?: Json
           pipeline_ids?: string[]
           role?: string
           token: string
@@ -1754,6 +1756,7 @@ export type Database = {
           id?: string
           invited_by_user_id?: string
           organization_id?: string
+          pipeline_assignments?: Json
           pipeline_ids?: string[]
           role?: string
           token?: string
