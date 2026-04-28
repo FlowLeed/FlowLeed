@@ -469,7 +469,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
       
       
       <div className="space-y-1">
-        {items.map(item => <NavItem key={item.title} item={item} isActive={location.pathname === item.path} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />)}
+        {items.map(item => <NavItem key={item.flowId ?? item.path ?? item.title} item={item} isActive={location.pathname === item.path} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />)}
       </div>
       
     </div>;
