@@ -718,13 +718,13 @@ export const FlowSettingsDialog = ({
                           <SelectValue>
                             <div className="flex items-center gap-2">
                               {getRoleIcon(member.role)}
-                              <span className="capitalize">{member.role === 'member' ? 'Leader' : member.role}</span>
+                              <span>{member.role === 'lead' ? 'Flow Owner' : 'Contributor'}</span>
                             </div>
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="lead">Lead</SelectItem>
-                          <SelectItem value="member">Leader</SelectItem>
+                          <SelectItem value="lead">Flow Owner</SelectItem>
+                          <SelectItem value="member">Contributor</SelectItem>
                         </SelectContent>
                       </Select>
 
