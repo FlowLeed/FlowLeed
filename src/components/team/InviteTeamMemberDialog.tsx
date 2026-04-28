@@ -10,6 +10,7 @@ import { UserPlus, Mail, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
+import { FlowIconBadge } from "@/components/search/FlowIconBadge";
 
 interface InviteTeamMemberDialogProps {
   open: boolean;
@@ -234,11 +235,15 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
                             checked={checked}
                             onCheckedChange={(v) => toggleFlow(flow.id, !!v)}
                           />
+                          <FlowIconBadge
+                            flow={{ name: flow.name, icon: flow.icon || "Users" }}
+                            size="sm"
+                            showTooltip={false}
+                          />
                           <label
                             htmlFor={`flow-${flow.id}`}
                             className="flex-1 cursor-pointer text-sm font-medium truncate"
                           >
-                            {flow.icon ? `${flow.icon} ` : ""}
                             {flow.name}
                           </label>
                           {checked && (
