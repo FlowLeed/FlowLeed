@@ -35,6 +35,7 @@ const ProfilePage = () => {
     loading
   } = useProfile();
   const { numbers: twilioNumbers } = useTwilioNumbers();
+  const { data: campuses = [] } = useCampuses();
   const { updateProgress } = useMemberOnboarding(user?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
