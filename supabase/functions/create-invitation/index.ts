@@ -7,10 +7,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface PipelineAssignment {
+  pipeline_id: string;
+  role: string;
+}
+
 interface CreateInvitationRequest {
   email: string;
   role: string;
   organizationId: string;
+  pipelineAssignments?: PipelineAssignment[];
 }
 
 serve(async (req) => {
@@ -41,7 +47,17 @@ serve(async (req) => {
 
     console.log('Authenticated user:', user.id)
 
-    const { email, role, organizationId }: CreateInvitationRequest = await req.json()
+    const { email, role, organizationId, pipelineAssignments = [] }: CreateInvitationRequest = await req.json()
+
+    // Validate pipeline assignments shape
+    const cleanAssignments = Array.isArray(pipelineAssignments)
+      ? pipelineAssignments
+          .filter((a) => a && typeof a.pipeline_id === 'string' && typeof a.role === 'string')
+          .map((a) => ({
+            pipeline_id: a.pipeline_id,
+            role: ['lead', 'manager', 'contributor', 'member'].includes(a.role) ? a.role : 'contributor',
+          }))
+      : []
 
     // Validate input
     if (!email || !role || !organizationId) {
@@ -174,7 +190,8 @@ serve(async (req) => {
         email: emailLower,
         role: role,
         invited_by_user_id: user.id,
-        token: token
+        token: token,
+        pipeline_assignments: cleanAssignments,
       })
       .select()
       .single()
