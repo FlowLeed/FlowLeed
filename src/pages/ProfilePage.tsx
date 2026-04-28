@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
+import { useCampuses } from "@/hooks/useCampuses";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
 import { SecuritySettings } from "@/components/profile/SecuritySettings";
 import { NotificationSettings } from "@/components/profile/NotificationSettings";
