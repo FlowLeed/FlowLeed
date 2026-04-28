@@ -121,7 +121,7 @@ serve(async (req) => {
         .map((a: any) => ({
           pipeline_id: a.pipeline_id,
           user_id: userData.user.id,
-          role: a.role || 'contributor',
+          role: a.role === 'lead' ? 'lead' : 'member',
         }));
 
       if (teamRows.length > 0) {
