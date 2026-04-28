@@ -1,46 +1,58 @@
+## What's happening
 
+The "Personal Flow" entries are real duplicate rows in the database — not a re-render glitch. Toggling "All flows" → "My flows" just re-exposes them.
 
-## Improve mobile view for the Flow header
+Two independent bugs are at play:
 
-At 390px the header is broken: the title "New Family Follow-Up" wraps to 3 lines and crashes into the toolbar icons sitting on the same row, the icon row overflows and pushes the avatar past the edge, and the kanban columns underneath are too narrow to read.
+### Bug 1 — Duplicate database triggers (root cause)
 
-### Changes
+`organization_members` has two triggers that do the exact same thing:
 
-**1. `src/components/layout/Header.tsx` — restructure the header for mobile**
+- `after_owner_member_insert`
+- `create_default_pipelines_trigger`
 
-Today the header is one flex row containing: hamburger + flow icon + title + toolbar icons + notifications + search + avatar. On mobile this overflows.
+Both fire `trigger_create_default_pipelines()` on every insert, which calls `create_personal_flow_for_user()`. The function has an idempotency guard ("skip if user already leads a Personal Flow"), but because both triggers run in the same transaction, both see "none exists" and both insert a row. Result: every user joining an org gets **2** Personal Flows. The current org (`3fae9226…`) actually has 4 users → I confirmed 4 "Personal Flow" pipelines, one per user, all named the same — and one was created today at 20:45 UTC matching the user's session.
 
-Restructure into two zones:
-- **Top row (always visible)**: hamburger, flow icon, title (truncated with `truncate` + `min-w-0`), and the persistent right cluster (notifications, search, avatar). Title takes `flex-1 min-w-0` so it never wraps — it ellipsizes.
-- **Toolbar cluster (Settings, View toggle, Select, Filter, Docs)**: on `md:` and up, render inline as today. On mobile (`<md`), collapse them into a single overflow `MoreHorizontal` icon button that opens a `DropdownMenu` listing each action with its label ("Settings", "Switch to table view", "Select", "Filter", "Docs"). Filter still shows its active-state dot on the trigger.
-- Reduce horizontal padding on mobile (`px-2`) and tighten gaps so the right cluster fits.
+### Bug 2 — React `key` collision in sidebar
 
-**2. `src/components/crm/FlowHeaderFilters.tsx` — mobile-friendly popover**
-
-The filter popover is `w-80` (320px) which barely fits at 390px and overflows when the trigger lives inside an overflow menu. Change to `w-[calc(100vw-1.5rem)] max-w-sm` so it stays inside the viewport with margin on both sides. Keep desktop behavior unchanged via the `max-w-sm` cap.
-
-**3. `src/components/crm/FlowView.tsx` — kanban → single-column stack on mobile** (verify file then adjust)
-
-On mobile the multi-column kanban is unusable. Either:
-- (a) Force the table view as default when `useIsMobile()` is true and hide the kanban toggle, OR
-- (b) Render kanban stages as a vertical accordion stack (one stage open at a time) on `<md`.
-
-I'll go with (a) — simpler, matches existing table view, and the user can still toggle back. The view toggle button stays available in the overflow menu.
-
-### Result
-
-```text
-Mobile (390px):
-┌────────────────────────────────────────┐
-│ ☰  ⚙ New Family Follow-Up… ⋯ 🔔 🔍 │ AY │
-└────────────────────────────────────────┘
-                        ↑ overflow menu
-
-Desktop (≥768px):  unchanged
-┌──────────────────────────────────────────────────────────┐
-│ New Family Follow-Up  ⚙ ⊞ ☑ ▽ 📖    🔔 🔍 │ AY     │
-└──────────────────────────────────────────────────────────┘
+`src/components/layout/Sidebar.tsx` line 472:
+```tsx
+{items.map(item => <NavItem key={item.title} … />)}
 ```
+Uses the flow's display name as the key. Multiple users' "Personal Flow" entries (visible when "Show all flows" is on) collide → the React warning in the console. Also, each user's own Personal Flow shares the name "Personal Flow" with teammates' personal flows, which is by design — so the key collision will keep happening for any same-named flow.
 
-Title never wraps, icons never overflow, popovers fit the screen, and the default mobile view is the readable table.
+## Changes
 
+### 1. Drop the duplicate trigger (migration)
+
+```sql
+DROP TRIGGER IF EXISTS create_default_pipelines_trigger
+  ON public.organization_members;
+```
+Keep `after_owner_member_insert` as the single source of truth.
+
+### 2. Clean up existing duplicate Personal Flows (migration)
+
+For every (org, user) pair that has more than one "Personal Flow" they lead:
+
+- Keep the oldest one (or the one with the most contacts/stage activity, whichever is non-empty).
+- For the duplicates: re-point any `pipeline_contacts` rows to the kept flow (just in case), then delete the duplicate pipeline (cascades to stages, team members, etc.).
+
+Safety: only target rows where `name = 'Personal Flow'` and the same user appears as `lead` on multiple of them in the same org.
+
+### 3. Fix the React key in the sidebar
+
+`src/components/layout/Sidebar.tsx` line 472 — change:
+```tsx
+items.map(item => <NavItem key={item.title} …
+```
+to:
+```tsx
+items.map(item => <NavItem key={item.flowId ?? item.path ?? item.title} …
+```
+Flow items always have `flowId`; non-flow nav items (Dashboard, People, etc.) always have `path`. This makes the warning impossible even if two flows ever share a name again.
+
+## Out of scope
+
+- No UI/UX change to how Personal Flows are displayed (still labeled "Personal Flow"). If you later want to show them as "Alex's Personal Flow" etc., that's a separate request.
+- No change to `create_personal_flow_for_user`'s logic — the dedupe guard inside it is correct; removing the duplicate trigger fixes the race.
