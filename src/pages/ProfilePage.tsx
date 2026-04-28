@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
+import { useCampuses } from "@/hooks/useCampuses";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
 import { SecuritySettings } from "@/components/profile/SecuritySettings";
 import { NotificationSettings } from "@/components/profile/NotificationSettings";
@@ -34,6 +35,7 @@ const ProfilePage = () => {
     loading
   } = useProfile();
   const { numbers: twilioNumbers } = useTwilioNumbers();
+  const { data: campuses = [] } = useCampuses();
   const { updateProgress } = useMemberOnboarding(user?.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -358,7 +360,26 @@ const ProfilePage = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <Input id="location" value={formData.location} onChange={e => handleInputChange("location", e.target.value)} />
+                {campuses.length > 0 ? (
+                  <Select
+                    value={formData.location || "none"}
+                    onValueChange={(value) => handleInputChange("location", value === "none" ? "" : value)}
+                  >
+                    <SelectTrigger id="location">
+                      <SelectValue placeholder="Select a campus" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No campus</SelectItem>
+                      {campuses.map((c) => (
+                        <SelectItem key={c.id} value={c.name}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input id="location" value={formData.location} onChange={e => handleInputChange("location", e.target.value)} placeholder="No campuses configured" />
+                )}
               </div>
             </div>
 
