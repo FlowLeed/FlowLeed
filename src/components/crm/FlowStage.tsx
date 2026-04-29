@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MoreVertical, CheckCircle2, Check } from "lucide-react";
+import { MoreVertical, CheckCircle2, Check, Plus } from "lucide-react";
 import { FlowStage as FlowStageType, Contact } from "@/types/crm";
 import { ContactCard } from "./ContactCard";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
@@ -9,6 +9,7 @@ import { Droppable, Draggable } from "react-beautiful-dnd";
 interface FlowStageProps {
   stage: FlowStageType;
   onAddContact?: (stageId: string) => void;
+  onAddPeople?: (stageId: string) => void;
   onEditContact?: (contact: Contact) => void;
   onDeleteContact?: (contactId: string, stageId: string) => void;
   onUpdateStage?: (stageId: string, name: string, color: string, defaultAssigneeId?: string | null) => void;
@@ -40,6 +41,7 @@ const getStageColor = (stageName: string): string => {
 export const FlowStage: React.FC<FlowStageProps> = ({
   stage,
   onAddContact,
+  onAddPeople,
   onEditContact,
   onDeleteContact,
   onUpdateStage,
@@ -83,13 +85,23 @@ export const FlowStage: React.FC<FlowStageProps> = ({
               </div>
             )}
           </div>
-          <button 
-            className="p-1 rounded-full hover:bg-gray-100 flex-shrink-0" 
-            onClick={() => setShowSettings(true)}
-            aria-label="Stage settings"
-          >
-            <MoreVertical className="h-4 w-4 text-gray-600" />
-          </button>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <button
+              className="p-1 rounded-full hover:bg-gray-100"
+              onClick={() => onAddPeople?.(stage.id)}
+              aria-label="Add people to this stage"
+              title="Add people to this stage"
+            >
+              <Plus className="h-4 w-4 text-gray-600" />
+            </button>
+            <button
+              className="p-1 rounded-full hover:bg-gray-100"
+              onClick={() => setShowSettings(true)}
+              aria-label="Stage settings"
+            >
+              <MoreVertical className="h-4 w-4 text-gray-600" />
+            </button>
+          </div>
         </div>
       
         <Droppable droppableId={stage.id}>

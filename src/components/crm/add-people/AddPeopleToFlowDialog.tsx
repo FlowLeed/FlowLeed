@@ -37,6 +37,7 @@ interface AddPeopleToFlowDialogProps {
   onOpenChange: (open: boolean) => void;
   flow: Flow;
   teamMembers: TeamMember[];
+  initialStageId?: string;
 }
 
 const STAGE_DEFAULT = "__stage_default__";
@@ -47,6 +48,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
   onOpenChange,
   flow,
   teamMembers,
+  initialStageId,
 }) => {
   const { organization } = useProfile();
   const queryClient = useQueryClient();
@@ -58,7 +60,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [stageId, setStageId] = useState<string>(flow.stages[0]?.id ?? "");
+  const [stageId, setStageId] = useState<string>(initialStageId ?? flow.stages[0]?.id ?? "");
   const [assigneeChoice, setAssigneeChoice] = useState<string>(STAGE_DEFAULT);
 
   // Existing contacts in this flow (to disable / show pill)
@@ -73,10 +75,10 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
       setSearch("");
       setDebouncedSearch("");
       setSelected(new Set());
-      setStageId(flow.stages[0]?.id ?? "");
+      setStageId(initialStageId ?? flow.stages[0]?.id ?? "");
       setAssigneeChoice(STAGE_DEFAULT);
     }
-  }, [open, flow.id]);
+  }, [open, flow.id, initialStageId]);
 
   // Debounce search
   useEffect(() => {

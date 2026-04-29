@@ -10,8 +10,6 @@ import { FlowCompletionConfetti } from "./FlowCompletionConfetti";
 import { AddPeopleToFlowDialog } from "./add-people/AddPeopleToFlowDialog";
 import { Header } from "../layout/Header";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, ChevronDown, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +38,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddPeopleOpen, setIsAddPeopleOpen] = useState(false);
+  const [addPeopleStageId, setAddPeopleStageId] = useState<string | undefined>(undefined);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -181,6 +180,11 @@ export const FlowView: React.FC<FlowViewProps> = ({
     setCurrentContact(null);
     setCurrentStageId(stageId);
     setIsFormOpen(true);
+  };
+
+  const handleAddPeopleToStage = (stageId: string) => {
+    setAddPeopleStageId(stageId);
+    setIsAddPeopleOpen(true);
   };
 
   const handleEditContact = (contact: Contact) => {
@@ -552,9 +556,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
         title={flow.name}
         showFlowIcon={true}
         onAddClick={() => {
-          setCurrentStageId(flow.stages[0].id);
-          setCurrentContact(null);
-          setIsFormOpen(true);
+          setAddPeopleStageId(undefined);
+          setIsAddPeopleOpen(true);
         }}
         onSettingsClick={() => setIsSettingsOpen(true)}
         onDocsClick={() => navigate(`/flows/${flow.id}/documentation`)}
@@ -578,45 +581,6 @@ export const FlowView: React.FC<FlowViewProps> = ({
         onCampusFilterChange={setSelectedCampusFilter}
       />
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
-        <div className="flex justify-end mb-4">
-          <div className="inline-flex rounded-md shadow-sm">
-            <Button
-              size="sm"
-              onClick={() => setIsAddPeopleOpen(true)}
-              className="rounded-r-none"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Add People
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  className="rounded-l-none border-l border-primary-foreground/20 px-2"
-                  aria-label="More add options"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={() => setIsAddPeopleOpen(true)}>
-                  <Users className="h-4 w-4 mr-2" />
-                  Pick from existing contacts
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setCurrentStageId(flow.stages[0].id);
-                    setCurrentContact(null);
-                    setIsFormOpen(true);
-                  }}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add one new person
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
         {viewMode === 'kanban' ? (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4">
@@ -625,6 +589,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
                   key={stage.id}
                   stage={stage}
                   onAddContact={handleAddContact}
+                  onAddPeople={handleAddPeopleToStage}
                   onEditContact={handleEditContact}
                   onDeleteContact={handleDeleteContact}
                   onUpdateStage={handleUpdateStage}
@@ -704,9 +669,13 @@ export const FlowView: React.FC<FlowViewProps> = ({
       )}
       <AddPeopleToFlowDialog
         open={isAddPeopleOpen}
-        onOpenChange={setIsAddPeopleOpen}
+        onOpenChange={(open) => {
+          setIsAddPeopleOpen(open);
+          if (!open) setAddPeopleStageId(undefined);
+        }}
         flow={flow}
         teamMembers={teamMembers}
+        initialStageId={addPeopleStageId}
       />
     </div>
   );
