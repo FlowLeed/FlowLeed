@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MoreVertical, CheckCircle2, Check } from "lucide-react";
+import { MoreVertical, CheckCircle2, Check, Plus } from "lucide-react";
 import { FlowStage as FlowStageType, Contact } from "@/types/crm";
 import { ContactCard } from "./ContactCard";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
