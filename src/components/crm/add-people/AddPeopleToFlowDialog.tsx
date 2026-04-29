@@ -109,7 +109,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
           if (isPhoneLike) {
             // Match phone with any non-digit chars between digits (e.g. +1 (408) 427-7192)
             const phonePattern = `%${digits.split('').join('%')}%`;
-            q = q.or(`phone.ilike.${phonePattern}`);
+            q = q.ilike('phone', phonePattern);
           } else {
             const s = raw.replace(/[%,]/g, '');
             q = q.or(`name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`);
