@@ -50,6 +50,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
 }) => {
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+  const { refreshFlows } = useFlowContext();
   const { bulkAddExistingContactsToFlow, isLoading: isAdding } = useBulkActions(flow.id);
 
   const [search, setSearch] = useState("");
