@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useBulkActions } from "@/hooks/useBulkActions";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFlowContext } from "@/contexts/FlowContext";
 import { Flow } from "@/types/crm";
 import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -49,6 +50,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
 }) => {
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+  const { refreshFlows } = useFlowContext();
   const { bulkAddExistingContactsToFlow, isLoading: isAdding } = useBulkActions(flow.id);
 
   const [search, setSearch] = useState("");
@@ -168,6 +170,9 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
     }
 
     queryClient.invalidateQueries({ queryKey: ['flows'] });
+    if (added > 0) {
+      await refreshFlows();
+    }
     onOpenChange(false);
   };
 
