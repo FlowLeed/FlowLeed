@@ -38,7 +38,7 @@ export const StageSelectionStep: React.FC<StageSelectionStepProps> = ({
   if (stages.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">No stages found in this flow.</p>
+        <p className="text-muted-foreground">No steps found in this flow.</p>
       </div>
     );
   }

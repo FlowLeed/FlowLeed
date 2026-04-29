@@ -89,15 +89,15 @@ export const FlowStage: React.FC<FlowStageProps> = ({
             <button
               className="p-1 rounded-full hover:bg-gray-100"
               onClick={() => onAddPeople?.(stage.id)}
-              aria-label="Add people to this stage"
-              title="Add people to this stage"
+              aria-label="Add people to this step"
+              title="Add people to this step"
             >
               <Plus className="h-4 w-4 text-gray-600" />
             </button>
             <button
               className="p-1 rounded-full hover:bg-gray-100"
               onClick={() => setShowSettings(true)}
-              aria-label="Stage settings"
+              aria-label="Step settings"
             >
               <MoreVertical className="h-4 w-4 text-gray-600" />
             </button>

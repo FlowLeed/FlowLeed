@@ -111,7 +111,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
               disabled={isLoading}
             >
               <MoveRight className="h-4 w-4 mr-2" />
-              Change Stage
+              Change Step
             </Button>
 
             <Button

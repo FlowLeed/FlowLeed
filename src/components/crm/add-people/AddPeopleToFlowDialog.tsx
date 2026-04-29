@@ -265,7 +265,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
           {/* RIGHT: destination */}
           <div className="flex flex-col p-4 gap-4 bg-muted/20">
             <div className="space-y-1.5">
-              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Stage</Label>
+              <Label className="text-xs uppercase tracking-wide text-muted-foreground">Step</Label>
               <Select value={stageId} onValueChange={setStageId}>
                 <SelectTrigger>
                   <SelectValue />
@@ -285,7 +285,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Defaults to the flow's first stage.
+                Defaults to the flow's first step.
               </p>
             </div>
 
@@ -297,7 +297,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={STAGE_DEFAULT}>
-                    Use stage default{stage?.default_assignee_user_id ? ` (Assigned)` : ''}
+                    Use step default{stage?.default_assignee_user_id ? ` (Assigned)` : ''}
                   </SelectItem>
                   <SelectItem value={UNASSIGNED}>Unassigned</SelectItem>
                   {teamMembers.map(m => (
