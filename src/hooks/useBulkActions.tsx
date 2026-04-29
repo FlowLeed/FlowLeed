@@ -185,6 +185,62 @@ export const useBulkActions = (flowId: string) => {
     }
   };
 
+  /**
+   * Bulk-add existing contacts to this flow.
+   * - Skips contacts already in the flow (server-side dedup).
+   * - Uses provided assigneeUserId, or null for stage default / unassigned.
+   * Returns { added, skipped }.
+   */
+  const bulkAddExistingContactsToFlow = async (
+    contactIds: string[],
+    stageId: string,
+    assigneeUserId: string | null
+  ): Promise<{ added: number; skipped: number }> => {
+    setIsLoading(true);
+    try {
+      if (contactIds.length === 0) return { added: 0, skipped: 0 };
+
+      // Server-side dedup against existing rows for this flow
+      const { data: existing, error: existErr } = await supabase
+        .from('pipeline_contacts')
+        .select('contact_id')
+        .eq('pipeline_id', flowId)
+        .in('contact_id', contactIds);
+      if (existErr) throw existErr;
+
+      const existingSet = new Set((existing ?? []).map(r => r.contact_id));
+      const toInsert = contactIds.filter(id => !existingSet.has(id));
+      const skipped = contactIds.length - toInsert.length;
+
+      if (toInsert.length === 0) {
+        return { added: 0, skipped };
+      }
+
+      const inserts = toInsert.map((contactId, index) => ({
+        contact_id: contactId,
+        pipeline_id: flowId,
+        stage_id: stageId,
+        stage_order: index,
+        source_type: 'manual',
+        assigned_to_user_id: assigneeUserId,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('pipeline_contacts')
+        .insert(inserts);
+      if (insertError) throw insertError;
+
+      queryClient.invalidateQueries({ queryKey: ['flows'] });
+      return { added: toInsert.length, skipped };
+    } catch (error) {
+      console.error("Error in bulk add existing contacts:", error);
+      toast.error("Failed to add people to flow");
+      return { added: 0, skipped: 0 };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     bulkChangeStage,
     bulkReassign,
@@ -192,6 +248,7 @@ export const useBulkActions = (flowId: string) => {
     bulkRemoveTags,
     bulkDelete,
     bulkMoveToFlow,
+    bulkAddExistingContactsToFlow,
     isLoading
   };
 };
