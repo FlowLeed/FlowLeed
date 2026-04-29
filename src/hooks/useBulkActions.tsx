@@ -22,11 +22,11 @@ export const useBulkActions = (flowId: string) => {
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ['flows'] });
-      toast.success(`${contactIds.length} contacts moved to new stage`);
+      toast.success(`${contactIds.length} contacts moved to new step`);
       return true;
     } catch (error) {
       console.error("Error in bulk stage change:", error);
-      toast.error("Failed to update stages");
+      toast.error("Failed to update steps");
       return false;
     } finally {
       setIsLoading(false);
