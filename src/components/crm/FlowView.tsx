@@ -558,9 +558,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
         title={flow.name}
         showFlowIcon={true}
         onAddClick={() => {
-          setCurrentStageId(flow.stages[0].id);
-          setCurrentContact(null);
-          setIsFormOpen(true);
+          setAddPeopleStageId(undefined);
+          setIsAddPeopleOpen(true);
         }}
         onSettingsClick={() => setIsSettingsOpen(true)}
         onDocsClick={() => navigate(`/flows/${flow.id}/documentation`)}
