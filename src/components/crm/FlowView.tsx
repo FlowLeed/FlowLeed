@@ -671,9 +671,13 @@ export const FlowView: React.FC<FlowViewProps> = ({
       )}
       <AddPeopleToFlowDialog
         open={isAddPeopleOpen}
-        onOpenChange={setIsAddPeopleOpen}
+        onOpenChange={(open) => {
+          setIsAddPeopleOpen(open);
+          if (!open) setAddPeopleStageId(undefined);
+        }}
         flow={flow}
         teamMembers={teamMembers}
+        initialStageId={addPeopleStageId}
       />
     </div>
   );
