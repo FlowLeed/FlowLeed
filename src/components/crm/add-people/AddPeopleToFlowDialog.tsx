@@ -60,7 +60,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
   const [contacts, setContacts] = useState<ContactRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [stageId, setStageId] = useState<string>(flow.stages[0]?.id ?? "");
+  const [stageId, setStageId] = useState<string>(initialStageId ?? flow.stages[0]?.id ?? "");
   const [assigneeChoice, setAssigneeChoice] = useState<string>(STAGE_DEFAULT);
 
   // Existing contacts in this flow (to disable / show pill)
