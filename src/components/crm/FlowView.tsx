@@ -184,6 +184,11 @@ export const FlowView: React.FC<FlowViewProps> = ({
     setIsFormOpen(true);
   };
 
+  const handleAddPeopleToStage = (stageId: string) => {
+    setAddPeopleStageId(stageId);
+    setIsAddPeopleOpen(true);
+  };
+
   const handleEditContact = (contact: Contact) => {
     setCurrentContact(contact);
     setIsFormOpen(true);
