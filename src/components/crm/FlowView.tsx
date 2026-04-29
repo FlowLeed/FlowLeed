@@ -702,6 +702,12 @@ export const FlowView: React.FC<FlowViewProps> = ({
       {showConfetti && (
         <FlowCompletionConfetti onComplete={() => setShowConfetti(false)} />
       )}
+      <AddPeopleToFlowDialog
+        open={isAddPeopleOpen}
+        onOpenChange={setIsAddPeopleOpen}
+        flow={flow}
+        teamMembers={teamMembers}
+      />
     </div>
   );
 };
