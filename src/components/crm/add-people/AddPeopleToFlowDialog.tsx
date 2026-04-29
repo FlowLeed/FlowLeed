@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useBulkActions } from "@/hooks/useBulkActions";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFlowContext } from "@/contexts/FlowContext";
 import { Flow } from "@/types/crm";
 import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
