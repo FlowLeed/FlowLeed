@@ -75,10 +75,10 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
       setSearch("");
       setDebouncedSearch("");
       setSelected(new Set());
-      setStageId(flow.stages[0]?.id ?? "");
+      setStageId(initialStageId ?? flow.stages[0]?.id ?? "");
       setAssigneeChoice(STAGE_DEFAULT);
     }
-  }, [open, flow.id]);
+  }, [open, flow.id, initialStageId]);
 
   // Debounce search
   useEffect(() => {
