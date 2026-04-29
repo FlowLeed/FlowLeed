@@ -48,6 +48,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
   onOpenChange,
   flow,
   teamMembers,
+  initialStageId,
 }) => {
   const { organization } = useProfile();
   const queryClient = useQueryClient();
