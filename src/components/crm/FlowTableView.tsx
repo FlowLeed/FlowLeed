@@ -175,7 +175,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
 
       onFlowChange?.(updatedFlow);
       
-      const newStageName = flow.stages.find(s => s.id === newStageId)?.name || 'stage';
+      const newStageName = flow.stages.find(s => s.id === newStageId)?.name || 'step';
       toast.success(`Moved to ${newStageName}`);
     } catch (error) {
       console.error("Error updating stage:", error);
@@ -250,7 +250,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                 e.stopPropagation();
                 setSettingsStageId(stage.id);
               }}
-              aria-label="Stage settings"
+              aria-label="Step settings"
             >
               <MoreVertical className="h-4 w-4 text-gray-600" />
             </button>
@@ -302,7 +302,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                   {contacts.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={isSelectMode ? 7 : 6} className="text-center text-muted-foreground py-4">
-                        No contacts in this stage
+                        No contacts in this step
                       </TableCell>
                     </TableRow>
                   ) : (

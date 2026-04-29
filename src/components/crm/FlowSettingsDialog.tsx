@@ -441,7 +441,7 @@ export const FlowSettingsDialog = ({
     
     setFlowSteps([...flowSteps, { 
       id: `temp-${Date.now()}`,
-      name: `Stage ${flowSteps.length + 1}`, 
+      name: `Step ${flowSteps.length + 1}`, 
       color: availableColor,
       stage_order: flowSteps.length,
       is_start_step: false,
@@ -583,7 +583,7 @@ export const FlowSettingsDialog = ({
                 <SelectItem value="linear">
                   <div className="flex flex-col items-start">
                     <span className="font-medium">Linear Flow</span>
-                    <span className="text-xs text-muted-foreground">People move through stages and complete</span>
+                    <span className="text-xs text-muted-foreground">People move through steps and complete</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="recurring">

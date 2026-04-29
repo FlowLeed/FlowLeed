@@ -59,11 +59,11 @@ export const ColumnSettingsDialog: React.FC<ColumnSettingsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Column Settings</DialogTitle>
+          <DialogTitle>Step Settings</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label htmlFor="column-name">Column Name</Label>
+            <Label htmlFor="column-name">Step Name</Label>
             <Input
               id="column-name"
               value={name}
@@ -73,7 +73,7 @@ export const ColumnSettingsDialog: React.FC<ColumnSettingsDialogProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Label>Column Color</Label>
+            <Label>Step Color</Label>
             <div className="grid grid-cols-4 gap-2">
               {colorOptions.map((colorOption) => (
                 <button

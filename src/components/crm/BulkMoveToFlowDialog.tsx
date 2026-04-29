@@ -123,7 +123,7 @@ export const BulkMoveToFlowDialog: React.FC<BulkMoveToFlowDialogProps> = ({
             <DialogTitle>
               {step === 'pipeline' 
                 ? `Move ${selectedCount} contact${selectedCount !== 1 ? 's' : ''} to Flow` 
-                : `Select Stage in ${selectedPipeline?.name}`}
+                : `Select Step in ${selectedPipeline?.name}`}
             </DialogTitle>
           </div>
         </DialogHeader>

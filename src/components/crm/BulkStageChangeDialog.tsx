@@ -37,9 +37,9 @@ export const BulkStageChangeDialog: React.FC<BulkStageChangeDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change Stage</DialogTitle>
+          <DialogTitle>Change Step</DialogTitle>
           <DialogDescription>
-            Select the stage to move all selected people to
+            Select the step to move all selected people to
           </DialogDescription>
         </DialogHeader>
 
