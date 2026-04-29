@@ -9,6 +9,7 @@ import { Droppable, Draggable } from "react-beautiful-dnd";
 interface FlowStageProps {
   stage: FlowStageType;
   onAddContact?: (stageId: string) => void;
+  onAddPeople?: (stageId: string) => void;
   onEditContact?: (contact: Contact) => void;
   onDeleteContact?: (contactId: string, stageId: string) => void;
   onUpdateStage?: (stageId: string, name: string, color: string, defaultAssigneeId?: string | null) => void;
