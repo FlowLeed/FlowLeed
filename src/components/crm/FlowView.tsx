@@ -7,7 +7,11 @@ import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
 import { FlowCompletionConfetti } from "./FlowCompletionConfetti";
+import { AddPeopleToFlowDialog } from "./add-people/AddPeopleToFlowDialog";
 import { Header } from "../layout/Header";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, ChevronDown, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +39,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAddPeopleOpen, setIsAddPeopleOpen] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -573,6 +578,45 @@ export const FlowView: React.FC<FlowViewProps> = ({
         onCampusFilterChange={setSelectedCampusFilter}
       />
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
+        <div className="flex justify-end mb-4">
+          <div className="inline-flex rounded-md shadow-sm">
+            <Button
+              size="sm"
+              onClick={() => setIsAddPeopleOpen(true)}
+              className="rounded-r-none"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Add People
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  className="rounded-l-none border-l border-primary-foreground/20 px-2"
+                  aria-label="More add options"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem onClick={() => setIsAddPeopleOpen(true)}>
+                  <Users className="h-4 w-4 mr-2" />
+                  Pick from existing contacts
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setCurrentStageId(flow.stages[0].id);
+                    setCurrentContact(null);
+                    setIsFormOpen(true);
+                  }}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add one new person
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
         {viewMode === 'kanban' ? (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4">
@@ -658,6 +702,12 @@ export const FlowView: React.FC<FlowViewProps> = ({
       {showConfetti && (
         <FlowCompletionConfetti onComplete={() => setShowConfetti(false)} />
       )}
+      <AddPeopleToFlowDialog
+        open={isAddPeopleOpen}
+        onOpenChange={setIsAddPeopleOpen}
+        flow={flow}
+        teamMembers={teamMembers}
+      />
     </div>
   );
 };
