@@ -40,6 +40,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddPeopleOpen, setIsAddPeopleOpen] = useState(false);
+  const [addPeopleStageId, setAddPeopleStageId] = useState<string | undefined>(undefined);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
