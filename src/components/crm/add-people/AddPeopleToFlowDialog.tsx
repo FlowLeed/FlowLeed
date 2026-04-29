@@ -37,6 +37,7 @@ interface AddPeopleToFlowDialogProps {
   onOpenChange: (open: boolean) => void;
   flow: Flow;
   teamMembers: TeamMember[];
+  initialStageId?: string;
 }
 
 const STAGE_DEFAULT = "__stage_default__";
