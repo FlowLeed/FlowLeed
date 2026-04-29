@@ -170,6 +170,9 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
     }
 
     queryClient.invalidateQueries({ queryKey: ['flows'] });
+    if (added > 0) {
+      await refreshFlows();
+    }
     onOpenChange(false);
   };
 
