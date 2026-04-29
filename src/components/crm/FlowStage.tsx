@@ -41,6 +41,7 @@ const getStageColor = (stageName: string): string => {
 export const FlowStage: React.FC<FlowStageProps> = ({
   stage,
   onAddContact,
+  onAddPeople,
   onEditContact,
   onDeleteContact,
   onUpdateStage,
