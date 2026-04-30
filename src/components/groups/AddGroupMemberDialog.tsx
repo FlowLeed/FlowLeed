@@ -8,6 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Search, UserPlus } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { buildPhoneOrFilter } from "@/lib/phoneSearch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
