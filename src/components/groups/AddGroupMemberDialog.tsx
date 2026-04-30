@@ -129,7 +129,7 @@ export const AddGroupMemberDialog = ({
                 </Button>
               </div>
             ) : (
-              <Command className="border rounded-lg">
+              <Command className="border rounded-lg" shouldFilter={false}>
                 <CommandInput
                   placeholder="Search by name, email, or phone..."
                   value={searchTerm}
