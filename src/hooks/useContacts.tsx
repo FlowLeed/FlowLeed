@@ -147,9 +147,8 @@ export const useContacts = (filters: ContactFilters) => {
       // Apply search filter — sanitize to avoid PostgREST syntax issues with parens/commas
       if (filters.searchTerm) {
         const sanitized = filters.searchTerm.replace(/[(),]/g, '').trim();
-        const digitsOnly = filters.searchTerm.replace(/\D/g, '');
-        const phonePattern = digitsOnly.split('').join('%');
-        const phonePart = digitsOnly.length >= 3 ? `,phone.ilike.%${phonePattern}%` : '';
+        const phoneFilter = buildPhoneOrFilter(filters.searchTerm);
+        const phonePart = phoneFilter ? `,${phoneFilter}` : '';
         query = query.or(
           `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`
         );
