@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import type { ContactFilters } from "@/pages/ContactsPage";
+import { buildPhoneOrFilter } from "@/lib/phoneSearch";
 
 export const useContacts = (filters: ContactFilters) => {
   const { user } = useAuth();

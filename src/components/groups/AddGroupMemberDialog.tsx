@@ -55,7 +55,10 @@ export const AddGroupMemberDialog = ({
       }
 
       if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+        const sanitized = searchTerm.replace(/[(),]/g, '').trim();
+        const phoneFilter = buildPhoneOrFilter(searchTerm);
+        const phonePart = phoneFilter ? `,${phoneFilter}` : '';
+        query = query.or(`name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`);
       }
 
       const { data, error } = await query.limit(10);

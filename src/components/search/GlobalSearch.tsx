@@ -115,7 +115,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             )
           `)
           .eq('organization_id', organization.id)
-          .or(`name.ilike.%${searchQuery.replace(/[(),]/g, '').trim()}%,email.ilike.%${searchQuery.replace(/[(),]/g, '').trim()}%${searchQuery.replace(/\D/g, '').length >= 3 ? `,phone.ilike.%${searchQuery.replace(/\D/g, '').split('').join('%')}%` : ''}`)
+          .or((() => {
+            const sanitized = searchQuery.replace(/[(),]/g, '').trim();
+            const phoneFilter = buildPhoneOrFilter(searchQuery);
+            const phonePart = phoneFilter ? `,${phoneFilter}` : '';
+            return `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`;
+          })())
           .limit(8);
 
         if (error) throw error;
