@@ -1,63 +1,40 @@
 ## Problem
 
-Searching for `+1 (408) 427-7192` returns no results, even though the contact exists with phone `+14084277192`.
+Phone search works in the "Add People to Flow" dialog but fails in the **Global Search** (Cmd+K) and **Add Group Member** dialog. The server returns the right contacts, but they get hidden before display.
 
-### Root cause
+## Root cause
 
-The current code in `AddPeopleToFlowDialog.tsx` extracts all digits from the search input (`14084277192`) and builds an ILIKE pattern that requires every digit to appear in order: `%1%4%0%8%4%2%7%7%1%9%2%`.
+Both broken searches use the cmdk `Command` component, which by default **filters results client-side** by matching the typed text against each item's `value` prop. The `value` is built from name + email + phone — and the stored phone (`+14084277192`) doesn't match the user's formatted input (`+1 (408) 427-7192`), so cmdk drops every row even though the server returned them correctly.
 
-That works against `+14084277192`, but fails for the **24,288 contacts (94%)** whose phones are stored *without* the `+1` country code (e.g. `4084277192`, `(408) 427-7192`, `408-427-7192`). For those rows there is no `1` before the `4`, so the pattern never matches.
-
-DB snapshot:
-- 1,586 contacts stored as `+1...`
-- 24,288 contacts stored without any `+`
-- 20 contacts with a non-US country code
-
-So the very common case of "user types/pastes a US number with +1, but the contact in the DB has no country code" silently returns nothing.
+The working "Add People to Flow" dialog uses a plain `<Input>` (no cmdk filtering), which is why it displays results.
 
 ## Fix
 
-Update the phone search in `src/components/crm/add-people/AddPeopleToFlowDialog.tsx` so it tries both:
-1. The full digit string as typed (e.g. `14084277192`)
-2. The US 10-digit local form when the input starts with `1` and has 11 digits (e.g. `4084277192`)
+Disable cmdk's client-side filtering in the two affected components and rely entirely on the server-side query (which already uses `buildPhoneOrFilter` correctly).
 
-Combine the two with PostgREST's `.or()` filter so a row matches if either ILIKE pattern hits:
+### Files to change
 
-```
-phone.ilike.%1%4%0%8%4%2%7%7%1%9%2%,phone.ilike.%4%0%8%4%2%7%7%1%9%2%
-```
+1. **`src/components/search/GlobalSearch.tsx`**
+   - Pass `shouldFilter={false}` to the `CommandDialog` (cmdk Command root).
+   - Remove the synthetic `value={...name email phone}` from each `CommandItem` so cmdk doesn't try to score them.
 
-Logic outline:
-- Detect phone-like input (digits + typical phone punctuation, ≥3 digits) — unchanged.
-- Build `digits` from input.
-- Build `candidates`:
-  - Always include `digits`.
-  - If `digits.length === 11 && digits.startsWith('1')`, also include `digits.slice(1)` (strip US country code).
-  - If `digits.length === 10`, also include `'1' + digits` (handle the reverse: typed local, stored with +1).
-- Map each candidate to `phone.ilike.%d1%d2%...%` and join with `,` for `q.or(...)`.
+2. **`src/components/groups/AddGroupMemberDialog.tsx`**
+   - Pass `shouldFilter={false}` to the `Command` wrapper.
 
-This keeps the wildcard-between-digits approach (so any formatting in the stored value still matches) but no longer requires the country code to be present on both sides.
+3. **`src/components/ui/command.tsx`** (if needed)
+   - Verify `CommandDialog` forwards extra props (like `shouldFilter`) through to the underlying `Command`. If it doesn't, thread the prop through.
 
-## Apply same fix elsewhere
+### Bonus consistency pass
 
-Two other places use the same digit-interleave pattern and have the same bug. Update them for consistency:
+While in there, audit any other `Command`-based contact pickers for the same client-filter issue (none currently found beyond the two above, but a quick grep for `CommandInput` + `contacts` will confirm).
 
-- `src/hooks/useContacts.tsx` (lines ~150-152) — main contacts list search.
-- `src/components/search/GlobalSearch.tsx` (line ~118) — global search bar.
+## Why this works
 
-`src/components/groups/AddGroupMemberDialog.tsx` does a plain `phone.ilike.%term%` and won't match formatted input at all — extend it with the same phone-aware logic so group member search behaves consistently.
-
-Extract the candidate-building + OR-filter construction into a small helper (e.g. `src/lib/phoneSearch.ts` exporting `buildPhoneOrFilter(input)` and `isPhoneLike(input)`) so all four call sites share one implementation.
+- The server query already returns the correct rows for `+1 (408) 427-7192`, `4084277192`, etc. via `buildPhoneOrFilter`.
+- Disabling `shouldFilter` lets every server result render as-is, exactly like the working Add-People dialog.
+- No changes needed to `phoneSearch.ts` or `useContacts` — those are already correct.
 
 ## Out of scope
 
-- Non-US country codes (20 contacts). The +1 ↔ local handling covers the realistic case for this user; we won't try to be clever about arbitrary country codes here.
-- Normalizing stored phone numbers in the DB. That's a bigger migration; the search-side fix is enough to unblock the user.
-
-## Files touched
-
-- `src/lib/phoneSearch.ts` (new)
-- `src/components/crm/add-people/AddPeopleToFlowDialog.tsx`
-- `src/hooks/useContacts.tsx`
-- `src/components/search/GlobalSearch.tsx`
-- `src/components/groups/AddGroupMemberDialog.tsx`
+- The `useContacts` hook (Contacts page) doesn't use cmdk filtering, so it isn't affected by this bug.
+- No DB migrations or edge-function changes.
