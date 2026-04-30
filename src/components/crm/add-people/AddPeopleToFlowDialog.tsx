@@ -16,6 +16,7 @@ import { useFlowContext } from "@/contexts/FlowContext";
 import { Flow } from "@/types/crm";
 import { Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { buildPhoneOrFilter } from "@/lib/phoneSearch";
 
 interface TeamMember {
   id: string;
@@ -103,13 +104,10 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
 
         if (debouncedSearch) {
           const raw = debouncedSearch;
-          const digits = raw.replace(/\D/g, '');
-          // If input looks like a phone number (mostly digits/phone chars), search by digits
-          const isPhoneLike = digits.length >= 3 && /^[\d\s+()\-.]+$/.test(raw);
-          if (isPhoneLike) {
-            // Match phone with any non-digit chars between digits (e.g. +1 (408) 427-7192)
-            const phonePattern = `%${digits.split('').join('%')}%`;
-            q = q.ilike('phone', phonePattern);
+          const phoneFilter = buildPhoneOrFilter(raw);
+          if (phoneFilter) {
+            // Phone-like input: try variants with/without US country code
+            q = q.or(phoneFilter);
           } else {
             const s = raw.replace(/[%,]/g, '');
             q = q.or(`name.ilike.%${s}%,email.ilike.%${s}%,phone.ilike.%${s}%`);

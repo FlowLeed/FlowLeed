@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import type { ContactFilters } from "@/pages/ContactsPage";
+import { buildPhoneOrFilter } from "@/lib/phoneSearch";
 
 export const useContacts = (filters: ContactFilters) => {
   const { user } = useAuth();
@@ -147,9 +148,8 @@ export const useContacts = (filters: ContactFilters) => {
       // Apply search filter — sanitize to avoid PostgREST syntax issues with parens/commas
       if (filters.searchTerm) {
         const sanitized = filters.searchTerm.replace(/[(),]/g, '').trim();
-        const digitsOnly = filters.searchTerm.replace(/\D/g, '');
-        const phonePattern = digitsOnly.split('').join('%');
-        const phonePart = digitsOnly.length >= 3 ? `,phone.ilike.%${phonePattern}%` : '';
+        const phoneFilter = buildPhoneOrFilter(filters.searchTerm);
+        const phonePart = phoneFilter ? `,${phoneFilter}` : '';
         query = query.or(
           `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`
         );

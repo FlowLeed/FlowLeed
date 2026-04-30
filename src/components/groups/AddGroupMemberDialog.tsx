@@ -8,6 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Search, UserPlus } from "lucide-react";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { buildPhoneOrFilter } from "@/lib/phoneSearch";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -55,7 +56,10 @@ export const AddGroupMemberDialog = ({
       }
 
       if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+        const sanitized = searchTerm.replace(/[(),]/g, '').trim();
+        const phoneFilter = buildPhoneOrFilter(searchTerm);
+        const phonePart = phoneFilter ? `,${phoneFilter}` : '';
+        query = query.or(`name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`);
       }
 
       const { data, error } = await query.limit(10);
