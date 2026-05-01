@@ -3171,6 +3171,25 @@ export type Database = {
         Args: { _admin_user_id: string }
         Returns: string
       }
+      get_org_checkin_counts: {
+        Args: {
+          p_campus_id?: string
+          p_month_start: string
+          p_org_id: string
+          p_week_start: string
+        }
+        Returns: {
+          checkins_month: number
+          checkins_week: number
+        }[]
+      }
+      get_org_engagement_distribution: {
+        Args: { p_campus_id?: string; p_org_id: string }
+        Returns: {
+          count: number
+          engagement_level: string
+        }[]
+      }
       get_organizations_health_data: {
         Args: never
         Returns: {
