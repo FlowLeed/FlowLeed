@@ -108,10 +108,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   onSettingsClick,
   pinnedFlowIds,
   onPin,
-  showAllFlows,
-  onToggleShowAll,
-  showPinnedOnly,
-  onTogglePinnedOnly,
+  filterControl,
 }) => {
   const location = useLocation();
   const {
