@@ -341,16 +341,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
         </div>
         {title === "Flows" && (
           <div className="flex items-center gap-0.5">
-            {onToggleShowAll && (
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showAllFlows ? 'text-foreground' : 'text-muted-foreground'}`} onClick={onToggleShowAll} title={showAllFlows ? "Showing all flows" : "Showing my flows"}>
-                {showAllFlows ? <Users className="h-3 w-3" /> : <User className="h-3 w-3" />}
-              </Button>
-            )}
-            {onTogglePinnedOnly && (
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showPinnedOnly ? 'text-muted-foreground' : 'text-muted-foreground hover:text-foreground'}`} onClick={onTogglePinnedOnly} title={showPinnedOnly ? "Showing pinned only" : "Showing all"}>
-                <Star className={`h-3 w-3 transition-all ${showPinnedOnly ? '' : 'hover:fill-current'}`} />
-              </Button>
-            )}
+            {filterControl}
             {onSettingsClick && (
               <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent" onClick={onSettingsClick}>
                 <Settings2 className="h-3 w-3" />
