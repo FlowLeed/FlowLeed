@@ -476,8 +476,40 @@ export const Sidebar = () => {
   const { data: myFlows } = useMyFlows(user?.id);
   const { pinnedFlowIds, togglePin } = useFlowPreferences(user?.id);
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
-  const [showAllFlows, setShowAllFlows] = useState(false);
-  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
+  const STORAGE_KEY = user?.id ? `flow-filters:${user.id}` : null;
+  const initialFilters = (() => {
+    if (typeof window === "undefined" || !STORAGE_KEY) return { showAllFlows: false, showPinnedOnly: false, teamMemberFilter: null as string | null };
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { showAllFlows: false, showPinnedOnly: false, teamMemberFilter: null as string | null };
+      const parsed = JSON.parse(raw);
+      return {
+        showAllFlows: !!parsed.showAllFlows,
+        showPinnedOnly: !!parsed.showPinnedOnly,
+        teamMemberFilter: parsed.teamMemberFilter ?? null,
+      };
+    } catch {
+      return { showAllFlows: false, showPinnedOnly: false, teamMemberFilter: null as string | null };
+    }
+  })();
+  const [showAllFlows, setShowAllFlows] = useState(initialFilters.showAllFlows);
+  const [showPinnedOnly, setShowPinnedOnly] = useState(initialFilters.showPinnedOnly);
+  const [teamMemberFilter, setTeamMemberFilter] = useState<string | null>(initialFilters.teamMemberFilter);
+
+  const { isOrgAdmin } = useIsOrgAdmin(user?.id);
+  const { data: orgMembers = [] } = useOrgMembers(user?.id, isOrgAdmin);
+  const { data: flowsByMember } = useFlowTeamMemberships(isOrgAdmin && !!teamMemberFilter);
+
+  // Persist filter selections per user
+  useEffect(() => {
+    if (!STORAGE_KEY || typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ showAllFlows, showPinnedOnly, teamMemberFilter })
+      );
+    } catch {}
+  }, [STORAGE_KEY, showAllFlows, showPinnedOnly, teamMemberFilter]);
   
   const pageItems: SidebarItem[] = [{
     title: "Dashboard",
