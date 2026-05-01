@@ -24,16 +24,29 @@ export const useOrgMembers = (userId: string | undefined, enabled: boolean) => {
 
       const { data: members, error: memErr } = await supabase
         .from("organization_members")
-        .select("user_id, profiles:user_id(full_name, avatar_url)")
+        .select("user_id")
         .eq("organization_id", myMembership.organization_id);
       if (memErr) throw memErr;
+      if (!members || members.length === 0) return [];
 
-      return (members || [])
-        .map((m: any) => ({
-          user_id: m.user_id,
-          full_name: m.profiles?.full_name || "Unnamed",
-          avatar_url: m.profiles?.avatar_url ?? null,
-        }))
+      const userIds = members.map((m: any) => m.user_id).filter(Boolean);
+      const { data: profiles, error: profErr } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url")
+        .in("user_id", userIds);
+      if (profErr) throw profErr;
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+
+      return members
+        .map((m: any) => {
+          const p = profileMap.get(m.user_id);
+          return {
+            user_id: m.user_id,
+            full_name: p?.full_name || "Unnamed",
+            avatar_url: p?.avatar_url ?? null,
+          };
+        })
         .sort((a, b) => a.full_name.localeCompare(b.full_name));
     },
     enabled: !!userId && enabled,
