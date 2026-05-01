@@ -3,7 +3,12 @@ import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
+import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
+import { useFlowTeamMemberships } from "@/hooks/useFlowTeamMemberships";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -46,10 +51,7 @@ interface SidebarSectionProps {
   onSettingsClick?: () => void;
   pinnedFlowIds?: Set<string>;
   onPin?: (flowId: string) => void;
-  showAllFlows?: boolean;
-  onToggleShowAll?: () => void;
-  showPinnedOnly?: boolean;
-  onTogglePinnedOnly?: () => void;
+  filterControl?: React.ReactNode;
 }
 const NavItem = ({
   item,
@@ -106,10 +108,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   onSettingsClick,
   pinnedFlowIds,
   onPin,
-  showAllFlows,
-  onToggleShowAll,
-  showPinnedOnly,
-  onTogglePinnedOnly,
+  filterControl,
 }) => {
   const location = useLocation();
   const {
@@ -342,16 +341,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
         </div>
         {title === "Flows" && (
           <div className="flex items-center gap-0.5">
-            {onToggleShowAll && (
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showAllFlows ? 'text-foreground' : 'text-muted-foreground'}`} onClick={onToggleShowAll} title={showAllFlows ? "Showing all flows" : "Showing my flows"}>
-                {showAllFlows ? <Users className="h-3 w-3" /> : <User className="h-3 w-3" />}
-              </Button>
-            )}
-            {onTogglePinnedOnly && (
-              <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 hover:bg-sidebar-accent ${showPinnedOnly ? 'text-muted-foreground' : 'text-muted-foreground hover:text-foreground'}`} onClick={onTogglePinnedOnly} title={showPinnedOnly ? "Showing pinned only" : "Showing all"}>
-                <Star className={`h-3 w-3 transition-all ${showPinnedOnly ? '' : 'hover:fill-current'}`} />
-              </Button>
-            )}
+            {filterControl}
             {onSettingsClick && (
               <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent" onClick={onSettingsClick}>
                 <Settings2 className="h-3 w-3" />
@@ -486,8 +476,40 @@ export const Sidebar = () => {
   const { data: myFlows } = useMyFlows(user?.id);
   const { pinnedFlowIds, togglePin } = useFlowPreferences(user?.id);
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
-  const [showAllFlows, setShowAllFlows] = useState(false);
-  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
+  const STORAGE_KEY = user?.id ? `flow-filters:${user.id}` : null;
+  const initialFilters = (() => {
+    if (typeof window === "undefined" || !STORAGE_KEY) return { showAllFlows: false, showPinnedOnly: false, teamMemberFilter: null as string | null };
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { showAllFlows: false, showPinnedOnly: false, teamMemberFilter: null as string | null };
+      const parsed = JSON.parse(raw);
+      return {
+        showAllFlows: !!parsed.showAllFlows,
+        showPinnedOnly: !!parsed.showPinnedOnly,
+        teamMemberFilter: parsed.teamMemberFilter ?? null,
+      };
+    } catch {
+      return { showAllFlows: false, showPinnedOnly: false, teamMemberFilter: null as string | null };
+    }
+  })();
+  const [showAllFlows, setShowAllFlows] = useState(initialFilters.showAllFlows);
+  const [showPinnedOnly, setShowPinnedOnly] = useState(initialFilters.showPinnedOnly);
+  const [teamMemberFilter, setTeamMemberFilter] = useState<string | null>(initialFilters.teamMemberFilter);
+
+  const { isOrgAdmin } = useIsOrgAdmin(user?.id);
+  const { data: orgMembers = [] } = useOrgMembers(user?.id, isOrgAdmin);
+  const { data: flowsByMember } = useFlowTeamMemberships(isOrgAdmin && !!teamMemberFilter);
+
+  // Persist filter selections per user
+  useEffect(() => {
+    if (!STORAGE_KEY || typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ showAllFlows, showPinnedOnly, teamMemberFilter })
+      );
+    } catch {}
+  }, [STORAGE_KEY, showAllFlows, showPinnedOnly, teamMemberFilter]);
   
   const pageItems: SidebarItem[] = [{
     title: "Dashboard",
@@ -549,17 +571,23 @@ export const Sidebar = () => {
 
   // Filtering logic
   let displayedFlowItems: SidebarItem[];
-  if (showPinnedOnly) {
-    displayedFlowItems = allFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
-  } else if (showAllFlows) {
+  if (showAllFlows) {
     displayedFlowItems = allFlowItems;
   } else {
     // My flows: show flows where user is a team member + pinned flows
-    displayedFlowItems = allFlowItems.filter(item => 
-      (item.flowId && myFlowIds.has(item.flowId)) || 
+    displayedFlowItems = allFlowItems.filter(item =>
+      (item.flowId && myFlowIds.has(item.flowId)) ||
       (item.flowId && pinnedFlowIds.has(item.flowId))
     );
   }
+  if (showPinnedOnly) {
+    displayedFlowItems = displayedFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
+  }
+  if (isOrgAdmin && teamMemberFilter && flowsByMember) {
+    const memberFlows = flowsByMember.get(teamMemberFilter) ?? new Set<string>();
+    displayedFlowItems = displayedFlowItems.filter(item => item.flowId && memberFlows.has(item.flowId));
+  }
+  const filtersActive = showAllFlows || showPinnedOnly || !!teamMemberFilter;
   
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
@@ -604,21 +632,84 @@ export const Sidebar = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  const selectedMember = teamMemberFilter ? orgMembers.find(m => m.user_id === teamMemberFilter) : null;
+  const flowsFilterControl = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent relative" title="Filter flows">
+          <FilterIcon className="h-3 w-3" />
+          {filtersActive && (
+            <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-purple-500" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
+        <DropdownMenuLabel>View</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={showAllFlows ? "all" : "my"} onValueChange={(v) => setShowAllFlows(v === "all")}>
+          <DropdownMenuRadioItem value="my">My flows</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="all">All flows</DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Show</DropdownMenuLabel>
+        <DropdownMenuCheckboxItem checked={showPinnedOnly} onCheckedChange={(c) => setShowPinnedOnly(!!c)}>
+          <Star className="h-3.5 w-3.5 mr-2" />
+          Favorites only
+        </DropdownMenuCheckboxItem>
+        {isOrgAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Team member</DropdownMenuLabel>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <span className="truncate">{selectedMember ? selectedMember.full_name : "Anyone"}</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent className="max-h-72 overflow-y-auto bg-popover z-50">
+                  <DropdownMenuItem onClick={() => setTeamMemberFilter(null)}>
+                    <span className="w-4 mr-2 inline-flex justify-center">
+                      {!teamMemberFilter && <CheckIcon className="h-3.5 w-3.5" />}
+                    </span>
+                    Anyone
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {orgMembers.map((m) => (
+                    <DropdownMenuItem key={m.user_id} onClick={() => setTeamMemberFilter(m.user_id)}>
+                      <span className="w-4 mr-2 inline-flex justify-center">
+                        {teamMemberFilter === m.user_id && <CheckIcon className="h-3.5 w-3.5" />}
+                      </span>
+                      <Avatar className="h-5 w-5 mr-2">
+                        <AvatarImage src={m.avatar_url ?? undefined} alt={m.full_name} />
+                        <AvatarFallback className="text-[10px]">
+                          {m.full_name.split(" ").map(p => p[0]).slice(0, 2).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">{m.full_name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  {orgMembers.length === 0 && (
+                    <DropdownMenuItem disabled>No teammates</DropdownMenuItem>
+                  )}
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const sidebarContent = (
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-6 sidebar-scroll">
         <SidebarSection title="HUB" items={pageItems} />
-        <SidebarSection 
-          title="Flows" 
-          items={displayedFlowItems} 
+        <SidebarSection
+          title="Flows"
+          items={displayedFlowItems}
           onSettingsClick={() => setShowFlowsManagement(true)}
           pinnedFlowIds={pinnedFlowIds}
           onPin={togglePin}
-          showAllFlows={showAllFlows}
-          onToggleShowAll={() => setShowAllFlows(!showAllFlows)}
-          showPinnedOnly={showPinnedOnly}
-          onTogglePinnedOnly={() => setShowPinnedOnly(!showPinnedOnly)}
+          filterControl={flowsFilterControl}
         />
         <SidebarSection title="Connect" items={connectItems} />
         <SidebarSection title="Settings" items={settingsItems} />
