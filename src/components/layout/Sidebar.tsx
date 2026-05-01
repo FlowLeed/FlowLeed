@@ -571,17 +571,23 @@ export const Sidebar = () => {
 
   // Filtering logic
   let displayedFlowItems: SidebarItem[];
-  if (showPinnedOnly) {
-    displayedFlowItems = allFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
-  } else if (showAllFlows) {
+  if (showAllFlows) {
     displayedFlowItems = allFlowItems;
   } else {
     // My flows: show flows where user is a team member + pinned flows
-    displayedFlowItems = allFlowItems.filter(item => 
-      (item.flowId && myFlowIds.has(item.flowId)) || 
+    displayedFlowItems = allFlowItems.filter(item =>
+      (item.flowId && myFlowIds.has(item.flowId)) ||
       (item.flowId && pinnedFlowIds.has(item.flowId))
     );
   }
+  if (showPinnedOnly) {
+    displayedFlowItems = displayedFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
+  }
+  if (isOrgAdmin && teamMemberFilter && flowsByMember) {
+    const memberFlows = flowsByMember.get(teamMemberFilter) ?? new Set<string>();
+    displayedFlowItems = displayedFlowItems.filter(item => item.flowId && memberFlows.has(item.flowId));
+  }
+  const filtersActive = showAllFlows || showPinnedOnly || !!teamMemberFilter;
   
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
