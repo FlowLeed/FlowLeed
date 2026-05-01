@@ -258,53 +258,33 @@ export function useOrgCheckinStats(orgId: string | undefined, campusId?: string 
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      // If campusId, get contact IDs for that campus first
-      let contactIds: string[] | null = null;
-      if (campusId) {
-        const { data: campusContacts } = await supabase
-          .from('contacts')
-          .select('id')
-          .eq('organization_id', orgId)
-          .eq('campus_id', campusId);
-        contactIds = campusContacts?.map(c => c.id) || [];
-        if (contactIds.length === 0) {
-          return { checkinsThisWeek: 0, checkinsThisMonth: 0, engagementDistribution: {} };
-        }
-      }
-
-      let weekQuery = supabase
-        .from('pco_checkins')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId)
-        .gte('checked_in_at', weekAgo);
-      if (contactIds) weekQuery = weekQuery.in('contact_id', contactIds);
-
-      let monthQuery = supabase
-        .from('pco_checkins')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId)
-        .gte('checked_in_at', monthAgo);
-      if (contactIds) monthQuery = monthQuery.in('contact_id', contactIds);
-
-      let levelQuery = supabase
-        .from('contact_engagement_scores')
-        .select('engagement_level')
-        .eq('organization_id', orgId);
-      if (contactIds) levelQuery = levelQuery.in('contact_id', contactIds);
-
-      const [weekRes, monthRes, levelRes] = await Promise.all([
-        weekQuery, monthQuery, levelQuery,
+      const [countsRes, distRes] = await Promise.all([
+        supabase.rpc('get_org_checkin_counts', {
+          p_org_id: orgId,
+          p_week_start: weekAgo,
+          p_month_start: monthAgo,
+          p_campus_id: campusId ?? undefined,
+        }),
+        supabase.rpc('get_org_engagement_distribution', {
+          p_org_id: orgId,
+          p_campus_id: campusId ?? undefined,
+        }),
       ]);
 
-      const levels = (levelRes.data || []) as unknown as { engagement_level: string }[];
+      if (countsRes.error) throw countsRes.error;
+      if (distRes.error) throw distRes.error;
+
+      const countsRow = (countsRes.data as unknown as { checkins_week: number | string; checkins_month: number | string }[])?.[0];
+      const distRows = (distRes.data as unknown as { engagement_level: string; count: number | string }[]) || [];
+
       const distribution: Record<string, number> = {};
-      for (const row of levels) {
-        distribution[row.engagement_level] = (distribution[row.engagement_level] || 0) + 1;
+      for (const row of distRows) {
+        distribution[row.engagement_level] = Number(row.count) || 0;
       }
 
       return {
-        checkinsThisWeek: weekRes.count || 0,
-        checkinsThisMonth: monthRes.count || 0,
+        checkinsThisWeek: Number(countsRow?.checkins_week) || 0,
+        checkinsThisMonth: Number(countsRow?.checkins_month) || 0,
         engagementDistribution: distribution,
       };
     },
