@@ -1,40 +1,64 @@
-## Problem
+# Add Filter dropdown to Flows in sidebar
 
-Phone search works in the "Add People to Flow" dialog but fails in the **Global Search** (Cmd+K) and **Add Group Member** dialog. The server returns the right contacts, but they get hidden before display.
+Replace the two existing inline icon toggles in the Flows section header (the user/users "my vs all" button and the star "pinned only" button) with a single **Filter icon** that opens a dropdown menu. Admins see one extra section.
 
-## Root cause
+## Filter dropdown contents
 
-Both broken searches use the cmdk `Command` component, which by default **filters results client-side** by matching the typed text against each item's `value` prop. The `value` is built from name + email + phone — and the stored phone (`+14084277192`) doesn't match the user's formatted input (`+1 (408) 427-7192`), so cmdk drops every row even though the server returned them correctly.
+```text
+View
+  ◉ My flows
+  ○ All flows
 
-The working "Add People to Flow" dialog uses a plain `<Input>` (no cmdk filtering), which is why it displays results.
+Show
+  ☐ Favorites only
 
-## Fix
+Team member            (admins only)
+  ▼ Anyone
+    Sarah K.
+    Mike R.
+    ...
+```
 
-Disable cmdk's client-side filtering in the two affected components and rely entirely on the server-side query (which already uses `buildPhoneOrFilter` correctly).
+- **View** (radio): "My flows" / "All flows" — replaces the current `showAllFlows` toggle.
+- **Show → Favorites only** (checkbox): replaces the current `showPinnedOnly` star toggle.
+- **Team member** (admins only, single-select submenu): "Anyone" plus each org member. When set, only flows where that user is on the flow team are shown.
 
-### Files to change
+A small dot/badge appears on the Filter icon when any non-default filter is active so it's discoverable that filters are applied.
 
-1. **`src/components/search/GlobalSearch.tsx`**
-   - Pass `shouldFilter={false}` to the `CommandDialog` (cmdk Command root).
-   - Remove the synthetic `value={...name email phone}` from each `CommandItem` so cmdk doesn't try to score them.
+## Technical plan
 
-2. **`src/components/groups/AddGroupMemberDialog.tsx`**
-   - Pass `shouldFilter={false}` to the `Command` wrapper.
+1. **`src/components/layout/Sidebar.tsx`**
+   - Replace `Users`/`User` toggle and `Star` toggle in the Flows section header with a single `<DropdownMenu>` triggered by a `Filter` lucide icon button (same `h-6 w-6` styling).
+   - Use `DropdownMenuRadioGroup` for View, `DropdownMenuCheckboxItem` for Favorites, and a `DropdownMenuSub` for Team member (rendered only when `isOrgAdmin`).
+   - Add new state `const [teamMemberFilter, setTeamMemberFilter] = useState<string | null>(null);` alongside existing `showAllFlows` / `showPinnedOnly`.
+   - Extend the existing filtering block (lines ~550–562) so that after computing `displayedFlowItems`, when `teamMemberFilter` is set we further restrict to flows where that user is on `pipeline_team_members`.
+   - Update `SidebarSectionProps` to pass a single `filterControl?: ReactNode` instead of the four boolean toggle props (cleaner) — header just renders it next to the Settings gear.
 
-3. **`src/components/ui/command.tsx`** (if needed)
-   - Verify `CommandDialog` forwards extra props (like `shouldFilter`) through to the underlying `Command`. If it doesn't, thread the prop through.
+2. **Admin detection** — new lightweight hook `src/hooks/useIsOrgAdmin.tsx`:
+   - Reads `organization_members.role` for the current user (mirrors the pattern used at `FlowContext.tsx:133`).
+   - Returns `{ isOrgAdmin: boolean }` where `role IN ('owner', 'admin')`.
+   - Cached via React Query (`['org-role', userId]`).
 
-### Bonus consistency pass
+3. **Org members list for the submenu** — new hook `src/hooks/useOrgMembers.tsx` (only enabled when `isOrgAdmin`):
+   - Joins `organization_members` → `profiles` for the current user's org and returns `{ user_id, full_name, avatar_url }[]` sorted by name.
 
-While in there, audit any other `Command`-based contact pickers for the same client-filter issue (none currently found beyond the two above, but a quick grep for `CommandInput` + `contacts` will confirm).
+4. **Team-member filtering data** — extend `useMyFlows` is not appropriate (it's user-scoped). Instead, fetch flow → team-member mapping once and reuse:
+   - New hook `src/hooks/useFlowTeamMemberships.tsx` (admin-only, enabled when filter is active): returns `Map<userId, Set<pipelineId>>` from `pipeline_team_members`.
+   - Sidebar uses `flowsByMember.get(teamMemberFilter)` to filter `displayedFlowItems`.
 
-## Why this works
+5. **Persistence (optional, recommended)** — store the three filter values in `localStorage` keyed by user id so the choice survives reloads, matching the implicit feel of the current toggles. No DB changes.
 
-- The server query already returns the correct rows for `+1 (408) 427-7192`, `4084277192`, etc. via `buildPhoneOrFilter`.
-- Disabling `shouldFilter` lets every server result render as-is, exactly like the working Add-People dialog.
-- No changes needed to `phoneSearch.ts` or `useContacts` — those are already correct.
+6. **Active-state indicator** — add a small purple dot via an absolutely positioned `<span>` on the Filter button when `showAllFlows || showPinnedOnly || teamMemberFilter`.
+
+## Files touched
+
+- `src/components/layout/Sidebar.tsx` — swap toggles for the Filter dropdown, add new state, extend filtering.
+- `src/hooks/useIsOrgAdmin.tsx` — new.
+- `src/hooks/useOrgMembers.tsx` — new.
+- `src/hooks/useFlowTeamMemberships.tsx` — new.
 
 ## Out of scope
 
-- The `useContacts` hook (Contacts page) doesn't use cmdk filtering, so it isn't affected by this bug.
-- No DB migrations or edge-function changes.
+- Moving the Settings gear, drag-to-reorder, or pin behavior on individual flow rows — all preserved as-is.
+- Saving filters to a database table (using localStorage instead).
+- Filtering by flow type (linear/recurring) or status — easy to add later inside the same dropdown if you want.
