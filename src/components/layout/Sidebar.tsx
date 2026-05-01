@@ -3,7 +3,12 @@ import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
+import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
+import { useFlowTeamMemberships } from "@/hooks/useFlowTeamMemberships";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
@@ -46,10 +51,7 @@ interface SidebarSectionProps {
   onSettingsClick?: () => void;
   pinnedFlowIds?: Set<string>;
   onPin?: (flowId: string) => void;
-  showAllFlows?: boolean;
-  onToggleShowAll?: () => void;
-  showPinnedOnly?: boolean;
-  onTogglePinnedOnly?: () => void;
+  filterControl?: React.ReactNode;
 }
 const NavItem = ({
   item,
