@@ -632,21 +632,84 @@ export const Sidebar = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  const selectedMember = teamMemberFilter ? orgMembers.find(m => m.user_id === teamMemberFilter) : null;
+  const flowsFilterControl = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-sidebar-accent relative" title="Filter flows">
+          <FilterIcon className="h-3 w-3" />
+          {filtersActive && (
+            <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-purple-500" />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
+        <DropdownMenuLabel>View</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={showAllFlows ? "all" : "my"} onValueChange={(v) => setShowAllFlows(v === "all")}>
+          <DropdownMenuRadioItem value="my">My flows</DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="all">All flows</DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Show</DropdownMenuLabel>
+        <DropdownMenuCheckboxItem checked={showPinnedOnly} onCheckedChange={(c) => setShowPinnedOnly(!!c)}>
+          <Star className="h-3.5 w-3.5 mr-2" />
+          Favorites only
+        </DropdownMenuCheckboxItem>
+        {isOrgAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Team member</DropdownMenuLabel>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <span className="truncate">{selectedMember ? selectedMember.full_name : "Anyone"}</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent className="max-h-72 overflow-y-auto bg-popover z-50">
+                  <DropdownMenuItem onClick={() => setTeamMemberFilter(null)}>
+                    <span className="w-4 mr-2 inline-flex justify-center">
+                      {!teamMemberFilter && <CheckIcon className="h-3.5 w-3.5" />}
+                    </span>
+                    Anyone
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {orgMembers.map((m) => (
+                    <DropdownMenuItem key={m.user_id} onClick={() => setTeamMemberFilter(m.user_id)}>
+                      <span className="w-4 mr-2 inline-flex justify-center">
+                        {teamMemberFilter === m.user_id && <CheckIcon className="h-3.5 w-3.5" />}
+                      </span>
+                      <Avatar className="h-5 w-5 mr-2">
+                        <AvatarImage src={m.avatar_url ?? undefined} alt={m.full_name} />
+                        <AvatarFallback className="text-[10px]">
+                          {m.full_name.split(" ").map(p => p[0]).slice(0, 2).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="truncate">{m.full_name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  {orgMembers.length === 0 && (
+                    <DropdownMenuItem disabled>No teammates</DropdownMenuItem>
+                  )}
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   const sidebarContent = (
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-6 sidebar-scroll">
         <SidebarSection title="HUB" items={pageItems} />
-        <SidebarSection 
-          title="Flows" 
-          items={displayedFlowItems} 
+        <SidebarSection
+          title="Flows"
+          items={displayedFlowItems}
           onSettingsClick={() => setShowFlowsManagement(true)}
           pinnedFlowIds={pinnedFlowIds}
           onPin={togglePin}
-          showAllFlows={showAllFlows}
-          onToggleShowAll={() => setShowAllFlows(!showAllFlows)}
-          showPinnedOnly={showPinnedOnly}
-          onTogglePinnedOnly={() => setShowPinnedOnly(!showPinnedOnly)}
+          filterControl={flowsFilterControl}
         />
         <SidebarSection title="Connect" items={connectItems} />
         <SidebarSection title="Settings" items={settingsItems} />
