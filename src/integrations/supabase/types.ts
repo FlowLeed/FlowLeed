@@ -3190,6 +3190,14 @@ export type Database = {
           engagement_level: string
         }[]
       }
+      get_org_team_activity_stats: {
+        Args: { p_org_id: string }
+        Returns: {
+          active_days_30d: number
+          last_active_at: string
+          user_id: string
+        }[]
+      }
       get_organizations_health_data: {
         Args: never
         Returns: {

@@ -231,6 +231,15 @@ export const useTeamPerformance = (dateRange: DateRange) => {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
+      // Fetch team activity stats (last_active, active_days_30d) server-side
+      const { data: activityStats } = await supabase.rpc(
+        "get_org_team_activity_stats",
+        { p_org_id: organizationId }
+      );
+      const activityMap = new Map(
+        (activityStats || []).map((a: any) => [a.user_id, a])
+      );
+
       const teamPerformance = await Promise.all(
         (members || []).map(async (member) => {
           const profile = profileMap.get(member.user_id);
@@ -257,6 +266,13 @@ export const useTeamPerformance = (dateRange: DateRange) => {
             interactionTypes[i.interaction_type] = (interactionTypes[i.interaction_type] || 0) + 1;
           });
 
+          const stat: any = activityMap.get(member.user_id);
+          const lastActiveRaw = stat?.last_active_at as string | undefined;
+          const lastActiveAt =
+            lastActiveRaw && new Date(lastActiveRaw).getFullYear() > 1970
+              ? lastActiveRaw
+              : null;
+
           return {
             userId: member.user_id,
             name: profile?.full_name || "Unknown",
@@ -264,6 +280,8 @@ export const useTeamPerformance = (dateRange: DateRange) => {
             assignedContacts: assignedContacts || 0,
             totalInteractions: interactions?.length || 0,
             interactionTypes,
+            lastActiveAt,
+            activeDays30d: stat?.active_days_30d ?? 0,
           };
         })
       );
