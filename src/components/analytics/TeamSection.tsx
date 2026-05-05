@@ -68,6 +68,8 @@ export const TeamSection = ({ dateRange }: TeamSectionProps) => {
                 <TableHead>Team Member</TableHead>
                 <TableHead className="text-right">Assigned People</TableHead>
                 <TableHead className="text-right">Total Interactions</TableHead>
+                <TableHead>Last Active</TableHead>
+                <TableHead className="text-right">Active Days (30d)</TableHead>
                 <TableHead>Interaction Types</TableHead>
               </TableRow>
             </TableHeader>
@@ -88,6 +90,18 @@ export const TeamSection = ({ dateRange }: TeamSectionProps) => {
                   <TableCell className="text-right">{member.assignedContacts}</TableCell>
                   <TableCell className="text-right">{member.totalInteractions}</TableCell>
                   <TableCell>
+                    {member.lastActiveAt ? (
+                      <span className="text-sm">
+                        {formatDistanceToNow(new Date(member.lastActiveAt), { addSuffix: true })}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">Never</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className="text-sm">{member.activeDays30d}</span>
+                  </TableCell>
+                  <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {Object.entries(member.interactionTypes).map(([type, count]) => (
                         <Badge key={type} variant="secondary" className="text-xs">
@@ -103,7 +117,7 @@ export const TeamSection = ({ dateRange }: TeamSectionProps) => {
               ))}
               {teamPerformance?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No team activity found
                   </TableCell>
                 </TableRow>
