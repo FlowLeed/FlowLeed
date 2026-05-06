@@ -150,7 +150,7 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
@@ -161,8 +161,8 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="space-y-2 min-h-0">
             <Label htmlFor="email">Email Address</Label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -212,7 +212,7 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
               Pre-assign this member to flows so they can jump in right away.
             </p>
 
-            <div className="rounded-md border bg-muted/30">
+            <div className="rounded-md border bg-muted/30 overflow-hidden">
               {flowsLoading ? (
                 <div className="p-4 text-sm text-muted-foreground">Loading flows…</div>
               ) : flows.length === 0 ? (
@@ -220,7 +220,7 @@ export const InviteTeamMemberDialog: React.FC<InviteTeamMemberDialogProps> = ({
                   No flows yet. You can add this member to flows later.
                 </div>
               ) : (
-                <ScrollArea className="max-h-56">
+                <ScrollArea className="h-[min(14rem,32vh)]">
                   <div className="divide-y">
                     {flows.map((flow) => {
                       const checked = !!assignments[flow.id];
