@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
@@ -23,12 +24,19 @@ export interface ContactFilters {
 
 const ContactsPage = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [searchParams] = useSearchParams();
+  const initialEngagement = (() => {
+    const v = searchParams.get("engagementLevel");
+    return v && ["highly_engaged", "active", "at_risk", "inactive", "new", "none"].includes(v)
+      ? v
+      : "all";
+  })();
   const [filters, setFilters] = useState<ContactFilters>({
     searchTerm: "",
     assignedToUserId: "all",
     flowId: "all",
     lastInteractionDays: "all",
-    engagementLevel: "all",
+    engagementLevel: initialEngagement,
     campusId: "all",
   });
 

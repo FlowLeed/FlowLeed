@@ -8,6 +8,7 @@ import { FlowsSection } from "@/components/analytics/FlowsSection";
 import { TeamSection } from "@/components/analytics/TeamSection";
 import { PeopleSection } from "@/components/analytics/PeopleSection";
 import { AttendanceSection } from "@/components/analytics/AttendanceSection";
+import { HeartbeatCard } from "@/components/analytics/HeartbeatCard";
 import { DateRange, DateRangePreset, getDateRangeFromPreset } from "@/hooks/useAnalytics";
 
 const AnalyticsPage = () => {
@@ -38,6 +39,7 @@ const AnalyticsPage = () => {
             onCampusChange={setSelectedCampusId}
           />
         </div>
+        <HeartbeatCard campusId={selectedCampusId} />
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>

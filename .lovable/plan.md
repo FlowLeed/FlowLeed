@@ -1,44 +1,76 @@
-## Goal
 
-Fix the silent 1000-row cap in the Analytics → Attendance tab so the engagement distribution and campus-filtered counts are accurate at any org size.
+# Church Heartbeat on Analytics
 
-## Changes
+Add a hero card at the top of `/analytics` that shows the church's engagement "heartbeat": one row per engagement level (Highly Engaged, Active, At Risk, Inactive, New) with a label, descriptor, count, and a horizontal progress bar. Clicking a row deep-links to the People page pre-filtered by that engagement level.
 
-### 1. Database migration — add two SECURITY DEFINER RPCs
+The data already exists — `useOrgCheckinStats` returns `engagementDistribution` keyed by level, and `ContactsPage` already supports an `engagementLevel` filter. No new backend work needed for Phase 1.
 
-**`get_org_engagement_distribution(p_org_id uuid, p_campus_id uuid default null)`**
-- Returns `(engagement_level text, count bigint)` rows.
-- Server-side `GROUP BY engagement_level` on `contact_engagement_scores`, joined to `contacts` when `p_campus_id` is provided.
-- Internal access check: caller must be a member of `p_org_id` via `organization_members` (or a system admin).
+---
 
-**`get_org_checkin_counts(p_org_id uuid, p_campus_id uuid default null, p_week_start timestamptz, p_month_start timestamptz)`**
-- Returns a single row `(checkins_week bigint, checkins_month bigint)`.
-- Two `COUNT(*)` aggregates over `pco_checkins` filtered by `organization_id`, `checked_in_at >=` thresholds, and (optionally) `contact_id IN (SELECT id FROM contacts WHERE campus_id = p_campus_id)`.
-- Same access check as above.
+## Phase 1 — Heartbeat card (frontend only)
 
-Both functions: `LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public`, granted to `authenticated`.
+**New component:** `src/components/analytics/HeartbeatCard.tsx`
+- Props: `campusId?: string | null`
+- Uses `useOrgCheckinStats(orgId, campusId)` (already in project)
+- Layout matches the reference screenshot:
+  - Header: "Church Heartbeat" + total people on the right (`{total} people`)
+  - One row per level with: bold label, muted descriptor on the right, full-width `Progress` bar below (count / max across levels = bar value)
+- Levels (top → bottom) and copy:
+  - **Highly Engaged** — "Engaged, serving, connected"
+  - **Active** — "Showing up consistently"
+  - **At Risk** — "Missed check-ins, fading signals"
+  - **Inactive** — "Needs a personal call"
+  - **New** — "Recently joined the family"
+- Each row is a `button` → navigates to `/contacts?engagementLevel=<level>`
+- Loading state via `Skeleton`; empty state mirrors `AttendanceSection`'s "no check-in data" message
+- Styling: semantic tokens only (`bg-card`, `text-foreground`, `text-muted-foreground`, `bg-primary` for bars). No hardcoded colors.
 
-### 2. Update `src/hooks/useCheckinData.tsx`
+**Wire-up:** `src/pages/AnalyticsPage.tsx`
+- Render `<HeartbeatCard campusId={selectedCampusId} />` directly under the filters row, above the `Tabs`.
 
-Rewrite `useOrgCheckinStats` to:
-- Compute `weekAgo` / `monthAgo` as today.
-- Call `supabase.rpc('get_org_checkin_counts', { p_org_id, p_campus_id, p_week_start, p_month_start })` for the two counts.
-- Call `supabase.rpc('get_org_engagement_distribution', { p_org_id, p_campus_id })` and reduce rows into the `{ level: count }` map the UI already expects.
-- Drop the old `.select('id', { count: 'exact', head: true })` queries and the campus contact-ID prefetch (the prefetch itself was capped at 1000).
+**Deep-link support:** `src/pages/ContactsPage.tsx`
+- On mount, read `?engagementLevel=` from the URL (via `useSearchParams`) and seed the `engagementLevel` filter if the value is one of the known levels.
+- No other behavior change.
 
-No changes needed in `AttendanceSection.tsx` — the returned shape stays identical:
-```
-{ checkinsThisWeek, checkinsThisMonth, engagementDistribution }
-```
+**Acceptance**
+- Card appears on Analytics, shows real counts pulled from existing RPC.
+- Bars are proportional to the largest level.
+- Clicking a row lands on `/contacts` with the matching engagement filter active.
+- Respects the existing campus filter on Analytics.
 
-## Why this fixes it
+---
 
-- Aggregation happens in Postgres, so PostgREST's 1000-row response cap never applies.
-- Counts are exact regardless of how many contacts/check-ins exist.
-- One round-trip per metric instead of fetching rows and counting in JS.
-- Campus filter is applied inside the SQL, so large campuses no longer silently drop contacts past row 1000.
+## Phase 2 — Polish & motion
 
-## Out of scope
+- Subtle bar fill animation on first render (framer-motion, already used in project).
+- Hover state on rows (raise + show "View people →" affordance).
+- Tooltip on each bar with exact count + % of total.
+- Add a "Total scored" vs "Unscored" footer line so the math is transparent (reuses values already computed in `AttendanceSection`).
+- Optional toggle: "Show as %" / "Show counts".
 
-- Wiring the page-level DateRangeFilter into Attendance (still uses fixed 7/30 day windows). Happy to do it next as a separate change.
-- Other analytics tabs (Overview/Flows/Team/People) — only Attendance had the bug you flagged.
+---
+
+## Phase 3 — Trends (requires light backend work)
+
+Goal: show whether the heartbeat is improving or declining.
+
+- New RPC `get_org_engagement_distribution_snapshot(p_org_id, p_as_of date, p_campus_id)` OR a daily snapshot table `org_engagement_snapshots(org_id, campus_id, snapshot_date, level, count)` populated by a pg_cron job (pattern already used elsewhere in the project — see DB Maintenance memory).
+- Heartbeat card shows a small delta per row vs 30 days ago (e.g. `At Risk · +12 ↑`, colored red when bad-direction, green when good-direction).
+- Add a tiny sparkline per row using the snapshot history.
+
+---
+
+## Phase 4 — Actionability
+
+- Each row gets a secondary action: "Start a follow-up flow" → opens the existing AddToFlowDialog pre-scoped to the filtered cohort (bulk add).
+- Surface the Heartbeat card on the Dashboard too (compact variant, no descriptors) so leaders see it on login.
+- Optional: weekly "Heartbeat digest" email reusing `send-daily-digest` infra.
+
+---
+
+## Technical notes
+
+- No new tables in Phase 1/2.
+- Reuses: `useOrgCheckinStats`, `Progress`, `Skeleton`, `Card`, semantic tokens.
+- Engagement level keys must stay in sync with `useCheckinData.tsx` (`highly_engaged | active | at_risk | inactive | new`) and the `engagementLevel` values accepted by `ContactFilters.tsx`. We'll verify the exact strings before wiring the filter.
+- Phase 3 is the only phase that requires a Supabase migration.
