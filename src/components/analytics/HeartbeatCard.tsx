@@ -110,30 +110,32 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
 
   return (
     <TooltipProvider delayDuration={200}>
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
+      <Card className={compact ? "" : "mb-6"}>
+        <CardHeader className={cn("flex flex-row items-center justify-between space-y-0", compact ? "pb-3" : "pb-4")}>
+          <CardTitle className={cn("flex items-center gap-2", compact && "text-base")}>
+            <Activity className={cn("text-primary", compact ? "h-4 w-4" : "h-5 w-5")} />
             Church Heartbeat
           </CardTitle>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setShowAsPercent((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-md border px-2 py-1"
-              aria-label="Toggle counts and percentages"
-            >
-              {showAsPercent ? <Percent className="h-3 w-3" /> : <Hash className="h-3 w-3" />}
-              {showAsPercent ? "Percent" : "Counts"}
-            </button>
+            {!compact && (
+              <button
+                type="button"
+                onClick={() => setShowAsPercent((v) => !v)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded-md border px-2 py-1"
+                aria-label="Toggle counts and percentages"
+              >
+                {showAsPercent ? <Percent className="h-3 w-3" /> : <Hash className="h-3 w-3" />}
+                {showAsPercent ? "Percent" : "Counts"}
+              </button>
+            )}
             <span className="text-sm text-muted-foreground">
               {isLoading ? "—" : `${total} ${total === 1 ? "person" : "people"}`}
             </span>
           </div>
         </CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent className={compact ? "space-y-3" : "space-y-5"}>
           {isLoading ? (
-            <div className="space-y-5">
+            <div className={compact ? "space-y-3" : "space-y-5"}>
               {LEVELS.map((l) => (
                 <div key={l.key} className="space-y-2">
                   <Skeleton className="h-4 w-40" />
@@ -170,11 +172,14 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                       <button
                         type="button"
                         onClick={() => navigate(`/contacts?engagementLevel=${l.key}`)}
-                        className="w-full text-left group rounded-md -mx-2 px-2 py-1.5 hover:bg-muted/50 transition-colors"
+                        className={cn(
+                          "w-full text-left group rounded-md -mx-2 px-2 hover:bg-muted/50 transition-colors",
+                          compact ? "py-1" : "py-1.5"
+                        )}
                       >
-                        <div className="flex items-baseline justify-between mb-2 gap-3">
+                        <div className={cn("flex items-baseline justify-between gap-3", compact ? "mb-1.5" : "mb-2")}>
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-semibold text-foreground">{l.label}</span>
+                            <span className={cn("font-semibold text-foreground", compact && "text-sm")}>{l.label}</span>
                             <span className="text-xs text-muted-foreground tabular-nums">
                               {valueLabel}
                             </span>
@@ -183,14 +188,14 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                             )}
                           </div>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            {sparkValues.length >= 2 && (
+                            {!compact && sparkValues.length >= 2 && (
                               <Sparkline values={sparkValues} positive={sparkPositive} />
                             )}
-                            <span className="hidden sm:inline">{l.descriptor}</span>
+                            {!compact && <span className="hidden sm:inline">{l.descriptor}</span>}
                             <ChevronRight className="h-4 w-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                           </div>
                         </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                        <div className={cn("w-full overflow-hidden rounded-full bg-secondary", compact ? "h-1.5" : "h-2")}>
                           <div
                             className={cn(
                               "h-full bg-primary rounded-full",
@@ -223,12 +228,14 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                   </Tooltip>
                 );
               })}
-              <div className="pt-2 border-t text-xs text-muted-foreground flex items-center justify-between">
-                <span>Trends compared to 30 days ago · based on check-in history</span>
-                <span className="tabular-nums">
-                  {total} scored {total === 1 ? "person" : "people"}
-                </span>
-              </div>
+              {!compact && (
+                <div className="pt-2 border-t text-xs text-muted-foreground flex items-center justify-between">
+                  <span>Trends compared to 30 days ago · based on check-in history</span>
+                  <span className="tabular-nums">
+                    {total} scored {total === 1 ? "person" : "people"}
+                  </span>
+                </div>
+              )}
             </>
           )}
         </CardContent>
