@@ -1879,6 +1879,45 @@ export type Database = {
           },
         ]
       }
+      org_engagement_snapshots: {
+        Row: {
+          count: number
+          created_at: string
+          engagement_level: string
+          organization_id: string
+          snapshot_date: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          engagement_level: string
+          organization_id: string
+          snapshot_date: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          engagement_level?: string
+          organization_id?: string
+          snapshot_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_engagement_snapshots_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_engagement_snapshots_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_activity_stats: {
         Row: {
           ai_descriptions_generated: number | null
@@ -3163,6 +3202,22 @@ export type Database = {
         Args: { _session_id: string }
         Returns: boolean
       }
+      get_engagement_snapshot: {
+        Args: { p_as_of: string; p_org_id: string }
+        Returns: {
+          count: number
+          engagement_level: string
+          snapshot_date: string
+        }[]
+      }
+      get_engagement_snapshot_series: {
+        Args: { p_days?: number; p_org_id: string }
+        Returns: {
+          count: number
+          engagement_level: string
+          snapshot_date: string
+        }[]
+      }
       get_flow_role: {
         Args: { _pipeline_id: string; _user_id: string }
         Returns: string
@@ -3257,6 +3312,7 @@ export type Database = {
         Args: { org_id: string }
         Returns: undefined
       }
+      snapshot_engagement_distribution_all: { Args: never; Returns: number }
       start_impersonation_session:
         | {
             Args: {
