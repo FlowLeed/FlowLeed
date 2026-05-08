@@ -96,6 +96,7 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
 
   const [showAsPercent, setShowAsPercent] = useState(false);
   const [animated, setAnimated] = useState(false);
+  const [cohortDialog, setCohortDialog] = useState<{ level: Level; label: string; count: number } | null>(null);
   const hasAnimatedRef = useRef(false);
 
   const dist = stats?.engagementDistribution || {};
