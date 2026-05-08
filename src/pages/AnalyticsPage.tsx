@@ -39,6 +39,7 @@ const AnalyticsPage = () => {
             onCampusChange={setSelectedCampusId}
           />
         </div>
+        <HeartbeatCard campusId={selectedCampusId} />
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
