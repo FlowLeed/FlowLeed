@@ -6,8 +6,9 @@ import { useOrgCheckinStats } from "@/hooks/useCheckinData";
 import { useEngagementTrends, EngagementLevel } from "@/hooks/useEngagementTrends";
 import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
-import { Activity, ChevronRight, Hash, Percent, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { Activity, ChevronRight, Hash, Percent, ArrowUp, ArrowDown, Minus, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AddCohortToFlowDialog } from "./AddCohortToFlowDialog";
 
 type Level = EngagementLevel;
 
@@ -95,6 +96,7 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
 
   const [showAsPercent, setShowAsPercent] = useState(false);
   const [animated, setAnimated] = useState(false);
+  const [cohortDialog, setCohortDialog] = useState<{ level: Level; label: string; count: number } | null>(null);
   const hasAnimatedRef = useRef(false);
 
   const dist = stats?.engagementDistribution || {};
@@ -169,11 +171,18 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                 return (
                   <Tooltip key={l.key}>
                     <TooltipTrigger asChild>
-                      <button
-                        type="button"
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => navigate(`/contacts?engagementLevel=${l.key}`)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate(`/contacts?engagementLevel=${l.key}`);
+                          }
+                        }}
                         className={cn(
-                          "w-full text-left group rounded-md -mx-2 px-2 hover:bg-muted/50 transition-colors",
+                          "w-full text-left group rounded-md -mx-2 px-2 hover:bg-muted/50 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring",
                           compact ? "py-1" : "py-1.5"
                         )}
                       >
@@ -191,7 +200,23 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                             {!compact && sparkValues.length >= 2 && (
                               <Sparkline values={sparkValues} positive={sparkPositive} />
                             )}
-                            {!compact && <span className="hidden sm:inline">{l.descriptor}</span>}
+                            {!compact && (
+                              <span className="hidden lg:inline">{l.descriptor}</span>
+                            )}
+                            {!compact && count > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCohortDialog({ level: l.key, label: l.label, count });
+                                }}
+                                className="hidden md:inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline px-2 py-0.5 rounded-md hover:bg-primary/5 transition-colors"
+                                aria-label={`Start a follow-up flow for ${l.label}`}
+                              >
+                                <Workflow className="h-3 w-3" />
+                                Follow up
+                              </button>
+                            )}
                             <ChevronRight className="h-4 w-4 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                           </div>
                         </div>
@@ -207,7 +232,7 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                             }}
                           />
                         </div>
-                      </button>
+                      </div>
                     </TooltipTrigger>
                     <TooltipContent side="top">
                       <div className="text-xs">
@@ -240,6 +265,16 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
           )}
         </CardContent>
       </Card>
+      {cohortDialog && (
+        <AddCohortToFlowDialog
+          open={!!cohortDialog}
+          onOpenChange={(o) => !o && setCohortDialog(null)}
+          engagementLevel={cohortDialog.level}
+          cohortLabel={cohortDialog.label}
+          campusId={campusId}
+          estimatedCount={cohortDialog.count}
+        />
+      )}
     </TooltipProvider>
   );
 }
