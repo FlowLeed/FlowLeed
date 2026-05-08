@@ -265,6 +265,16 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
           )}
         </CardContent>
       </Card>
+      {cohortDialog && (
+        <AddCohortToFlowDialog
+          open={!!cohortDialog}
+          onOpenChange={(o) => !o && setCohortDialog(null)}
+          engagementLevel={cohortDialog.level}
+          cohortLabel={cohortDialog.label}
+          campusId={campusId}
+          estimatedCount={cohortDialog.count}
+        />
+      )}
     </TooltipProvider>
   );
 }
