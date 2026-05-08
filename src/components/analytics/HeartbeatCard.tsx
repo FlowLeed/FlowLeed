@@ -6,8 +6,9 @@ import { useOrgCheckinStats } from "@/hooks/useCheckinData";
 import { useEngagementTrends, EngagementLevel } from "@/hooks/useEngagementTrends";
 import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
-import { Activity, ChevronRight, Hash, Percent, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { Activity, ChevronRight, Hash, Percent, ArrowUp, ArrowDown, Minus, Workflow } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AddCohortToFlowDialog } from "./AddCohortToFlowDialog";
 
 type Level = EngagementLevel;
 
