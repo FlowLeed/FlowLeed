@@ -25,6 +25,7 @@ import { AISuggestions } from "@/components/contact/AISuggestions";
 import { ContactFormDialog } from "@/components/crm/ContactFormDialog";
 import { TagManager } from "@/components/contact/TagManager";
 import { FlowMomentsCard } from "@/components/contact/FlowMomentsCard";
+import { PcoCustomFieldsCard } from "@/components/contact/PcoCustomFieldsCard";
 import { ContactCheckinsCard } from "@/components/contact/ContactCheckinsCard";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 import { useEngagementScore } from "@/hooks/useCheckinData";
@@ -1050,6 +1051,9 @@ const UserProfilePage = () => {
 
       {/* Flow Moments */}
       <FlowMomentsCard contactId={contactId!} />
+
+      {/* Planning Center custom fields (per-user) */}
+      <PcoCustomFieldsCard contactId={contactId!} />
 
       {/* Attendance / Check-ins */}
       <ContactCheckinsCard contactId={contactId!} />
