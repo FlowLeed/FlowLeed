@@ -3125,6 +3125,36 @@ export type Database = {
           },
         ]
       }
+      user_pco_field_preferences: {
+        Row: {
+          created_at: string
+          hide_empty: boolean
+          id: string
+          organization_id: string
+          selected_field_ids: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hide_empty?: boolean
+          id?: string
+          organization_id: string
+          selected_field_ids?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hide_empty?: boolean
+          id?: string
+          organization_id?: string
+          selected_field_ids?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       impersonation_audit_log: {
