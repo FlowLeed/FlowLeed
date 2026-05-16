@@ -1,76 +1,63 @@
+## Goal
 
-# Church Heartbeat on Analytics
+Add a "Planning Center Info" card on the contact profile (below Flow Moments) where each logged-in user picks which specific PCO custom fields they want to see, **and the order they appear**. Selection is per-user, so a Connections Pastor and a Worship Leader each see only the fields relevant to them.
 
-Add a hero card at the top of `/analytics` that shows the church's engagement "heartbeat": one row per engagement level (Highly Engaged, Active, At Risk, Inactive, New) with a label, descriptor, count, and a horizontal progress bar. Clicking a row deep-links to the People page pre-filtered by that engagement level.
+## UX
 
-The data already exists — `useOrgCheckinStats` returns `engagementDistribution` keyed by level, and `ContactsPage` already supports an `engagementLevel` filter. No new backend work needed for Phase 1.
+**Card placement:** `UserProfilePage.tsx`, directly below `<FlowMomentsCard />`.
 
----
+**Empty state (default for new users):**
 
-## Phase 1 — Heartbeat card (frontend only)
+- Card title: "Profile Insights"
+- Body: "Pick the Planning Center fields you want to see for every contact."
+- Primary button: **Configure fields**
 
-**New component:** `src/components/analytics/HeartbeatCard.tsx`
-- Props: `campusId?: string | null`
-- Uses `useOrgCheckinStats(orgId, campusId)` (already in project)
-- Layout matches the reference screenshot:
-  - Header: "Church Heartbeat" + total people on the right (`{total} people`)
-  - One row per level with: bold label, muted descriptor on the right, full-width `Progress` bar below (count / max across levels = bar value)
-- Levels (top → bottom) and copy:
-  - **Highly Engaged** — "Engaged, serving, connected"
-  - **Active** — "Showing up consistently"
-  - **At Risk** — "Missed check-ins, fading signals"
-  - **Inactive** — "Needs a personal call"
-  - **New** — "Recently joined the family"
-- Each row is a `button` → navigates to `/contacts?engagementLevel=<level>`
-- Loading state via `Skeleton`; empty state mirrors `AttendanceSection`'s "no check-in data" message
-- Styling: semantic tokens only (`bg-card`, `text-foreground`, `text-muted-foreground`, `bg-primary` for bars). No hardcoded colors.
+**Configured state:**
 
-**Wire-up:** `src/pages/AnalyticsPage.tsx`
-- Render `<HeartbeatCard campusId={selectedCampusId} />` directly under the filters row, above the `Tabs`.
+- Compact key–value list rendered in the **user's saved order** (not grouped by tab — the user's priority wins).
+- Each row: `Label: value`. Tab name shown as a small muted suffix (e.g. `Background Check Date · Background Check`) for context.
+- Fields with no value render as `—`. Toggle "Hide empty fields" (default ON) hides them entirely.
+- Top-right of the card: small **Edit** (pencil) button.
 
-**Deep-link support:** `src/pages/ContactsPage.tsx`
-- On mount, read `?engagementLevel=` from the URL (via `useSearchParams`) and seed the `engagementLevel` filter if the value is one of the known levels.
-- No other behavior change.
+**Edit dialog** (`PcoFieldsPreferenceDialog`):
 
-**Acceptance**
-- Card appears on Analytics, shows real counts pulled from existing RPC.
-- Bars are proportional to the largest level.
-- Clicking a row lands on `/contacts` with the matching engagement filter active.
-- Respects the existing campus filter on Analytics.
+- Modal with search box at top.
+- **Left panel — Available fields:** all PCO tabs as collapsible sections; each field has a checkbox. "Select all / Clear" per tab.
+- **Right panel — Your selection (ordered):** the chosen fields as a draggable list (dnd-kit, already in the stack pattern). Drag to reorder. Click ✕ to remove.
+- Footer: "Hide empty fields" switch, **Cancel**, **Save**.
+- Saved selection is keyed to the current `user_id` + `organization_id`.
 
----
+## Data
 
-## Phase 2 — Polish & motion
+New table `user_pco_field_preferences`:
 
-- Subtle bar fill animation on first render (framer-motion, already used in project).
-- Hover state on rows (raise + show "View people →" affordance).
-- Tooltip on each bar with exact count + % of total.
-- Add a "Total scored" vs "Unscored" footer line so the math is transparent (reuses values already computed in `AttendanceSection`).
-- Optional toggle: "Show as %" / "Show counts".
+- `user_id uuid`, `organization_id uuid`
+- `selected_field_ids text[]` — **ordered** array of PCO `field_definition` IDs (order = display order)
+- `hide_empty boolean default true`
+- Unique on (`user_id`, `organization_id`)
+- RLS: user can read/write only their own row.
 
----
+Field **definitions** (tabs + fields): reuse `usePcoCustomFields` / `pco-fetch-custom-fields`.
 
-## Phase 3 — Trends (requires light backend work)
+Field **values** per contact: new edge function `pco-fetch-contact-field-data` that, given a `contact_id`, calls PCO `/people/{pc_person_id}/field_data?include=field_definition` and returns `{ field_definition_id: value }`. Cached via React Query (5 min).
 
-Goal: show whether the heartbeat is improving or declining.
+## Components / files
 
-- New RPC `get_org_engagement_distribution_snapshot(p_org_id, p_as_of date, p_campus_id)` OR a daily snapshot table `org_engagement_snapshots(org_id, campus_id, snapshot_date, level, count)` populated by a pg_cron job (pattern already used elsewhere in the project — see DB Maintenance memory).
-- Heartbeat card shows a small delta per row vs 30 days ago (e.g. `At Risk · +12 ↑`, colored red when bad-direction, green when good-direction).
-- Add a tiny sparkline per row using the snapshot history.
+New:
 
----
+- `src/components/contact/PcoCustomFieldsCard.tsx`
+- `src/components/contact/PcoFieldsPreferenceDialog.tsx` (with dnd-kit reordering)
+- `src/hooks/useUserPcoFieldPreferences.tsx`
+- `src/hooks/useContactPcoFieldData.tsx`
+- `supabase/functions/pco-fetch-contact-field-data/index.ts`
+- Migration for `user_pco_field_preferences` + RLS
 
-## Phase 4 — Actionability
+Modified:
 
-- Each row gets a secondary action: "Start a follow-up flow" → opens the existing AddToFlowDialog pre-scoped to the filtered cohort (bulk add).
-- Surface the Heartbeat card on the Dashboard too (compact variant, no descriptors) so leaders see it on login.
-- Optional: weekly "Heartbeat digest" email reusing `send-daily-digest` infra.
+- `src/pages/UserProfilePage.tsx` — render `<PcoCustomFieldsCard contactId={contactId} />` below `<FlowMomentsCard />`.
 
----
+## Dependency
 
-## Technical notes
+`@dnd-kit/core` + `@dnd-kit/sortable` (add if not already installed).
 
-- No new tables in Phase 1/2.
-- Reuses: `useOrgCheckinStats`, `Progress`, `Skeleton`, `Card`, semantic tokens.
-- Engagement level keys must stay in sync with `useCheckinData.tsx` (`highly_engaged | active | at_risk | inactive | new`) and the `engagementLevel` values accepted by `ContactFilters.tsx`. We'll verify the exact strings before wiring the filter.
-- Phase 3 is the only phase that requires a Supabase migration.
+Ready to implement on approval.
