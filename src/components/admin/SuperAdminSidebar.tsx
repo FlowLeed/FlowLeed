@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Building2, Users, DollarSign, Settings, GitBranch, MessageCircle, Mail } from "lucide-react";
-import flowleedLogo from "@/assets/flowleed_logo.png";
+import flowleedLogo from "@/assets/flowleed_logo_new.png";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
