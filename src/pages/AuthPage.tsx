@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase, setRememberMe, getRememberMe } from '@/integrations/supabase/client';
 import { Checkbox } from '@/components/ui/checkbox';
-import flowleedLogo from '@/assets/flowleed_logo_2-3.png';
+import flowleedLogo from '@/assets/flowleed_logo_new.png';
 import { Check, AlertTriangle, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
