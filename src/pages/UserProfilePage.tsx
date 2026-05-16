@@ -1051,6 +1051,9 @@ const UserProfilePage = () => {
       {/* Flow Moments */}
       <FlowMomentsCard contactId={contactId!} />
 
+      {/* Planning Center custom fields (per-user) */}
+      <PcoCustomFieldsCard contactId={contactId!} />
+
       {/* Attendance / Check-ins */}
       <ContactCheckinsCard contactId={contactId!} />
 
