@@ -72,7 +72,6 @@ Deno.serve(async (req) => {
       .select('credentials')
       .eq('organization_id', contact.organization_id)
       .eq('service_name', 'planning_center')
-      .eq('is_active', true)
       .maybeSingle();
 
     if (!integration) {
