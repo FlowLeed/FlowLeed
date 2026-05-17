@@ -71,34 +71,39 @@ Deno.serve(async (req) => {
 
     console.log('Fetching PCO field definitions...');
 
-    // Fetch field definitions from PCO with tabs and field options
-    const pcoResponse = await fetch(
-      'https://api.planningcenteronline.com/people/v2/field_definitions?include=tab,field_options&per_page=100',
-      {
-        headers: {
-          'Authorization': `Basic ${authString}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const pcoHeaders = {
+      'Authorization': `Basic ${authString}`,
+      'Content-Type': 'application/json',
+    };
 
-    if (!pcoResponse.ok) {
-      const errorText = await pcoResponse.text();
-      console.error('PCO API error:', errorText);
-      
-      // Provide more helpful error message for authentication failures
-      const errorMessage = pcoResponse.status === 401 
-        ? 'Planning Center authentication failed - please reconnect your account'
-        : 'Failed to fetch from Planning Center';
-      
-      return new Response(JSON.stringify({ error: errorMessage }), {
-        status: pcoResponse.status,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Paginated fetch — PCO caps included arrays per page, so we must walk all pages
+    const allData: any[] = [];
+    const allIncluded: any[] = [];
+    let nextUrl: string | null =
+      'https://api.planningcenteronline.com/people/v2/field_definitions?include=tab,field_options&per_page=100';
+    let guard = 0;
+    while (nextUrl && guard < 50) {
+      const pcoResponse: Response = await fetch(nextUrl, { headers: pcoHeaders });
+      if (!pcoResponse.ok) {
+        const errorText = await pcoResponse.text();
+        console.error('PCO API error:', errorText);
+        const errorMessage = pcoResponse.status === 401
+          ? 'Planning Center authentication failed - please reconnect your account'
+          : 'Failed to fetch from Planning Center';
+        return new Response(JSON.stringify({ error: errorMessage }), {
+          status: pcoResponse.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const page: any = await pcoResponse.json();
+      if (Array.isArray(page.data)) allData.push(...page.data);
+      if (Array.isArray(page.included)) allIncluded.push(...page.included);
+      nextUrl = page.links?.next || null;
+      guard++;
     }
 
-    const pcoData = await pcoResponse.json();
-    console.log(`Fetched ${pcoData.data?.length || 0} field definitions`);
+    const pcoData = { data: allData, included: allIncluded };
+    console.log(`Fetched ${pcoData.data.length} field definitions across ${guard} page(s)`);
 
     // Transform and group by tab
     const tabs = new Map<string, any>();
