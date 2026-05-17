@@ -100,8 +100,11 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
   const hasAnimatedRef = useRef(false);
 
   const dist = stats?.engagementDistribution || {};
-  const total = LEVELS.reduce((sum, l) => sum + (dist[l.key] || 0), 0);
-  const max = Math.max(1, ...LEVELS.map((l) => dist[l.key] || 0));
+  const scoredTotal = LEVELS.reduce((sum, l) => sum + (dist[l.key] || 0), 0);
+  const totalContacts = stats?.totalContacts || 0;
+  const unscored = Math.max(0, totalContacts - scoredTotal);
+  const total = totalContacts || scoredTotal;
+  const max = Math.max(1, ...LEVELS.map((l) => dist[l.key] || 0), unscored);
 
   useEffect(() => {
     if (!isLoading && total > 0 && !hasAnimatedRef.current) {
