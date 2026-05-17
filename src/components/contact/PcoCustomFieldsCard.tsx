@@ -15,11 +15,10 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const { preferences, isLoading: prefsLoading, save } = useUserPcoFieldPreferences();
   const [isOpen, setIsOpen] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-  if (!hydrated && !prefsLoading) {
-    setHydrated(true);
-    setIsOpen(preferences.open_by_default);
-  }
+  useEffect(() => {
+    if (!prefsLoading) setIsOpen(preferences.open_by_default);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefsLoading, preferences.open_by_default, contactId]);
   const { data, isLoading: dataLoading } = useContactPcoFieldData(contactId, !prefsLoading);
 
   const fields = data?.fields ?? [];
