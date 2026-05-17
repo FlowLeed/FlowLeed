@@ -1,0 +1,2 @@
+ALTER TABLE public.integrations DROP CONSTRAINT IF EXISTS valid_sync_frequency;
+ALTER TABLE public.integrations ADD CONSTRAINT valid_sync_frequency CHECK (sync_frequency = ANY (ARRAY['daily'::text, 'twice_daily'::text, 'manual'::text]));
