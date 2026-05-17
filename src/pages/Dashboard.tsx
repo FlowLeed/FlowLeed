@@ -218,11 +218,6 @@ const Dashboard = () => {
             />
           )}
 
-          {/* Church Heartbeat - compact, hero state only */}
-          {!hasMessages && !isLoading && (
-            <HeartbeatCard compact />
-          )}
-
           {/* Chat Thread */}
           <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} />
         </div>
