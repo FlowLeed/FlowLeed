@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Settings2, Loader2, ChevronDown } from "lucide-react";
@@ -15,11 +15,10 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const { preferences, isLoading: prefsLoading, save } = useUserPcoFieldPreferences();
   const [isOpen, setIsOpen] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
-  if (!hydrated && !prefsLoading) {
-    setHydrated(true);
-    setIsOpen(preferences.open_by_default);
-  }
+  useEffect(() => {
+    if (!prefsLoading) setIsOpen(preferences.open_by_default);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefsLoading, preferences.open_by_default, contactId]);
   const { data, isLoading: dataLoading } = useContactPcoFieldData(contactId, !prefsLoading);
 
   const fields = data?.fields ?? [];
