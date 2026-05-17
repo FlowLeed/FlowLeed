@@ -127,6 +127,31 @@ Deno.serve(async (req) => {
       }
     });
 
+    // Resolve any tab IDs referenced by fields that didn't show up in `included`
+    const missingTabIds = new Set<string>();
+    for (const fieldDef of pcoData.data) {
+      const tabId = fieldDef.relationships?.tab?.data?.id;
+      if (tabId && !tabMap.has(tabId)) missingTabIds.add(tabId);
+    }
+    if (missingTabIds.size > 0) {
+      console.log(`Resolving ${missingTabIds.size} missing tab(s) directly`);
+      await Promise.all(Array.from(missingTabIds).map(async (tabId) => {
+        try {
+          const r = await fetch(
+            `https://api.planningcenteronline.com/people/v2/tabs/${tabId}`,
+            { headers: pcoHeaders }
+          );
+          if (r.ok) {
+            const j = await r.json();
+            const name = j.data?.attributes?.name;
+            if (name) tabMap.set(tabId, name);
+          }
+        } catch (e) {
+          console.error('Failed to fetch tab', tabId, e);
+        }
+      }));
+    }
+
     // Process field definitions
     for (const fieldDef of pcoData.data || []) {
       const tabId = fieldDef.relationships?.tab?.data?.id;
