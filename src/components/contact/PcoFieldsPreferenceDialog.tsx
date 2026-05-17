@@ -68,19 +68,21 @@ function SortableRow({ id, label, tabName, onRemove }: {
 }
 
 export function PcoFieldsPreferenceDialog({
-  open, onOpenChange, tabs, fields, initialSelected, initialHideEmpty, onSave, saving,
+  open, onOpenChange, tabs, fields, initialSelected, initialHideEmpty, initialOpenByDefault, onSave, saving,
 }: Props) {
   const [selected, setSelected] = useState<string[]>(initialSelected);
   const [hideEmpty, setHideEmpty] = useState(initialHideEmpty);
+  const [openByDefault, setOpenByDefault] = useState(initialOpenByDefault);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (open) {
       setSelected(initialSelected);
       setHideEmpty(initialHideEmpty);
+      setOpenByDefault(initialOpenByDefault);
       setSearch("");
     }
-  }, [open, initialSelected, initialHideEmpty]);
+  }, [open, initialSelected, initialHideEmpty, initialOpenByDefault]);
 
   const fieldMap = useMemo(() => {
     const m = new Map<string, PcoFieldDef>();
