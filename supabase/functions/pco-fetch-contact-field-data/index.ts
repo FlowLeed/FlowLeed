@@ -144,12 +144,9 @@ Deno.serve(async (req) => {
 
     // Parse contact values
     const values: Record<string, string> = {};
-    if (valuesRes && valuesRes.ok) {
-      const valData = await valuesRes.json();
-      for (const v of valData.data || []) {
-        const defId = v.relationships?.field_definition?.data?.id;
-        if (defId) values[defId] = v.attributes?.value ?? '';
-      }
+    for (const v of valuesAll.data) {
+      const defId = v.relationships?.field_definition?.data?.id;
+      if (defId) values[defId] = v.attributes?.value ?? '';
     }
 
     return new Response(JSON.stringify({ fields, tabs, values }), {
