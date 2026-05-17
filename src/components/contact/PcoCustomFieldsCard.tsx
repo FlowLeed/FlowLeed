@@ -46,7 +46,7 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-base">Planning Center Info</CardTitle>
+          <CardTitle className="text-base">Pastoral Context</CardTitle>
           {hasSelection && (
             <Button
               variant="ghost"
