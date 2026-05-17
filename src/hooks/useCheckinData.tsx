@@ -258,7 +258,13 @@ export function useOrgCheckinStats(orgId: string | undefined, campusId?: string 
       const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      const [countsRes, distRes] = await Promise.all([
+      let totalContactsQuery = supabase
+        .from('contacts')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId);
+      if (campusId) totalContactsQuery = totalContactsQuery.eq('campus_id', campusId);
+
+      const [countsRes, distRes, totalRes] = await Promise.all([
         supabase.rpc('get_org_checkin_counts', {
           p_org_id: orgId,
           p_week_start: weekAgo,
@@ -269,6 +275,7 @@ export function useOrgCheckinStats(orgId: string | undefined, campusId?: string 
           p_org_id: orgId,
           p_campus_id: campusId ?? undefined,
         }),
+        totalContactsQuery,
       ]);
 
       if (countsRes.error) throw countsRes.error;
@@ -286,6 +293,7 @@ export function useOrgCheckinStats(orgId: string | undefined, campusId?: string 
         checkinsThisWeek: Number(countsRow?.checkins_week) || 0,
         checkinsThisMonth: Number(countsRow?.checkins_month) || 0,
         engagementDistribution: distribution,
+        totalContacts: totalRes.count || 0,
       };
     },
     enabled: !!orgId,
