@@ -27,7 +27,8 @@ interface Props {
   fields: PcoFieldDef[];
   initialSelected: string[];
   initialHideEmpty: boolean;
-  onSave: (prefs: { selected_field_ids: string[]; hide_empty: boolean }) => void;
+  initialOpenByDefault: boolean;
+  onSave: (prefs: { selected_field_ids: string[]; hide_empty: boolean; open_by_default: boolean }) => void;
   saving?: boolean;
 }
 
