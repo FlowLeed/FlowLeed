@@ -256,11 +256,62 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                   </Tooltip>
                 );
               })}
+              {unscored > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/contacts?engagementLevel=unscored`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          navigate(`/contacts?engagementLevel=unscored`);
+                        }
+                      }}
+                      className={cn(
+                        "w-full text-left group rounded-md -mx-2 px-2 hover:bg-muted/50 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring border-t mt-2 pt-3",
+                        compact ? "py-1" : "py-1.5"
+                      )}
+                    >
+                      <div className={cn("flex items-baseline justify-between gap-3", compact ? "mb-1.5" : "mb-2")}>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={cn("font-medium text-muted-foreground", compact && "text-sm")}>Unscored</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            {showAsPercent && total > 0 ? `${Math.round((unscored / total) * 100)}%` : unscored}
+                          </span>
+                        </div>
+                        {!compact && (
+                          <span className="hidden lg:inline text-sm text-muted-foreground">
+                            In PCO but no check-ins yet
+                          </span>
+                        )}
+                      </div>
+                      <div className={cn("w-full overflow-hidden rounded-full bg-secondary/50", compact ? "h-1.5" : "h-2")}>
+                        <div
+                          className="h-full bg-muted-foreground/40 rounded-full transition-[width] duration-700 ease-out"
+                          style={{ width: animated ? `${(unscored / max) * 100}%` : "0%" }}
+                        />
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <div className="text-xs max-w-[260px]">
+                      <div className="font-medium">Unscored</div>
+                      <div className="text-muted-foreground">
+                        {unscored} {unscored === 1 ? "person" : "people"} in PCO without check-in history.
+                        Often adults who don't check in, archived profiles, or list-only contacts.
+                      </div>
+                      <div className="text-muted-foreground mt-0.5">Click to view</div>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {!compact && (
                 <div className="pt-2 border-t text-xs text-muted-foreground flex items-center justify-between">
                   <span>Trends compared to 30 days ago · based on check-in history</span>
                   <span className="tabular-nums">
-                    {total} scored {total === 1 ? "person" : "people"}
+                    {scoredTotal} scored of {totalContacts}
                   </span>
                 </div>
               )}
