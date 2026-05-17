@@ -57,7 +57,7 @@ export function ContactCheckinsCard({ contactId }: ContactCheckinsCardProps) {
 
   return (
     <Card>
-      <CardHeader className="pb-3 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
+      <CardHeader className="py-4 cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-2 min-w-0 flex-1">
             <CardTitle className="flex items-center gap-2 text-base">
