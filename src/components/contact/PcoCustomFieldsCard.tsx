@@ -128,6 +128,7 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
         fields={fields}
         initialSelected={preferences.selected_field_ids}
         initialHideEmpty={preferences.hide_empty}
+        initialOpenByDefault={preferences.open_by_default}
         saving={save.isPending}
         onSave={async (prefs) => {
           await save.mutateAsync(prefs);
