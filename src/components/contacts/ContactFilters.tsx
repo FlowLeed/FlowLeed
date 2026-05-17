@@ -226,7 +226,7 @@ export const ContactFilters = ({
                   <SelectItem value="at_risk">At Risk</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="none">No Score</SelectItem>
+                  <SelectItem value="none">Unscored (no check-ins)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

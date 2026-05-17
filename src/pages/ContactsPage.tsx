@@ -27,6 +27,7 @@ const ContactsPage = () => {
   const [searchParams] = useSearchParams();
   const initialEngagement = (() => {
     const v = searchParams.get("engagementLevel");
+    if (v === "unscored") return "none";
     return v && ["highly_engaged", "active", "at_risk", "inactive", "new", "none"].includes(v)
       ? v
       : "all";

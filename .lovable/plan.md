@@ -1,63 +1,50 @@
-## Goal
+## What's going on (verified against your data)
 
-Add a "Planning Center Info" card on the contact profile (below Flow Moments) where each logged-in user picks which specific PCO custom fields they want to see, **and the order they appear**. Selection is per-user, so a Connections Pastor and a Worship Leader each see only the fields relevant to them.
+For your org `3fae9226…6406f`:
 
-## UX
+- Total contacts: **16,942**
+- Scored in Heartbeat: **7,798**
+- Unscored: **9,144**
 
-**Card placement:** `UserProfilePage.tsx`, directly below `<FlowMomentsCard />`.
+The scoring engine (`calculate_engagement_scores`) only writes a row to `contact_engagement_scores` for a contact that has **at least one check-in** — either directly, through a household member, or through a family member. Of the unscored 9,144:
 
-**Empty state (default for new users):**
+- **9,141** came from Planning Center (only 3 are manual)
+- **8,490** have no `pc_household_id` (so household-borrowed check-ins can't lift them)
+- **8,406** haven't been re-synced in 30+ days (`last_synced_at` is stale or null)
+- 309 have no `campus_id`
 
-- Card title: "Profile Insights"
-- Body: "Pick the Planning Center fields you want to see for every contact."
-- Primary button: **Configure fields**
+Breakdown of how the 7,798 get scored today:
+- 5,766 have their own check-in
+- ~2,045 inherit check-ins from a household member
+- the rest from `contact_family_members`
 
-**Configured state:**
+So the 9,144 are essentially **PCO people we've ingested who have never been checked into any synced service/event, and aren't tied to a household that has**. Classic culprits: adults at churches that only check in kids, legacy PCO profiles, archived/inactive people that PCO still returns, and people pulled in via a List but never seen at a service.
 
-- Compact key–value list rendered in the **user's saved order** (not grouped by tab — the user's priority wins).
-- Each row: `Label: value`. Tab name shown as a small muted suffix (e.g. `Background Check Date · Background Check`) for context.
-- Fields with no value render as `—`. Toggle "Hide empty fields" (default ON) hides them entirely.
-- Top-right of the card: small **Edit** (pencil) button.
+## What I'd like to ship
 
-**Edit dialog** (`PcoFieldsPreferenceDialog`):
+A small, honest fix in two parts. Both are presentation-only — no scoring math changes.
 
-- Modal with search box at top.
-- **Left panel — Available fields:** all PCO tabs as collapsible sections; each field has a checkbox. "Select all / Clear" per tab.
-- **Right panel — Your selection (ordered):** the chosen fields as a draggable list (dnd-kit, already in the stack pattern). Drag to reorder. Click ✕ to remove.
-- Footer: "Hide empty fields" switch, **Cancel**, **Save**.
-- Saved selection is keyed to the current `user_id` + `organization_id`.
+### 1. Reconciliation on the Heartbeat card
 
-## Data
+Add an **"Unscored"** row at the bottom of the Heartbeat list (rendered subtler than the 5 engagement levels — muted text, no sparkline, no "Follow up" button) showing `totalContacts - scoredTotal`. The header total switches from "7,798 people" to "16,942 people" so it matches the dashboard's Total People card. The "X scored of Y" relationship becomes self-evident.
 
-New table `user_pco_field_preferences`:
+- Click row → navigates to `/contacts?engagementLevel=unscored` so leaders can see exactly who's in the bucket.
+- Tooltip explains: *"In PCO but no check-ins yet — likely adults who don't check in, archived profiles, or list-only contacts."*
 
-- `user_id uuid`, `organization_id uuid`
-- `selected_field_ids text[]` — **ordered** array of PCO `field_definition` IDs (order = display order)
-- `hide_empty boolean default true`
-- Unique on (`user_id`, `organization_id`)
-- RLS: user can read/write only their own row.
+### 2. "Unscored" filter on the Contacts page
 
-Field **definitions** (tabs + fields): reuse `usePcoCustomFields` / `pco-fetch-custom-fields`.
+`ContactFilters` / `ContactsTable` already accept `engagementLevel`. Add an `unscored` option that resolves to `contacts.id NOT IN (SELECT contact_id FROM contact_engagement_scores WHERE organization_id = …)`. This lets the user actually investigate the cohort (sort by `last_synced_at`, by campus, by household, etc.) and decide whether to archive, re-sync, or enroll them in a re-engagement flow.
 
-Field **values** per contact: new edge function `pco-fetch-contact-field-data` that, given a `contact_id`, calls PCO `/people/{pc_person_id}/field_data?include=field_definition` and returns `{ field_definition_id: value }`. Cached via React Query (5 min).
+## Technical notes
 
-## Components / files
+- `HeartbeatCard.tsx`: pull `totalContacts` from `useOverviewMetrics` (already used elsewhere) or add it to `useOrgCheckinStats`. Compute `unscoredCount = totalContacts - sum(LEVELS counts)`. Render below the 5 LEVELS rows with a divider; reuse existing row markup but skip Sparkline/DeltaBadge/Follow-up.
+- Contacts filter: extend the engagement level enum in `ContactFilters.tsx` + the query in `useContacts.tsx` to handle `unscored` via an anti-join on `contact_engagement_scores`.
+- No migrations, no edge function changes, no edits to `calculate_engagement_scores`.
 
-New:
+## Out of scope (call out, don't do)
 
-- `src/components/contact/PcoCustomFieldsCard.tsx`
-- `src/components/contact/PcoFieldsPreferenceDialog.tsx` (with dnd-kit reordering)
-- `src/hooks/useUserPcoFieldPreferences.tsx`
-- `src/hooks/useContactPcoFieldData.tsx`
-- `supabase/functions/pco-fetch-contact-field-data/index.ts`
-- Migration for `user_pco_field_preferences` + RLS
+- Re-tuning the scoring formula so more people get a score.
+- Auto-archiving PCO contacts with no check-ins.
+- A separate "stale sync" badge — `last_synced_at` already exists if you want it later.
 
-Modified:
-
-- `src/pages/UserProfilePage.tsx` — render `<PcoCustomFieldsCard contactId={contactId} />` below `<FlowMomentsCard />`.
-
-## Dependency
-
-`@dnd-kit/core` + `@dnd-kit/sortable` (add if not already installed).
-
-Ready to implement on approval.
+Sound good? If yes, I'll implement parts 1 and 2.
