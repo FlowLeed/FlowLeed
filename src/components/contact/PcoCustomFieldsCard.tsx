@@ -13,6 +13,7 @@ interface Props {
 
 export function PcoCustomFieldsCard({ contactId }: Props) {
   const [editOpen, setEditOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { preferences, isLoading: prefsLoading, save } = useUserPcoFieldPreferences();
   const { data, isLoading: dataLoading } = useContactPcoFieldData(contactId, !prefsLoading);
 
