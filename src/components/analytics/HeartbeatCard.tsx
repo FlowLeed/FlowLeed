@@ -6,7 +6,7 @@ import { useOrgCheckinStats } from "@/hooks/useCheckinData";
 import { useEngagementTrends, EngagementLevel } from "@/hooks/useEngagementTrends";
 import { useProfile } from "@/hooks/useProfile";
 import { useNavigate } from "react-router-dom";
-import { Activity, ChevronRight, Hash, Percent, ArrowUp, ArrowDown, Minus, Workflow } from "lucide-react";
+import { Activity, ChevronRight, Hash, Percent, ArrowUp, ArrowDown, Minus, Workflow, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AddCohortToFlowDialog } from "./AddCohortToFlowDialog";
 
@@ -310,8 +310,20 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
               {!compact && (
                 <div className="pt-2 border-t text-xs text-muted-foreground flex items-center justify-between">
                   <span>Trends compared to 30 days ago · based on check-in history</span>
-                  <span className="tabular-nums">
+                  <span className="tabular-nums flex items-center gap-1">
                     {scoredTotal} scored of {totalContacts}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="inline-flex items-center justify-center rounded-full hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                          <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <div className="max-w-[260px] text-xs">
+                          Anyone with no check-ins and no qualifying signal is excluded from scoring.
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   </span>
                 </div>
               )}
