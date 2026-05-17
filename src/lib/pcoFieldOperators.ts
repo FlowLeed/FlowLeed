@@ -53,14 +53,16 @@ export function getCombinedOptionsForField(field: FieldWithOptions): OperatorOpt
     case 'multi_select':
     case 'multiple_select':
     case 'multiselect':
-      // Only show the actual dropdown options
+      // Show actual options plus "Has any value"
       if (field.options && field.options.length > 0) {
-        return field.options.map(option => ({
-          value: `option:${option}`,
-          label: option,
-        }));
+        return [
+          ...field.options.map(option => ({
+            value: `option:${option}`,
+            label: option,
+          })),
+          { value: 'is_not_empty', label: 'Has any value' },
+        ];
       }
-      // Fallback if no options available
       return [{ value: 'is_not_empty', label: 'Has any value' }];
     
     default:
