@@ -54,7 +54,7 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
       <Card>
         
         <CardHeader
-          className="pb-3 cursor-pointer"
+          className="py-4 cursor-pointer"
           onClick={() => setIsOpen(o => !o)}
         >
           <div className="flex items-center justify-between gap-2">
