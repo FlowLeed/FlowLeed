@@ -3130,6 +3130,7 @@ export type Database = {
           created_at: string
           hide_empty: boolean
           id: string
+          open_by_default: boolean
           organization_id: string
           selected_field_ids: string[]
           updated_at: string
@@ -3139,6 +3140,7 @@ export type Database = {
           created_at?: string
           hide_empty?: boolean
           id?: string
+          open_by_default?: boolean
           organization_id: string
           selected_field_ids?: string[]
           updated_at?: string
@@ -3148,6 +3150,7 @@ export type Database = {
           created_at?: string
           hide_empty?: boolean
           id?: string
+          open_by_default?: boolean
           organization_id?: string
           selected_field_ids?: string[]
           updated_at?: string

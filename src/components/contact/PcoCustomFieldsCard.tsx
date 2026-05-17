@@ -13,8 +13,13 @@ interface Props {
 
 export function PcoCustomFieldsCard({ contactId }: Props) {
   const [editOpen, setEditOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
   const { preferences, isLoading: prefsLoading, save } = useUserPcoFieldPreferences();
+  const [isOpen, setIsOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  if (!hydrated && !prefsLoading) {
+    setHydrated(true);
+    setIsOpen(preferences.open_by_default);
+  }
   const { data, isLoading: dataLoading } = useContactPcoFieldData(contactId, !prefsLoading);
 
   const fields = data?.fields ?? [];
@@ -128,6 +133,7 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
         fields={fields}
         initialSelected={preferences.selected_field_ids}
         initialHideEmpty={preferences.hide_empty}
+        initialOpenByDefault={preferences.open_by_default}
         saving={save.isPending}
         onSave={async (prefs) => {
           await save.mutateAsync(prefs);

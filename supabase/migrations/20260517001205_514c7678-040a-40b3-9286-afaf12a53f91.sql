@@ -1,0 +1,1 @@
+ALTER TABLE public.user_pco_field_preferences ADD COLUMN IF NOT EXISTS open_by_default boolean NOT NULL DEFAULT false;

@@ -27,7 +27,8 @@ interface Props {
   fields: PcoFieldDef[];
   initialSelected: string[];
   initialHideEmpty: boolean;
-  onSave: (prefs: { selected_field_ids: string[]; hide_empty: boolean }) => void;
+  initialOpenByDefault: boolean;
+  onSave: (prefs: { selected_field_ids: string[]; hide_empty: boolean; open_by_default: boolean }) => void;
   saving?: boolean;
 }
 
@@ -67,19 +68,21 @@ function SortableRow({ id, label, tabName, onRemove }: {
 }
 
 export function PcoFieldsPreferenceDialog({
-  open, onOpenChange, tabs, fields, initialSelected, initialHideEmpty, onSave, saving,
+  open, onOpenChange, tabs, fields, initialSelected, initialHideEmpty, initialOpenByDefault, onSave, saving,
 }: Props) {
   const [selected, setSelected] = useState<string[]>(initialSelected);
   const [hideEmpty, setHideEmpty] = useState(initialHideEmpty);
+  const [openByDefault, setOpenByDefault] = useState(initialOpenByDefault);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (open) {
       setSelected(initialSelected);
       setHideEmpty(initialHideEmpty);
+      setOpenByDefault(initialOpenByDefault);
       setSearch("");
     }
-  }, [open, initialSelected, initialHideEmpty]);
+  }, [open, initialSelected, initialHideEmpty, initialOpenByDefault]);
 
   const fieldMap = useMemo(() => {
     const m = new Map<string, PcoFieldDef>();
@@ -242,14 +245,20 @@ export function PcoFieldsPreferenceDialog({
         </div>
 
         <DialogFooter className="flex-row items-center justify-between sm:justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Switch id="hide-empty" checked={hideEmpty} onCheckedChange={setHideEmpty} />
-            <Label htmlFor="hide-empty" className="text-sm">Hide empty fields</Label>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Switch id="hide-empty" checked={hideEmpty} onCheckedChange={setHideEmpty} />
+              <Label htmlFor="hide-empty" className="text-sm">Hide empty fields</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch id="open-default" checked={openByDefault} onCheckedChange={setOpenByDefault} />
+              <Label htmlFor="open-default" className="text-sm">Open by default on each contact</Label>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button
-              onClick={() => onSave({ selected_field_ids: selected, hide_empty: hideEmpty })}
+              onClick={() => onSave({ selected_field_ids: selected, hide_empty: hideEmpty, open_by_default: openByDefault })}
               disabled={saving}
             >
               {saving ? "Saving…" : "Save"}
