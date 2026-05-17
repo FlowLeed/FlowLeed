@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil, Settings2, Loader2 } from "lucide-react";
+import { Pencil, Settings2, Loader2, ChevronDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useContactPcoFieldData } from "@/hooks/useContactPcoFieldData";
 import { useUserPcoFieldPreferences } from "@/hooks/useUserPcoFieldPreferences";
 import { PcoFieldsPreferenceDialog } from "./PcoFieldsPreferenceDialog";
@@ -12,6 +13,7 @@ interface Props {
 
 export function PcoCustomFieldsCard({ contactId }: Props) {
   const [editOpen, setEditOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { preferences, isLoading: prefsLoading, save } = useUserPcoFieldPreferences();
   const { data, isLoading: dataLoading } = useContactPcoFieldData(contactId, !prefsLoading);
 
@@ -45,21 +47,31 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-base">Pastoral Context</CardTitle>
-          {hasSelection && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1"
-              onClick={() => setEditOpen(true)}
-              disabled={loading}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </Button>
-          )}
+        
+        <CardHeader
+          className="pb-3 cursor-pointer"
+          onClick={() => setIsOpen(o => !o)}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-base">Pastoral Context</CardTitle>
+            <div className="flex items-center gap-1 shrink-0">
+              {hasSelection && isOpen && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1"
+                  onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
+                  disabled={loading}
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              )}
+              <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
+            </div>
+          </div>
         </CardHeader>
+        {isOpen && (
         <CardContent>
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
@@ -106,6 +118,7 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
             </dl>
           )}
         </CardContent>
+        )}
       </Card>
 
       <PcoFieldsPreferenceDialog
