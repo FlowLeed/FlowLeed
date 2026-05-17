@@ -7,7 +7,14 @@ import { useToast } from "@/hooks/use-toast";
 export interface PcoFieldPreferences {
   selected_field_ids: string[];
   hide_empty: boolean;
+  open_by_default: boolean;
 }
+
+const DEFAULTS: PcoFieldPreferences = {
+  selected_field_ids: [],
+  hide_empty: true,
+  open_by_default: false,
+};
 
 export function useUserPcoFieldPreferences() {
   const { user } = useAuth();
@@ -24,12 +31,12 @@ export function useUserPcoFieldPreferences() {
     queryFn: async (): Promise<PcoFieldPreferences> => {
       const { data, error } = await supabase
         .from("user_pco_field_preferences")
-        .select("selected_field_ids, hide_empty")
+        .select("selected_field_ids, hide_empty, open_by_default")
         .eq("user_id", user!.id)
         .eq("organization_id", orgId!)
         .maybeSingle();
       if (error) throw error;
-      return data ?? { selected_field_ids: [], hide_empty: true };
+      return { ...DEFAULTS, ...(data ?? {}) };
     },
   });
 
@@ -44,6 +51,7 @@ export function useUserPcoFieldPreferences() {
             organization_id: orgId,
             selected_field_ids: prefs.selected_field_ids,
             hide_empty: prefs.hide_empty,
+            open_by_default: prefs.open_by_default,
           },
           { onConflict: "user_id,organization_id" }
         );
@@ -59,7 +67,7 @@ export function useUserPcoFieldPreferences() {
   });
 
   return {
-    preferences: data ?? { selected_field_ids: [], hide_empty: true },
+    preferences: data ?? DEFAULTS,
     isLoading,
     save,
   };
