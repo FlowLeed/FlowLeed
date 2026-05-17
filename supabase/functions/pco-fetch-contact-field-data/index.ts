@@ -87,29 +87,41 @@ Deno.serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
-    // Fetch field definitions (with tabs) + contact values in parallel
-    const [defsRes, valuesRes] = await Promise.all([
-      fetch('https://api.planningcenteronline.com/people/v2/field_definitions?include=tab&per_page=100', { headers: pcoHeaders }),
-      contact.pc_person_id
-        ? fetch(`https://api.planningcenteronline.com/people/v2/people/${contact.pc_person_id}/field_data?per_page=100`, { headers: pcoHeaders })
-        : Promise.resolve(null),
-    ]);
-
-    if (!defsRes.ok) {
-      const err = await defsRes.text();
-      console.error('PCO defs error', err);
-      return new Response(JSON.stringify({ error: 'Failed to fetch PCO field definitions' }), {
-        status: defsRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Paginated fetch helper
+    async function fetchAll(initialUrl: string): Promise<{ data: any[]; included: any[] }> {
+      let url: string | null = initialUrl;
+      const allData: any[] = [];
+      const allIncluded: any[] = [];
+      let guard = 0;
+      while (url && guard < 50) {
+        const res: Response = await fetch(url, { headers: pcoHeaders });
+        if (!res.ok) {
+          const err = await res.text();
+          console.error('PCO fetch error', url, err);
+          throw new Error(`PCO fetch failed: ${res.status}`);
+        }
+        const json: any = await res.json();
+        if (Array.isArray(json.data)) allData.push(...json.data);
+        if (Array.isArray(json.included)) allIncluded.push(...json.included);
+        url = json.links?.next || null;
+        guard++;
+      }
+      return { data: allData, included: allIncluded };
     }
 
-    const defsData = await defsRes.json();
+    const [defsAll, valuesAll] = await Promise.all([
+      fetchAll('https://api.planningcenteronline.com/people/v2/field_definitions?include=tab&per_page=100'),
+      contact.pc_person_id
+        ? fetchAll(`https://api.planningcenteronline.com/people/v2/people/${contact.pc_person_id}/field_data?per_page=100`)
+        : Promise.resolve({ data: [], included: [] }),
+    ]);
+
     const tabMap = new Map<string, string>();
-    for (const inc of defsData.included || []) {
+    for (const inc of defsAll.included) {
       if (inc.type === 'Tab') tabMap.set(inc.id, inc.attributes?.name || 'Other');
     }
 
-    const fields: PcoField[] = (defsData.data || [])
+    const fields: PcoField[] = defsAll.data
       .filter((f: any) => !f.attributes?.deleted_at)
       .map((f: any) => ({
         id: f.id,
@@ -132,12 +144,9 @@ Deno.serve(async (req) => {
 
     // Parse contact values
     const values: Record<string, string> = {};
-    if (valuesRes && valuesRes.ok) {
-      const valData = await valuesRes.json();
-      for (const v of valData.data || []) {
-        const defId = v.relationships?.field_definition?.data?.id;
-        if (defId) values[defId] = v.attributes?.value ?? '';
-      }
+    for (const v of valuesAll.data) {
+      const defId = v.relationships?.field_definition?.data?.id;
+      if (defId) values[defId] = v.attributes?.value ?? '';
     }
 
     return new Response(JSON.stringify({ fields, tabs, values }), {
