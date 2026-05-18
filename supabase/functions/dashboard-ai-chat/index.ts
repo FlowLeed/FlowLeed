@@ -369,6 +369,13 @@ serve(async (req) => {
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
+    const userId = getUserIdFromJwt(authHeader);
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { messages } = await req.json();
     if (!messages || !Array.isArray(messages)) {
@@ -385,6 +392,7 @@ serve(async (req) => {
     const { data: membership, error: membershipError } = await userClient
       .from("organization_members")
       .select("user_id, organization_id, role, organizations(name)")
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
