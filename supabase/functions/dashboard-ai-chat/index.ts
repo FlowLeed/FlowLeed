@@ -328,6 +328,22 @@ async function executeSearchPeopleInFlow(
   return results.join("\n\n");
 }
 
+function getUserIdFromJwt(authHeader: string): string | null {
+  try {
+    const token = authHeader.replace("Bearer ", "");
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
+    const claims = JSON.parse(atob(padded));
+
+    return typeof claims?.sub === "string" ? claims.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -338,26 +354,23 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Verify user
+    // Verify access through the user's RLS context instead of Auth session lookup.
+    // Some valid app tokens can fail /auth/v1/user with "Session not found" after
+    // session rotation, while PostgREST/RLS still validates the bearer JWT correctly.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: authError } = await supabaseAnon.auth.getClaims(token);
-    const user = claimsData?.claims
-      ? { id: claimsData.claims.sub as string, email: (claimsData.claims as any).email as string | undefined }
-      : null;
-    if (authError || !user) {
-      console.error("Auth failed:", authError?.message);
+    const userId = getUserIdFromJwt(authHeader);
+    if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -374,21 +387,25 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user's org
-    const { data: membership } = await adminClient
+    // Get user's org via RLS. If the bearer token is invalid or unauthorized,
+    // this returns no accessible membership and the request is rejected.
+    const { data: membership, error: membershipError } = await userClient
       .from("organization_members")
-      .select("organization_id, role, organizations(name)")
-      .eq("user_id", user.id)
+      .select("user_id, organization_id, role, organizations(name)")
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (!membership) {
-      return new Response(JSON.stringify({ error: "No organization found" }), {
-        status: 400,
+    if (membershipError || !membership?.user_id) {
+      console.error("Auth/RLS membership check failed:", membershipError?.message);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const user = { id: membership.user_id as string };
 
     const orgId = membership.organization_id;
     const orgName = (membership.organizations as any)?.name || "Your Church";
