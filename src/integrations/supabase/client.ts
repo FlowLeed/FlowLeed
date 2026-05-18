@@ -15,6 +15,17 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // store to read from on initial page load.
 const REMEMBER_ME_KEY = 'sb-remember-me';
 
+const getStoredSessionExpiry = (value: string | null): number => {
+  if (!value) return 0;
+
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed?.expires_at === 'number' ? parsed.expires_at : 0;
+  } catch {
+    return 0;
+  }
+};
+
 export const setRememberMe = (remember: boolean) => {
   try {
     localStorage.setItem(REMEMBER_ME_KEY, remember ? 'true' : 'false');
@@ -36,9 +47,16 @@ export const getRememberMe = (): boolean => {
 const hybridStorage = {
   getItem: (key: string): string | null => {
     try {
-      // Read from whichever store currently has the key.
-      // sessionStorage takes precedence so an in-tab session wins over a stale localStorage value.
-      return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+      // Read from whichever store currently has the newest session.
+      // This prevents an old tab-scoped session from shadowing a newer remembered login.
+      const sessionValue = sessionStorage.getItem(key);
+      const localValue = localStorage.getItem(key);
+
+      if (!sessionValue || !localValue) return sessionValue ?? localValue;
+
+      return getStoredSessionExpiry(sessionValue) >= getStoredSessionExpiry(localValue)
+        ? sessionValue
+        : localValue;
     } catch {
       return null;
     }
