@@ -348,11 +348,16 @@ serve(async (req) => {
     // Verify user
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
-    const { data: { user }, error: authError } = await supabaseAnon.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
+    const supabaseAnon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authError } = await supabaseAnon.auth.getClaims(token);
+    const user = claimsData?.claims
+      ? { id: claimsData.claims.sub as string, email: (claimsData.claims as any).email as string | undefined }
+      : null;
     if (authError || !user) {
+      console.error("Auth failed:", authError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
