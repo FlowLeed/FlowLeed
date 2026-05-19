@@ -3203,6 +3203,23 @@ export type Database = {
       }
     }
     Functions: {
+      admin_get_org_members_activity: {
+        Args: { p_org_id: string }
+        Returns: {
+          avatar_url: string
+          contacts_assigned: number
+          email: string
+          full_name: string
+          interactions_30d: number
+          joined_at: string
+          last_login: string
+          logins_30d: number
+          logins_7d: number
+          notes_30d: number
+          role: string
+          user_id: string
+        }[]
+      }
       calculate_engagement_scores: {
         Args: { p_org_id: string }
         Returns: undefined
