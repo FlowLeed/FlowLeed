@@ -281,6 +281,9 @@ export default function OrganizationDetailPage() {
           {/* Phone Numbers */}
           {org.id && <OrganizationPhoneNumbers organizationId={org.id} />}
 
+          {/* Team Members */}
+          {org.id && <OrgMembersTable organizationId={org.id} organizationName={org.name} />}
+
           {/* Coming Soon Sections */}
           <Card className="opacity-60">
             <CardHeader>
