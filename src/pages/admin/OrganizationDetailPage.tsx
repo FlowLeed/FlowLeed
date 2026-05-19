@@ -6,6 +6,7 @@ import { SuperAdminHeader } from '@/components/admin/SuperAdminHeader';
 import { HealthScoreCard } from '@/components/admin/HealthScoreCard';
 import { EditOrganizationDialog } from '@/components/admin/EditOrganizationDialog';
 import { OrganizationPhoneNumbers } from '@/components/admin/OrganizationPhoneNumbers';
+import { OrgMembersTable } from '@/components/admin/OrgMembersTable';
 import { StartImpersonationDialog } from '@/components/admin/StartImpersonationDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -279,6 +280,9 @@ export default function OrganizationDetailPage() {
 
           {/* Phone Numbers */}
           {org.id && <OrganizationPhoneNumbers organizationId={org.id} />}
+
+          {/* Team Members */}
+          {org.id && <OrgMembersTable organizationId={org.id} organizationName={org.name} />}
 
           {/* Coming Soon Sections */}
           <Card className="opacity-60">
