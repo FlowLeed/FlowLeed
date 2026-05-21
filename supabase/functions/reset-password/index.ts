@@ -87,7 +87,8 @@ serve(async (req) => {
       throw listError;
     }
 
-    const user = users?.find(u => u.email === tokenData.email);
+    const normalizedEmail = (tokenData.email || '').toLowerCase().trim();
+    const user = users?.find(u => (u.email || '').toLowerCase() === normalizedEmail);
 
     if (!user) {
       console.error('User not found for email:', tokenData.email);
