@@ -16,7 +16,8 @@ serve(async (req) => {
   }
 
   try {
-    const { email } = await req.json();
+    const { email: rawEmail } = await req.json();
+    const email = (rawEmail || '').toLowerCase().trim();
 
     console.log('Sending password reset to:', email);
 
