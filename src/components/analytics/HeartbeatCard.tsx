@@ -171,17 +171,22 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                       : sparkValues[sparkValues.length - 1] <= sparkValues[0]
                     : true;
 
+                const buildHref = (level: string) => {
+                  const params = new URLSearchParams({ engagementLevel: level });
+                  if (campusId) params.set("campusId", campusId);
+                  return `/contacts?${params.toString()}`;
+                };
                 return (
                   <Tooltip key={l.key}>
                     <TooltipTrigger asChild>
                       <div
                         role="button"
                         tabIndex={0}
-                        onClick={() => navigate(`/contacts?engagementLevel=${l.key}`)}
+                        onClick={() => navigate(buildHref(l.key))}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            navigate(`/contacts?engagementLevel=${l.key}`);
+                            navigate(buildHref(l.key));
                           }
                         }}
                         className={cn(
@@ -262,11 +267,11 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                     <div
                       role="button"
                       tabIndex={0}
-                      onClick={() => navigate(`/contacts?engagementLevel=unscored`)}
+                      onClick={() => navigate(`/contacts?engagementLevel=unscored${campusId ? `&campusId=${campusId}` : ""}`)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          navigate(`/contacts?engagementLevel=unscored`);
+                          navigate(`/contacts?engagementLevel=unscored${campusId ? `&campusId=${campusId}` : ""}`);
                         }
                       }}
                       className={cn(

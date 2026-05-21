@@ -32,13 +32,14 @@ const ContactsPage = () => {
       ? v
       : "all";
   })();
+  const initialCampus = searchParams.get("campusId") || "all";
   const [filters, setFilters] = useState<ContactFilters>({
     searchTerm: "",
     assignedToUserId: "all",
     flowId: "all",
     lastInteractionDays: "all",
     engagementLevel: initialEngagement,
-    campusId: "all",
+    campusId: initialCampus,
   });
 
   const { organization } = useProfile();
