@@ -267,11 +267,11 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                     <div
                       role="button"
                       tabIndex={0}
-                      onClick={() => navigate(`/contacts?engagementLevel=unscored`)}
+                      onClick={() => navigate(`/contacts?engagementLevel=unscored${campusId ? `&campusId=${campusId}` : ""}`)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          navigate(`/contacts?engagementLevel=unscored`);
+                          navigate(`/contacts?engagementLevel=unscored${campusId ? `&campusId=${campusId}` : ""}`);
                         }
                       }}
                       className={cn(
