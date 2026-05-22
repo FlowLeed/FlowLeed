@@ -18,7 +18,7 @@ interface Props {
   organizationName: string;
 }
 
-type SortKey = 'name' | 'role' | 'last_login' | 'logins_30d' | 'contacts_assigned' | 'activity';
+type SortKey = 'name' | 'role' | 'last_login' | 'logins_30d' | 'contacts_assigned' | 'activity' | 'flows';
 
 function roleLabel(role: string): string {
   switch (role) {
