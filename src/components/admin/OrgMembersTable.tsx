@@ -176,6 +176,28 @@ export function OrgMembersTable({ organizationId, organizationName }: Props) {
                     <span className="text-muted-foreground"> / {m.logins_7d}</span>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{m.contacts_assigned}</TableCell>
+                  <TableCell>
+                    {(() => {
+                      const flows = getMemberFlows(m);
+                      if (flows.length === 0) return <span className="text-sm text-muted-foreground">—</span>;
+                      const max = 5;
+                      const visible = flows.slice(0, max);
+                      const overflow = flows.slice(max);
+                      const isAll = (m.role === 'owner' || m.role === 'admin') && (orgFlows?.length || 0) > 0;
+                      return (
+                        <div className="flex items-center gap-1 flex-wrap" title={isAll ? 'All flows (org admin)' : undefined}>
+                          {visible.map(f => (
+                            <FlowIconBadge key={f.id} flow={{ name: f.name, icon: f.icon }} size="sm" />
+                          ))}
+                          {overflow.length > 0 && (
+                            <Badge variant="outline" className="h-5 px-1.5 text-[10px] rounded-full" title={overflow.map(f => f.name).join(', ')}>
+                              +{overflow.length}
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {m.notes_30d} / {m.interactions_30d}
                   </TableCell>
