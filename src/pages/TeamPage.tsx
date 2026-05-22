@@ -509,6 +509,26 @@ const TeamPage = () => {
                           addSuffix: true
                         })}
                       </p>
+                      {(() => {
+                        const flows = getMemberFlows(member.user_id, member.role);
+                        if (flows.length === 0) return null;
+                        const max = 6;
+                        const visible = flows.slice(0, max);
+                        const overflow = flows.slice(max);
+                        const isAll = member.role === 'owner' || member.role === 'admin';
+                        return (
+                          <div className="flex items-center gap-1 flex-wrap mt-1.5" title={isAll ? 'All flows (org admin)' : flows.map(f => f.name).join(', ')}>
+                            {visible.map(f => (
+                              <FlowIconBadge key={f.id} flow={{ name: f.name, icon: f.icon }} size="sm" />
+                            ))}
+                            {overflow.length > 0 && (
+                              <Badge variant="outline" className="h-5 px-1.5 text-[10px] rounded-full" title={overflow.map(f => f.name).join(', ')}>
+                                +{overflow.length}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {canManageMembers ? (
                         <div className="flex items-center gap-2 mt-2">
                           <Phone className="h-3 w-3 text-muted-foreground" />
