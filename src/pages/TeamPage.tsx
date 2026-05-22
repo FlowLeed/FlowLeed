@@ -21,6 +21,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useTwilioNumbers } from "@/hooks/useTwilioNumbers";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OrganizationPhoneNumbers } from "@/components/admin/OrganizationPhoneNumbers";
+import { useFlowTeamMemberships } from "@/hooks/useFlowTeamMemberships";
+import { useOrgFlowsMeta } from "@/hooks/useOrgFlowsMeta";
+import { FlowIconBadge } from "@/components/search/FlowIconBadge";
 
 interface TeamMember {
   id: string;
@@ -73,6 +76,21 @@ const TeamPage = () => {
     mergeTags
   } = useOrgTagManagement(organization?.id);
   const { numbers: twilioNumbers, assignNumber } = useTwilioNumbers();
+  const { data: flowMemberships } = useFlowTeamMemberships(true);
+  const { data: orgFlows } = useOrgFlowsMeta(organization?.id);
+  const flowsById = React.useMemo(() => {
+    const m = new Map<string, { id: string; name: string; icon: string }>();
+    (orgFlows || []).forEach(f => m.set(f.id, f));
+    return m;
+  }, [orgFlows]);
+  const getMemberFlows = (userId: string, role: string) => {
+    if (role === 'owner' || role === 'admin') return orgFlows || [];
+    const ids = flowMemberships?.get(userId);
+    if (!ids) return [];
+    const arr: { id: string; name: string; icon: string }[] = [];
+    ids.forEach(id => { const f = flowsById.get(id); if (f) arr.push(f); });
+    return arr.sort((a, b) => a.name.localeCompare(b.name));
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
@@ -491,6 +509,26 @@ const TeamPage = () => {
                           addSuffix: true
                         })}
                       </p>
+                      {(() => {
+                        const flows = getMemberFlows(member.user_id, member.role);
+                        if (flows.length === 0) return null;
+                        const max = 6;
+                        const visible = flows.slice(0, max);
+                        const overflow = flows.slice(max);
+                        const isAll = member.role === 'owner' || member.role === 'admin';
+                        return (
+                          <div className="flex items-center gap-1 flex-wrap mt-1.5" title={isAll ? 'All flows (org admin)' : flows.map(f => f.name).join(', ')}>
+                            {visible.map(f => (
+                              <FlowIconBadge key={f.id} flow={{ name: f.name, icon: f.icon }} size="sm" />
+                            ))}
+                            {overflow.length > 0 && (
+                              <Badge variant="outline" className="h-5 px-1.5 text-[10px] rounded-full" title={overflow.map(f => f.name).join(', ')}>
+                                +{overflow.length}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })()}
                       {canManageMembers ? (
                         <div className="flex items-center gap-2 mt-2">
                           <Phone className="h-3 w-3 text-muted-foreground" />
