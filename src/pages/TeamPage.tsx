@@ -76,6 +76,21 @@ const TeamPage = () => {
     mergeTags
   } = useOrgTagManagement(organization?.id);
   const { numbers: twilioNumbers, assignNumber } = useTwilioNumbers();
+  const { data: flowMemberships } = useFlowTeamMemberships(true);
+  const { data: orgFlows } = useOrgFlowsMeta(organization?.id);
+  const flowsById = React.useMemo(() => {
+    const m = new Map<string, { id: string; name: string; icon: string }>();
+    (orgFlows || []).forEach(f => m.set(f.id, f));
+    return m;
+  }, [orgFlows]);
+  const getMemberFlows = (userId: string, role: string) => {
+    if (role === 'owner' || role === 'admin') return orgFlows || [];
+    const ids = flowMemberships?.get(userId);
+    if (!ids) return [];
+    const arr: { id: string; name: string; icon: string }[] = [];
+    ids.forEach(id => { const f = flowsById.get(id); if (f) arr.push(f); });
+    return arr.sort((a, b) => a.name.localeCompare(b.name));
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<string | null>(null);
