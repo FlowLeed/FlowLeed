@@ -127,6 +127,7 @@ export function OrgMembersTable({ organizationId, organizationName }: Props) {
                 <SortHeader k="last_login">Last login</SortHeader>
                 <SortHeader k="logins_30d" className="text-right">Logins (30d/7d)</SortHeader>
                 <SortHeader k="contacts_assigned" className="text-right">Contacts</SortHeader>
+                <SortHeader k="flows">Flows</SortHeader>
                 <SortHeader k="activity" className="text-right">Notes / Interactions (30d)</SortHeader>
                 <TableHead>Engagement</TableHead>
                 <TableHead className="w-[60px]"></TableHead>
@@ -135,12 +136,12 @@ export function OrgMembersTable({ organizationId, organizationName }: Props) {
             <TableBody>
               {isLoading && Array.from({ length: 4 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={8}><Skeleton className="h-8 w-full" /></TableCell>
+                  <TableCell colSpan={9}><Skeleton className="h-8 w-full" /></TableCell>
                 </TableRow>
               ))}
               {!isLoading && sorted.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-6">
+                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-6">
                     No members found.
                   </TableCell>
                 </TableRow>
