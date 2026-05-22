@@ -46,9 +46,30 @@ function initials(name: string | null, email: string | null) {
 
 export function OrgMembersTable({ organizationId, organizationName }: Props) {
   const { data, isLoading } = useOrgMembersActivity(organizationId);
+  const { data: flowMemberships } = useFlowTeamMemberships(true);
+  const { data: orgFlows } = useOrgFlowsMeta(organizationId);
   const [sortKey, setSortKey] = useState<SortKey>('last_login');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [impersonateUserId, setImpersonateUserId] = useState<string | null>(null);
+
+  const flowsById = useMemo(() => {
+    const m = new Map<string, FlowMeta>();
+    (orgFlows || []).forEach(f => m.set(f.id, f));
+    return m;
+  }, [orgFlows]);
+
+  const getMemberFlows = (m: OrgMemberActivity): FlowMeta[] => {
+    // Org owners/admins implicitly have access to all flows
+    if (m.role === 'owner' || m.role === 'admin') return orgFlows || [];
+    const ids = flowMemberships?.get(m.user_id);
+    if (!ids) return [];
+    const arr: FlowMeta[] = [];
+    ids.forEach(id => {
+      const f = flowsById.get(id);
+      if (f) arr.push(f);
+    });
+    return arr.sort((a, b) => a.name.localeCompare(b.name));
+  };
 
   const sorted = useMemo(() => {
     if (!data) return [];
@@ -64,13 +85,14 @@ export function OrgMembersTable({ organizationId, organizationName }: Props) {
         case 'logins_30d': av = a.logins_30d; bv = b.logins_30d; break;
         case 'contacts_assigned': av = a.contacts_assigned; bv = b.contacts_assigned; break;
         case 'activity': av = a.notes_30d + a.interactions_30d; bv = b.notes_30d + b.interactions_30d; break;
+        case 'flows': av = getMemberFlows(a).length; bv = getMemberFlows(b).length; break;
       }
       if (av < bv) return -1 * dir;
       if (av > bv) return 1 * dir;
       return 0;
     });
     return arr;
-  }, [data, sortKey, sortDir]);
+  }, [data, sortKey, sortDir, flowMemberships, orgFlows]);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
