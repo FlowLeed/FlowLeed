@@ -28,7 +28,7 @@ const GroupsPage = () => {
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [selectedCampus, setSelectedCampus] = useState<string>("all");
+  const [selectedCampusIds, setSelectedCampusIds] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [syncing, setSyncing] = useState(false);
