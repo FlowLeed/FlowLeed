@@ -300,24 +300,13 @@ const GroupsPage = () => {
               ))}
             </SelectContent>
           </Select>
-          <Select value={selectedDay} onValueChange={setSelectedDay}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All days" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All days</SelectItem>
-              {dayOptions.map((d) => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           {hasActiveFilters && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 setSelectedType("all");
-                setSelectedCampus("all");
+                setSelectedCampusIds([]);
                 setSelectedDay("all");
                 setSearchQuery("");
               }}
