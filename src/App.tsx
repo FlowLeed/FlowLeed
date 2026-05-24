@@ -2,6 +2,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "./components/layout/MainLayout";
 import { FlowProvider } from "./contexts/FlowContext";
@@ -10,37 +11,45 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { SuperAdminProtectedRoute } from "./components/admin/SuperAdminProtectedRoute";
 import { SuperAdminLayout } from "./components/admin/SuperAdminLayout";
 import { ImpersonationEscapeHandler } from "./components/ImpersonationEscapeHandler";
-import Dashboard from "./pages/Dashboard";
-import NotFound from "./pages/NotFound";
-import FlowPage from "./pages/FlowPage";
-import FlowDocumentationPage from "./pages/FlowDocumentationPage";
-import UserProfilePage from "./pages/UserProfilePage";
-import ProfilePage from "./pages/ProfilePage";
-import TeamPage from "./pages/TeamPage";
-import GroupsPage from "./pages/GroupsPage";
-import GroupDetailPage from "./pages/GroupDetailPage";
-import IntegrationsPage from "./pages/IntegrationsPage";
-import IntegrationAdvancedSettingsPage from "./pages/IntegrationAdvancedSettingsPage";
-import ChurchOnlineAdvancedPage from "./pages/ChurchOnlineAdvancedPage";
-import AuthPage from "./pages/AuthPage";
-import AuthVerifyPage from "./pages/AuthVerifyPage";
-import VerifyEmailPage from "./pages/VerifyEmailPage";
-import InvitePage from "./pages/InvitePage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import ContactsPage from "./pages/ContactsPage";
-import MessagesPage from "./pages/MessagesPage";
-import CallsPage from "./pages/CallsPage";
-import CalendarPage from "./pages/CalendarPage";
-import TasksPage from "./pages/TasksPage";
-import SuperAdminAuthPage from "./pages/admin/SuperAdminAuthPage";
-import OrganizationsListPage from "./pages/admin/OrganizationsListPage";
-import OrganizationDetailPage from "./pages/admin/OrganizationDetailPage";
-import OnboardingFlowsPage from "./pages/admin/OnboardingFlowsPage";
-import OngoingSupportFlowsPage from "./pages/admin/OngoingSupportFlowsPage";
-import CommunicationsPage from "./pages/admin/CommunicationsPage";
-import SuperAdminProfilePage from "./pages/admin/SuperAdminProfilePage";
-import GroupPublicSignupPage from "./pages/GroupPublicSignupPage";
-import GroupDirectoryPage from "./pages/GroupDirectoryPage";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const FlowPage = lazy(() => import("./pages/FlowPage"));
+const FlowDocumentationPage = lazy(() => import("./pages/FlowDocumentationPage"));
+const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const TeamPage = lazy(() => import("./pages/TeamPage"));
+const GroupsPage = lazy(() => import("./pages/GroupsPage"));
+const GroupDetailPage = lazy(() => import("./pages/GroupDetailPage"));
+const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
+const IntegrationAdvancedSettingsPage = lazy(() => import("./pages/IntegrationAdvancedSettingsPage"));
+const ChurchOnlineAdvancedPage = lazy(() => import("./pages/ChurchOnlineAdvancedPage"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
+const AuthVerifyPage = lazy(() => import("./pages/AuthVerifyPage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
+const InvitePage = lazy(() => import("./pages/InvitePage"));
+const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
+const ContactsPage = lazy(() => import("./pages/ContactsPage"));
+const MessagesPage = lazy(() => import("./pages/MessagesPage"));
+const CallsPage = lazy(() => import("./pages/CallsPage"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const TasksPage = lazy(() => import("./pages/TasksPage"));
+const SuperAdminAuthPage = lazy(() => import("./pages/admin/SuperAdminAuthPage"));
+const OrganizationsListPage = lazy(() => import("./pages/admin/OrganizationsListPage"));
+const OrganizationDetailPage = lazy(() => import("./pages/admin/OrganizationDetailPage"));
+const OnboardingFlowsPage = lazy(() => import("./pages/admin/OnboardingFlowsPage"));
+const OngoingSupportFlowsPage = lazy(() => import("./pages/admin/OngoingSupportFlowsPage"));
+const CommunicationsPage = lazy(() => import("./pages/admin/CommunicationsPage"));
+const SuperAdminProfilePage = lazy(() => import("./pages/admin/SuperAdminProfilePage"));
+const GroupPublicSignupPage = lazy(() => import("./pages/GroupPublicSignupPage"));
+const GroupDirectoryPage = lazy(() => import("./pages/GroupDirectoryPage"));
+
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+  </div>
+);
+
 const App = () => (
   <TooltipProvider>
     <Toaster />
@@ -49,7 +58,8 @@ const App = () => (
       <AuthProvider>
         <ImpersonationEscapeHandler />
         <FlowProvider>
-          <Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/verify" element={<AuthVerifyPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -92,7 +102,8 @@ const App = () => (
               </Route>
 
               <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </Suspense>
         </FlowProvider>
       </AuthProvider>
     </BrowserRouter>
