@@ -68,9 +68,9 @@ export default function GroupDirectoryPage() {
           image_url,
           member_count:group_members(count)
         `)
-        .eq("allow_public_signup", true)
-        .in("visibility", ["public", "unlisted"])
+        .eq("visibility", "public")
         .eq("status", "active")
+        .is("archived_at", null)
         .order("name");
 
       if (error) throw error;
