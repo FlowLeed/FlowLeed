@@ -6,6 +6,7 @@ import { Users, MapPin, Calendar, MoreVertical } from "lucide-react";
 import { Group, useGroups } from "@/hooks/useGroups";
 import { useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,7 @@ const groupTypeColors: Record<string, string> = {
 
 export const GroupCard = ({ group }: GroupCardProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { organization } = useProfile();
   const { deleteGroup } = useGroups(organization?.id);
   const [editOpen, setEditOpen] = useState(false);
@@ -53,6 +55,11 @@ export const GroupCard = ({ group }: GroupCardProps) => {
   const handleDelete = () => {
     deleteGroup.mutate(group.id);
     setDeleteOpen(false);
+  };
+
+  const openGroup = () => {
+    queryClient.setQueryData(["group", group.id], group);
+    navigate(`/groups/${group.id}`);
   };
 
   const cleanDescription = group.description
@@ -83,7 +90,7 @@ export const GroupCard = ({ group }: GroupCardProps) => {
               </div>
               <h3
                 className="text-lg font-semibold hover:text-primary transition-colors cursor-pointer line-clamp-2 break-words"
-                onClick={() => navigate(`/groups/${group.id}`)}
+                onClick={openGroup}
                 title={group.name}
               >
                 {group.name}
@@ -96,7 +103,7 @@ export const GroupCard = ({ group }: GroupCardProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/groups/${group.id}`)}>
+                <DropdownMenuItem onClick={openGroup}>
                   View Details
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setEditOpen(true)}>
@@ -155,7 +162,7 @@ export const GroupCard = ({ group }: GroupCardProps) => {
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => navigate(`/groups/${group.id}`)}
+            onClick={openGroup}
           >
             View Group
           </Button>
