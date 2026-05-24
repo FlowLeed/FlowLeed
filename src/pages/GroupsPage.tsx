@@ -112,11 +112,20 @@ const GroupsPage = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="About Groups">
+                    <HelpCircle className="h-5 w-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage your small groups, serving teams, and classes</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <h1 className="text-3xl font-bold tracking-tight">Groups</h1>
-            <p className="text-muted-foreground">
-              Manage your small groups, serving teams, and classes
-            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleSyncFromPco} disabled={syncing}>
