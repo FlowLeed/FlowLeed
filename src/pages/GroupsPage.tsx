@@ -75,16 +75,35 @@ const GroupsPage = () => {
     );
   }
 
-  const filteredGroups = selectedType === "all" 
-    ? groups 
-    : groups.filter(g => g.group_type === selectedType);
+  // Derive a friendly category label from PCO group type name (text before ':'),
+  // falling back to the local group_type enum for non-PCO groups.
+  const categoryOf = (g: any): string => {
+    const pcoName: string | null = g.pco_group_type_name;
+    if (pcoName && pcoName.trim()) return pcoName.split(":")[0].trim();
+    const map: Record<string, string> = {
+      small_group: "Small Groups",
+      serving_team: "Serving Teams",
+      class: "Classes",
+      ministry: "Ministries",
+    };
+    return map[g.group_type] || "Other";
+  };
+
+  const filteredGroups = selectedType === "all"
+    ? groups
+    : groups.filter(g => categoryOf(g) === selectedType);
+
+  const categoryCounts = groups.reduce<Record<string, number>>((acc, g) => {
+    const k = categoryOf(g);
+    acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
 
   const groupTypes = [
     { value: "all", label: "All Groups", count: groups.length },
-    { value: "small_group", label: "Small Groups", count: groups.filter(g => g.group_type === "small_group").length },
-    { value: "serving_team", label: "Serving Teams", count: groups.filter(g => g.group_type === "serving_team").length },
-    { value: "class", label: "Classes", count: groups.filter(g => g.group_type === "class").length },
-    { value: "ministry", label: "Ministries", count: groups.filter(g => g.group_type === "ministry").length },
+    ...Object.entries(categoryCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ value: label, label, count })),
   ];
 
   return (
