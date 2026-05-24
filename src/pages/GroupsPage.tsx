@@ -95,9 +95,17 @@ const GroupsPage = () => {
     return map[g.group_type] || "Other";
   };
 
-  const filteredGroups = selectedType === "all"
-    ? groups
-    : groups.filter(g => categoryOf(g) === selectedType);
+  const filteredGroups = groups.filter((g: any) => {
+    if (selectedType !== "all" && categoryOf(g) !== selectedType) return false;
+    if (selectedLocation !== "all" && (g.location || "Unspecified") !== selectedLocation) return false;
+    if (selectedDay !== "all" && (g.meeting_day || "Unspecified") !== selectedDay) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const hay = `${g.name || ""} ${g.location || ""} ${g.description || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
 
   const categoryCounts = groups.reduce<Record<string, number>>((acc, g) => {
     const k = categoryOf(g);
@@ -111,6 +119,25 @@ const GroupsPage = () => {
       .sort((a, b) => b[1] - a[1])
       .map(([label, count]) => ({ value: label, label, count })),
   ];
+
+  const locationOptions = Array.from(
+    new Set(groups.map((g: any) => (g.location || "").trim()).filter(Boolean))
+  ).sort();
+
+  const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayOptions = Array.from(
+    new Set(groups.map((g: any) => (g.meeting_day || "").trim()).filter(Boolean))
+  ).sort((a, b) => {
+    const ia = dayOrder.indexOf(a);
+    const ib = dayOrder.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+
+  const hasActiveFilters = selectedType !== "all" || selectedLocation !== "all" || selectedDay !== "all" || searchQuery.trim() !== "";
+
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
