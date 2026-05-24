@@ -110,6 +110,8 @@ const GroupsPage = () => {
       if (!effective.some((id) => selectedCampusIds.includes(id))) return false;
     }
     if (selectedDay !== "all" && (g.meeting_day || "Unspecified") !== selectedDay) return false;
+    if (selectedSource === "pco" && !g.pco_group_id) return false;
+    if (selectedSource === "flowleed" && g.pco_group_id) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const hay = `${g.name || ""} ${g.location || ""} ${g.description || ""}`.toLowerCase();
