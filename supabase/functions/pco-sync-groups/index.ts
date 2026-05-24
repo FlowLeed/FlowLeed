@@ -168,10 +168,47 @@ Deno.serve(async (req) => {
     const gIdMap = new Map((groupMap || []).map(g => [g.pco_group_id!, g.id]));
 
     let membersUpserted = 0;
+    let campusLinksUpserted = 0;
     for (const pcoGid of batchSlice) {
       const localGid = gIdMap.get(pcoGid);
       if (!localGid) continue;
+
+      // 2a. Fetch group→campuses assignment (PCO supports many-to-many).
       try {
+        const campusRes = await pcoFetch(
+          `https://api.planningcenteronline.com/groups/v2/groups/${pcoGid}/campuses?per_page=100`,
+          auth
+        );
+        if (campusRes.ok) {
+          const cj = await campusRes.json();
+          const campusPcoIds: string[] = (cj.data || [])
+            .map((c: any) => c.id)
+            .filter((id: any) => id);
+
+          // Replace existing links for this group
+          await supabase.from('group_campuses').delete().eq('group_id', localGid);
+          const linkRows = campusPcoIds
+            .map((pcoId) => campusIdMap.get(pcoId))
+            .filter((id): id is string => !!id)
+            .map((campus_id) => ({ group_id: localGid, campus_id }));
+          if (linkRows.length) {
+            const { error: linkErr } = await supabase
+              .from('group_campuses')
+              .upsert(linkRows, { onConflict: 'group_id,campus_id' });
+            if (linkErr) console.error(`group_campuses upsert (${pcoGid}):`, linkErr.message);
+            else campusLinksUpserted += linkRows.length;
+
+            // Set convenience primary campus_id to the first
+            await supabase.from('groups').update({ campus_id: linkRows[0].campus_id })
+              .eq('id', localGid);
+          }
+        }
+        await sleep(API_DELAY);
+      } catch (e) {
+        console.error(`group ${pcoGid} campuses error:`, (e as Error).message);
+      }
+
+
         const pages = await fetchAllPages(
           `https://api.planningcenteronline.com/groups/v2/groups/${pcoGid}/memberships?per_page=100&include=person`,
           auth, 10
