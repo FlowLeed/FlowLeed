@@ -74,6 +74,9 @@ export const GroupCard = ({ group }: GroupCardProps) => {
                   {group.status === "inactive" && (
                     <Badge variant="outline">Inactive</Badge>
                   )}
+                  {(group as any).pco_group_id && (
+                    <Badge variant="outline" className="text-[10px] h-5">PCO</Badge>
+                  )}
                 </div>
                 <h3 
                   className="text-lg font-semibold hover:text-primary transition-colors truncate cursor-pointer"

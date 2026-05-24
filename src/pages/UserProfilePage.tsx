@@ -27,6 +27,7 @@ import { TagManager } from "@/components/contact/TagManager";
 import { FlowMomentsCard } from "@/components/contact/FlowMomentsCard";
 import { PcoCustomFieldsCard } from "@/components/contact/PcoCustomFieldsCard";
 import { ContactCheckinsCard } from "@/components/contact/ContactCheckinsCard";
+import { ContactGroupsCard } from "@/components/contact/ContactGroupsCard";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 import { useEngagementScore } from "@/hooks/useCheckinData";
 
@@ -1057,6 +1058,9 @@ const UserProfilePage = () => {
 
       {/* Attendance / Check-ins */}
       <ContactCheckinsCard contactId={contactId!} />
+
+      {/* Groups */}
+      <ContactGroupsCard contactId={contactId!} />
 
       {/* AI Suggestions Block */}
       <AISuggestions 

@@ -1043,36 +1043,42 @@ export type Database = {
         Row: {
           checked_in_at: string | null
           checked_in_by_user_id: string | null
-          contact_id: string
+          contact_id: string | null
           created_at: string
           group_meeting_id: string
-          group_member_id: string
+          group_member_id: string | null
           id: string
           notes: string | null
+          pc_person_id: string | null
+          pco_attendance_id: string | null
           status: string
           updated_at: string
         }
         Insert: {
           checked_in_at?: string | null
           checked_in_by_user_id?: string | null
-          contact_id: string
+          contact_id?: string | null
           created_at?: string
           group_meeting_id: string
-          group_member_id: string
+          group_member_id?: string | null
           id?: string
           notes?: string | null
+          pc_person_id?: string | null
+          pco_attendance_id?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           checked_in_at?: string | null
           checked_in_by_user_id?: string | null
-          contact_id?: string
+          contact_id?: string | null
           created_at?: string
           group_meeting_id?: string
-          group_member_id?: string
+          group_member_id?: string | null
           id?: string
           notes?: string | null
+          pc_person_id?: string | null
+          pco_attendance_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -1109,6 +1115,7 @@ export type Database = {
       }
       group_meetings: {
         Row: {
+          attendance_submitted: boolean
           created_at: string
           created_by_user_id: string | null
           description: string | null
@@ -1119,11 +1126,13 @@ export type Database = {
           meeting_date: string
           meeting_type: string | null
           notes: string | null
+          pco_event_id: string | null
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          attendance_submitted?: boolean
           created_at?: string
           created_by_user_id?: string | null
           description?: string | null
@@ -1134,11 +1143,13 @@ export type Database = {
           meeting_date: string
           meeting_type?: string | null
           notes?: string | null
+          pco_event_id?: string | null
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          attendance_submitted?: boolean
           created_at?: string
           created_by_user_id?: string | null
           description?: string | null
@@ -1149,6 +1160,7 @@ export type Database = {
           meeting_date?: string
           meeting_type?: string | null
           notes?: string | null
+          pco_event_id?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -1181,8 +1193,10 @@ export type Database = {
           last_attended_at: string | null
           notes: string | null
           pco_membership_id: string | null
+          pco_person_id: string | null
           role: string
           status: string
+          synced_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1195,8 +1209,10 @@ export type Database = {
           last_attended_at?: string | null
           notes?: string | null
           pco_membership_id?: string | null
+          pco_person_id?: string | null
           role?: string
           status?: string
+          synced_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1209,8 +1225,10 @@ export type Database = {
           last_attended_at?: string | null
           notes?: string | null
           pco_membership_id?: string | null
+          pco_person_id?: string | null
           role?: string
           status?: string
+          synced_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1300,6 +1318,7 @@ export type Database = {
       groups: {
         Row: {
           allow_public_signup: boolean
+          archived_at: string | null
           capacity: number | null
           co_leader_user_id: string | null
           created_at: string
@@ -1307,15 +1326,21 @@ export type Database = {
           group_type: string
           id: string
           image_url: string | null
+          last_meeting_at: string | null
+          last_synced_at: string | null
           leader_user_id: string | null
           location: string | null
           meeting_day: string | null
           meeting_frequency: string | null
           meeting_time: string | null
+          member_count: number
           metadata: Json | null
           name: string
           organization_id: string
           pco_group_id: string | null
+          pco_group_type_id: string | null
+          pco_group_type_name: string | null
+          pco_location_id: string | null
           public_signup_token: string | null
           status: string
           tags: string[] | null
@@ -1324,6 +1349,7 @@ export type Database = {
         }
         Insert: {
           allow_public_signup?: boolean
+          archived_at?: string | null
           capacity?: number | null
           co_leader_user_id?: string | null
           created_at?: string
@@ -1331,15 +1357,21 @@ export type Database = {
           group_type?: string
           id?: string
           image_url?: string | null
+          last_meeting_at?: string | null
+          last_synced_at?: string | null
           leader_user_id?: string | null
           location?: string | null
           meeting_day?: string | null
           meeting_frequency?: string | null
           meeting_time?: string | null
+          member_count?: number
           metadata?: Json | null
           name: string
           organization_id: string
           pco_group_id?: string | null
+          pco_group_type_id?: string | null
+          pco_group_type_name?: string | null
+          pco_location_id?: string | null
           public_signup_token?: string | null
           status?: string
           tags?: string[] | null
@@ -1348,6 +1380,7 @@ export type Database = {
         }
         Update: {
           allow_public_signup?: boolean
+          archived_at?: string | null
           capacity?: number | null
           co_leader_user_id?: string | null
           created_at?: string
@@ -1355,15 +1388,21 @@ export type Database = {
           group_type?: string
           id?: string
           image_url?: string | null
+          last_meeting_at?: string | null
+          last_synced_at?: string | null
           leader_user_id?: string | null
           location?: string | null
           meeting_day?: string | null
           meeting_frequency?: string | null
           meeting_time?: string | null
+          member_count?: number
           metadata?: Json | null
           name?: string
           organization_id?: string
           pco_group_id?: string | null
+          pco_group_type_id?: string | null
+          pco_group_type_name?: string | null
+          pco_location_id?: string | null
           public_signup_token?: string | null
           status?: string
           tags?: string[] | null
