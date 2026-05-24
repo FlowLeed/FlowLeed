@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true, hasMore,
-      groupsUpserted, membersUpserted,
+      groupsUpserted, membersUpserted, campusLinksUpserted,
       processedGroups: batchSlice.length, totalGroups: allGroupIds.length,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
