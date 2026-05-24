@@ -24,6 +24,9 @@ const GroupsPage = () => {
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  const [selectedDay, setSelectedDay] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [syncing, setSyncing] = useState(false);
   const queryClient = useQueryClient();
 
