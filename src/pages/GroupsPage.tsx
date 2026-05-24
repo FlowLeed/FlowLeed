@@ -2,8 +2,10 @@ import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Plus, Users, RefreshCw, HelpCircle } from "lucide-react";
+import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, MapPin, Search, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +24,9 @@ const GroupsPage = () => {
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  const [selectedDay, setSelectedDay] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [syncing, setSyncing] = useState(false);
   const queryClient = useQueryClient();
 
@@ -90,9 +95,17 @@ const GroupsPage = () => {
     return map[g.group_type] || "Other";
   };
 
-  const filteredGroups = selectedType === "all"
-    ? groups
-    : groups.filter(g => categoryOf(g) === selectedType);
+  const filteredGroups = groups.filter((g: any) => {
+    if (selectedType !== "all" && categoryOf(g) !== selectedType) return false;
+    if (selectedLocation !== "all" && (g.location || "Unspecified") !== selectedLocation) return false;
+    if (selectedDay !== "all" && (g.meeting_day || "Unspecified") !== selectedDay) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const hay = `${g.name || ""} ${g.location || ""} ${g.description || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
 
   const categoryCounts = groups.reduce<Record<string, number>>((acc, g) => {
     const k = categoryOf(g);
@@ -106,6 +119,25 @@ const GroupsPage = () => {
       .sort((a, b) => b[1] - a[1])
       .map(([label, count]) => ({ value: label, label, count })),
   ];
+
+  const locationOptions = Array.from(
+    new Set(groups.map((g: any) => (g.location || "").trim()).filter(Boolean))
+  ).sort();
+
+  const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayOptions = Array.from(
+    new Set(groups.map((g: any) => (g.meeting_day || "").trim()).filter(Boolean))
+  ).sort((a, b) => {
+    const ia = dayOrder.indexOf(a);
+    const ib = dayOrder.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+
+  const hasActiveFilters = selectedType !== "all" || selectedLocation !== "all" || selectedDay !== "all" || searchQuery.trim() !== "";
+
 
   return (
     <div className="flex-1 overflow-y-auto p-6">
@@ -157,6 +189,61 @@ const GroupsPage = () => {
             </TabsList>
           </div>
         </Tabs>
+
+        {/* Search & Filters */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, location, description…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="All locations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All locations</SelectItem>
+              {locationOptions.map((loc) => (
+                <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedDay} onValueChange={setSelectedDay}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="All days" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All days</SelectItem>
+              {dayOptions.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedType("all");
+                setSelectedLocation("all");
+                setSelectedDay("all");
+                setSearchQuery("");
+              }}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear
+            </Button>
+          )}
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Showing {filteredGroups.length} of {groups.length} groups
+        </p>
 
         {/* Groups Grid */}
         {isLoading ? (
