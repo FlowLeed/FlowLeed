@@ -26,6 +26,8 @@ export interface Group {
   public_signup_token?: string;
   allow_public_signup?: boolean;
   image_url?: string | null;
+  campus_id?: string | null;
+  pco_campus_id?: string | null;
 }
 
 export const useGroups = (organizationId: string | undefined) => {
