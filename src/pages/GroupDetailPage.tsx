@@ -88,7 +88,7 @@ const GroupDetailPage = () => {
     enabled: !!group?.leader_user_id,
   });
 
-  if (groupsLoading) {
+  if (!organization || groupsLoading) {
     return (
       <div className="flex-1 overflow-y-auto p-6">
         <div className="text-center py-12">
