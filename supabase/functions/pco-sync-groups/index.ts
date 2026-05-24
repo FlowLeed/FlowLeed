@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
           pco_group_id: g.id,
           name: attrs.name || 'Untitled Group',
           description: attrs.description || null,
-          image_url: attrs.header_image?.thumbnail || attrs.header_image?.original || null,
+          image_url: attrs.header_image?.original || attrs.header_image?.medium || attrs.header_image?.thumbnail || null,
           status: attrs.archived_at ? 'archived' : 'active',
           archived_at: attrs.archived_at || null,
           pco_group_type_id: gtId || null,
