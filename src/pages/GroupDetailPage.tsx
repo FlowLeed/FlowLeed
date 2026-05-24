@@ -123,15 +123,32 @@ const GroupDetailPage = () => {
 
         {/* Hero Banner */}
         <Card className="overflow-hidden">
-          <div className="w-full h-48 bg-muted flex items-center justify-center">
+          <div className="relative w-full h-56 sm:h-64 bg-muted overflow-hidden">
             {group.image_url ? (
-              <img src={group.image_url} alt={group.name} className="w-full h-full object-cover" />
+              <>
+                {/* Blurred backdrop fills the container */}
+                <img
+                  src={group.image_url}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
+                />
+                {/* Foreground image fully contained, no awkward cropping */}
+                <img
+                  src={group.image_url}
+                  alt={group.name}
+                  className="relative w-full h-full object-contain"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent pointer-events-none" />
+              </>
             ) : (
-              <span className="text-5xl font-semibold text-muted-foreground">
-                {group.name.trim().split(/\s+/).length >= 2
-                  ? (group.name.trim().split(/\s+/)[0][0] + group.name.trim().split(/\s+/)[1][0]).toUpperCase()
-                  : group.name.slice(0, 2).toUpperCase()}
-              </span>
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="text-5xl font-semibold text-muted-foreground">
+                  {group.name.trim().split(/\s+/).length >= 2
+                    ? (group.name.trim().split(/\s+/)[0][0] + group.name.trim().split(/\s+/)[1][0]).toUpperCase()
+                    : group.name.slice(0, 2).toUpperCase()}
+                </span>
+              </div>
             )}
           </div>
           <div className="p-6">
