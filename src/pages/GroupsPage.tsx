@@ -21,11 +21,12 @@ const GroupsPage = () => {
   console.log("[GroupsPage] Organization:", organization?.id);
   
   const { groups, isLoading } = useGroups(organization?.id);
+  const { data: campuses = [] } = useCampuses();
   console.log("[GroupsPage] Groups:", groups, "Loading:", isLoading);
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  const [selectedCampus, setSelectedCampus] = useState<string>("all");
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [syncing, setSyncing] = useState(false);
