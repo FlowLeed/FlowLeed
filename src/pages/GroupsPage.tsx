@@ -245,7 +245,7 @@ const GroupsPage = () => {
               size="sm"
               onClick={() => {
                 setSelectedType("all");
-                setSelectedLocation("all");
+                setSelectedCampus("all");
                 setSelectedDay("all");
                 setSearchQuery("");
               }}
