@@ -101,9 +101,12 @@ const GroupsPage = () => {
 
   const filteredGroups = groups.filter((g: any) => {
     if (selectedType !== "all" && categoryOf(g) !== selectedType) return false;
-    if (selectedCampus !== "all") {
-      const gCampus = g.campus_id || "none";
-      if (gCampus !== selectedCampus) return false;
+    if (selectedCampusIds.length > 0) {
+      const ids: string[] = g.campus_ids?.length
+        ? g.campus_ids
+        : (g.campus_id ? [g.campus_id] : []);
+      const effective = ids.length ? ids : ["none"];
+      if (!effective.some((id) => selectedCampusIds.includes(id))) return false;
     }
     if (selectedDay !== "all" && (g.meeting_day || "Unspecified") !== selectedDay) return false;
     if (searchQuery.trim()) {
