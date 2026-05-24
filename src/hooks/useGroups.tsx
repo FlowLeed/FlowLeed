@@ -41,17 +41,20 @@ export const useGroups = (organizationId: string | undefined) => {
         .from("groups")
         .select(`
           *,
-          member_count:group_members(count)
+          local_member_count:group_members(count)
         `)
         .eq("organization_id", organizationId)
         .order("name");
 
       if (error) throw error;
-      
-      return data.map(group => ({
-        ...group,
-        member_count: group.member_count?.[0]?.count || 0
-      }));
+
+      return data.map((group: any) => {
+        const local = group.local_member_count?.[0]?.count || 0;
+        // Prefer PCO-reported count when local join is empty (e.g. PCO members
+        // not yet matched to FlowLeed contacts).
+        const member_count = local > 0 ? local : (group.member_count || 0);
+        return { ...group, member_count };
+      });
     },
     enabled: !!organizationId,
   });
