@@ -1319,6 +1319,7 @@ export type Database = {
         Row: {
           allow_public_signup: boolean
           archived_at: string | null
+          campus_id: string | null
           capacity: number | null
           co_leader_user_id: string | null
           created_at: string
@@ -1337,6 +1338,7 @@ export type Database = {
           metadata: Json | null
           name: string
           organization_id: string
+          pco_campus_id: string | null
           pco_group_id: string | null
           pco_group_type_id: string | null
           pco_group_type_name: string | null
@@ -1350,6 +1352,7 @@ export type Database = {
         Insert: {
           allow_public_signup?: boolean
           archived_at?: string | null
+          campus_id?: string | null
           capacity?: number | null
           co_leader_user_id?: string | null
           created_at?: string
@@ -1368,6 +1371,7 @@ export type Database = {
           metadata?: Json | null
           name: string
           organization_id: string
+          pco_campus_id?: string | null
           pco_group_id?: string | null
           pco_group_type_id?: string | null
           pco_group_type_name?: string | null
@@ -1381,6 +1385,7 @@ export type Database = {
         Update: {
           allow_public_signup?: boolean
           archived_at?: string | null
+          campus_id?: string | null
           capacity?: number | null
           co_leader_user_id?: string | null
           created_at?: string
@@ -1399,6 +1404,7 @@ export type Database = {
           metadata?: Json | null
           name?: string
           organization_id?: string
+          pco_campus_id?: string | null
           pco_group_id?: string | null
           pco_group_type_id?: string | null
           pco_group_type_name?: string | null
@@ -1410,6 +1416,13 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "groups_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "groups_co_leader_user_id_fkey"
             columns: ["co_leader_user_id"]

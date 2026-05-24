@@ -81,9 +81,16 @@ Deno.serve(async (req) => {
     // ----- 1. Sync groups list -----
     console.log(`[groups-sync] org ${orgId} — fetching groups`);
     const groupPages = await fetchAllPages(
-      'https://api.planningcenteronline.com/groups/v2/groups?per_page=100&include=group_type,location',
+      'https://api.planningcenteronline.com/groups/v2/groups?per_page=100&include=group_type,location,campus',
       auth, 20
     );
+
+    // Build campus pco_id -> uuid map for this org
+    const { data: campusRows } = await supabase
+      .from('campuses')
+      .select('id, pco_campus_id')
+      .eq('organization_id', orgId);
+    const campusIdMap = new Map((campusRows || []).map((c: any) => [c.pco_campus_id, c.id]));
 
     const pcoGroupIds = new Set<string>();
     const groupRows: any[] = [];
@@ -95,6 +102,7 @@ Deno.serve(async (req) => {
         const rel = g.relationships || {};
         const gtId = rel.group_type?.data?.id;
         const locId = rel.location?.data?.id;
+        const campusPcoId = rel.campus?.data?.id || null;
         const gt = includedGT.find((x: any) => x.id === gtId);
         const loc = includedLoc.find((x: any) => x.id === locId);
         pcoGroupIds.add(g.id);
@@ -110,6 +118,8 @@ Deno.serve(async (req) => {
           pco_group_type_name: gt?.attributes?.name || null,
           pco_location_id: locId || null,
           location: loc?.attributes?.full_formatted_address || loc?.attributes?.name || null,
+          pco_campus_id: campusPcoId,
+          campus_id: campusPcoId ? (campusIdMap.get(campusPcoId) || null) : null,
           last_synced_at: new Date().toISOString(),
           metadata: { pco_url: attrs.public_church_center_web_url || null },
         });

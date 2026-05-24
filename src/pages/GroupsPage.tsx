@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
+import { useCampuses } from "@/hooks/useCampuses";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, MapPin, Search, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -20,11 +21,12 @@ const GroupsPage = () => {
   console.log("[GroupsPage] Organization:", organization?.id);
   
   const { groups, isLoading } = useGroups(organization?.id);
+  const { data: campuses = [] } = useCampuses();
   console.log("[GroupsPage] Groups:", groups, "Loading:", isLoading);
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  const [selectedCampus, setSelectedCampus] = useState<string>("all");
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [syncing, setSyncing] = useState(false);
@@ -97,7 +99,10 @@ const GroupsPage = () => {
 
   const filteredGroups = groups.filter((g: any) => {
     if (selectedType !== "all" && categoryOf(g) !== selectedType) return false;
-    if (selectedLocation !== "all" && (g.location || "Unspecified") !== selectedLocation) return false;
+    if (selectedCampus !== "all") {
+      const gCampus = g.campus_id || "none";
+      if (gCampus !== selectedCampus) return false;
+    }
     if (selectedDay !== "all" && (g.meeting_day || "Unspecified") !== selectedDay) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -120,9 +125,16 @@ const GroupsPage = () => {
       .map(([label, count]) => ({ value: label, label, count })),
   ];
 
-  const locationOptions = Array.from(
-    new Set(groups.map((g: any) => (g.location || "").trim()).filter(Boolean))
-  ).sort();
+  // Only show campuses that actually have groups assigned, plus "Unassigned" if any
+  const campusGroupCounts = groups.reduce<Record<string, number>>((acc, g: any) => {
+    const key = g.campus_id || "none";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const campusOptions = campuses
+    .filter((c) => campusGroupCounts[c.id])
+    .map((c) => ({ value: c.id, label: c.name }));
+  const hasUnassigned = (campusGroupCounts["none"] || 0) > 0;
 
   const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const dayOptions = Array.from(
@@ -136,7 +148,7 @@ const GroupsPage = () => {
     return ia - ib;
   });
 
-  const hasActiveFilters = selectedType !== "all" || selectedLocation !== "all" || selectedDay !== "all" || searchQuery.trim() !== "";
+  const hasActiveFilters = selectedType !== "all" || selectedCampus !== "all" || selectedDay !== "all" || searchQuery.trim() !== "";
 
 
   return (
@@ -201,16 +213,19 @@ const GroupsPage = () => {
               className="pl-9"
             />
           </div>
-          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+          <Select value={selectedCampus} onValueChange={setSelectedCampus}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All locations" />
+              <SelectValue placeholder="All Campuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All locations</SelectItem>
-              {locationOptions.map((loc) => (
-                <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+              <SelectItem value="all">All Campuses</SelectItem>
+              {campusOptions.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
               ))}
+              {hasUnassigned && (
+                <SelectItem value="none">Unassigned</SelectItem>
+              )}
             </SelectContent>
           </Select>
           <Select value={selectedDay} onValueChange={setSelectedDay}>
@@ -230,7 +245,7 @@ const GroupsPage = () => {
               size="sm"
               onClick={() => {
                 setSelectedType("all");
-                setSelectedLocation("all");
+                setSelectedCampus("all");
                 setSelectedDay("all");
                 setSearchQuery("");
               }}
