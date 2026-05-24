@@ -55,40 +55,43 @@ export const GroupCard = ({ group }: GroupCardProps) => {
     setDeleteOpen(false);
   };
 
+  const cleanDescription = group.description
+    ? group.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+    : "";
+
   return (
     <>
       <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer group">
         <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3 flex-1">
-              <GroupAvatar name={group.name} imageUrl={group.image_url} size="lg" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge
-                    variant="secondary"
-                    className={groupTypeColors[group.group_type] || ""}
-                  >
-                    {groupTypeLabels[group.group_type] || group.group_type}
-                  </Badge>
-                  {group.status === "inactive" && (
-                    <Badge variant="outline">Inactive</Badge>
-                  )}
-                  {(group as any).pco_group_id && (
-                    <Badge variant="outline" className="text-[10px] h-5">PCO</Badge>
-                  )}
-                </div>
-                <h3 
-                  className="text-lg font-semibold hover:text-primary transition-colors truncate cursor-pointer"
-                  onClick={() => navigate(`/groups/${group.id}`)}
+          <div className="flex items-start gap-3">
+            <GroupAvatar name={group.name} imageUrl={group.image_url} size="lg" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <Badge
+                  variant="secondary"
+                  className={groupTypeColors[group.group_type] || ""}
                 >
-                  {group.name}
-                </h3>
+                  {groupTypeLabels[group.group_type] || group.group_type}
+                </Badge>
+                {group.status === "inactive" && (
+                  <Badge variant="outline">Inactive</Badge>
+                )}
+                {(group as any).pco_group_id && (
+                  <Badge variant="outline" className="text-[10px] h-5">PCO</Badge>
+                )}
               </div>
+              <h3
+                className="text-lg font-semibold hover:text-primary transition-colors cursor-pointer line-clamp-2 break-words"
+                onClick={() => navigate(`/groups/${group.id}`)}
+                title={group.name}
+              >
+                {group.name}
+              </h3>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="shrink-0 -mr-2">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -110,9 +113,9 @@ export const GroupCard = ({ group }: GroupCardProps) => {
           </div>
 
           {/* Description */}
-          {group.description && (
+          {cleanDescription && (
             <p className="text-sm text-muted-foreground line-clamp-2">
-              {group.description}
+              {cleanDescription}
             </p>
           )}
 
