@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Plus, Users, RefreshCw } from "lucide-react";
+import { ExternalLink, Plus, Users, RefreshCw, HelpCircle } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -111,11 +112,20 @@ const GroupsPage = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="About Groups">
+                    <HelpCircle className="h-5 w-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage your small groups, serving teams, and classes</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <h1 className="text-3xl font-bold tracking-tight">Groups</h1>
-            <p className="text-muted-foreground">
-              Manage your small groups, serving teams, and classes
-            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleSyncFromPco} disabled={syncing}>
