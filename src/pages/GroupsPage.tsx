@@ -164,7 +164,10 @@ const GroupsPage = () => {
     return ia - ib;
   });
 
-  const hasActiveFilters = selectedType !== "all" || selectedCampusIds.length > 0 || selectedDay !== "all" || searchQuery.trim() !== "";
+  const pcoCount = groups.filter((g: any) => !!g.pco_group_id).length;
+  const flowleedCount = groups.length - pcoCount;
+
+  const hasActiveFilters = selectedType !== "all" || selectedCampusIds.length > 0 || selectedDay !== "all" || selectedSource !== "all" || searchQuery.trim() !== "";
 
 
   return (
