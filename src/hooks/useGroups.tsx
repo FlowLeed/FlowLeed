@@ -46,6 +46,8 @@ export const useGroups = (organizationId: string | undefined) => {
           local_member_count:group_members(count),
           group_campuses(campus_id)
         `)
+        .neq("status", "archived")
+        .is("archived_at", null)
         .eq("organization_id", organizationId)
         .order("name");
 
