@@ -161,7 +161,7 @@ const GroupsPage = () => {
     return ia - ib;
   });
 
-  const hasActiveFilters = selectedType !== "all" || selectedCampus !== "all" || selectedDay !== "all" || searchQuery.trim() !== "";
+  const hasActiveFilters = selectedType !== "all" || selectedCampusIds.length > 0 || selectedDay !== "all" || searchQuery.trim() !== "";
 
 
   return (
