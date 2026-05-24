@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
         console.error(`group ${pcoGid} campuses error:`, (e as Error).message);
       }
 
-
+      try {
         const pages = await fetchAllPages(
           `https://api.planningcenteronline.com/groups/v2/groups/${pcoGid}/memberships?per_page=100&include=person`,
           auth, 10
