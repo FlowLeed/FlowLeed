@@ -207,9 +207,11 @@ Deno.serve(async (req) => {
           .map(r => ({ ...r, contact_id: contactMap.get(r.pco_person_id) }));
 
         if (rowsWithContact.length) {
+          // Use (group_id, contact_id) as conflict target — pco_membership_id has only a
+          // PARTIAL unique index which Postgres ON CONFLICT cannot target.
           const { error } = await supabase
             .from('group_members')
-            .upsert(rowsWithContact, { onConflict: 'pco_membership_id' });
+            .upsert(rowsWithContact, { onConflict: 'group_id,contact_id' });
           if (error) console.error(`members upsert (group ${pcoGid}):`, error.message);
           else membersUpserted += rowsWithContact.length;
         }
