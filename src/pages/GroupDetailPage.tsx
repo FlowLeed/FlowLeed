@@ -87,8 +87,8 @@ const GroupDetailPage = () => {
 
   const { pendingCount } = useGroupSignupRequests(groupId);
 
-  const group = groups.find((g) => g.id === groupId);
   const existingMemberIds = members.map((m) => m.contact_id);
+
 
   const { data: leaderProfile } = useQuery({
     queryKey: ["leader-profile", group?.leader_user_id],
