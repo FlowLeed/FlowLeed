@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useProfile } from "@/hooks/useProfile";
 
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupAttendance } from "@/hooks/useGroupAttendance";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +32,7 @@ const groupTypeLabels: Record<string, string> = {
 const GroupDetailPage = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
-  const { organization } = useProfile();
+  const queryClient = useQueryClient();
   const { data: group, isLoading: groupsLoading } = useQuery({
     queryKey: ["group", groupId],
     queryFn: async () => {
@@ -50,6 +49,13 @@ const GroupDetailPage = () => {
       return { ...data, campus_ids };
     },
     enabled: !!groupId,
+    initialData: () => {
+      const cachedGroups = queryClient.getQueriesData<any[]>({ queryKey: ["groups"] });
+      return cachedGroups
+        .flatMap(([, groups]) => groups || [])
+        .find((cachedGroup) => cachedGroup.id === groupId);
+    },
+    staleTime: 5 * 60 * 1000,
   });
   const { members, isLoading: membersLoading, updateMember, removeMember } = useGroupMembers(groupId);
   const { meetings, meetingsLoading } = useGroupAttendance(groupId);
@@ -104,7 +110,7 @@ const GroupDetailPage = () => {
     enabled: !!group?.leader_user_id,
   });
 
-  if (!organization || groupsLoading) {
+  if (groupsLoading) {
     return (
       <div className="flex-1 overflow-y-auto p-6">
         <div className="text-center py-12">
@@ -453,14 +459,12 @@ const GroupDetailPage = () => {
               open={createMeetingOpen}
               onOpenChange={setCreateMeetingOpen}
             />
-            {organization && (
-              <SignupRequestsDialog
-                groupId={groupId!}
-                organizationId={organization.id}
-                open={signupRequestsOpen}
-                onOpenChange={setSignupRequestsOpen}
-              />
-            )}
+            <SignupRequestsDialog
+              groupId={groupId!}
+              organizationId={group.organization_id}
+              open={signupRequestsOpen}
+              onOpenChange={setSignupRequestsOpen}
+            />
           </>
         )}
 
