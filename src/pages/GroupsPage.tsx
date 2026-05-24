@@ -30,6 +30,7 @@ const GroupsPage = () => {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedCampusIds, setSelectedCampusIds] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<string>("all");
+  const [selectedSource, setSelectedSource] = useState<"all" | "pco" | "flowleed">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [syncing, setSyncing] = useState(false);
   const queryClient = useQueryClient();
@@ -109,6 +110,8 @@ const GroupsPage = () => {
       if (!effective.some((id) => selectedCampusIds.includes(id))) return false;
     }
     if (selectedDay !== "all" && (g.meeting_day || "Unspecified") !== selectedDay) return false;
+    if (selectedSource === "pco" && !g.pco_group_id) return false;
+    if (selectedSource === "flowleed" && g.pco_group_id) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const hay = `${g.name || ""} ${g.location || ""} ${g.description || ""}`.toLowerCase();
@@ -161,7 +164,10 @@ const GroupsPage = () => {
     return ia - ib;
   });
 
-  const hasActiveFilters = selectedType !== "all" || selectedCampusIds.length > 0 || selectedDay !== "all" || searchQuery.trim() !== "";
+  const pcoCount = groups.filter((g: any) => !!g.pco_group_id).length;
+  const flowleedCount = groups.length - pcoCount;
+
+  const hasActiveFilters = selectedType !== "all" || selectedCampusIds.length > 0 || selectedDay !== "all" || selectedSource !== "all" || searchQuery.trim() !== "";
 
 
   return (
@@ -300,6 +306,13 @@ const GroupsPage = () => {
               ))}
             </SelectContent>
           </Select>
+          <Tabs value={selectedSource} onValueChange={(v) => setSelectedSource(v as any)}>
+            <TabsList>
+              <TabsTrigger value="all">All ({groups.length})</TabsTrigger>
+              <TabsTrigger value="pco">PCO ({pcoCount})</TabsTrigger>
+              <TabsTrigger value="flowleed">FlowLeed ({flowleedCount})</TabsTrigger>
+            </TabsList>
+          </Tabs>
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -308,6 +321,7 @@ const GroupsPage = () => {
                 setSelectedType("all");
                 setSelectedCampusIds([]);
                 setSelectedDay("all");
+                setSelectedSource("all");
                 setSearchQuery("");
               }}
             >
