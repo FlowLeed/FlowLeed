@@ -3,10 +3,12 @@ import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { useCampuses } from "@/hooks/useCampuses";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, MapPin, Search, X } from "lucide-react";
+import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, MapPin, Search, X, ChevronDown } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,7 +28,7 @@ const GroupsPage = () => {
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [selectedCampus, setSelectedCampus] = useState<string>("all");
+  const [selectedCampusIds, setSelectedCampusIds] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [syncing, setSyncing] = useState(false);
@@ -99,9 +101,12 @@ const GroupsPage = () => {
 
   const filteredGroups = groups.filter((g: any) => {
     if (selectedType !== "all" && categoryOf(g) !== selectedType) return false;
-    if (selectedCampus !== "all") {
-      const gCampus = g.campus_id || "none";
-      if (gCampus !== selectedCampus) return false;
+    if (selectedCampusIds.length > 0) {
+      const ids: string[] = g.campus_ids?.length
+        ? g.campus_ids
+        : (g.campus_id ? [g.campus_id] : []);
+      const effective = ids.length ? ids : ["none"];
+      if (!effective.some((id) => selectedCampusIds.includes(id))) return false;
     }
     if (selectedDay !== "all" && (g.meeting_day || "Unspecified") !== selectedDay) return false;
     if (searchQuery.trim()) {
@@ -125,16 +130,24 @@ const GroupsPage = () => {
       .map(([label, count]) => ({ value: label, label, count })),
   ];
 
-  // Only show campuses that actually have groups assigned, plus "Unassigned" if any
+  // Only show campuses that actually have groups assigned, plus "Unassigned" if any.
+  // Use many-to-many campus_ids when present; fall back to campus_id.
   const campusGroupCounts = groups.reduce<Record<string, number>>((acc, g: any) => {
-    const key = g.campus_id || "none";
-    acc[key] = (acc[key] || 0) + 1;
+    const ids: string[] = g.campus_ids?.length
+      ? g.campus_ids
+      : (g.campus_id ? [g.campus_id] : []);
+    if (ids.length === 0) {
+      acc["none"] = (acc["none"] || 0) + 1;
+    } else {
+      for (const id of ids) acc[id] = (acc[id] || 0) + 1;
+    }
     return acc;
   }, {});
   const campusOptions = campuses
     .filter((c) => campusGroupCounts[c.id])
-    .map((c) => ({ value: c.id, label: c.name }));
+    .map((c) => ({ value: c.id, label: c.name, count: campusGroupCounts[c.id] }));
   const hasUnassigned = (campusGroupCounts["none"] || 0) > 0;
+  const unassignedCount = campusGroupCounts["none"] || 0;
 
   const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const dayOptions = Array.from(
@@ -148,7 +161,7 @@ const GroupsPage = () => {
     return ia - ib;
   });
 
-  const hasActiveFilters = selectedType !== "all" || selectedCampus !== "all" || selectedDay !== "all" || searchQuery.trim() !== "";
+  const hasActiveFilters = selectedType !== "all" || selectedCampusIds.length > 0 || selectedDay !== "all" || searchQuery.trim() !== "";
 
 
   return (
@@ -213,21 +226,69 @@ const GroupsPage = () => {
               className="pl-9"
             />
           </div>
-          <Select value={selectedCampus} onValueChange={setSelectedCampus}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All Campuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Campuses</SelectItem>
-              {campusOptions.map((c) => (
-                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-              ))}
-              {hasUnassigned && (
-                <SelectItem value="none">Unassigned</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-[220px] justify-between">
+                <span className="flex items-center gap-2 truncate">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  {selectedCampusIds.length === 0
+                    ? "All Campuses"
+                    : selectedCampusIds.length === 1
+                      ? (campusOptions.find((c) => c.value === selectedCampusIds[0])?.label
+                          ?? (selectedCampusIds[0] === "none" ? "Unassigned" : "1 campus"))
+                      : `${selectedCampusIds.length} campuses`}
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[260px] p-2" align="start">
+              <div className="space-y-1 max-h-72 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCampusIds([])}
+                  className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-accent flex items-center justify-between"
+                >
+                  <span className="font-medium">All Campuses</span>
+                  <span className="text-xs text-muted-foreground">{groups.length}</span>
+                </button>
+                <div className="h-px bg-border my-1" />
+                {campusOptions.map((c) => {
+                  const checked = selectedCampusIds.includes(c.value);
+                  return (
+                    <label
+                      key={c.value}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          setSelectedCampusIds((prev) =>
+                            v ? [...prev, c.value] : prev.filter((id) => id !== c.value)
+                          );
+                        }}
+                      />
+                      <span className="flex-1 text-sm truncate">{c.label}</span>
+                      <span className="text-xs text-muted-foreground">{c.count}</span>
+                    </label>
+                  );
+                })}
+                {hasUnassigned && (
+                  <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer">
+                    <Checkbox
+                      checked={selectedCampusIds.includes("none")}
+                      onCheckedChange={(v) => {
+                        setSelectedCampusIds((prev) =>
+                          v ? [...prev, "none"] : prev.filter((id) => id !== "none")
+                        );
+                      }}
+                    />
+                    <span className="flex-1 text-sm">Unassigned</span>
+                    <span className="text-xs text-muted-foreground">{unassignedCount}</span>
+                  </label>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Select value={selectedDay} onValueChange={setSelectedDay}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="All days" />
@@ -245,7 +306,7 @@ const GroupsPage = () => {
               size="sm"
               onClick={() => {
                 setSelectedType("all");
-                setSelectedCampus("all");
+                setSelectedCampusIds([]);
                 setSelectedDay("all");
                 setSearchQuery("");
               }}

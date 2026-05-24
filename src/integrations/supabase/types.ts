@@ -1113,6 +1113,39 @@ export type Database = {
           },
         ]
       }
+      group_campuses: {
+        Row: {
+          campus_id: string
+          created_at: string
+          group_id: string
+        }
+        Insert: {
+          campus_id: string
+          created_at?: string
+          group_id: string
+        }
+        Update: {
+          campus_id?: string
+          created_at?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_campuses_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_campuses_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_meetings: {
         Row: {
           attendance_submitted: boolean
