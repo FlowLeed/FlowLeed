@@ -226,19 +226,78 @@ const GroupsPage = () => {
               className="pl-9"
             />
           </div>
-          <Select value={selectedCampus} onValueChange={setSelectedCampus}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All Campuses" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-[220px] justify-between">
+                <span className="flex items-center gap-2 truncate">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  {selectedCampusIds.length === 0
+                    ? "All Campuses"
+                    : selectedCampusIds.length === 1
+                      ? (campusOptions.find((c) => c.value === selectedCampusIds[0])?.label
+                          ?? (selectedCampusIds[0] === "none" ? "Unassigned" : "1 campus"))
+                      : `${selectedCampusIds.length} campuses`}
+                </span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[260px] p-2" align="start">
+              <div className="space-y-1 max-h-72 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCampusIds([])}
+                  className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-accent flex items-center justify-between"
+                >
+                  <span className="font-medium">All Campuses</span>
+                  <span className="text-xs text-muted-foreground">{groups.length}</span>
+                </button>
+                <div className="h-px bg-border my-1" />
+                {campusOptions.map((c) => {
+                  const checked = selectedCampusIds.includes(c.value);
+                  return (
+                    <label
+                      key={c.value}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          setSelectedCampusIds((prev) =>
+                            v ? [...prev, c.value] : prev.filter((id) => id !== c.value)
+                          );
+                        }}
+                      />
+                      <span className="flex-1 text-sm truncate">{c.label}</span>
+                      <span className="text-xs text-muted-foreground">{c.count}</span>
+                    </label>
+                  );
+                })}
+                {hasUnassigned && (
+                  <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer">
+                    <Checkbox
+                      checked={selectedCampusIds.includes("none")}
+                      onCheckedChange={(v) => {
+                        setSelectedCampusIds((prev) =>
+                          v ? [...prev, "none"] : prev.filter((id) => id !== "none")
+                        );
+                      }}
+                    />
+                    <span className="flex-1 text-sm">Unassigned</span>
+                    <span className="text-xs text-muted-foreground">{unassignedCount}</span>
+                  </label>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Select value={selectedDay} onValueChange={setSelectedDay}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="All days" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Campuses</SelectItem>
-              {campusOptions.map((c) => (
-                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              <SelectItem value="all">All days</SelectItem>
+              {dayOptions.map((d) => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
               ))}
-              {hasUnassigned && (
-                <SelectItem value="none">Unassigned</SelectItem>
-              )}
             </SelectContent>
           </Select>
           <Select value={selectedDay} onValueChange={setSelectedDay}>
