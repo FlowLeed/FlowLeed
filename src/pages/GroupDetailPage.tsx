@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
-import { useGroups } from "@/hooks/useGroups";
+
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupAttendance } from "@/hooks/useGroupAttendance";
 import { useQuery } from "@tanstack/react-query";
