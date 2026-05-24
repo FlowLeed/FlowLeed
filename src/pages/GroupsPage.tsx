@@ -213,16 +213,19 @@ const GroupsPage = () => {
               className="pl-9"
             />
           </div>
-          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+          <Select value={selectedCampus} onValueChange={setSelectedCampus}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="All locations" />
+              <SelectValue placeholder="All Campuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All locations</SelectItem>
-              {locationOptions.map((loc) => (
-                <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+              <SelectItem value="all">All Campuses</SelectItem>
+              {campusOptions.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
               ))}
+              {hasUnassigned && (
+                <SelectItem value="none">Unassigned</SelectItem>
+              )}
             </SelectContent>
           </Select>
           <Select value={selectedDay} onValueChange={setSelectedDay}>
