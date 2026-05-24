@@ -137,13 +137,15 @@ const GroupsPage = () => {
 
         {/* Group Type Tabs */}
         <Tabs value={selectedType} onValueChange={setSelectedType}>
-          <TabsList>
-            {groupTypes.map((type) => (
-              <TabsTrigger key={type.value} value={type.value}>
-                {type.label} ({type.count})
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="w-max">
+              {groupTypes.map((type) => (
+                <TabsTrigger key={type.value} value={type.value}>
+                  {type.label} ({type.count})
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </Tabs>
 
         {/* Groups Grid */}
