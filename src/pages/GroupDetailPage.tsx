@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useProfile } from "@/hooks/useProfile";
-import { useGroups } from "@/hooks/useGroups";
+
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupAttendance } from "@/hooks/useGroupAttendance";
 import { useQuery } from "@tanstack/react-query";
@@ -34,7 +34,23 @@ const GroupDetailPage = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
   const { organization } = useProfile();
-  const { groups, isLoading: groupsLoading } = useGroups(organization?.id);
+  const { data: group, isLoading: groupsLoading } = useQuery({
+    queryKey: ["group", groupId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("groups")
+        .select(`*, group_campuses(campus_id)`)
+        .eq("id", groupId!)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const campus_ids: string[] = (data.group_campuses || [])
+        .map((gc: any) => gc.campus_id)
+        .filter(Boolean);
+      return { ...data, campus_ids };
+    },
+    enabled: !!groupId,
+  });
   const { members, isLoading: membersLoading, updateMember, removeMember } = useGroupMembers(groupId);
   const { meetings, meetingsLoading } = useGroupAttendance(groupId);
 
@@ -71,8 +87,8 @@ const GroupDetailPage = () => {
 
   const { pendingCount } = useGroupSignupRequests(groupId);
 
-  const group = groups.find((g) => g.id === groupId);
   const existingMemberIds = members.map((m) => m.contact_id);
+
 
   const { data: leaderProfile } = useQuery({
     queryKey: ["leader-profile", group?.leader_user_id],
