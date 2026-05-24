@@ -99,7 +99,10 @@ const GroupsPage = () => {
 
   const filteredGroups = groups.filter((g: any) => {
     if (selectedType !== "all" && categoryOf(g) !== selectedType) return false;
-    if (selectedLocation !== "all" && (g.location || "Unspecified") !== selectedLocation) return false;
+    if (selectedCampus !== "all") {
+      const gCampus = g.campus_id || "none";
+      if (gCampus !== selectedCampus) return false;
+    }
     if (selectedDay !== "all" && (g.meeting_day || "Unspecified") !== selectedDay) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -122,9 +125,16 @@ const GroupsPage = () => {
       .map(([label, count]) => ({ value: label, label, count })),
   ];
 
-  const locationOptions = Array.from(
-    new Set(groups.map((g: any) => (g.location || "").trim()).filter(Boolean))
-  ).sort();
+  // Only show campuses that actually have groups assigned, plus "Unassigned" if any
+  const campusGroupCounts = groups.reduce<Record<string, number>>((acc, g: any) => {
+    const key = g.campus_id || "none";
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+  const campusOptions = campuses
+    .filter((c) => campusGroupCounts[c.id])
+    .map((c) => ({ value: c.id, label: c.name }));
+  const hasUnassigned = (campusGroupCounts["none"] || 0) > 0;
 
   const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const dayOptions = Array.from(
@@ -138,7 +148,7 @@ const GroupsPage = () => {
     return ia - ib;
   });
 
-  const hasActiveFilters = selectedType !== "all" || selectedLocation !== "all" || selectedDay !== "all" || searchQuery.trim() !== "";
+  const hasActiveFilters = selectedType !== "all" || selectedCampus !== "all" || selectedDay !== "all" || searchQuery.trim() !== "";
 
 
   return (
