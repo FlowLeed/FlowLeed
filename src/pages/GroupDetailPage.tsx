@@ -123,15 +123,20 @@ const GroupDetailPage = () => {
 
         {/* Hero Banner */}
         <Card className="overflow-hidden">
-          <div className="relative w-full h-56 sm:h-72 bg-muted overflow-hidden">
+          <div className="relative w-full aspect-video bg-muted overflow-hidden">
             {group.image_url ? (
               <>
                 <img
                   src={group.image_url}
                   alt={group.name}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent pointer-events-none" />
+                <img
+                  src={group.image_url}
+                  alt={group.name}
+                  className="relative z-10 w-full h-full object-contain"
+                />
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center">
