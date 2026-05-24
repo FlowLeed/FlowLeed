@@ -306,6 +306,13 @@ const GroupsPage = () => {
               ))}
             </SelectContent>
           </Select>
+          <Tabs value={selectedSource} onValueChange={(v) => setSelectedSource(v as any)}>
+            <TabsList>
+              <TabsTrigger value="all">All ({groups.length})</TabsTrigger>
+              <TabsTrigger value="pco">PCO ({pcoCount})</TabsTrigger>
+              <TabsTrigger value="flowleed">FlowLeed ({flowleedCount})</TabsTrigger>
+            </TabsList>
+          </Tabs>
           {hasActiveFilters && (
             <Button
               variant="ghost"
@@ -314,6 +321,7 @@ const GroupsPage = () => {
                 setSelectedType("all");
                 setSelectedCampusIds([]);
                 setSelectedDay("all");
+                setSelectedSource("all");
                 setSearchQuery("");
               }}
             >
