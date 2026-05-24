@@ -268,9 +268,14 @@ const GroupDetailPage = () => {
                         className="flex items-center gap-3 flex-1 cursor-pointer"
                         onClick={() => navigate(`/contacts/${member.contact_id}`)}
                       >
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Users className="h-5 w-5 text-primary" />
-                        </div>
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={member.contact?.avatar || undefined} alt={member.contact?.name || "Member"} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {member.contact?.name
+                              ? member.contact.name.trim().split(/\s+/).slice(0, 2).map((n: string) => n[0]).join("").toUpperCase()
+                              : "?"}
+                          </AvatarFallback>
+                        </Avatar>
                         <div>
                           <p className="font-semibold">{member.contact?.name || "Unknown"}</p>
                           <p className="text-sm text-muted-foreground">
