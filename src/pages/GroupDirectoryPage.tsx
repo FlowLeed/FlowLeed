@@ -68,9 +68,9 @@ export default function GroupDirectoryPage() {
           image_url,
           member_count:group_members(count)
         `)
-        .eq("allow_public_signup", true)
-        .in("visibility", ["public", "unlisted"])
+        .eq("visibility", "public")
         .eq("status", "active")
+        .is("archived_at", null)
         .order("name");
 
       if (error) throw error;
@@ -226,12 +226,18 @@ export default function GroupDirectoryPage() {
                       </div>
                     )}
                   </div>
-                  <Button
-                    onClick={() => handleJoinGroup(group.public_signup_token)}
-                    className="w-full group"
-                  >
-                    Learn More...
-                  </Button>
+                  {group.allow_public_signup && group.public_signup_token ? (
+                    <Button
+                      onClick={() => handleJoinGroup(group.public_signup_token)}
+                      className="w-full group"
+                    >
+                      Learn More...
+                    </Button>
+                  ) : (
+                    <Button variant="outline" className="w-full" disabled>
+                      Contact church to join
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ))}
