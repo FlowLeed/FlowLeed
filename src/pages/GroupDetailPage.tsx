@@ -139,10 +139,15 @@ const GroupDetailPage = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2">
                   <h1 className="text-3xl font-bold tracking-tight">{group.name}</h1>
-                  <Badge variant="secondary">{groupTypeLabels[group.group_type]}</Badge>
+                  <Badge variant="secondary">
+                    {group.pco_group_type_name?.split(":")[0].trim() ||
+                      groupTypeLabels[group.group_type]}
+                  </Badge>
                 </div>
                 {group.description && (
-                  <p className="text-muted-foreground mb-2">{group.description}</p>
+                  <p className="text-muted-foreground mb-2 whitespace-pre-line">
+                    {group.description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim()}
+                  </p>
                 )}
                 {leaderProfile && (
                   <div className="flex items-center gap-2">
