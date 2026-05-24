@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
+import { useCampuses } from "@/hooks/useCampuses";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, MapPin, Search, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
