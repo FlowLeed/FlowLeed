@@ -130,16 +130,24 @@ const GroupsPage = () => {
       .map(([label, count]) => ({ value: label, label, count })),
   ];
 
-  // Only show campuses that actually have groups assigned, plus "Unassigned" if any
+  // Only show campuses that actually have groups assigned, plus "Unassigned" if any.
+  // Use many-to-many campus_ids when present; fall back to campus_id.
   const campusGroupCounts = groups.reduce<Record<string, number>>((acc, g: any) => {
-    const key = g.campus_id || "none";
-    acc[key] = (acc[key] || 0) + 1;
+    const ids: string[] = g.campus_ids?.length
+      ? g.campus_ids
+      : (g.campus_id ? [g.campus_id] : []);
+    if (ids.length === 0) {
+      acc["none"] = (acc["none"] || 0) + 1;
+    } else {
+      for (const id of ids) acc[id] = (acc[id] || 0) + 1;
+    }
     return acc;
   }, {});
   const campusOptions = campuses
     .filter((c) => campusGroupCounts[c.id])
-    .map((c) => ({ value: c.id, label: c.name }));
+    .map((c) => ({ value: c.id, label: c.name, count: campusGroupCounts[c.id] }));
   const hasUnassigned = (campusGroupCounts["none"] || 0) > 0;
+  const unassignedCount = campusGroupCounts["none"] || 0;
 
   const dayOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const dayOptions = Array.from(
