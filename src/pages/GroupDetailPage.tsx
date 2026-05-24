@@ -123,23 +123,15 @@ const GroupDetailPage = () => {
 
         {/* Hero Banner */}
         <Card className="overflow-hidden">
-          <div className="relative w-full h-56 sm:h-64 bg-muted overflow-hidden">
+          <div className="relative w-full h-56 sm:h-72 bg-muted overflow-hidden">
             {group.image_url ? (
               <>
-                {/* Blurred backdrop fills the container */}
-                <img
-                  src={group.image_url}
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60"
-                />
-                {/* Foreground image fully contained, no awkward cropping */}
                 <img
                   src={group.image_url}
                   alt={group.name}
-                  className="relative w-full h-full object-contain"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/30 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent pointer-events-none" />
               </>
             ) : (
               <div className="w-full h-full flex items-center justify-center">

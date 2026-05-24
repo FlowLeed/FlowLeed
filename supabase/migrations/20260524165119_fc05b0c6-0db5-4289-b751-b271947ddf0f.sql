@@ -1,0 +1,1 @@
+UPDATE groups SET image_url = replace(image_url, '/thumbnail_', '/original_') WHERE image_url LIKE '%groups-production.s3.amazonaws.com%/thumbnail_%';
