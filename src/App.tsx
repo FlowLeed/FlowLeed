@@ -2,7 +2,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MainLayout } from "./components/layout/MainLayout";
 import { FlowProvider } from "./contexts/FlowContext";
@@ -42,20 +41,15 @@ import CommunicationsPage from "./pages/admin/CommunicationsPage";
 import SuperAdminProfilePage from "./pages/admin/SuperAdminProfilePage";
 import GroupPublicSignupPage from "./pages/GroupPublicSignupPage";
 import GroupDirectoryPage from "./pages/GroupDirectoryPage";
-
-
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <ImpersonationEscapeHandler />
-          <FlowProvider>
-            <Routes>
+  <TooltipProvider>
+    <Toaster />
+    <Sonner />
+    <BrowserRouter>
+      <AuthProvider>
+        <ImpersonationEscapeHandler />
+        <FlowProvider>
+          <Routes>
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/verify" element={<AuthVerifyPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
@@ -98,12 +92,11 @@ const App = () => (
               </Route>
 
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </FlowProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+          </Routes>
+        </FlowProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </TooltipProvider>
 );
 
 export default App;
