@@ -30,6 +30,7 @@ const GroupsPage = () => {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedCampusIds, setSelectedCampusIds] = useState<string[]>([]);
   const [selectedDay, setSelectedDay] = useState<string>("all");
+  const [selectedSource, setSelectedSource] = useState<"all" | "pco" | "flowleed">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [syncing, setSyncing] = useState(false);
   const queryClient = useQueryClient();
