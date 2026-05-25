@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, MapPin, Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { GroupAvatar } from "@/components/groups/GroupAvatar";
+import { MapPin, Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 
 interface GroupDetails {
   id: string;
