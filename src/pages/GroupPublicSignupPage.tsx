@@ -34,6 +34,20 @@ const groupTypeLabels: Record<string, string> = {
   other: "Other",
 };
 
+const formatDescription = (description: string | null) => {
+  if (!description) return null;
+
+  return description
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 export default function GroupPublicSignupPage() {
   const { token } = useParams<{ token: string }>();
   const [group, setGroup] = useState<GroupDetails | null>(null);
@@ -217,7 +231,9 @@ export default function GroupPublicSignupPage() {
             </div>
             <CardTitle className="text-2xl">{group.name}</CardTitle>
             {group.description && (
-              <CardDescription className="text-base mt-1">{group.description}</CardDescription>
+              <CardDescription className="text-base mt-1">
+                {formatDescription(group.description)}
+              </CardDescription>
             )}
           </CardHeader>
         <CardContent className="space-y-6">
