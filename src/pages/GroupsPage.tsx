@@ -171,16 +171,16 @@ const GroupsPage = () => {
 
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
-      <div className="space-y-6">
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-[1600px] mx-auto p-4 sm:p-6 space-y-4">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="About Groups">
-                    <HelpCircle className="h-5 w-5" />
+                    <HelpCircle className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -188,53 +188,45 @@ const GroupsPage = () => {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <h1 className="text-3xl font-bold tracking-tight">Groups</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Groups</h1>
+            <span className="text-sm text-muted-foreground ml-1">
+              {filteredGroups.length}
+              {filteredGroups.length !== groups.length && ` of ${groups.length}`}
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleSyncFromPco} disabled={syncing}>
+            <Button variant="outline" size="sm" onClick={handleSyncFromPco} disabled={syncing}>
               <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing…" : "Sync from PCO"}
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" size="sm" asChild>
               <a href="/groups/directory" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Public Directory
               </a>
             </Button>
-            <Button onClick={() => setCreateDialogOpen(true)}>
+            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Group
             </Button>
           </div>
         </div>
 
-        {/* Group Type Tabs */}
-        <Tabs value={selectedType} onValueChange={setSelectedType}>
-          <div className="overflow-x-auto">
-            <TabsList className="w-max">
-              {groupTypes.map((type) => (
-                <TabsTrigger key={type.value} value={type.value}>
-                  {type.label} ({type.count})
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-        </Tabs>
-
-        {/* Search & Filters */}
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1 min-w-0">
+        {/* Toolbar: search + filters in one compact row */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, location, description…"
+              placeholder="Search groups…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-9"
             />
           </div>
+
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-[220px] justify-between">
+              <Button variant="outline" size="sm" className="h-9 justify-between min-w-[160px]">
                 <span className="flex items-center gap-2 truncate">
                   <MapPin className="h-4 w-4 text-muted-foreground" />
                   {selectedCampusIds.length === 0
@@ -244,7 +236,7 @@ const GroupsPage = () => {
                           ?? (selectedCampusIds[0] === "none" ? "Unassigned" : "1 campus"))
                       : `${selectedCampusIds.length} campuses`}
                 </span>
-                <ChevronDown className="h-4 w-4 opacity-50" />
+                <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[260px] p-2" align="start">
@@ -295,8 +287,9 @@ const GroupsPage = () => {
               </div>
             </PopoverContent>
           </Popover>
+
           <Select value={selectedDay} onValueChange={setSelectedDay}>
-            <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectTrigger className="h-9 w-[140px]">
               <SelectValue placeholder="All days" />
             </SelectTrigger>
             <SelectContent>
@@ -306,17 +299,33 @@ const GroupsPage = () => {
               ))}
             </SelectContent>
           </Select>
+
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue placeholder="All Groups" />
+            </SelectTrigger>
+            <SelectContent>
+              {groupTypes.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label} ({type.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <Tabs value={selectedSource} onValueChange={(v) => setSelectedSource(v as any)}>
-            <TabsList>
-              <TabsTrigger value="all">All ({groups.length})</TabsTrigger>
-              <TabsTrigger value="pco">PCO ({pcoCount})</TabsTrigger>
-              <TabsTrigger value="flowleed">FlowLeed ({flowleedCount})</TabsTrigger>
+            <TabsList className="h-9">
+              <TabsTrigger value="all" className="h-7 text-xs">All {groups.length}</TabsTrigger>
+              <TabsTrigger value="pco" className="h-7 text-xs">PCO {pcoCount}</TabsTrigger>
+              <TabsTrigger value="flowleed" className="h-7 text-xs">FlowLeed {flowleedCount}</TabsTrigger>
             </TabsList>
           </Tabs>
+
           {hasActiveFilters && (
             <Button
               variant="ghost"
               size="sm"
+              className="h-9"
               onClick={() => {
                 setSelectedType("all");
                 setSelectedCampusIds([]);
@@ -331,31 +340,29 @@ const GroupsPage = () => {
           )}
         </div>
 
-        <p className="text-sm text-muted-foreground">
-          Showing {filteredGroups.length} of {groups.length} groups
-        </p>
-
         {/* Groups Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-64 bg-muted animate-pulse rounded-lg" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-44 bg-muted animate-pulse rounded-lg" />
             ))}
           </div>
         ) : filteredGroups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Users className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No groups yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Create your first group to get started
+          <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg bg-card">
+            <Users className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-1">No groups found</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {hasActiveFilters ? "Try adjusting your filters" : "Create your first group to get started"}
             </p>
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Group
-            </Button>
+            {!hasActiveFilters && (
+              <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Group
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredGroups.map((group) => (
               <GroupCard key={group.id} group={group} />
             ))}
@@ -374,3 +381,4 @@ const GroupsPage = () => {
 };
 
 export default GroupsPage;
+
