@@ -213,6 +213,15 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
                       Auto Sync
                     </Badge>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => setEditingMapping(mapping)}
+                    title="Edit mapping"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
