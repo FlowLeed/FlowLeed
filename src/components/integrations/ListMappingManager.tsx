@@ -42,6 +42,7 @@ import { SyncProgressDisplay } from './SyncProgressDisplay';
 
 interface ListMapping {
   id: string;
+  integration_id: string;
   external_list_id: string;
   external_list_name: string;
   pipeline_id: string;
@@ -327,14 +328,32 @@ function EditMappingDialog({
   const [flowId, setFlowId] = useState('');
   const [stageId, setStageId] = useState('');
   const [autoSync, setAutoSync] = useState(true);
+  const [externalListId, setExternalListId] = useState('');
+  const [externalListName, setExternalListName] = useState('');
 
   useEffect(() => {
     if (mapping) {
       setFlowId(mapping.pipeline_id);
       setStageId(mapping.stage_id);
       setAutoSync(mapping.auto_sync);
+      setExternalListId(mapping.external_list_id);
+      setExternalListName(mapping.external_list_name);
     }
   }, [mapping]);
+
+  const { data: pcoLists } = useQuery({
+    queryKey: ['pco-lists-for-mapping-edit', mapping?.integration_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('integration_list_metadata')
+        .select('external_list_id, name, member_count')
+        .eq('integration_id', mapping!.integration_id)
+        .order('name');
+      if (error) throw error;
+      return data as { external_list_id: string; name: string; member_count: number | null }[];
+    },
+    enabled: !!mapping?.integration_id,
+  });
 
   const { data: flows } = useQuery({
     queryKey: ['flows-for-mapping-edit'],
@@ -373,6 +392,8 @@ function EditMappingDialog({
           pipeline_id: flowId,
           stage_id: stageId,
           auto_sync: autoSync,
+          external_list_id: externalListId,
+          external_list_name: externalListName,
         })
         .eq('id', mapping.id);
       if (error) throw error;
@@ -406,6 +427,28 @@ function EditMappingDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Planning Center List</Label>
+            <Select
+              value={externalListId}
+              onValueChange={(val) => {
+                setExternalListId(val);
+                const found = pcoLists?.find((l) => l.external_list_id === val);
+                if (found) setExternalListName(found.name);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select PCO list" />
+              </SelectTrigger>
+              <SelectContent>
+                {pcoLists?.map((l) => (
+                  <SelectItem key={l.external_list_id} value={l.external_list_id}>
+                    {l.name}{typeof l.member_count === 'number' ? ` (${l.member_count})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label>Target Flow</Label>
             <Select value={flowId} onValueChange={handleFlowChange}>
@@ -446,7 +489,7 @@ function EditMappingDialog({
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => saveMutation.mutate()}
-            disabled={!flowId || !stageId || saveMutation.isPending}
+            disabled={!flowId || !stageId || !externalListId || saveMutation.isPending}
           >
             {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Save Changes
