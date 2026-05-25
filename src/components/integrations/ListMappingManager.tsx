@@ -392,6 +392,8 @@ function EditMappingDialog({
           pipeline_id: flowId,
           stage_id: stageId,
           auto_sync: autoSync,
+          external_list_id: externalListId,
+          external_list_name: externalListName,
         })
         .eq('id', mapping.id);
       if (error) throw error;
