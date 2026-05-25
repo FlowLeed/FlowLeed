@@ -42,6 +42,7 @@ import { SyncProgressDisplay } from './SyncProgressDisplay';
 
 interface ListMapping {
   id: string;
+  integration_id: string;
   external_list_id: string;
   external_list_name: string;
   pipeline_id: string;
