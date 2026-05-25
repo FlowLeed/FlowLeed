@@ -49,13 +49,12 @@ Deno.serve(async (req) => {
           member_count:group_members(count)
         `)
         .eq('public_signup_token', token)
-        .eq('allow_public_signup', true)
         .single();
 
-      if (groupError || !group) {
-        console.error('Group not found or not public:', groupError);
+      if (groupError || !group || group.visibility !== 'public') {
+        console.error('Group not found or not listed:', groupError);
         return new Response(
-          JSON.stringify({ error: 'Group not found or signup is not enabled' }),
+          JSON.stringify({ error: 'Group not found or not listed' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -76,6 +75,7 @@ Deno.serve(async (req) => {
             location: group.location,
             capacity: group.capacity,
             image_url: group.image_url,
+            allow_public_signup: group.allow_public_signup,
             member_count: memberCount,
             is_full: isFull,
           }

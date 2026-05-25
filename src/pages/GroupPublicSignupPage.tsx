@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, MapPin, Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { GroupAvatar } from "@/components/groups/GroupAvatar";
+import { MapPin, Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
 
 interface GroupDetails {
   id: string;
@@ -23,6 +21,7 @@ interface GroupDetails {
   member_count: number;
   is_full: boolean;
   image_url: string | null;
+  allow_public_signup: boolean;
 }
 
 const groupTypeLabels: Record<string, string> = {
@@ -33,6 +32,20 @@ const groupTypeLabels: Record<string, string> = {
   class: "Class",
   support_group: "Support Group",
   other: "Other",
+};
+
+const formatDescription = (description: string | null) => {
+  if (!description) return null;
+
+  return description
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
 };
 
 export default function GroupPublicSignupPage() {
@@ -57,13 +70,6 @@ export default function GroupPublicSignupPage() {
       }
 
       try {
-        const { data, error: fnError } = await supabase.functions.invoke('group-public-signup', {
-          method: 'GET',
-          body: null,
-          headers: {},
-        });
-
-        // Since we can't pass query params easily, let's use a different approach
         const response = await fetch(
           `https://lghamvpolwebtjwaxned.supabase.co/functions/v1/group-public-signup?token=${token}`,
           {
@@ -225,7 +231,9 @@ export default function GroupPublicSignupPage() {
             </div>
             <CardTitle className="text-2xl">{group.name}</CardTitle>
             {group.description && (
-              <CardDescription className="text-base mt-1">{group.description}</CardDescription>
+              <CardDescription className="text-base mt-1">
+                {formatDescription(group.description)}
+              </CardDescription>
             )}
           </CardHeader>
         <CardContent className="space-y-6">
@@ -252,7 +260,13 @@ export default function GroupPublicSignupPage() {
           </div>
 
           {/* Signup Form */}
-          {group.is_full ? (
+          {!group.allow_public_signup ? (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">
+                Contact the church to join this group.
+              </p>
+            </div>
+          ) : group.is_full ? (
             <div className="text-center py-4">
               <p className="text-muted-foreground">
                 This group is currently full. Please check back later or contact the group leader.
