@@ -45,10 +45,13 @@ const groupTypeColors: Record<string, string> = {
   other: "bg-muted text-muted-foreground",
 };
 
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 export default function GroupDirectoryPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedDay, setSelectedDay] = useState<string>("all");
 
   const { data: groups, isLoading } = useQuery({
     queryKey: ["public-groups"],
