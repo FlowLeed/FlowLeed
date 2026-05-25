@@ -3,15 +3,15 @@ import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { useCampuses } from "@/hooks/useCampuses";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, MapPin, Search, X, ChevronDown } from "lucide-react";
+import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, Search, X, Filter } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -212,7 +212,7 @@ const GroupsPage = () => {
           </div>
         </div>
 
-        {/* Toolbar: search + filters in one compact row */}
+        {/* Toolbar: search + single Filter button */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[220px] max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -226,119 +226,144 @@ const GroupsPage = () => {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 justify-between min-w-[160px]">
-                <span className="flex items-center gap-2 truncate">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  {selectedCampusIds.length === 0
-                    ? "All Campuses"
-                    : selectedCampusIds.length === 1
-                      ? (campusOptions.find((c) => c.value === selectedCampusIds[0])?.label
-                          ?? (selectedCampusIds[0] === "none" ? "Unassigned" : "1 campus"))
-                      : `${selectedCampusIds.length} campuses`}
-                </span>
-                <ChevronDown className="h-4 w-4 opacity-50 ml-2" />
+              <Button variant="outline" size="sm" className="gap-2 h-9">
+                <Filter className="h-4 w-4" />
+                Filter
+                {(() => {
+                  const count = [
+                    selectedType !== "all",
+                    selectedCampusIds.length > 0,
+                    selectedDay !== "all",
+                    selectedSource !== "all",
+                  ].filter(Boolean).length;
+                  return count > 0 ? (
+                    <Badge variant="secondary" className="ml-1 rounded-full px-2 py-0 text-xs">
+                      {count}
+                    </Badge>
+                  ) : null;
+                })()}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[260px] p-2" align="start">
-              <div className="space-y-1 max-h-72 overflow-y-auto">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCampusIds([])}
-                  className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-accent flex items-center justify-between"
-                >
-                  <span className="font-medium">All Campuses</span>
-                  <span className="text-xs text-muted-foreground">{groups.length}</span>
-                </button>
-                <div className="h-px bg-border my-1" />
-                {campusOptions.map((c) => {
-                  const checked = selectedCampusIds.includes(c.value);
-                  return (
-                    <label
-                      key={c.value}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
-                    >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(v) => {
-                          setSelectedCampusIds((prev) =>
-                            v ? [...prev, c.value] : prev.filter((id) => id !== c.value)
-                          );
-                        }}
-                      />
-                      <span className="flex-1 text-sm truncate">{c.label}</span>
-                      <span className="text-xs text-muted-foreground">{c.count}</span>
-                    </label>
-                  );
-                })}
-                {hasUnassigned && (
-                  <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer">
-                    <Checkbox
-                      checked={selectedCampusIds.includes("none")}
-                      onCheckedChange={(v) => {
-                        setSelectedCampusIds((prev) =>
-                          v ? [...prev, "none"] : prev.filter((id) => id !== "none")
+            <PopoverContent className="w-80" align="end">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Group type</label>
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Groups" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {groupTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label} ({type.count})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Meeting day</label>
+                  <Select value={selectedDay} onValueChange={setSelectedDay}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All days" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All days</SelectItem>
+                      {dayOptions.map((d) => (
+                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Source</label>
+                  <Select value={selectedSource} onValueChange={(v) => setSelectedSource(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All sources" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All ({groups.length})</SelectItem>
+                      <SelectItem value="pco">PCO ({pcoCount})</SelectItem>
+                      <SelectItem value="flowleed">FlowLeed ({flowleedCount})</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(campusOptions.length > 0 || hasUnassigned) && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Campuses</label>
+                    <div className="space-y-1 max-h-56 overflow-y-auto rounded-md border p-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCampusIds([])}
+                        className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-accent flex items-center justify-between"
+                      >
+                        <span className="font-medium">All Campuses</span>
+                        <span className="text-xs text-muted-foreground">{groups.length}</span>
+                      </button>
+                      <div className="h-px bg-border my-1" />
+                      {campusOptions.map((c) => {
+                        const checked = selectedCampusIds.includes(c.value);
+                        return (
+                          <label
+                            key={c.value}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(v) => {
+                                setSelectedCampusIds((prev) =>
+                                  v ? [...prev, c.value] : prev.filter((id) => id !== c.value)
+                                );
+                              }}
+                            />
+                            <span className="flex-1 text-sm truncate">{c.label}</span>
+                            <span className="text-xs text-muted-foreground">{c.count}</span>
+                          </label>
                         );
-                      }}
-                    />
-                    <span className="flex-1 text-sm">Unassigned</span>
-                    <span className="text-xs text-muted-foreground">{unassignedCount}</span>
-                  </label>
+                      })}
+                      {hasUnassigned && (
+                        <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer">
+                          <Checkbox
+                            checked={selectedCampusIds.includes("none")}
+                            onCheckedChange={(v) => {
+                              setSelectedCampusIds((prev) =>
+                                v ? [...prev, "none"] : prev.filter((id) => id !== "none")
+                              );
+                            }}
+                          />
+                          <span className="flex-1 text-sm">Unassigned</span>
+                          <span className="text-xs text-muted-foreground">{unassignedCount}</span>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setSelectedType("all");
+                      setSelectedCampusIds([]);
+                      setSelectedDay("all");
+                      setSelectedSource("all");
+                      setSearchQuery("");
+                    }}
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Clear Filters
+                  </Button>
                 )}
               </div>
             </PopoverContent>
           </Popover>
-
-          <Select value={selectedDay} onValueChange={setSelectedDay}>
-            <SelectTrigger className="h-9 w-[140px]">
-              <SelectValue placeholder="All days" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All days</SelectItem>
-              {dayOptions.map((d) => (
-                <SelectItem key={d} value={d}>{d}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedType} onValueChange={setSelectedType}>
-            <SelectTrigger className="h-9 w-[200px]">
-              <SelectValue placeholder="All Groups" />
-            </SelectTrigger>
-            <SelectContent>
-              {groupTypes.map((type) => (
-                <SelectItem key={type.value} value={type.value}>
-                  {type.label} ({type.count})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Tabs value={selectedSource} onValueChange={(v) => setSelectedSource(v as any)}>
-            <TabsList className="h-9">
-              <TabsTrigger value="all" className="h-7 text-xs">All {groups.length}</TabsTrigger>
-              <TabsTrigger value="pco" className="h-7 text-xs">PCO {pcoCount}</TabsTrigger>
-              <TabsTrigger value="flowleed" className="h-7 text-xs">FlowLeed {flowleedCount}</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9"
-              onClick={() => {
-                setSelectedType("all");
-                setSelectedCampusIds([]);
-                setSelectedDay("all");
-                setSelectedSource("all");
-                setSearchQuery("");
-              }}
-            >
-              <X className="h-4 w-4 mr-1" />
-              Clear
-            </Button>
-          )}
         </div>
+
 
         {/* Groups Grid */}
         {isLoading ? (
