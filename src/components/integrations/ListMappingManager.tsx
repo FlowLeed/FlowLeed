@@ -328,14 +328,32 @@ function EditMappingDialog({
   const [flowId, setFlowId] = useState('');
   const [stageId, setStageId] = useState('');
   const [autoSync, setAutoSync] = useState(true);
+  const [externalListId, setExternalListId] = useState('');
+  const [externalListName, setExternalListName] = useState('');
 
   useEffect(() => {
     if (mapping) {
       setFlowId(mapping.pipeline_id);
       setStageId(mapping.stage_id);
       setAutoSync(mapping.auto_sync);
+      setExternalListId(mapping.external_list_id);
+      setExternalListName(mapping.external_list_name);
     }
   }, [mapping]);
+
+  const { data: pcoLists } = useQuery({
+    queryKey: ['pco-lists-for-mapping-edit', mapping?.integration_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('integration_list_metadata')
+        .select('external_list_id, name, member_count')
+        .eq('integration_id', mapping!.integration_id)
+        .order('name');
+      if (error) throw error;
+      return data as { external_list_id: string; name: string; member_count: number | null }[];
+    },
+    enabled: !!mapping?.integration_id,
+  });
 
   const { data: flows } = useQuery({
     queryKey: ['flows-for-mapping-edit'],
