@@ -133,7 +133,7 @@ export default function GroupDirectoryPage() {
       <div className="max-w-6xl mx-auto px-4 -mt-8">
         <Card className="shadow-lg">
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -143,25 +143,61 @@ export default function GroupDirectoryPage() {
                   className="pl-9"
                 />
               </div>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant={selectedType === null ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedType(null)}
-                >
-                  All
-                </Button>
-                {groupTypes.map((type) => (
-                  <Button
-                    key={type}
-                    variant={selectedType === type ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedType(type)}
-                  >
-                    {groupTypeLabels[type] || type}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 h-10">
+                    <Filter className="h-4 w-4" />
+                    Filter
+                    {activeFilterCount > 0 && (
+                      <Badge variant="secondary" className="ml-1 rounded-full px-2 py-0 text-xs">
+                        {activeFilterCount}
+                      </Badge>
+                    )}
                   </Button>
-                ))}
-              </div>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Group type</label>
+                      <Select value={selectedType} onValueChange={setSelectedType}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All types</SelectItem>
+                          {groupTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {groupTypeLabels[type] || type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Meeting day</label>
+                      <Select value={selectedDay} onValueChange={setSelectedDay}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All days</SelectItem>
+                          {DAYS.map((day) => (
+                            <SelectItem key={day} value={day}>
+                              {day}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {hasActiveFilters && (
+                      <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
+                        <X className="mr-2 h-4 w-4" />
+                        Clear Filters
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </CardContent>
         </Card>
