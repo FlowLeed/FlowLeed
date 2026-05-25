@@ -433,25 +433,14 @@ function EditMappingDialog({
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>Planning Center List</Label>
-            <Select
+            <PcoListCombobox
+              lists={pcoLists || []}
               value={externalListId}
-              onValueChange={(val) => {
-                setExternalListId(val);
-                const found = pcoLists?.find((l) => l.external_list_id === val);
-                if (found) setExternalListName(found.name);
+              onChange={(id, name) => {
+                setExternalListId(id);
+                setExternalListName(name);
               }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select PCO list" />
-              </SelectTrigger>
-              <SelectContent>
-                {pcoLists?.map((l) => (
-                  <SelectItem key={l.external_list_id} value={l.external_list_id}>
-                    {l.name}{typeof l.member_count === 'number' ? ` (${l.member_count})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </div>
           <div className="space-y-2">
             <Label>Target Flow</Label>
