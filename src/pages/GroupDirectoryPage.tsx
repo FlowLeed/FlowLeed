@@ -299,7 +299,7 @@ export default function GroupDirectoryPage() {
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Groups Found</h3>
               <p className="text-muted-foreground">
-                {searchQuery || selectedType
+                {searchQuery || hasActiveFilters
                   ? "Try adjusting your search or filters"
                   : "No groups are currently accepting new members"}
               </p>
