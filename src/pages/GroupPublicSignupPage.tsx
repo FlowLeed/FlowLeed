@@ -23,6 +23,7 @@ interface GroupDetails {
   member_count: number;
   is_full: boolean;
   image_url: string | null;
+  allow_public_signup: boolean;
 }
 
 const groupTypeLabels: Record<string, string> = {
@@ -57,13 +58,6 @@ export default function GroupPublicSignupPage() {
       }
 
       try {
-        const { data, error: fnError } = await supabase.functions.invoke('group-public-signup', {
-          method: 'GET',
-          body: null,
-          headers: {},
-        });
-
-        // Since we can't pass query params easily, let's use a different approach
         const response = await fetch(
           `https://lghamvpolwebtjwaxned.supabase.co/functions/v1/group-public-signup?token=${token}`,
           {
@@ -252,7 +246,13 @@ export default function GroupPublicSignupPage() {
           </div>
 
           {/* Signup Form */}
-          {group.is_full ? (
+          {!group.allow_public_signup ? (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">
+                Contact the church to join this group.
+              </p>
+            </div>
+          ) : group.is_full ? (
             <div className="text-center py-4">
               <p className="text-muted-foreground">
                 This group is currently full. Please check back later or contact the group leader.
