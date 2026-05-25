@@ -198,7 +198,7 @@ export default function GroupDirectoryPage() {
                   </div>
                   {group.description && (
                     <CardDescription className="line-clamp-2">
-                      {group.description}
+                      {group.description.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()}
                     </CardDescription>
                   )}
                 </CardHeader>
