@@ -176,18 +176,6 @@ const GroupsPage = () => {
         {/* Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="About Groups">
-                    <HelpCircle className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Manage your small groups, serving teams, and classes</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
             <h1 className="text-2xl font-semibold tracking-tight">Groups</h1>
             <span className="text-sm text-muted-foreground ml-1">
               {filteredGroups.length}
