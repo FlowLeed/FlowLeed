@@ -489,7 +489,7 @@ function EditMappingDialog({
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button
             onClick={() => saveMutation.mutate()}
-            disabled={!flowId || !stageId || saveMutation.isPending}
+            disabled={!flowId || !stageId || !externalListId || saveMutation.isPending}
           >
             {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Save Changes
