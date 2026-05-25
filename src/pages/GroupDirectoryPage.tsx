@@ -174,12 +174,12 @@ export default function GroupDirectoryPage() {
             {filteredGroups.map((group) => (
               <Card key={group.id} className="flex flex-col hover:shadow-md transition-shadow overflow-hidden">
                 {/* Wide image/avatar at top */}
-                <div className="w-full h-32 bg-muted flex items-center justify-center">
+                <div className="w-full aspect-video bg-muted flex items-center justify-center overflow-hidden">
                   {group.image_url ? (
                     <img 
                       src={group.image_url} 
                       alt={group.name} 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <span className="text-3xl font-semibold text-muted-foreground">
