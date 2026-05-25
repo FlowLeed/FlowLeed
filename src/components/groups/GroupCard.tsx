@@ -68,106 +68,87 @@ export const GroupCard = ({ group }: GroupCardProps) => {
 
   return (
     <>
-      <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer group">
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="flex items-start gap-3">
-            <GroupAvatar name={group.name} imageUrl={group.image_url} size="lg" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Badge
-                  variant="secondary"
-                  className={groupTypeColors[group.group_type] || ""}
-                >
-                  {groupTypeLabels[group.group_type] || group.group_type}
-                </Badge>
-                {group.status === "inactive" && (
-                  <Badge variant="outline">Inactive</Badge>
-                )}
-                {(group as any).pco_group_id && (
-                  <Badge variant="outline" className="text-[10px] h-5">PCO</Badge>
-                )}
-              </div>
-              <h3
-                className="text-lg font-semibold hover:text-primary transition-colors cursor-pointer line-clamp-2 break-words"
-                onClick={openGroup}
-                title={group.name}
+      <Card
+        className="p-4 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer group flex flex-col gap-3"
+        onClick={openGroup}
+      >
+        {/* Header row */}
+        <div className="flex items-start gap-3">
+          <GroupAvatar name={group.name} imageUrl={group.image_url} size="md" />
+          <div className="flex-1 min-w-0">
+            <h3
+              className="text-sm font-semibold leading-tight line-clamp-2 break-words group-hover:text-primary transition-colors"
+              title={group.name}
+            >
+              {group.name}
+            </h3>
+            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+              <Badge
+                variant="secondary"
+                className={`text-[10px] h-4 px-1.5 font-medium ${groupTypeColors[group.group_type] || ""}`}
               >
-                {group.name}
-              </h3>
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0 -mr-2">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={openGroup}>
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                  Edit Group
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={() => setDeleteOpen(true)}
-                >
-                  Delete Group
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Description */}
-          {cleanDescription && (
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {cleanDescription}
-            </p>
-          )}
-
-          {/* Stats */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              <span>{group.member_count || 0} members</span>
-            </div>
-            {group.capacity && (
-              <span className="text-xs">/ {group.capacity} capacity</span>
-            )}
-          </div>
-
-          {/* Meeting Info */}
-          {(group.meeting_day || group.location) && (
-            <div className="space-y-2 pt-2 border-t">
-              {group.meeting_day && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    {group.meeting_day}
-                    {group.meeting_time && ` at ${group.meeting_time}`}
-                  </span>
-                </div>
+                {groupTypeLabels[group.group_type] || group.group_type}
+              </Badge>
+              {group.status === "inactive" && (
+                <Badge variant="outline" className="text-[10px] h-4 px-1.5">Inactive</Badge>
               )}
-              {group.location && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{group.location}</span>
-                </div>
+              {(group as any).pco_group_id && (
+                <Badge variant="outline" className="text-[10px] h-4 px-1.5">PCO</Badge>
               )}
             </div>
-          )}
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="icon" className="shrink-0 h-7 w-7 -mr-1 -mt-1">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={openGroup}>View Details</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditOpen(true)}>Edit Group</DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => setDeleteOpen(true)}
+              >
+                Delete Group
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
-          {/* Action Button */}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={openGroup}
-          >
-            View Group
-          </Button>
+        {/* Description */}
+        {cleanDescription && (
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {cleanDescription}
+          </p>
+        )}
+
+        {/* Meta row */}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-auto pt-2 border-t flex-wrap">
+          <div className="flex items-center gap-1">
+            <Users className="h-3.5 w-3.5" />
+            <span>
+              {group.member_count || 0}
+              {group.capacity ? `/${group.capacity}` : ""}
+            </span>
+          </div>
+          {group.meeting_day && (
+            <div className="flex items-center gap-1 min-w-0">
+              <Calendar className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">
+                {group.meeting_day}{group.meeting_time && ` · ${group.meeting_time}`}
+              </span>
+            </div>
+          )}
+          {group.location && (
+            <div className="flex items-center gap-1 min-w-0">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{group.location}</span>
+            </div>
+          )}
         </div>
       </Card>
+
 
       <EditGroupDialog group={group} open={editOpen} onOpenChange={setEditOpen} />
 
