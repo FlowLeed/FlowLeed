@@ -535,3 +535,65 @@ function MappingSyncProgress({
     </div>
   );
 }
+function PcoListCombobox({
+  lists,
+  value,
+  onChange,
+}: {
+  lists: { external_list_id: string; name: string; member_count: number | null }[];
+  value: string;
+  onChange: (id: string, name: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = lists.find((l) => l.external_list_id === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className="truncate">
+            {selected ? selected.name : 'Select PCO list...'}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search lists..." />
+          <CommandList>
+            <CommandEmpty>No lists found.</CommandEmpty>
+            <CommandGroup>
+              {lists.map((l) => (
+                <CommandItem
+                  key={l.external_list_id}
+                  value={l.name}
+                  onSelect={() => {
+                    onChange(l.external_list_id, l.name);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      value === l.external_list_id ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  <span className="flex-1 truncate">{l.name}</span>
+                  {typeof l.member_count === 'number' && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {l.member_count}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
