@@ -106,6 +106,13 @@ Deno.serve(async (req) => {
         const gt = includedGT.find((x: any) => x.id === gtId);
         const loc = includedLoc.find((x: any) => x.id === locId);
         pcoGroupIds.add(g.id);
+        // Mirror PCO "Church Center" visibility:
+        //   public_church_center_web_url present → Listed (public)
+        //   otherwise → Unlisted/private
+        const pcoUrl = attrs.public_church_center_web_url || null;
+        const visibility = pcoUrl ? 'public' : 'private';
+        // PCO enrollment_strategy: 'open_signup' lets anyone join directly
+        const allowPublicSignup = attrs.enrollment_strategy === 'open_signup';
         groupRows.push({
           organization_id: orgId,
           pco_group_id: g.id,
@@ -120,8 +127,10 @@ Deno.serve(async (req) => {
           location: loc?.attributes?.full_formatted_address || loc?.attributes?.name || null,
           pco_campus_id: campusPcoId,
           campus_id: campusPcoId ? (campusIdMap.get(campusPcoId) || null) : null,
+          visibility,
+          allow_public_signup: allowPublicSignup,
           last_synced_at: new Date().toISOString(),
-          metadata: { pco_url: attrs.public_church_center_web_url || null },
+          metadata: { pco_url: pcoUrl, pco_enrollment_strategy: attrs.enrollment_strategy || null },
         });
       }
     }
