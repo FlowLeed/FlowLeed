@@ -67,8 +67,10 @@ interface ListMappingManagerProps {
 export function ListMappingManager({ integrationId, onCreateMapping }: ListMappingManagerProps) {
   const [syncingMappings, setSyncingMappings] = useState<Set<string>>(new Set());
   const [activeSyncJobs, setActiveSyncJobs] = useState<Map<string, string>>(new Map());
+  const [editingMapping, setEditingMapping] = useState<ListMapping | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
 
   const { data: mappings, isLoading } = useQuery({
     queryKey: ['integration-list-mappings', integrationId],
