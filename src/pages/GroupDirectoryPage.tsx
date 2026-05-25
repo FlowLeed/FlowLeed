@@ -92,13 +92,23 @@ export default function GroupDirectoryPage() {
       !searchQuery ||
       group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       group.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = !selectedType || group.group_type === selectedType;
-    return matchesSearch && matchesType;
+    const matchesType = selectedType === "all" || group.group_type === selectedType;
+    const matchesDay = selectedDay === "all" || group.meeting_day === selectedDay;
+    return matchesSearch && matchesType && matchesDay;
   });
 
   const groupTypes = groups
     ? [...new Set(groups.map((g) => g.group_type))]
     : [];
+
+  const activeFilterCount =
+    (selectedType !== "all" ? 1 : 0) + (selectedDay !== "all" ? 1 : 0);
+  const hasActiveFilters = activeFilterCount > 0;
+
+  const clearFilters = () => {
+    setSelectedType("all");
+    setSelectedDay("all");
+  };
 
   const handleJoinGroup = (token: string | null) => {
     if (token) {
