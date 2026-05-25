@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,17 +15,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { 
-  Loader2, 
-  Trash2, 
-  RefreshCw, 
-  ExternalLink, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Loader2,
+  Trash2,
+  RefreshCw,
+  ExternalLink,
   Users,
-  ArrowRight 
+  ArrowRight,
+  Pencil,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePcoSyncJob } from '@/hooks/usePcoSyncJob';
 import { SyncProgressDisplay } from './SyncProgressDisplay';
+
 
 interface ListMapping {
   id: string;
@@ -54,8 +67,10 @@ interface ListMappingManagerProps {
 export function ListMappingManager({ integrationId, onCreateMapping }: ListMappingManagerProps) {
   const [syncingMappings, setSyncingMappings] = useState<Set<string>>(new Set());
   const [activeSyncJobs, setActiveSyncJobs] = useState<Map<string, string>>(new Map());
+  const [editingMapping, setEditingMapping] = useState<ListMapping | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
 
   const { data: mappings, isLoading } = useQuery({
     queryKey: ['integration-list-mappings', integrationId],
@@ -198,6 +213,15 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
                       Auto Sync
                     </Badge>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                    onClick={() => setEditingMapping(mapping)}
+                    title="Edit mapping"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
@@ -282,7 +306,154 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
           </Card>
         ))}
       </div>
+
+      <EditMappingDialog
+        mapping={editingMapping}
+        onClose={() => setEditingMapping(null)}
+      />
     </div>
+  );
+}
+
+function EditMappingDialog({
+  mapping,
+  onClose,
+}: {
+  mapping: ListMapping | null;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [flowId, setFlowId] = useState('');
+  const [stageId, setStageId] = useState('');
+  const [autoSync, setAutoSync] = useState(true);
+
+  useEffect(() => {
+    if (mapping) {
+      setFlowId(mapping.pipeline_id);
+      setStageId(mapping.stage_id);
+      setAutoSync(mapping.auto_sync);
+    }
+  }, [mapping]);
+
+  const { data: flows } = useQuery({
+    queryKey: ['flows-for-mapping-edit'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('pipelines')
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
+    enabled: !!mapping,
+  });
+
+  const { data: stages } = useQuery({
+    queryKey: ['stages-for-mapping-edit', flowId],
+    queryFn: async () => {
+      if (!flowId) return [];
+      const { data, error } = await supabase
+        .from('pipeline_stages')
+        .select('id, name, stage_order')
+        .eq('pipeline_id', flowId)
+        .order('stage_order');
+      if (error) throw error;
+      return data as { id: string; name: string; stage_order: number }[];
+    },
+    enabled: !!flowId,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!mapping) return;
+      const { error } = await supabase
+        .from('integration_list_mappings')
+        .update({
+          pipeline_id: flowId,
+          stage_id: stageId,
+          auto_sync: autoSync,
+        })
+        .eq('id', mapping.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integration-list-mappings'] });
+      toast({ title: 'Mapping updated' });
+      onClose();
+    },
+    onError: (e: any) => {
+      toast({
+        title: 'Failed to update mapping',
+        description: e.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleFlowChange = (val: string) => {
+    setFlowId(val);
+    if (val !== mapping?.pipeline_id) setStageId('');
+  };
+
+  return (
+    <Dialog open={!!mapping} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit List Mapping</DialogTitle>
+          <DialogDescription>
+            {mapping?.external_list_name}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Target Flow</Label>
+            <Select value={flowId} onValueChange={handleFlowChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select flow" />
+              </SelectTrigger>
+              <SelectContent>
+                {flows?.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Stage</Label>
+            <Select value={stageId} onValueChange={setStageId} disabled={!flowId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select stage" />
+              </SelectTrigger>
+              <SelectContent>
+                {stages?.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <Label className="text-sm">Auto Sync</Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically sync new members from this list.
+              </p>
+            </div>
+            <Switch checked={autoSync} onCheckedChange={setAutoSync} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            onClick={() => saveMutation.mutate()}
+            disabled={!flowId || !stageId || saveMutation.isPending}
+          >
+            {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Save Changes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
