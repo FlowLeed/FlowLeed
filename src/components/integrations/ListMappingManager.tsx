@@ -26,6 +26,10 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   Loader2,
   Trash2,
@@ -429,25 +433,14 @@ function EditMappingDialog({
         <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label>Planning Center List</Label>
-            <Select
+            <PcoListCombobox
+              lists={pcoLists || []}
               value={externalListId}
-              onValueChange={(val) => {
-                setExternalListId(val);
-                const found = pcoLists?.find((l) => l.external_list_id === val);
-                if (found) setExternalListName(found.name);
+              onChange={(id, name) => {
+                setExternalListId(id);
+                setExternalListName(name);
               }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select PCO list" />
-              </SelectTrigger>
-              <SelectContent>
-                {pcoLists?.map((l) => (
-                  <SelectItem key={l.external_list_id} value={l.external_list_id}>
-                    {l.name}{typeof l.member_count === 'number' ? ` (${l.member_count})` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </div>
           <div className="space-y-2">
             <Label>Target Flow</Label>
@@ -540,5 +533,67 @@ function MappingSyncProgress({
         onComplete={onComplete}
       />
     </div>
+  );
+}
+function PcoListCombobox({
+  lists,
+  value,
+  onChange,
+}: {
+  lists: { external_list_id: string; name: string; member_count: number | null }[];
+  value: string;
+  onChange: (id: string, name: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = lists.find((l) => l.external_list_id === value);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className="truncate">
+            {selected ? selected.name : 'Select PCO list...'}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search lists..." />
+          <CommandList>
+            <CommandEmpty>No lists found.</CommandEmpty>
+            <CommandGroup>
+              {lists.map((l) => (
+                <CommandItem
+                  key={l.external_list_id}
+                  value={l.name}
+                  onSelect={() => {
+                    onChange(l.external_list_id, l.name);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      value === l.external_list_id ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  <span className="flex-1 truncate">{l.name}</span>
+                  {typeof l.member_count === 'number' && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {l.member_count}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
