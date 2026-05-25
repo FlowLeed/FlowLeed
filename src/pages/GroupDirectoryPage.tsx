@@ -226,12 +226,12 @@ export default function GroupDirectoryPage() {
                       </div>
                     )}
                   </div>
-                  {group.allow_public_signup && group.public_signup_token ? (
+                  {group.public_signup_token ? (
                     <Button
                       onClick={() => handleJoinGroup(group.public_signup_token)}
                       className="w-full group"
                     >
-                      Learn More...
+                      Learn More
                     </Button>
                   ) : (
                     <Button variant="outline" className="w-full" disabled>
