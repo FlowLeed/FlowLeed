@@ -1339,6 +1339,22 @@ async function checkAndCompleteJob(supabase: any, jobId: string) {
           .from('integration_list_mappings')
           .update({ last_sync_at: new Date().toISOString() })
           .eq('id', job.list_mapping_id);
+      }
+
+      // Update last_full_sync_completed_at for full people syncs
+      if (!job.list_mapping_id) {
+        await supabase
+          .from('integrations')
+          .update({ last_full_sync_completed_at: new Date().toISOString() })
+          .eq('id', job.integration_id);
+
+        // Populate family members from household matching
+        await populateFamilyMembersFromHouseholds(integration.organization_id, supabase);
+      }
+    }
+  } catch (error) {
+    console.error('Error checking job completion:', error);
+  }
 }
 
 // Helper function to sync campuses from PCO
@@ -1349,7 +1365,7 @@ async function syncCampuses(
 ) {
   try {
     console.log(`🏛️ Syncing campuses for org ${organizationId}`);
-    
+
     const response = await fetchWithRetry(
       'https://api.planningcenteronline.com/people/v2/campuses',
       {
@@ -1359,22 +1375,22 @@ async function syncCampuses(
         },
       }
     );
-    
+
     if (!response.ok) {
       console.warn(`Failed to fetch campuses: ${response.status}`);
       return;
     }
-    
+
     const data = await response.json();
     const campuses = data.data || [];
-    
+
     if (campuses.length === 0) {
       console.log('No campuses found in PCO');
       return;
     }
-    
+
     console.log(`Found ${campuses.length} campuses in PCO`);
-    
+
     for (const campus of campuses) {
       const attrs = campus.attributes || {};
       const { error } = await supabase
@@ -1392,7 +1408,7 @@ async function syncCampuses(
           onConflict: 'organization_id,pco_campus_id',
           ignoreDuplicates: false,
         });
-      
+
       if (error) {
         console.error(`Error upserting campus ${campus.id}:`, error);
       } else {
@@ -1403,19 +1419,4 @@ async function syncCampuses(
     console.warn('Campus sync failed (non-fatal):', error);
   }
 }
-      
-      // Update last_full_sync_completed_at for full people syncs
-      if (!job.list_mapping_id) {
-        await supabase
-          .from('integrations')
-          .update({ last_full_sync_completed_at: new Date().toISOString() })
-          .eq('id', job.integration_id);
-        
-        // Populate family members from household matching
-        await populateFamilyMembersFromHouseholds(integration.organization_id, supabase);
-      }
-    }
-  } catch (error) {
-    console.error('Error checking job completion:', error);
-  }
-}
+
