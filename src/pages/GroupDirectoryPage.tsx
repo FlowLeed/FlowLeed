@@ -7,9 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, MapPin, Calendar, Clock, Search, Filter, X } from "lucide-react";
+import { Users, MapPin, Calendar, Clock, Search, ArrowRight } from "lucide-react";
 import { GroupAvatar } from "@/components/groups/GroupAvatar";
 interface PublicGroup {
   id: string;
@@ -45,13 +43,10 @@ const groupTypeColors: Record<string, string> = {
   other: "bg-muted text-muted-foreground",
 };
 
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
 export default function GroupDirectoryPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedType, setSelectedType] = useState<string>("all");
-  const [selectedDay, setSelectedDay] = useState<string>("all");
+  const [selectedType, setSelectedType] = useState<string | null>(null);
 
   const { data: groups, isLoading } = useQuery({
     queryKey: ["public-groups"],
@@ -92,23 +87,13 @@ export default function GroupDirectoryPage() {
       !searchQuery ||
       group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       group.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = selectedType === "all" || group.group_type === selectedType;
-    const matchesDay = selectedDay === "all" || group.meeting_day === selectedDay;
-    return matchesSearch && matchesType && matchesDay;
+    const matchesType = !selectedType || group.group_type === selectedType;
+    return matchesSearch && matchesType;
   });
 
   const groupTypes = groups
     ? [...new Set(groups.map((g) => g.group_type))]
     : [];
-
-  const activeFilterCount =
-    (selectedType !== "all" ? 1 : 0) + (selectedDay !== "all" ? 1 : 0);
-  const hasActiveFilters = activeFilterCount > 0;
-
-  const clearFilters = () => {
-    setSelectedType("all");
-    setSelectedDay("all");
-  };
 
   const handleJoinGroup = (token: string | null) => {
     if (token) {
@@ -133,7 +118,7 @@ export default function GroupDirectoryPage() {
       <div className="max-w-6xl mx-auto px-4 -mt-8">
         <Card className="shadow-lg">
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -143,61 +128,25 @@ export default function GroupDirectoryPage() {
                   className="pl-9"
                 />
               </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 h-10">
-                    <Filter className="h-4 w-4" />
-                    Filter
-                    {activeFilterCount > 0 && (
-                      <Badge variant="secondary" className="ml-1 rounded-full px-2 py-0 text-xs">
-                        {activeFilterCount}
-                      </Badge>
-                    )}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={selectedType === null ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedType(null)}
+                >
+                  All
+                </Button>
+                {groupTypes.map((type) => (
+                  <Button
+                    key={type}
+                    variant={selectedType === type ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedType(type)}
+                  >
+                    {groupTypeLabels[type] || type}
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Group type</label>
-                      <Select value={selectedType} onValueChange={setSelectedType}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All types</SelectItem>
-                          {groupTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {groupTypeLabels[type] || type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Meeting day</label>
-                      <Select value={selectedDay} onValueChange={setSelectedDay}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All days</SelectItem>
-                          {DAYS.map((day) => (
-                            <SelectItem key={day} value={day}>
-                              {day}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {hasActiveFilters && (
-                      <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full">
-                        <X className="mr-2 h-4 w-4" />
-                        Clear Filters
-                      </Button>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -299,7 +248,7 @@ export default function GroupDirectoryPage() {
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No Groups Found</h3>
               <p className="text-muted-foreground">
-                {searchQuery || hasActiveFilters
+                {searchQuery || selectedType
                   ? "Try adjusting your search or filters"
                   : "No groups are currently accepting new members"}
               </p>
