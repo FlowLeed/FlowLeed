@@ -1,131 +1,97 @@
+# Plan: Progressive Web App + Push Notifications
 
-# Sync Planning Center Groups → FlowLeed
+## Current state
 
-Goal: pull every PCO Group (and its members + meetings + attendance) into FlowLeed, surface a person's groups on their profile, and feed group attendance into the engagement score.
+- React + Vite app, no manifest, no service worker, no PWA tooling installed.
+- `index.html` has basic meta + Inter font, no mobile-app meta tags, no manifest link, no apple-touch icons.
+- Notifications today are in-app only (`useNotifications` + realtime Postgres subscription on `notifications` table) and a daily email digest (`send-daily-digest` edge function). `NotificationSettings` only toggles the email digest.
+- Supabase backend is in place — easy to add a `push_subscriptions` table + an edge function to send pushes.
+- No native wrapper is needed; the goal is web-based install + push.
 
-The `groups`, `group_members`, `group_meetings`, and `group_attendance` tables already have the right shape (`pco_group_id`, `pco_membership_id`, native fields). No schema rewrite — additive only.
+## What we'll build
 
----
+### 1. Installable PWA (manifest-only, no aggressive service worker caching)
 
-## Phase 1 — Schema additions (minimal)
+Lovable previews live in iframes, so a heavy caching service worker breaks the editor. We'll use the lightweight pattern: a real manifest + icons for "Add to Home Screen", and a **minimal service worker only for push notifications** (no offline HTML caching, no `navigateFallback`).
 
-`groups`:
-- `pco_group_type_id text` — for filtering/grouping
-- `pco_group_type_name text`
-- `pco_location_id text`
-- `member_count integer default 0`
-- `last_synced_at timestamptz`
-- `archived_at timestamptz` (so we can soft-delete groups removed in PCO)
+- Add `public/manifest.webmanifest` with name "Flow", short_name "Flow", `display: standalone`, theme/background colors from the design tokens, `start_url: /`, `scope: /`.
+- Generate icon set (192, 512, maskable 512, apple-touch 180) into `public/icons/` using the existing Flow brand.
+- Update `index.html`:
+  - `<link rel="manifest">`, `<link rel="apple-touch-icon">`
+  - `<meta name="theme-color">`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-mobile-web-app-title`
+  - Proper viewport with `viewport-fit=cover` for iOS safe areas
+- Add a small `InstallPrompt` component:
+  - Listens for `beforeinstallprompt` (Android/desktop Chrome) and shows a "Install Flow" button in the header or profile page.
+  - Detects iOS Safari and shows the "Share → Add to Home Screen" instructions (since iOS doesn't fire `beforeinstallprompt`).
+  - Hides itself when `display-mode: standalone` is active.
+- Guard the push service worker registration so it does **not** register inside the Lovable preview iframe / preview host (so the editor stays clean). It only activates on the published domain.
 
-`group_members`:
-- `pco_person_id text` (index) — match path when no contact yet
-- `synced_at timestamptz`
+### 2. Web Push notifications
 
-`group_meetings`:
-- `pco_event_id text unique per group`
-- `attendance_submitted boolean default false`
+Uses the standard Web Push API (VAPID). Works on Chrome/Edge/Firefox/Android, and on iOS 16.4+ **only after the user installs the PWA to home screen**.
 
-`group_attendance`:
-- `pco_attendance_id text` — unique per meeting
-- `pc_person_id text` — for unmatched contacts
+**Database** (new migration):
+- `push_subscriptions` table: `id`, `user_id`, `endpoint` (unique), `p256dh`, `auth`, `user_agent`, `created_at`, `last_used_at`.
+- RLS: users can insert/select/delete only their own rows; `service_role` full access.
+- Add `push_enabled boolean default false` to `profiles` (or extend existing notification prefs row if one exists).
 
-Plus indexes on every `pco_*_id` for upsert performance.
+**Service worker** (`public/sw-push.js`):
+- `push` event → `showNotification(title, { body, icon, badge, data: { url } })`
+- `notificationclick` event → `clients.openWindow(data.url)` (focus existing tab if open)
+- No fetch/caching handlers — keeps it safe alongside the dev preview.
 
----
+**Client**:
+- `src/lib/push.ts`: helpers to register the SW, request `Notification.permission`, call `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: VAPID_PUBLIC })`, POST subscription to an edge function that stores it, and an `unsubscribe` flow.
+- VAPID public key shipped via `VITE_VAPID_PUBLIC_KEY` (publishable, safe in frontend).
+- Extend `NotificationSettings` with a "Push notifications" toggle showing browser permission state, install hint for iOS, and a "Send test notification" button.
 
-## Phase 2 — Sync edge functions
+**Edge functions** (new):
+- `push-subscribe` — auth'd, upserts a row in `push_subscriptions` for the current user.
+- `push-unsubscribe` — auth'd, deletes by endpoint.
+- `send-push` — internal helper used by other backend code. Takes `{ user_id, title, body, url, tag }`, looks up the user's subscriptions, signs JWTs with VAPID keys, POSTs to each endpoint. Deletes rows that come back 404/410 (stale).
+- `send-test-push` — auth'd, sends a test notification to the caller's subscriptions.
 
-Follow the existing PCO sync architecture (chunked, queued, rate-limited per memory `pco-rate-limiting-protection`).
+**Wire pushes into existing notification creation**:
+- Find the places that currently `insert` into the `notifications` table (assignment notifications, mentions, etc.) — either:
+  - **Option A (recommended):** add a Postgres trigger on `notifications` that calls a small `pg_net` request to `send-push` so any future in-app notification automatically also fires a push. One integration point, future-proof.
+  - **Option B:** call `send-push` from each edge function that creates a notification.
 
-New functions in `supabase/functions/`:
+**Secrets** (added via secrets tool, not committed):
+- `VAPID_PUBLIC_KEY` (also exposed to the client as `VITE_VAPID_PUBLIC_KEY`)
+- `VAPID_PRIVATE_KEY`
+- `VAPID_SUBJECT` (e.g. `mailto:support@flowleed.com`)
 
-1. **`pco-sync-groups`** — orchestrator. Paginates `/groups/v2/groups?include=group_type,location` → upsert into `groups` by `pco_group_id`. Marks missing groups `archived_at = now()`.
-2. **`pco-sync-group-members`** — per group, paginates `/groups/v2/groups/{id}/memberships?include=person` → upsert `group_members` by `pco_membership_id`. Resolves `contact_id` by `pc_person_id`. Updates `member_count`.
-3. **`pco-sync-group-events`** — per group, paginates `/groups/v2/groups/{id}/events` (or `/events` with filter) → upsert `group_meetings` by `pco_event_id`.
-4. **`pco-sync-group-attendance`** — per event, paginates `/groups/v2/events/{id}/attendances?include=person` → upsert `group_attendance` with `status='present'|'absent'`, `checked_in_at = event.starts_at`. Sets `last_attended_at` + `attendance_count` via existing trigger.
+### 3. UX polish
 
-All four reuse the shared PCO auth helper, 350 ms throttle, exponential backoff, and the `pco_sync_queue` pattern.
+- Add a one-time prompt (after sign-in, dismissible, stored in `profiles.push_prompt_dismissed_at`) asking the user to enable push.
+- Show an "Install app" card in `ProfilePage` next to the existing notification settings, with platform-aware copy (Android install button, iOS instructions, "Already installed ✓" when standalone).
+- Standalone-mode CSS tweak: add `env(safe-area-inset-*)` padding to the header/sidebar so it looks right on installed iOS.
 
-### Scheduling
+## Out of scope (explicit non-goals)
 
-- Add to existing PCO sync config (`pco_sync_frequency`): groups follow the same cadence (`daily` / `twice_daily` / `manual`) — no new cadences (memory rule).
-- Initial backfill triggered once on first sync; thereafter incremental via `?where[updated_at][gte]=last_synced_at`.
-- New `pg_cron` job calls `pco-sync-groups` which fans out to the other three.
+- Offline support / caching of API responses — would conflict with the live realtime CRM model and the Lovable preview. Can be added later if needed.
+- Native iOS/Android apps via Capacitor — separate path, not needed for push on iOS 16.4+ installed PWA.
+- Background sync / periodic sync.
 
-### Onboarding flag
+## Rollout order
 
-Extend `organizations.onboarding_progress` with `pco_groups_synced`. Set true after first successful run.
+1. Manifest + icons + meta tags + InstallPrompt (ship installability).
+2. DB migration for `push_subscriptions` + profile flag.
+3. VAPID secrets + service worker + client subscribe flow + settings UI.
+4. `send-push` edge function + test-push button (verify end-to-end).
+5. Hook into `notifications` table (trigger) so existing assignment / mention notifications start delivering as pushes.
+6. Optional: post-login enable-push prompt.
 
----
+## Technical notes
 
-## Phase 3 — Person profile: "Groups" section
-
-New component `ContactGroupsCard.tsx` on `ContactDetailPage`:
-- Query: groups where `group_members.contact_id = contact.id` (or `pc_person_id` match) and `status='active'`.
-- For each group show: avatar/name, role badge (Leader / Co-Leader / Host / Member), join date, attendance count, last attended (relative), and a small attendance sparkline (last 12 weeks from `group_attendance`).
-- Empty state: "Not in any groups yet."
-- Click → `/groups/{id}`.
-
-Also: a "Group attendance" row in the existing contact timeline, sourced from `group_attendance` joined to `group_meetings` + `groups`.
-
----
-
-## Phase 4 — Engagement score integration
-
-`calculate_engagement_scores` already reads `group_attendance` (status='present') into `combined_attendance` and `leadership` already considers `group_members.role IN ('leader','co_leader','host')`. Once Phase 2 populates these tables for every org, scoring picks it up automatically.
-
-Tweaks worth shipping with this phase:
-- Add small "group consistency" bonus: if a contact attends ≥ 60% of their group's last 8 meetings, +5 to the Frequency component (capped at the existing 35).
-- Treat `group_members.role = 'leader' | 'co_leader' | 'host'` as floor `active` (already in place).
-- Recompute scores at the end of `pco-sync-group-attendance` for affected orgs.
-
----
-
-## Phase 5 — Groups page integration
-
-`GroupsPage` already lists native groups. After sync:
-- Show a "Synced from Planning Center" badge on PCO-sourced groups (where `pco_group_id is not null`).
-- Lock the destructive fields on synced groups (name, members, meetings) — edits route the user to PCO with a tooltip "Managed in Planning Center". Local-only fields stay editable: `description`, `image_url`, `tags`, `visibility`, `allow_public_signup`, `public_signup_token`.
-- Filter chip: "All / Native / Planning Center".
-- Group detail page: new "Attendance" tab driven by `group_meetings` + `group_attendance` (already structurally supported).
-
----
-
-## Phase 6 — What else we should add (proposed)
-
-1. **Group-type mapping**: small admin screen mapping PCO group types → tags / categories in FlowLeed, so the public directory can filter by category without re-tagging.
-2. **Leader → user linking**: when a PCO group leader's email matches a FlowLeed `profiles.email`, auto-assign `groups.leader_user_id`. Surface unmatched leaders in an admin "Needs linking" panel.
-3. **Auto-enroll in flows from group activity**: e.g. first-time group visitor → "New Group Member" flow. Configurable per group type in a future iteration.
-4. **Attendance-based moments**: detect "Joined a small group" via new `group_members` insert → fire `flow_moments` (`Small Group Joined` already seeded by `seed_default_moment_types`).
-5. **Drop-off detection**: contact attended 4+ weeks then missed 3 in a row → notification to group leader + tag on contact profile.
-6. **Public directory parity**: surface `member_count` and "spots left" using existing `capacity` field, now that headcount is real.
-7. **Webhook path (later)**: PCO Groups doesn't expose first-class webhooks for attendance, so polling stays. Document this in the integrations memory.
-8. **Sync health card** on `/admin/integrations`: last_synced_at per entity (groups / memberships / events / attendances) + retry button per stage.
-
----
-
-## Out of scope (call out)
-
-- Creating/updating groups in PCO from FlowLeed (one-way sync only).
-- Real-time check-in writeback into PCO.
-- Historical attendance backfill beyond 12 months (configurable later).
-
----
-
-## File map
-
-- New SQL migration: additive columns + indexes on the 4 group tables; onboarding flag.
-- New edge fns: `pco-sync-groups`, `pco-sync-group-members`, `pco-sync-group-events`, `pco-sync-group-attendance`.
-- New cron entry calling `pco-sync-groups`.
-- New frontend: `ContactGroupsCard.tsx`, "PCO" badge + lock UI in `GroupsPage` / `GroupDetailPage`, Attendance tab.
-- Modified: `calculate_engagement_scores` (group consistency bonus), contact timeline source list, group edit dialogs (read-only fields for synced groups).
-- Untouched: existing native groups data path.
-
----
-
-## Rollout
-
-1. Ship Phase 1 + 2 dark — first org test (internal), verify counts vs PCO.
-2. Flip Phase 3 + 5 UI per org behind onboarding flag.
-3. Recalculate engagement scores per org once attendance lands (Phase 4).
-4. Iterate on Phase 6 items based on what surfaces first in real data.
+- Use `web-push` style VAPID signing in Deno via `npm:web-push` in the edge function (works in Supabase Edge Functions).
+- Service worker registration guard:
+  ```ts
+  const isPreview = location.hostname.includes('lovableproject.com') || location.hostname.includes('id-preview--');
+  const inIframe = window.self !== window.top;
+  if (!isPreview && !inIframe && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw-push.js');
+  }
+  ```
+- iOS requirement: push only works when launched from the home-screen icon AND on iOS 16.4+. The UI must communicate this.
+- Browser permission is a one-shot — if denied, we cannot re-prompt; UI must instruct the user to re-enable via browser settings.
