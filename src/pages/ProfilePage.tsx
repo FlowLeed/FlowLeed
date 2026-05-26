@@ -21,6 +21,7 @@ import { useCampuses } from "@/hooks/useCampuses";
 import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
 import { SecuritySettings } from "@/components/profile/SecuritySettings";
 import { NotificationSettings } from "@/components/profile/NotificationSettings";
+import { InstallPrompt } from "@/components/InstallPrompt";
 const ProfilePage = () => {
   const navigate = useNavigate();
   const {
@@ -483,6 +484,8 @@ const ProfilePage = () => {
           </CardContent>
         </Card>
         */}
+
+        <InstallPrompt />
 
         <NotificationSettings 
           emailDigestEnabled={emailDigestEnabled}
