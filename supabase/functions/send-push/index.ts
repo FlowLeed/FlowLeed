@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
   const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY");
   const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY");
   const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "mailto:support@flowleed.com";
+  // redeploy marker: pickup VAPID secrets
   if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
     return new Response(JSON.stringify({ error: "VAPID keys not configured" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
