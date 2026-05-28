@@ -423,43 +423,124 @@ const GroupDetailPage = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
-                {meetings.map((meeting) => (
-                  <Card key={meeting.id}>
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle>{meeting.title}</CardTitle>
-                          <CardDescription>
-                            {new Date(meeting.meeting_date).toLocaleDateString()} • {meeting.duration_minutes} min • {meeting.location || "No location"}
-                          </CardDescription>
+              <>
+                {(() => {
+                  const completed = meetings
+                    .filter((m) => new Date(m.meeting_date) <= new Date())
+                    .slice(0, 8)
+                    .map((m) => ({ m, att: attendanceByMeeting[m.id] }))
+                    .filter((x) => x.att && x.att.total > 0);
+                  if (completed.length === 0) return null;
+                  const avgPresent = Math.round(
+                    completed.reduce((s, x) => s + x.att!.present, 0) / completed.length
+                  );
+                  const avgTotal = Math.round(
+                    completed.reduce((s, x) => s + x.att!.total, 0) / completed.length
+                  );
+                  const avgPct = avgTotal ? Math.round((avgPresent / avgTotal) * 100) : 0;
+                  const last = completed[0];
+                  const lastPct = last.att!.total ? Math.round((last.att!.present / last.att!.total) * 100) : 0;
+                  const trend = [...completed].reverse();
+                  return (
+                    <Card>
+                      <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Avg attendance</p>
+                          <p className="text-2xl font-bold">
+                            {avgPresent} / {avgTotal}
+                            <span className="text-sm font-normal text-muted-foreground ml-2">({avgPct}%)</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">last {completed.length} meetings</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={meeting.status === "completed" ? "secondary" : "default"}>
-                            {meeting.status}
-                          </Badge>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedMeeting(meeting);
-                              setAttendanceDialogOpen(true);
-                            }}
-                          >
-                            <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Take Attendance
-                          </Button>
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Last meeting</p>
+                          <p className="text-2xl font-bold">
+                            {last.att!.present} / {last.att!.total}
+                            <span className="text-sm font-normal text-muted-foreground ml-2">({lastPct}%)</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(last.m.meeting_date).toLocaleDateString()}
+                          </p>
                         </div>
-                      </div>
-                    </CardHeader>
-                    {meeting.description && (
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">{meeting.description}</p>
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Trend</p>
+                          <div className="flex items-end gap-1 h-12">
+                            {trend.map((x) => {
+                              const pct = x.att!.total ? (x.att!.present / x.att!.total) * 100 : 0;
+                              return (
+                                <div
+                                  key={x.m.id}
+                                  className="flex-1 bg-primary/70 rounded-sm min-h-[2px]"
+                                  style={{ height: `${Math.max(pct, 4)}%` }}
+                                  title={`${new Date(x.m.meeting_date).toLocaleDateString()}: ${x.att!.present}/${x.att!.total}`}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
                       </CardContent>
-                    )}
-                  </Card>
-                ))}
-              </div>
+                    </Card>
+                  );
+                })()}
+
+                <div className="grid gap-4">
+                  {meetings.map((meeting) => {
+                    const att = attendanceByMeeting[meeting.id];
+                    const pct = att && att.total ? Math.round((att.present / att.total) * 100) : null;
+                    return (
+                      <Card key={meeting.id}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <CardTitle>{meeting.title}</CardTitle>
+                              <CardDescription>
+                                {new Date(meeting.meeting_date).toLocaleDateString()} • {meeting.duration_minutes} min • {meeting.location || "No location"}
+                              </CardDescription>
+                              <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                {att && att.total > 0 ? (
+                                  <Badge variant="secondary">
+                                    {att.present} / {att.total} present{pct !== null ? ` (${pct}%)` : ""}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-muted-foreground">
+                                    Not recorded
+                                  </Badge>
+                                )}
+                                {meeting.attendance_submitted && (
+                                  <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20">
+                                    Submitted
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge variant={meeting.status === "completed" ? "secondary" : "default"}>
+                                {meeting.status}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedMeeting(meeting);
+                                  setAttendanceDialogOpen(true);
+                                }}
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                Take Attendance
+                              </Button>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        {meeting.description && (
+                          <CardContent>
+                            <p className="text-sm text-muted-foreground">{meeting.description}</p>
+                          </CardContent>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </TabsContent>
         </Tabs>
