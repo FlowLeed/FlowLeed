@@ -1,75 +1,43 @@
-## Scope
+## Goal
 
-Two targeted upgrades to the always-loaded context in `supabase/functions/dashboard-ai-chat/index.ts`. No new tools, no DB migrations, no UI changes.
+Currently the Meetings tab on the group detail page lists meetings but never shows actual attendance — even though `group_attendance` is already populated (PCO sync + manual "Take Attendance"). Add attendance visibility for admins.
 
-## Changes
+## Changes (single file: `src/pages/GroupDetailPage.tsx`)
 
-### 1. Accurate new-contacts counts
-
-Today the "new this week" number is derived from the last 20 contacts — wrong for any active church. Replace with two real counts:
-
-- `new_last_7d` — `count(*) from contacts where organization_id = orgId and created_at >= now() - interval '7 days'`
-- `new_last_30d` — same with 30 days
-
-Run both as `head: true, count: 'exact'` queries in the existing `Promise.all` block. Surface in the system prompt as:
-
-```
-**People:** {totalContacts} total contacts | {new_last_7d} new in last 7 days | {new_last_30d} new in last 30 days
-```
-
-Drop the old `newContactsThisWeek` derivation.
-
-### 2. Enriched groups summary
-
-Today groups show only `name (type)`. Enrich with leader, member count, capacity, and meeting cadence.
-
-Replace the current `groups` query with:
+### 1. Fetch attendance counts per meeting
+Add one query that pulls aggregate attendance for all meetings in this group in a single round-trip:
 
 ```ts
-adminClient
-  .from("groups")
-  .select(`
-    id, name, group_type, capacity, meeting_day, meeting_time, meeting_frequency,
-    leader_user_id, co_leader_user_id,
-    member_count:group_members(count)
-  `)
-  .eq("organization_id", orgId)
-  .eq("status", "active")
-  .is("archived_at", null)
-  .order("name");
+supabase
+  .from("group_attendance")
+  .select("group_meeting_id, status")
+  .in("group_meeting_id", meetings.map(m => m.id))
 ```
 
-Resolve leader names from the already-fetched `team` array (no extra round-trip; both leader and co-leader user ids map to `team[].user_id` → `profiles.full_name`). Falls back to "Unassigned" when null or not in team.
+Reduce client-side into `{ [meetingId]: { present, absent, total } }`.
 
-Format each group line as:
+### 2. Show per-meeting attendance on each meeting card
+Under the meeting title/date line, render:
+- `12 / 18 present` (with subtle bar or percent badge)
+- If `attendance_submitted` is true → green "Submitted" badge; else muted "Not recorded"
+- Keep the existing "Take Attendance" button
 
-```
-- [Group Name](/groups/{id}) — {type} · led by {leaderName}{co-leader suffix if any} · {memberCount}/{capacity or "∞"} members · {meeting_day} {meeting_time} ({frequency})
-```
+### 3. Add an Attendance summary card above the meetings list
+A compact stats strip for the last 8 completed meetings:
+- **Avg attendance**: X / Y (Z%)
+- **Last meeting**: relative date + present count
+- **Trend**: tiny sparkline (8 dots/bars) of attendance % per meeting, oldest → newest
 
-Skip empty cadence/leader segments cleanly so groups without meeting times don't show "undefined".
+Uses the same query result — no extra fetch.
 
-Also include a header count line:
+### 4. Minor: Members tab "meetings attended" already shows from `attendance_count`. Leave as-is.
 
-```
-**Groups ({active count} active, {totalMembers} total members):**
-```
+## Out of scope
+- No DB migrations (data already exists)
+- No changes to PCO sync, AI context, or `TakeAttendanceDialog`
+- No new routes or hooks
 
-Where `totalMembers` is summed from the `member_count` aggregate.
-
-### 3. Minor prompt tightening
-
-Update the system-prompt guidance line about groups so the model knows it can answer "which groups have open spots" and "who leads X" from the enriched summary directly, without a tool.
-
-## Files
-
-- `supabase/functions/dashboard-ai-chat/index.ts` — only file changed (~25 lines modified in the always-loaded context block + system prompt string).
-
-## Out of scope (per your request)
-
-- New tools (`search_group`, `get_pastoral_priorities`, etc.)
-- Birthdays, prayer requests, at-risk people, attendance, communication history
-- UI / `SuggestedPrompts` changes
-- DB migrations
-
-Want me to implement?
+## Technical notes
+- Query is gated on `meetings.length > 0`
+- Invalidate `["group-attendance-summary", groupId]` when `TakeAttendanceDialog` saves (piggyback on existing `["attendance"]` invalidation by adding the new key)
+- ~80 lines added to `GroupDetailPage.tsx`

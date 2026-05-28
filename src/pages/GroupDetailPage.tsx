@@ -60,6 +60,31 @@ const GroupDetailPage = () => {
   const { members, isLoading: membersLoading, updateMember, removeMember } = useGroupMembers(groupId);
   const { meetings, meetingsLoading } = useGroupAttendance(groupId);
 
+  // Per-meeting attendance summary
+  const meetingIds = meetings.map((m) => m.id);
+  const { data: attendanceByMeeting = {} } = useQuery({
+    queryKey: ["group-attendance-summary", groupId, meetingIds.join(",")],
+    queryFn: async () => {
+      if (meetingIds.length === 0) return {} as Record<string, { present: number; absent: number; total: number }>;
+      const { data, error } = await supabase
+        .from("group_attendance")
+        .select("group_meeting_id, status")
+        .in("group_meeting_id", meetingIds);
+      if (error) throw error;
+      const map: Record<string, { present: number; absent: number; total: number }> = {};
+      for (const r of data || []) {
+        const id = r.group_meeting_id as string;
+        if (!map[id]) map[id] = { present: 0, absent: 0, total: 0 };
+        map[id].total += 1;
+        if (r.status === "present") map[id].present += 1;
+        else map[id].absent += 1;
+      }
+      return map;
+    },
+    enabled: meetingIds.length > 0,
+  });
+
+
   const { toast } = useToast();
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [editGroupOpen, setEditGroupOpen] = useState(false);
