@@ -420,19 +420,34 @@ serve(async (req) => {
 
     const userName = profile?.full_name || "Pastor";
 
+    // Compute time windows for new-contact counts
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
     // Gather lightweight context data in parallel
     const [
       contactsResult,
+      newLast7Result,
+      newLast30Result,
       pipelinesResult,
       groupsResult,
       teamResult,
     ] = await Promise.all([
       adminClient
         .from("contacts")
-        .select("id, name, status, created_at", { count: "exact" })
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", orgId),
+      adminClient
+        .from("contacts")
+        .select("id", { count: "exact", head: true })
         .eq("organization_id", orgId)
-        .order("created_at", { ascending: false })
-        .limit(20),
+        .gte("created_at", sevenDaysAgo),
+      adminClient
+        .from("contacts")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", orgId)
+        .gte("created_at", thirtyDaysAgo),
       adminClient
         .from("pipelines")
         .select(`id, name, icon, pipeline_stages(id, name, stage_order), pipeline_contacts(id, stage_id)`)
@@ -440,23 +455,24 @@ serve(async (req) => {
         .order("flow_order", { ascending: true }),
       adminClient
         .from("groups")
-        .select("id, name, group_type, status")
+        .select(`
+          id, name, group_type, capacity, meeting_day, meeting_time, meeting_frequency,
+          leader_user_id, co_leader_user_id,
+          member_count:group_members(count)
+        `)
         .eq("organization_id", orgId)
-        .eq("status", "active"),
+        .eq("status", "active")
+        .is("archived_at", null)
+        .order("name"),
       adminClient
         .from("organization_members")
         .select("user_id, role, profiles(full_name, email)")
         .eq("organization_id", orgId),
     ]);
 
-    const contacts = contactsResult.data || [];
-    const totalContacts = contactsResult.count || contacts.length;
-    const newContactsThisWeek = contacts.filter((c: any) => {
-      const d = new Date(c.created_at);
-      const week = new Date();
-      week.setDate(week.getDate() - 7);
-      return d >= week;
-    }).length;
+    const totalContacts = contactsResult.count || 0;
+    const newLast7d = newLast7Result.count || 0;
+    const newLast30d = newLast30Result.count || 0;
 
     const pipelines = pipelinesResult.data || [];
     const pipelineSummaries = pipelines.map((p: any) => {
@@ -472,12 +488,43 @@ serve(async (req) => {
     const groups = groupsResult.data || [];
     const team = teamResult.data || [];
 
+    // Helper: resolve user_id to full name via team roster
+    const nameFor = (uid: string | null | undefined): string | null => {
+      if (!uid) return null;
+      const m = team.find((t: any) => t.user_id === uid);
+      return m ? ((m.profiles as any)?.full_name || (m.profiles as any)?.email || null) : null;
+    };
+
+    let totalGroupMembers = 0;
+    const groupLines = groups.map((g: any) => {
+      const memberCount = Array.isArray(g.member_count) ? (g.member_count[0]?.count || 0) : 0;
+      totalGroupMembers += memberCount;
+      const capacity = g.capacity ? `${memberCount}/${g.capacity}` : `${memberCount}/∞`;
+      const leader = nameFor(g.leader_user_id) || "Unassigned";
+      const coLeader = nameFor(g.co_leader_user_id);
+      const leaderStr = coLeader ? `led by ${leader} & ${coLeader}` : `led by ${leader}`;
+      const cadenceParts: string[] = [];
+      if (g.meeting_day) cadenceParts.push(g.meeting_day);
+      if (g.meeting_time) cadenceParts.push(g.meeting_time);
+      const cadence = cadenceParts.length ? cadenceParts.join(" ") : null;
+      const freq = g.meeting_frequency ? `(${g.meeting_frequency})` : null;
+      const cadenceStr = [cadence, freq].filter(Boolean).join(" ");
+      const segments = [
+        g.group_type,
+        leaderStr,
+        `${capacity} members`,
+        cadenceStr || null,
+      ].filter(Boolean);
+      return `- [${g.name}](/groups/${g.id}) — ${segments.join(" · ")}`;
+    }).join("\n");
+
     const flowLinks = pipelines.map((p: any) => `- "${p.name}" → [${p.name}](/flows/${p.id})`).join("\n");
 
     const teamSummary = team.map((m: any) => {
       const name = (m.profiles as any)?.full_name || (m.profiles as any)?.email || "Unknown";
       return `- ${name} (${m.role})`;
     }).join("\n");
+
 
     const systemPrompt = `You are FlowLeed AI, a smart pastoral assistant for "${orgName}". You're speaking with ${userName} (role: ${userRole}).
 
@@ -499,7 +546,7 @@ When mentioning a Flow or a Person by name, ALWAYS use the markdown link format 
 ${flowLinks || "No flows yet."}
 
 ## Church Data Summary (overview)
-**People:** ${totalContacts} total contacts, ${newContactsThisWeek} new this week
+**People:** ${totalContacts} total contacts | ${newLast7d} new in last 7 days | ${newLast30d} new in last 30 days
 
 **Flows:**
 ${pipelineSummaries || "No flows set up yet."}
@@ -507,8 +554,10 @@ ${pipelineSummaries || "No flows set up yet."}
 **Team Members (${team.length}):**
 ${teamSummary || "Just you for now."}
 
-**Groups (${groups.length} active):**
-${groups.map((g: any) => `- ${g.name} (${g.group_type})`).join("\n") || "No groups yet."}
+**Groups (${groups.length} active, ${totalGroupMembers} total members):**
+${groupLines || "No groups yet."}
+
+You can answer questions like "which groups have open spots?", "who leads X?", or "what groups meet on Tuesday?" directly from the Groups list above without calling any tool.
 
 ## Guidelines
 - ALWAYS refer to pipelines as "Flows" — never say "pipeline" to the user.
