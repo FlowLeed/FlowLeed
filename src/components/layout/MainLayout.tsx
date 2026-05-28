@@ -11,7 +11,7 @@ export const MainLayout = () => {
         <ImpersonationBanner />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+          <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 max-w-full">
             <Outlet />
           </div>
         </div>

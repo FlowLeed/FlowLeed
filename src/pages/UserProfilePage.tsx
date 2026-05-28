@@ -651,7 +651,7 @@ const UserProfilePage = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <div className="flex-1 overflow-auto w-full p-4 md:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden w-full p-4 md:p-6 space-y-6">
         {/* Enhanced Header */}
         <div className="space-y-4">
         <div className="flex items-center gap-4">
