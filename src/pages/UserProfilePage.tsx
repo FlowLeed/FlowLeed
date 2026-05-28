@@ -859,11 +859,11 @@ const UserProfilePage = () => {
                   {(contact.email || contact.phone) && (
                     <div className="text-sm text-muted-foreground space-y-1">
                   {contact.email && (
-                    <div>
+                    <div className="min-w-0 break-words">
                       <span className="text-muted-foreground">Email: </span>
                       <button 
                         onClick={() => window.open(`mailto:${contact.email}`)}
-                        className="hover:text-primary cursor-pointer transition-colors"
+                        className="hover:text-primary cursor-pointer transition-colors break-all text-left"
                       >
                         {contact.email}
                       </button>
