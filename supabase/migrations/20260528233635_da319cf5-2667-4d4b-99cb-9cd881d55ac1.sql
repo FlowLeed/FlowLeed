@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX IF NOT EXISTS group_meetings_pco_event_id_key ON public.group_meetings(pco_event_id) WHERE pco_event_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS group_attendance_pco_attendance_id_key ON public.group_attendance(pco_attendance_id) WHERE pco_attendance_id IS NOT NULL;
