@@ -546,7 +546,7 @@ When mentioning a Flow or a Person by name, ALWAYS use the markdown link format 
 ${flowLinks || "No flows yet."}
 
 ## Church Data Summary (overview)
-**People:** ${totalContacts} total contacts, ${newContactsThisWeek} new this week
+**People:** ${totalContacts} total contacts | ${newLast7d} new in last 7 days | ${newLast30d} new in last 30 days
 
 **Flows:**
 ${pipelineSummaries || "No flows set up yet."}
@@ -554,8 +554,10 @@ ${pipelineSummaries || "No flows set up yet."}
 **Team Members (${team.length}):**
 ${teamSummary || "Just you for now."}
 
-**Groups (${groups.length} active):**
-${groups.map((g: any) => `- ${g.name} (${g.group_type})`).join("\n") || "No groups yet."}
+**Groups (${groups.length} active, ${totalGroupMembers} total members):**
+${groupLines || "No groups yet."}
+
+You can answer questions like "which groups have open spots?", "who leads X?", or "what groups meet on Tuesday?" directly from the Groups list above without calling any tool.
 
 ## Guidelines
 - ALWAYS refer to pipelines as "Flows" — never say "pipeline" to the user.
