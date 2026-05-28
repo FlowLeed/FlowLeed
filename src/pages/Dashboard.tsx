@@ -157,8 +157,8 @@ const Dashboard = () => {
         />
       )}
 
-      <div className="flex-1 overflow-auto hide-scrollbar">
-        <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-4 md:py-6 space-y-6">
           {/* Onboarding Checklist */}
           {shouldShowOnboarding && (
             <OnboardingChecklist
@@ -225,7 +225,7 @@ const Dashboard = () => {
 
       {/* Sticky bottom input - shown during active conversation */}
       {hasMessages && (
-        <div className="border-t bg-background px-6 py-4">
+        <div className="border-t bg-background px-3 md:px-6 py-3 md:py-4">
           <AIChatInput
             onSubmit={sendMessage}
             isLoading={isLoading}

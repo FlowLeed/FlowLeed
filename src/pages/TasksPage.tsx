@@ -36,7 +36,7 @@ const TasksPage = () => {
           </Button>
         }
       />
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="max-w-4xl mx-auto p-6 space-y-6">
           {/* Personal Metrics */}
           <PersonalMetrics

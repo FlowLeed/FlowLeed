@@ -651,7 +651,7 @@ const UserProfilePage = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
-      <div className="flex-1 overflow-auto w-full p-4 md:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden w-full p-4 md:p-6 space-y-6">
         {/* Enhanced Header */}
         <div className="space-y-4">
         <div className="flex items-center gap-4">
@@ -859,11 +859,11 @@ const UserProfilePage = () => {
                   {(contact.email || contact.phone) && (
                     <div className="text-sm text-muted-foreground space-y-1">
                   {contact.email && (
-                    <div>
+                    <div className="min-w-0 break-words">
                       <span className="text-muted-foreground">Email: </span>
                       <button 
                         onClick={() => window.open(`mailto:${contact.email}`)}
-                        className="hover:text-primary cursor-pointer transition-colors"
+                        className="hover:text-primary cursor-pointer transition-colors break-all text-left"
                       >
                         {contact.email}
                       </button>

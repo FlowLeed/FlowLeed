@@ -124,8 +124,8 @@ export const ContactFilters = ({
   ].filter(Boolean).length;
 
   return (
-    <div className="flex gap-4 items-center">
-      <div className="relative flex-1 min-w-[200px] max-w-xs">
+    <div className="flex flex-wrap gap-2 sm:gap-4 items-center">
+      <div className="relative flex-1 min-w-0 sm:min-w-[200px] max-w-xs">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search people..."

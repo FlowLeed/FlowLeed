@@ -26,7 +26,7 @@ const AnalyticsPage = () => {
         showAddButton={false}
       />
 
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">
         <div className="mb-6 flex items-center gap-4 flex-wrap">
           <DateRangeFilter 
             preset={preset} 

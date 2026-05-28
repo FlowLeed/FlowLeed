@@ -90,7 +90,7 @@ const MessagesPage = () => {
         showFlowIcon={false}
         showAddButton={false}
       />
-      <div className="flex flex-1 overflow-auto">
+      <div className="flex flex-1 overflow-y-auto overflow-x-hidden">
         {/* Conversations List - Left Panel */}
         <div className="w-72 flex-shrink-0">
         {conversationsLoading ? (

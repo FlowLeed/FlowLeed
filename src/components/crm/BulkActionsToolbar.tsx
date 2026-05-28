@@ -95,7 +95,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
 
   return (
     <>
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-4 min-w-[600px]">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-4 w-[min(600px,calc(100vw-2rem))]">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-sm">
