@@ -142,8 +142,8 @@ Deno.serve(async (req) => {
           .eq('group_id', g.id);
         const memberByPerson = new Map((gms || []).filter(m => m.pco_person_id).map(m => [m.pco_person_id!, m]));
 
-        // Fetch attendances per event (only submitted ones for efficiency)
-        for (const m of meetingRows.filter(m => m.attendance_submitted)) {
+        // Fetch attendances for every completed meeting (PCO often doesn't set attendance_submitted_at)
+        for (const m of meetingRows.filter(m => m.status === 'completed')) {
           const local = mIdMap.get(m.pco_event_id);
           if (!local) continue;
           try {
