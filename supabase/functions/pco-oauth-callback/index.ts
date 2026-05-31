@@ -148,7 +148,10 @@ Deno.serve(async (req) => {
           .from('integrations')
           .update(baseFields)
           .eq('id', existing.id);
-        if (upErr) return json({ error: upErr.message }, 500);
+        if (upErr) {
+          console.error('[pco-oauth-callback] integrations update failed', upErr);
+          return json({ error: 'integrations update failed', detail: upErr.message }, 500);
+        }
       } else {
         const { error: insErr } = await supabase.from('integrations').insert({
           ...baseFields,
@@ -158,9 +161,13 @@ Deno.serve(async (req) => {
           credentials: {},
           settings: {},
         });
-        if (insErr) return json({ error: insErr.message }, 500);
+        if (insErr) {
+          console.error('[pco-oauth-callback] integrations insert failed', insErr);
+          return json({ error: 'integrations insert failed', detail: insErr.message }, 500);
+        }
       }
 
+      console.log('[pco-oauth-callback] org connected ok');
       return json({ ok: true, purpose: 'org', providerAccountName });
     }
 
