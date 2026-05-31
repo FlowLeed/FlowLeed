@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -352,20 +353,17 @@ Deno.serve(async (req) => {
 
         console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number} (full sync: ${!mapping}, prefetched: ${hasPrefetchedData})`);
 
-        // Get PC credentials (try application_id first, fallback to app_id for backwards compatibility)
-        const applicationId = integration.credentials.application_id ?? integration.credentials.app_id;
-        const secret = integration.credentials.secret;
-        const auth = btoa(`${applicationId}:${secret}`);
+        const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integration.id);
 
         // Sync campuses once per org (on first chunk - chunks start at 1)
         if (chunk.chunk_number === 1) {
-          await syncCampuses(integration.organization_id, auth, supabase);
+          await syncCampuses(integration.organization_id, pcoAuthHeader, supabase);
         }
 
         // Process each person in the chunk with delay between API calls
         for (let i = 0; i < people.length; i++) {
           const person = people[i];
-          await processPersonData(person, integration.organization_id, mapping, auth, supabase, hasPrefetchedData);
+          await processPersonData(person, integration.organization_id, mapping, pcoAuthHeader, supabase, hasPrefetchedData);
           
           // Add delay between person processing to avoid rate limiting
           // Reduced delay if we have pre-fetched data (fewer API calls needed)
