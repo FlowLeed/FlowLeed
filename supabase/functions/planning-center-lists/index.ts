@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { syncDemographicData } from "../_shared/pco-demographics.ts";
+import { getPcoAuthHeader } from "../_shared/pco-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -132,31 +133,13 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
 
     console.log('Integration found:', integration);
     
-    // Access credentials properly from JSON field
-    const credentials = integration.credentials as any;
-    const application_id = credentials?.application_id;
-    const secret = credentials?.secret;
-    
-    console.log('Credentials check - has app_id:', !!application_id, 'has secret:', !!secret);
-
-    if (!application_id || !secret) {
-      console.error('Missing credentials:', { has_app_id: !!application_id, has_secret: !!secret });
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Missing Planning Center credentials' 
-      }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
-
-    // Test API connection with a simple endpoint
-    const auth = btoa(`${application_id}:${secret}`);
+    const { header: pcoAuthHeader, authType } = await getPcoAuthHeader(supabase, integrationId);
+    console.log('Planning Center auth type:', authType);
     console.log('Making API call to Planning Center...');
     
     const response = await fetch('https://api.planningcenteronline.com/people/v2/me', {
       headers: {
-        'Authorization': `Basic ${auth}`,
+        'Authorization': pcoAuthHeader,
         'Content-Type': 'application/json',
       },
     });
@@ -235,17 +218,8 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
       return new Response('Integration not found', { status: 404, headers: corsHeaders });
     }
 
-    // Access credentials properly from JSON field
-    const credentials = integration.credentials as any;
-    const application_id = credentials?.application_id;
-    const secret = credentials?.secret;
-    
-    if (!application_id || !secret) {
-      return new Response('Missing Planning Center credentials', { status: 400, headers: corsHeaders });
-    }
-
     // Fetch ALL lists from Planning Center API with pagination
-    const auth = btoa(`${application_id}:${secret}`);
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
     let allLists: any[] = [];
     let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/lists?per_page=100';
 
@@ -254,7 +228,7 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
       
       const response = await fetch(nextUrl, {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       });
@@ -389,18 +363,7 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
         .eq('status', 'pending');
     }
 
-    const credentials = integration.credentials as any;
-    const application_id = credentials?.application_id;
-    const secret = credentials?.secret;
-    
-    if (!application_id || !secret) {
-      return new Response(JSON.stringify({ error: 'Missing Planning Center credentials' }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
-
-    const auth = btoa(`${application_id}:${secret}`);
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
     
     // Check if this is an incremental sync (has completed a full sync before)
     const isIncrementalSync = !!integration.last_full_sync_completed_at;
@@ -429,7 +392,7 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       
       const response = await fetch(nextUrl, {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       });
@@ -710,16 +673,7 @@ async function syncSingleList(mapping: any, userId: string) {
     throw new Error('Integration not found');
   }
 
-  // Access credentials properly from JSON field
-  const credentials = integration.credentials as any;
-  const application_id = credentials?.application_id;
-  const secret = credentials?.secret;
-  
-  if (!application_id || !secret) {
-    throw new Error('Missing Planning Center credentials');
-  }
-  
-  const auth = btoa(`${application_id}:${secret}`);
+  const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, mapping.integration_id);
   
   console.log('Fetching PC list members for list:', mapping.external_list_id);
 
@@ -735,7 +689,7 @@ async function syncSingleList(mapping: any, userId: string) {
     
     const response = await fetch(nextUrl, {
       headers: {
-        'Authorization': `Basic ${auth}`,
+        'Authorization': pcoAuthHeader,
         'Content-Type': 'application/json',
       },
     });
@@ -941,7 +895,10 @@ async function autoSyncAllMappings() {
           const secret = creds?.secret;
           if (appId && secret) {
             const auth = btoa(`${appId}:${secret}`);
-            await syncCampusesFromPCO(integration.organization_id, auth);
+            await syncCampusesFromPCO(integration.organization_id, `Basic ${auth}`);
+          } else {
+            const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integration.id);
+            await syncCampusesFromPCO(integration.organization_id, pcoAuthHeader);
           }
         } catch (e) {
           console.warn(`Campus sync failed for org ${integration.organization_id}:`, e);
@@ -1131,7 +1088,7 @@ async function autoSyncAllMappings() {
 }
 
 // Helper to sync campuses from PCO directly
-async function syncCampusesFromPCO(organizationId: string, auth: string) {
+async function syncCampusesFromPCO(organizationId: string, pcoAuthHeader: string) {
   try {
     console.log(`🏛️ Syncing campuses for org ${organizationId}`);
     
@@ -1139,7 +1096,7 @@ async function syncCampusesFromPCO(organizationId: string, auth: string) {
       'https://api.planningcenteronline.com/people/v2/campuses',
       {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       }
@@ -1205,15 +1162,7 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     throw new Error('Integration not found');
   }
 
-  const credentials = integration.credentials as any;
-  const application_id = credentials?.application_id;
-  const secret = credentials?.secret;
-  
-  if (!application_id || !secret) {
-    throw new Error('Missing Planning Center credentials');
-  }
-
-  const auth = btoa(`${application_id}:${secret}`);
+  const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
   
   // Determine if this is an incremental sync
   const isIncrementalSync = !!lastFullSyncCompletedAt;
@@ -1240,7 +1189,7 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     
     const response = await fetch(nextUrl, {
       headers: {
-        'Authorization': `Basic ${auth}`,
+        'Authorization': pcoAuthHeader,
         'Content-Type': 'application/json',
       },
     });
@@ -1308,7 +1257,7 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
   console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
 
   // Always sync campuses, even if no contacts changed
-  await syncCampusesFromPCO(organizationId, auth);
+  await syncCampusesFromPCO(organizationId, pcoAuthHeader);
 
   if (allPeople.length === 0) {
     console.log('[Auto-sync] No people found/modified in Planning Center');

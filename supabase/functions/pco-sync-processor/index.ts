@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -352,20 +353,17 @@ Deno.serve(async (req) => {
 
         console.log(`Processing ${people.length} contacts in chunk ${chunk.chunk_number} (full sync: ${!mapping}, prefetched: ${hasPrefetchedData})`);
 
-        // Get PC credentials (try application_id first, fallback to app_id for backwards compatibility)
-        const applicationId = integration.credentials.application_id ?? integration.credentials.app_id;
-        const secret = integration.credentials.secret;
-        const auth = btoa(`${applicationId}:${secret}`);
+        const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integration.id);
 
         // Sync campuses once per org (on first chunk - chunks start at 1)
         if (chunk.chunk_number === 1) {
-          await syncCampuses(integration.organization_id, auth, supabase);
+          await syncCampuses(integration.organization_id, pcoAuthHeader, supabase);
         }
 
         // Process each person in the chunk with delay between API calls
         for (let i = 0; i < people.length; i++) {
           const person = people[i];
-          await processPersonData(person, integration.organization_id, mapping, auth, supabase, hasPrefetchedData);
+          await processPersonData(person, integration.organization_id, mapping, pcoAuthHeader, supabase, hasPrefetchedData);
           
           // Add delay between person processing to avoid rate limiting
           // Reduced delay if we have pre-fetched data (fewer API calls needed)
@@ -515,7 +513,7 @@ async function processPersonData(
   person: any,
   organizationId: string,
   mapping: any,
-  auth: string,
+  pcoAuthHeader: string,
   supabase: any,
   hasPrefetchedData: boolean = false
 ) {
@@ -530,7 +528,7 @@ async function processPersonData(
       `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=emails,phone_numbers,addresses,households,field_data`,
       {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       }
@@ -690,10 +688,10 @@ async function processPersonData(
   }
 
   // Sync demographic data - pass pre-fetched data if available to avoid API calls
-  await syncDemographicData(contact.id, pcPersonId, auth, supabase, person.included_data);
+  await syncDemographicData(contact.id, pcPersonId, pcoAuthHeader, supabase, person.included_data);
   
   // Sync flow moments from custom field data - pass pre-fetched data if available
-  await syncFlowMomentsFromFieldData(contact.id, organizationId, pcPersonId, auth, supabase, person.included_data);
+  await syncFlowMomentsFromFieldData(contact.id, organizationId, pcPersonId, pcoAuthHeader, supabase, person.included_data);
 }
 
 // Helper function to sync demographic data from Planning Center
@@ -701,7 +699,7 @@ async function processPersonData(
 async function syncDemographicData(
   contactId: string,
   pcPersonId: string,
-  auth: string,
+  pcoAuthHeader: string,
   supabase: any,
   includedData?: any
 ) {
@@ -739,7 +737,7 @@ async function syncDemographicData(
         `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}`,
         {
           headers: {
-            'Authorization': `Basic ${auth}`,
+            'Authorization': pcoAuthHeader,
             'Content-Type': 'application/json',
           },
         }
@@ -761,7 +759,7 @@ async function syncDemographicData(
         `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data,phone_numbers,emails`,
         {
           headers: {
-            'Authorization': `Basic ${auth}`,
+            'Authorization': pcoAuthHeader,
             'Content-Type': 'application/json',
           },
         }
@@ -973,7 +971,7 @@ async function syncFlowMomentsFromFieldData(
   contactId: string,
   organizationId: string,
   pcPersonId: string,
-  auth: string,
+  pcoAuthHeader: string,
   supabase: any,
   includedData?: any
 ) {
@@ -1023,7 +1021,7 @@ async function syncFlowMomentsFromFieldData(
         `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/field_data?include=field_definition`,
         {
           headers: {
-            'Authorization': `Basic ${auth}`,
+            'Authorization': pcoAuthHeader,
             'Content-Type': 'application/json',
           },
         }
@@ -1360,7 +1358,7 @@ async function checkAndCompleteJob(supabase: any, jobId: string) {
 // Helper function to sync campuses from PCO
 async function syncCampuses(
   organizationId: string,
-  auth: string,
+  pcoAuthHeader: string,
   supabase: any
 ) {
   try {
@@ -1370,7 +1368,7 @@ async function syncCampuses(
       'https://api.planningcenteronline.com/people/v2/campuses',
       {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       }
