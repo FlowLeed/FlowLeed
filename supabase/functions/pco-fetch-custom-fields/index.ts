@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -66,13 +67,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const credentials = integration.credentials as { application_id: string; secret: string };
-    const authString = btoa(`${credentials.application_id}:${credentials.secret}`);
-
     console.log('Fetching PCO field definitions...');
 
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integration_id);
+
     const pcoHeaders = {
-      'Authorization': `Basic ${authString}`,
+      'Authorization': pcoAuthHeader,
       'Content-Type': 'application/json',
     };
 
