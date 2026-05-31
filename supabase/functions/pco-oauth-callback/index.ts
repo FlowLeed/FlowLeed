@@ -160,6 +160,7 @@ Deno.serve(async (req) => {
           service_name: 'planning_center',
           credentials: {},
           settings: {},
+          sync_frequency: 'daily',
         });
         if (insErr) {
           console.error('[pco-oauth-callback] integrations insert failed', insErr);
