@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,18 +91,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const credentials = integration.credentials as any;
-    const application_id = credentials?.application_id;
-    const secret = credentials?.secret;
-
-    if (!application_id || !secret) {
-      return new Response(JSON.stringify({ error: 'Missing Planning Center credentials' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const auth = btoa(`${application_id}:${secret}`);
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
     const orgId = integration.organization_id;
     const metadata = (integration.metadata as any) || {};
 
@@ -131,7 +121,7 @@ Deno.serve(async (req) => {
     let pageCount = 0;
 
     const fetchHeaders = {
-      'Authorization': `Basic ${auth}`,
+      'Authorization': pcoAuthHeader,
       'Content-Type': 'application/json',
     };
 

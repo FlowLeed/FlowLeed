@@ -550,6 +550,30 @@ const IntegrationsPage = () => {
               </div>
             )}
 
+            {/* Reauth required: OAuth refresh failed (e.g., admin revoked install) */}
+            {planningCenterIntegration?.status === 'reauth_required' && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-amber-700 dark:text-amber-400 mb-1">
+                      Reconnect Planning Center
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Your Planning Center session expired or was revoked. Reconnect to resume syncing.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={handleConnectPcoOAuth}
+                      disabled={oauthLoading || !userOrgData?.organization_id}
+                    >
+                      Reconnect Planning Center
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* OAuth: connected account label */}
             {planningCenterIntegration?.auth_type === 'oauth' && planningCenterIntegration?.provider_account_name && (
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-sm">

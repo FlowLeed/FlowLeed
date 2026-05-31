@@ -1,6 +1,7 @@
 // Syncs Planning Center Group events + attendances into FlowLeed.
 // Pulls last 90 days of events per group (capped per run).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,9 +12,9 @@ const API_DELAY = 350;
 const MAX_GROUPS_PER_RUN = 25;
 const LOOKBACK_DAYS = 90;
 
-async function pcoFetch(url: string, auth: string, retries = 3): Promise<Response> {
+async function pcoFetch(url: string, authHeader: string, retries = 3): Promise<Response> {
   for (let i = 0; i <= retries; i++) {
-    const res = await fetch(url, { headers: { Authorization: `Basic ${auth}` } });
+    const res = await fetch(url, { headers: { Authorization: authHeader } });
     if (res.status === 429) {
       const wait = parseInt(res.headers.get('Retry-After') || '5', 10) * 1000;
       await sleep(Math.max(wait, 1000 * Math.pow(2, i)));
@@ -24,13 +25,13 @@ async function pcoFetch(url: string, auth: string, retries = 3): Promise<Respons
   throw new Error('PCO fetch failed');
 }
 
-async function fetchAllPages(url: string, auth: string, maxPages = 20) {
+async function fetchAllPages(url: string, authHeader: string, maxPages = 20) {
   const all: any[] = [];
   let next: string | null = url;
   let p = 0;
   while (next && p < maxPages) {
     p++;
-    const r = await pcoFetch(next, auth);
+    const r = await pcoFetch(next, authHeader);
     if (!r.ok) {
       if (r.status === 401) throw new Error('PCO_AUTH_FAILED');
       throw new Error(`PCO ${r.status}`);
@@ -67,11 +68,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Integration not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-    const creds = integration.credentials as any;
-    if (!creds?.application_id || !creds?.secret)
-      return new Response(JSON.stringify({ error: 'Missing PCO credentials' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    const auth = btoa(`${creds.application_id}:${creds.secret}`);
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
     const orgId = integration.organization_id;
     const metadata = (integration.metadata as any) || {};
 
@@ -96,7 +93,7 @@ Deno.serve(async (req) => {
         const evtPages = await fetchAllPages(
           `https://api.planningcenteronline.com/groups/v2/groups/${g.pco_group_id}/events` +
           `?per_page=100&where[starts_at][gte]=${encodeURIComponent(since)}&order=starts_at`,
-          auth, 5
+          pcoAuthHeader, 5
         );
         const meetingRows: any[] = [];
         const eventIds: { pco: string; localPromise?: any }[] = [];
@@ -149,7 +146,7 @@ Deno.serve(async (req) => {
           try {
             const attPages = await fetchAllPages(
               `https://api.planningcenteronline.com/groups/v2/events/${m.pco_event_id}/attendances?per_page=100&include=person`,
-              auth, 5
+              pcoAuthHeader, 5
             );
             const attRows: any[] = [];
             for (const ap of attPages) {

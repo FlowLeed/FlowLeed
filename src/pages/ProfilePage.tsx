@@ -22,6 +22,7 @@ import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
 import { SecuritySettings } from "@/components/profile/SecuritySettings";
 import { NotificationSettings } from "@/components/profile/NotificationSettings";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { PcoPersonalConnection } from "@/components/profile/PcoPersonalConnection";
 const ProfilePage = () => {
   const navigate = useNavigate();
   const {
@@ -486,6 +487,8 @@ const ProfilePage = () => {
         */}
 
         <InstallPrompt />
+
+        <PcoPersonalConnection organizationId={organization?.id} />
 
         <NotificationSettings 
           emailDigestEnabled={emailDigestEnabled}
