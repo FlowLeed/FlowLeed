@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 import { corsHeaders } from '../_shared/cors.ts';
+import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const BATCH_SIZE = 10; // Process contacts in batches to avoid timeout
 
@@ -34,7 +35,7 @@ Deno.serve(async (req) => {
     // Get integration credentials
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('credentials')
+      .select('id')
       .eq('id', integrationId)
       .eq('organization_id', organizationId)
       .single();
@@ -43,9 +44,7 @@ Deno.serve(async (req) => {
       throw new Error('Integration not found');
     }
 
-    const credentials = integration.credentials as { application_id: string; secret: string };
-    const auth = `${credentials.application_id}:${credentials.secret}`;
-    const authB64 = btoa(auth);
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
 
     // Fetch all active moment mappings
     const { data: mappings, error: mappingsError } = await supabase
@@ -88,7 +87,7 @@ Deno.serve(async (req) => {
               contact.id,
               contact.pc_person_id!,
               organizationId,
-              authB64,
+              pcoAuthHeader,
               mappings || [],
               supabase
             );
@@ -131,7 +130,7 @@ async function syncFlowMomentsForContact(
   contactId: string,
   pcPersonId: string,
   organizationId: string,
-  authB64: string,
+  pcoAuthHeader: string,
   mappings: any[],
   supabase: any
 ): Promise<number> {
@@ -140,7 +139,7 @@ async function syncFlowMomentsForContact(
   // Fetch field_data from PCO
   const fieldDataUrl = `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/field_data`;
   const fieldDataResponse = await fetch(fieldDataUrl, {
-    headers: { Authorization: `Basic ${authB64}` },
+    headers: { Authorization: pcoAuthHeader },
   });
 
   if (!fieldDataResponse.ok) {

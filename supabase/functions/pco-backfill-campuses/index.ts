@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,8 +31,7 @@ serve(async (req) => {
       });
     }
 
-    const creds = integration.credentials as any;
-    const auth = btoa(`${creds.application_id}:${creds.secret}`);
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
     const orgId = integration.organization_id;
 
     const { data: campuses } = await supabase
@@ -61,7 +61,7 @@ serve(async (req) => {
       
       const response = await fetch(nextUrl, {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       });

@@ -890,16 +890,8 @@ async function autoSyncAllMappings() {
     if (allActiveIntegrations && allActiveIntegrations.length > 0) {
       for (const integration of allActiveIntegrations) {
         try {
-          const creds = integration.credentials as any;
-          const appId = creds?.application_id ?? creds?.app_id;
-          const secret = creds?.secret;
-          if (appId && secret) {
-            const auth = btoa(`${appId}:${secret}`);
-            await syncCampusesFromPCO(integration.organization_id, `Basic ${auth}`);
-          } else {
-            const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integration.id);
-            await syncCampusesFromPCO(integration.organization_id, pcoAuthHeader);
-          }
+          const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integration.id);
+          await syncCampusesFromPCO(integration.organization_id, pcoAuthHeader);
         } catch (e) {
           console.warn(`Campus sync failed for org ${integration.organization_id}:`, e);
         }
