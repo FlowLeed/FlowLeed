@@ -130,3 +130,9 @@ verify_jwt = false
 
 [functions.pco-checkin-auto-sync]
 verify_jwt = false
+
+[functions.pco-oauth-start]
+verify_jwt = true
+
+[functions.pco-oauth-callback]
+verify_jwt = true
