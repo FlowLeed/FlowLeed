@@ -218,17 +218,8 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
       return new Response('Integration not found', { status: 404, headers: corsHeaders });
     }
 
-    // Access credentials properly from JSON field
-    const credentials = integration.credentials as any;
-    const application_id = credentials?.application_id;
-    const secret = credentials?.secret;
-    
-    if (!application_id || !secret) {
-      return new Response('Missing Planning Center credentials', { status: 400, headers: corsHeaders });
-    }
-
     // Fetch ALL lists from Planning Center API with pagination
-    const auth = btoa(`${application_id}:${secret}`);
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
     let allLists: any[] = [];
     let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/lists?per_page=100';
 
@@ -237,7 +228,7 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
       
       const response = await fetch(nextUrl, {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       });
@@ -372,18 +363,7 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
         .eq('status', 'pending');
     }
 
-    const credentials = integration.credentials as any;
-    const application_id = credentials?.application_id;
-    const secret = credentials?.secret;
-    
-    if (!application_id || !secret) {
-      return new Response(JSON.stringify({ error: 'Missing Planning Center credentials' }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
-
-    const auth = btoa(`${application_id}:${secret}`);
+    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
     
     // Check if this is an incremental sync (has completed a full sync before)
     const isIncrementalSync = !!integration.last_full_sync_completed_at;
@@ -412,7 +392,7 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       
       const response = await fetch(nextUrl, {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       });
