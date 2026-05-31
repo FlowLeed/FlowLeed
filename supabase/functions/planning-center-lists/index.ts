@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { syncDemographicData } from "../_shared/pco-demographics.ts";
+import { getPcoAuthHeader } from "../_shared/pco-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -132,31 +133,13 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
 
     console.log('Integration found:', integration);
     
-    // Access credentials properly from JSON field
-    const credentials = integration.credentials as any;
-    const application_id = credentials?.application_id;
-    const secret = credentials?.secret;
-    
-    console.log('Credentials check - has app_id:', !!application_id, 'has secret:', !!secret);
-
-    if (!application_id || !secret) {
-      console.error('Missing credentials:', { has_app_id: !!application_id, has_secret: !!secret });
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Missing Planning Center credentials' 
-      }), { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      });
-    }
-
-    // Test API connection with a simple endpoint
-    const auth = btoa(`${application_id}:${secret}`);
+    const { header: pcoAuthHeader, authType } = await getPcoAuthHeader(supabase, integrationId);
+    console.log('Planning Center auth type:', authType);
     console.log('Making API call to Planning Center...');
     
     const response = await fetch('https://api.planningcenteronline.com/people/v2/me', {
       headers: {
-        'Authorization': `Basic ${auth}`,
+        'Authorization': pcoAuthHeader,
         'Content-Type': 'application/json',
       },
     });
