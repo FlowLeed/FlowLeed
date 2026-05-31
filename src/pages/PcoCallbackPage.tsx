@@ -33,7 +33,8 @@ export default function PcoCallbackPage() {
         body: { code, state, redirectOrigin: window.location.origin },
       });
       if (error || data?.error) {
-        const msg = data?.message || data?.error || error?.message || 'Connection failed';
+        const msg = data?.message || data?.detail || data?.error || error?.message || 'Connection failed';
+        console.error('[pco-callback] failed', { error, data });
         setError(msg);
         toast.error(msg);
         return;
