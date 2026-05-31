@@ -1088,7 +1088,7 @@ async function autoSyncAllMappings() {
 }
 
 // Helper to sync campuses from PCO directly
-async function syncCampusesFromPCO(organizationId: string, auth: string) {
+async function syncCampusesFromPCO(organizationId: string, pcoAuthHeader: string) {
   try {
     console.log(`🏛️ Syncing campuses for org ${organizationId}`);
     
@@ -1096,7 +1096,7 @@ async function syncCampusesFromPCO(organizationId: string, auth: string) {
       'https://api.planningcenteronline.com/people/v2/campuses',
       {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       }
@@ -1162,15 +1162,7 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     throw new Error('Integration not found');
   }
 
-  const credentials = integration.credentials as any;
-  const application_id = credentials?.application_id;
-  const secret = credentials?.secret;
-  
-  if (!application_id || !secret) {
-    throw new Error('Missing Planning Center credentials');
-  }
-
-  const auth = btoa(`${application_id}:${secret}`);
+  const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
   
   // Determine if this is an incremental sync
   const isIncrementalSync = !!lastFullSyncCompletedAt;
@@ -1197,7 +1189,7 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     
     const response = await fetch(nextUrl, {
       headers: {
-        'Authorization': `Basic ${auth}`,
+        'Authorization': pcoAuthHeader,
         'Content-Type': 'application/json',
       },
     });
@@ -1265,7 +1257,7 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
   console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
 
   // Always sync campuses, even if no contacts changed
-  await syncCampusesFromPCO(organizationId, auth);
+  await syncCampusesFromPCO(organizationId, pcoAuthHeader);
 
   if (allPeople.length === 0) {
     console.log('[Auto-sync] No people found/modified in Planning Center');
