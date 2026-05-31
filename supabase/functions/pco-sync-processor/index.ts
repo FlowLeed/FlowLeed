@@ -699,7 +699,7 @@ async function processPersonData(
 async function syncDemographicData(
   contactId: string,
   pcPersonId: string,
-  auth: string,
+  pcoAuthHeader: string,
   supabase: any,
   includedData?: any
 ) {
@@ -737,7 +737,7 @@ async function syncDemographicData(
         `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}`,
         {
           headers: {
-            'Authorization': `Basic ${auth}`,
+            'Authorization': pcoAuthHeader,
             'Content-Type': 'application/json',
           },
         }
@@ -759,7 +759,7 @@ async function syncDemographicData(
         `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=addresses,households,field_data,phone_numbers,emails`,
         {
           headers: {
-            'Authorization': `Basic ${auth}`,
+            'Authorization': pcoAuthHeader,
             'Content-Type': 'application/json',
           },
         }
