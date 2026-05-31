@@ -17,6 +17,7 @@ import { ListMappingManager } from "@/components/integrations/ListMappingManager
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
 import { SyncProgressDisplay } from "@/components/integrations/SyncProgressDisplay";
 import { ChurchOnlineIntegration } from "@/components/integrations/ChurchOnlineIntegration";
+import { PcoEnforcementToggle } from "@/components/integrations/PcoEnforcementToggle";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
 import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
 
@@ -585,6 +586,10 @@ const IntegrationsPage = () => {
                   </span>
                 )}
               </div>
+            )}
+
+            {planningCenterIntegration?.auth_type === 'oauth' && (
+              <PcoEnforcementToggle organizationId={userOrgData?.organization_id} />
             )}
 
             {/* OAuth: primary connect CTA when nothing is connected */}
