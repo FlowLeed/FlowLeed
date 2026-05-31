@@ -289,6 +289,30 @@ const IntegrationsPage = () => {
       secret: planningCenterForm.secret
     });
   };
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const handleConnectPcoOAuth = async () => {
+    if (!userOrgData?.organization_id) {
+      toast.error('No organization');
+      return;
+    }
+    setOauthLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pco-oauth-start', {
+        body: {
+          organizationId: userOrgData.organization_id,
+          purpose: 'org',
+          redirectOrigin: window.location.origin,
+        },
+      });
+      if (error || !data?.authorizeUrl) {
+        throw new Error(data?.error || error?.message || 'Failed to start OAuth');
+      }
+      window.location.href = data.authorizeUrl;
+    } catch (e: any) {
+      toast.error(e.message);
+      setOauthLoading(false);
+    }
+  };
   const handlePlanningCenterDisconnect = () => {
     if (planningCenterIntegration) {
       deleteIntegrationMutation.mutate(planningCenterIntegration.id);
