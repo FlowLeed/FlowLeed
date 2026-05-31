@@ -1358,7 +1358,7 @@ async function checkAndCompleteJob(supabase: any, jobId: string) {
 // Helper function to sync campuses from PCO
 async function syncCampuses(
   organizationId: string,
-  auth: string,
+  pcoAuthHeader: string,
   supabase: any
 ) {
   try {
@@ -1368,7 +1368,7 @@ async function syncCampuses(
       'https://api.planningcenteronline.com/people/v2/campuses',
       {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       }
