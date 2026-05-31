@@ -67,6 +67,7 @@ const App = () => (
               <Route path="/invite/:token" element={<InvitePage />} />
               <Route path="/groups/directory" element={<GroupDirectoryPage />} />
               <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
+              <Route path="/pco/callback" element={<PcoCallbackPage />} />
               
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
