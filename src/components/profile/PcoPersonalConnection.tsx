@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Link2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { Link2, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Users } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface Conn {
   email: string | null;
@@ -12,19 +13,22 @@ interface Conn {
   oauth_scopes: string | null;
   provider_account_id: string | null;
   updated_at: string;
+  visible_people_synced_at: string | null;
+  visible_people_count: number | null;
 }
 
 export function PcoPersonalConnection({ organizationId }: { organizationId?: string }) {
   const [conn, setConn] = useState<Conn | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const load = async () => {
     if (!organizationId) { setLoading(false); return; }
     setLoading(true);
     const { data } = await supabase
       .from("user_pco_connections")
-      .select("email,status,oauth_scopes,provider_account_id,updated_at")
+      .select("email,status,oauth_scopes,provider_account_id,updated_at,visible_people_synced_at,visible_people_count")
       .eq("organization_id", organizationId)
       .maybeSingle();
     setConn((data as Conn) ?? null);
@@ -32,6 +36,14 @@ export function PcoPersonalConnection({ organizationId }: { organizationId?: str
   };
 
   useEffect(() => { load(); }, [organizationId]);
+
+  // Auto-trigger a first sync after a successful connect
+  useEffect(() => {
+    if (conn && conn.status === "active" && !conn.visible_people_synced_at && !syncing) {
+      runSync(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conn?.status, conn?.visible_people_synced_at]);
 
   const connect = async () => {
     if (!organizationId) return;
@@ -65,6 +77,23 @@ export function PcoPersonalConnection({ organizationId }: { organizationId?: str
     setBusy(false);
     if (error) toast.error(error.message);
     else { toast.success("Planning Center account disconnected"); load(); }
+  };
+
+  const runSync = async (silent = false) => {
+    if (!organizationId) return;
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("pco-sync-user-permissions", {
+        body: { organizationId },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Sync failed");
+      if (!silent) toast.success(`Synced ${data?.count ?? 0} visible people`);
+      await load();
+    } catch (e: any) {
+      if (!silent) toast.error(e.message || "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const reauth = conn?.status === "reauth_required";
@@ -108,15 +137,44 @@ export function PcoPersonalConnection({ organizationId }: { organizationId?: str
               <span className="text-muted-foreground">Signed in as:</span>{" "}
               <span className="font-medium">{conn.email ?? "—"}</span>
             </div>
+
+            {!reauth && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-3.5 w-3.5" />
+                {syncing ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Syncing visible people…
+                  </span>
+                ) : conn.visible_people_synced_at ? (
+                  <span>
+                    {conn.visible_people_count ?? 0} people visible · last synced{" "}
+                    {formatDistanceToNow(new Date(conn.visible_people_synced_at), { addSuffix: true })}
+                  </span>
+                ) : (
+                  <span>Not synced yet</span>
+                )}
+              </div>
+            )}
+
             {reauth && (
               <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3 text-sm">
                 Your Planning Center session expired. Please reconnect to continue seeing PCO data.
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={connect} disabled={busy}>
                 {reauth ? "Reconnect" : "Refresh connection"}
               </Button>
+              {!reauth && (
+                <Button variant="outline" onClick={() => runSync(false)} disabled={syncing}>
+                  {syncing ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Resync now
+                </Button>
+              )}
               <Button variant="ghost" onClick={disconnect} disabled={busy}>
                 Disconnect
               </Button>
