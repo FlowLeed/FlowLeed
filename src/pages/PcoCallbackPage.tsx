@@ -16,6 +16,10 @@ export default function PcoCallbackPage() {
 
     const code = params.get('code');
     const state = params.get('state');
+    const dedupeKey = `pco_cb_${state}`;
+    if (state && sessionStorage.getItem(dedupeKey)) return;
+    if (state) sessionStorage.setItem(dedupeKey, '1');
+
     const oauthError = params.get('error');
 
     if (oauthError) {
@@ -32,9 +36,15 @@ export default function PcoCallbackPage() {
       const { data, error } = await supabase.functions.invoke('pco-oauth-callback', {
         body: { code, state, redirectOrigin: window.location.origin },
       });
-      if (error || data?.error) {
-        const msg = data?.message || data?.detail || data?.error || error?.message || 'Connection failed';
-        console.error('[pco-callback] failed', { error, data });
+      let errBody: any = data;
+      if (error && (error as any).context?.json) {
+        try { errBody = await (error as any).context.json(); } catch {}
+      } else if (error && (error as any).context?.text) {
+        try { errBody = { error: await (error as any).context.text() }; } catch {}
+      }
+      if (error || errBody?.error) {
+        const msg = errBody?.message || errBody?.detail || errBody?.error || error?.message || 'Connection failed';
+        console.error('[pco-callback] failed', { error, errBody });
         setError(msg);
         toast.error(msg);
         return;
