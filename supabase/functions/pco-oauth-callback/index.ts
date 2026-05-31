@@ -57,9 +57,14 @@ Deno.serve(async (req) => {
       .eq('state', state);
 
     // Exchange code → tokens
-    const clientId = Deno.env.get('PCO_OAUTH_CLIENT_ID')!;
-    const clientSecret = Deno.env.get('PCO_OAUTH_CLIENT_SECRET')!;
+    const clientId = Deno.env.get('PCO_OAUTH_CLIENT_ID');
+    const clientSecret = Deno.env.get('PCO_OAUTH_CLIENT_SECRET');
+    if (!clientId || !clientSecret) {
+      console.error('[pco-oauth-callback] missing PCO_OAUTH_CLIENT_ID/SECRET env');
+      return json({ error: 'PCO OAuth not configured (missing client id/secret)' }, 500);
+    }
     const redirectUri = `${redirectOrigin.replace(/\/$/, '')}/pco/callback`;
+    console.log('[pco-oauth-callback] exchanging code', { redirectUri, purpose: stateRow.purpose });
 
     const tokRes = await fetch(PCO_TOKEN_URL, {
       method: 'POST',
@@ -78,6 +83,7 @@ Deno.serve(async (req) => {
       return json({ error: 'Token exchange failed', detail: txt }, 400);
     }
     const tok = await tokRes.json();
+    console.log('[pco-oauth-callback] got tokens, scope=', tok.scope);
     const accessToken = tok.access_token as string;
     const refreshToken = tok.refresh_token as string;
     const expiresAt = new Date(Date.now() + (tok.expires_in ?? 7200) * 1000).toISOString();
@@ -91,9 +97,10 @@ Deno.serve(async (req) => {
     if (!meRes.ok) {
       const txt = await meRes.text();
       console.error('[pco-oauth-callback] /me failed', meRes.status, txt);
-      return json({ error: 'Failed to load PCO profile' }, 502);
+      return json({ error: 'Failed to load PCO profile', detail: txt }, 502);
     }
     const meJson = await meRes.json();
+    console.log('[pco-oauth-callback] /me ok', { hasIncluded: !!meJson?.included });
     const pcPersonId: string = meJson?.data?.id ?? '';
     const email: string | null = meJson?.data?.attributes?.email_addresses?.[0]?.address
       ?? meJson?.data?.attributes?.login_identifier
@@ -103,6 +110,7 @@ Deno.serve(async (req) => {
     const orgInc = (meJson?.included ?? []).find((x: any) =>
       x.type === 'Organization' && x.id === providerAccountId);
     const providerAccountName: string | null = orgInc?.attributes?.name ?? null;
+
 
     if (stateRow.purpose === 'org') {
       // Find or create integration row
