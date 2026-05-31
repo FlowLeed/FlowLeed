@@ -296,8 +296,6 @@ const IntegrationsPage = () => {
       return;
     }
     setOauthLoading(true);
-    // Open a blank tab synchronously so popup blockers don't kill it during the await.
-    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
     // Use the top-level window's origin when we're inside the Lovable preview iframe,
     // so the OAuth redirect_uri matches what's registered in PCO and the callback page loads.
     let topOrigin = window.location.origin;
@@ -319,22 +317,17 @@ const IntegrationsPage = () => {
       if (error || !data?.authorizeUrl) {
         throw new Error(data?.error || error?.message || 'Failed to start OAuth');
       }
-      if (popup && !popup.closed) {
-        popup.location.href = data.authorizeUrl;
-      } else {
-        // Popup blocked — break out of the iframe to top, or fall back to current window.
-        try {
-          if (window.top) {
-            window.top.location.href = data.authorizeUrl;
-          } else {
-            window.location.href = data.authorizeUrl;
-          }
-        } catch {
+      // Redirect the top-level window (breaks out of the Lovable preview iframe).
+      try {
+        if (window.top) {
+          window.top.location.href = data.authorizeUrl;
+        } else {
           window.location.href = data.authorizeUrl;
         }
+      } catch {
+        window.location.href = data.authorizeUrl;
       }
     } catch (e: any) {
-      if (popup && !popup.closed) popup.close();
       toast.error(e.message);
       setOauthLoading(false);
     }
