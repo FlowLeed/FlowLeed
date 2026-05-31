@@ -2243,6 +2243,7 @@ export type Database = {
           onboarding_progress: Json | null
           onboarding_stage_entered_at: string | null
           onboarding_step: string | null
+          pco_enforce_user_permissions: boolean
           plan_price: number | null
           plan_tier: string | null
           primary_contact_email: string | null
@@ -2273,6 +2274,7 @@ export type Database = {
           onboarding_progress?: Json | null
           onboarding_stage_entered_at?: string | null
           onboarding_step?: string | null
+          pco_enforce_user_permissions?: boolean
           plan_price?: number | null
           plan_tier?: string | null
           primary_contact_email?: string | null
@@ -2303,6 +2305,7 @@ export type Database = {
           onboarding_progress?: Json | null
           onboarding_stage_entered_at?: string | null
           onboarding_step?: string | null
+          pco_enforce_user_permissions?: boolean
           plan_price?: number | null
           plan_tier?: string | null
           primary_contact_email?: string | null
@@ -3359,6 +3362,8 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          visible_people_count: number
+          visible_people_synced_at: string | null
         }
         Insert: {
           created_at?: string
@@ -3376,6 +3381,8 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          visible_people_count?: number
+          visible_people_synced_at?: string | null
         }
         Update: {
           created_at?: string
@@ -3393,6 +3400,8 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          visible_people_count?: number
+          visible_people_synced_at?: string | null
         }
         Relationships: []
       }
@@ -3425,6 +3434,27 @@ export type Database = {
           organization_id?: string
           selected_field_ids?: string[]
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_pco_visible_people: {
+        Row: {
+          organization_id: string
+          pc_person_id: string
+          synced_at: string
+          user_id: string
+        }
+        Insert: {
+          organization_id: string
+          pc_person_id: string
+          synced_at?: string
+          user_id: string
+        }
+        Update: {
+          organization_id?: string
+          pc_person_id?: string
+          synced_at?: string
           user_id?: string
         }
         Relationships: []
@@ -3614,6 +3644,10 @@ export type Database = {
         Args: { org_id: string }
         Returns: number
       }
+      can_user_see_contact: {
+        Args: { _contact_id: string; _user: string }
+        Returns: boolean
+      }
       create_assignment_notification: {
         Args: {
           _contact_id: string
@@ -3743,6 +3777,10 @@ export type Database = {
         }
         Returns: string
       }
+      replace_user_pco_visible_people: {
+        Args: { _ids: string[]; _org: string; _user: string }
+        Returns: number
+      }
       seed_default_moment_types: {
         Args: { org_id: string }
         Returns: undefined
@@ -3775,6 +3813,10 @@ export type Database = {
       track_user_login: {
         Args: { p_org_id: string; p_user_id: string }
         Returns: undefined
+      }
+      user_has_active_pco_connection: {
+        Args: { _org: string; _user: string }
+        Returns: boolean
       }
     }
     Enums: {
