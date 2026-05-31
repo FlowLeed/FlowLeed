@@ -289,6 +289,30 @@ const IntegrationsPage = () => {
       secret: planningCenterForm.secret
     });
   };
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const handleConnectPcoOAuth = async () => {
+    if (!userOrgData?.organization_id) {
+      toast.error('No organization');
+      return;
+    }
+    setOauthLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pco-oauth-start', {
+        body: {
+          organizationId: userOrgData.organization_id,
+          purpose: 'org',
+          redirectOrigin: window.location.origin,
+        },
+      });
+      if (error || !data?.authorizeUrl) {
+        throw new Error(data?.error || error?.message || 'Failed to start OAuth');
+      }
+      window.location.href = data.authorizeUrl;
+    } catch (e: any) {
+      toast.error(e.message);
+      setOauthLoading(false);
+    }
+  };
   const handlePlanningCenterDisconnect = () => {
     if (planningCenterIntegration) {
       deleteIntegrationMutation.mutate(planningCenterIntegration.id);
@@ -506,7 +530,36 @@ const IntegrationsPage = () => {
                 </div>
               </div>
             )}
-            
+
+            {/* OAuth: connected account label */}
+            {planningCenterIntegration?.auth_type === 'oauth' && planningCenterIntegration?.provider_account_name && (
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-sm">
+                <span className="text-muted-foreground">Connected to:</span>{' '}
+                <span className="font-medium text-foreground">{planningCenterIntegration.provider_account_name}</span>
+                {planningCenterIntegration.oauth_scopes && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    ({planningCenterIntegration.oauth_scopes})
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* OAuth: primary connect CTA when nothing is connected */}
+            {!planningCenterIntegration && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-sm">Connect with OAuth (recommended)</h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sign in with your Planning Center account — no manual tokens, automatic refresh, and stays connected to a specific PCO organization.
+                  </p>
+                </div>
+                <Button onClick={handleConnectPcoOAuth} disabled={oauthLoading || !userOrgData?.organization_id}>
+                  {oauthLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  Connect Planning Center
+                </Button>
+              </div>
+            )}
+
             {!planningCenterIntegration && (
               <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                 <h4 className="font-medium text-sm flex items-center gap-2">

@@ -382,6 +382,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "church_online_events_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "church_online_events_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -453,6 +460,13 @@ export type Database = {
             columns: ["integration_id"]
             isOneToOne: false
             referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_online_flow_automations_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations_public"
             referencedColumns: ["id"]
           },
           {
@@ -1658,6 +1672,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "integration_list_mappings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "integration_list_mappings_pipeline_id_fkey"
             columns: ["pipeline_id"]
             isOneToOne: false
@@ -1751,10 +1772,18 @@ export type Database = {
             referencedRelation: "integrations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "integration_logs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       integrations: {
         Row: {
+          auth_type: string
           auto_sync_all_people: boolean | null
           created_at: string
           credentials: Json
@@ -1762,7 +1791,14 @@ export type Database = {
           last_full_sync_completed_at: string | null
           last_sync_at: string | null
           metadata: Json | null
+          oauth_access_token: string | null
+          oauth_connected_by_user_id: string | null
+          oauth_refresh_token: string | null
+          oauth_scopes: string | null
+          oauth_token_expires_at: string | null
           organization_id: string
+          provider_account_id: string | null
+          provider_account_name: string | null
           service_name: string
           settings: Json
           status: string
@@ -1771,6 +1807,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auth_type?: string
           auto_sync_all_people?: boolean | null
           created_at?: string
           credentials?: Json
@@ -1778,7 +1815,14 @@ export type Database = {
           last_full_sync_completed_at?: string | null
           last_sync_at?: string | null
           metadata?: Json | null
+          oauth_access_token?: string | null
+          oauth_connected_by_user_id?: string | null
+          oauth_refresh_token?: string | null
+          oauth_scopes?: string | null
+          oauth_token_expires_at?: string | null
           organization_id: string
+          provider_account_id?: string | null
+          provider_account_name?: string | null
           service_name: string
           settings?: Json
           status?: string
@@ -1787,6 +1831,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auth_type?: string
           auto_sync_all_people?: boolean | null
           created_at?: string
           credentials?: Json
@@ -1794,7 +1839,14 @@ export type Database = {
           last_full_sync_completed_at?: string | null
           last_sync_at?: string | null
           metadata?: Json | null
+          oauth_access_token?: string | null
+          oauth_connected_by_user_id?: string | null
+          oauth_refresh_token?: string | null
+          oauth_scopes?: string | null
+          oauth_token_expires_at?: string | null
           organization_id?: string
+          provider_account_id?: string | null
+          provider_account_name?: string | null
           service_name?: string
           settings?: Json
           status?: string
@@ -2407,6 +2459,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pco_moment_mappings_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pco_moment_mappings_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -2421,6 +2480,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pco_oauth_states: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          organization_id: string
+          purpose: string
+          redirect_to: string | null
+          state: string
+          user_id: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          organization_id: string
+          purpose: string
+          redirect_to?: string | null
+          state: string
+          user_id: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          organization_id?: string
+          purpose?: string
+          redirect_to?: string | null
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       pco_sync_debug_logs: {
         Row: {
@@ -2515,6 +2607,13 @@ export type Database = {
             columns: ["integration_id"]
             isOneToOne: false
             referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pco_sync_jobs_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations_public"
             referencedColumns: ["id"]
           },
           {
@@ -3243,6 +3342,60 @@ export type Database = {
           },
         ]
       }
+      user_pco_connections: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          oauth_access_token: string | null
+          oauth_refresh_token: string | null
+          oauth_scopes: string | null
+          oauth_token_expires_at: string | null
+          organization_id: string
+          pc_person_id: string | null
+          permissions_json: Json
+          permissions_refreshed_at: string | null
+          provider_account_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          oauth_access_token?: string | null
+          oauth_refresh_token?: string | null
+          oauth_scopes?: string | null
+          oauth_token_expires_at?: string | null
+          organization_id: string
+          pc_person_id?: string | null
+          permissions_json?: Json
+          permissions_refreshed_at?: string | null
+          provider_account_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          oauth_access_token?: string | null
+          oauth_refresh_token?: string | null
+          oauth_scopes?: string | null
+          oauth_token_expires_at?: string | null
+          organization_id?: string
+          pc_person_id?: string | null
+          permissions_json?: Json
+          permissions_refreshed_at?: string | null
+          provider_account_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_pco_field_preferences: {
         Row: {
           created_at: string
@@ -3296,6 +3449,72 @@ export type Database = {
         }
         Relationships: []
       }
+      integrations_public: {
+        Row: {
+          auth_type: string | null
+          auto_sync_all_people: boolean | null
+          created_at: string | null
+          id: string | null
+          last_full_sync_completed_at: string | null
+          last_sync_at: string | null
+          metadata: Json | null
+          oauth_connected_by_user_id: string | null
+          oauth_scopes: string | null
+          oauth_token_expires_at: string | null
+          organization_id: string | null
+          provider_account_id: string | null
+          provider_account_name: string | null
+          service_name: string | null
+          settings: Json | null
+          status: string | null
+          sync_frequency: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          auth_type?: string | null
+          auto_sync_all_people?: boolean | null
+          created_at?: string | null
+          id?: string | null
+          last_full_sync_completed_at?: string | null
+          last_sync_at?: string | null
+          metadata?: Json | null
+          oauth_connected_by_user_id?: string | null
+          oauth_scopes?: string | null
+          oauth_token_expires_at?: string | null
+          organization_id?: string | null
+          provider_account_id?: string | null
+          provider_account_name?: string | null
+          service_name?: string | null
+          settings?: Json | null
+          status?: string | null
+          sync_frequency?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          auth_type?: string | null
+          auto_sync_all_people?: boolean | null
+          created_at?: string | null
+          id?: string | null
+          last_full_sync_completed_at?: string | null
+          last_sync_at?: string | null
+          metadata?: Json | null
+          oauth_connected_by_user_id?: string | null
+          oauth_scopes?: string | null
+          oauth_token_expires_at?: string | null
+          organization_id?: string | null
+          provider_account_id?: string | null
+          provider_account_name?: string | null
+          service_name?: string | null
+          settings?: Json | null
+          status?: string | null
+          sync_frequency?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       organization_health_view: {
         Row: {
           active_users: number | null
@@ -3316,6 +3535,54 @@ export type Database = {
           slug: string | null
           subscription_status: string | null
           total_logins_30d: number | null
+        }
+        Relationships: []
+      }
+      user_pco_connections_public: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string | null
+          oauth_scopes: string | null
+          oauth_token_expires_at: string | null
+          organization_id: string | null
+          pc_person_id: string | null
+          permissions_json: Json | null
+          permissions_refreshed_at: string | null
+          provider_account_id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          oauth_scopes?: string | null
+          oauth_token_expires_at?: string | null
+          organization_id?: string | null
+          pc_person_id?: string | null
+          permissions_json?: Json | null
+          permissions_refreshed_at?: string | null
+          provider_account_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          oauth_scopes?: string | null
+          oauth_token_expires_at?: string | null
+          organization_id?: string | null
+          pc_person_id?: string | null
+          permissions_json?: Json | null
+          permissions_refreshed_at?: string | null
+          provider_account_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
