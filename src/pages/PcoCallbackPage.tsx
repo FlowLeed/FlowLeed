@@ -20,8 +20,6 @@ export default function PcoCallbackPage() {
     if (state && sessionStorage.getItem(dedupeKey)) return;
     if (state) sessionStorage.setItem(dedupeKey, '1');
 
-    const code = params.get('code');
-    const state = params.get('state');
     const oauthError = params.get('error');
 
     if (oauthError) {
