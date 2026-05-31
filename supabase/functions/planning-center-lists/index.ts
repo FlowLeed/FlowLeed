@@ -673,16 +673,7 @@ async function syncSingleList(mapping: any, userId: string) {
     throw new Error('Integration not found');
   }
 
-  // Access credentials properly from JSON field
-  const credentials = integration.credentials as any;
-  const application_id = credentials?.application_id;
-  const secret = credentials?.secret;
-  
-  if (!application_id || !secret) {
-    throw new Error('Missing Planning Center credentials');
-  }
-  
-  const auth = btoa(`${application_id}:${secret}`);
+  const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, mapping.integration_id);
   
   console.log('Fetching PC list members for list:', mapping.external_list_id);
 
@@ -698,7 +689,7 @@ async function syncSingleList(mapping: any, userId: string) {
     
     const response = await fetch(nextUrl, {
       headers: {
-        'Authorization': `Basic ${auth}`,
+        'Authorization': pcoAuthHeader,
         'Content-Type': 'application/json',
       },
     });
@@ -904,7 +895,10 @@ async function autoSyncAllMappings() {
           const secret = creds?.secret;
           if (appId && secret) {
             const auth = btoa(`${appId}:${secret}`);
-            await syncCampusesFromPCO(integration.organization_id, auth);
+            await syncCampusesFromPCO(integration.organization_id, `Basic ${auth}`);
+          } else {
+            const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integration.id);
+            await syncCampusesFromPCO(integration.organization_id, pcoAuthHeader);
           }
         } catch (e) {
           console.warn(`Campus sync failed for org ${integration.organization_id}:`, e);
