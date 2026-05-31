@@ -513,7 +513,7 @@ async function processPersonData(
   person: any,
   organizationId: string,
   mapping: any,
-  auth: string,
+  pcoAuthHeader: string,
   supabase: any,
   hasPrefetchedData: boolean = false
 ) {
@@ -528,7 +528,7 @@ async function processPersonData(
       `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}?include=emails,phone_numbers,addresses,households,field_data`,
       {
         headers: {
-          'Authorization': `Basic ${auth}`,
+          'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       }
@@ -688,10 +688,10 @@ async function processPersonData(
   }
 
   // Sync demographic data - pass pre-fetched data if available to avoid API calls
-  await syncDemographicData(contact.id, pcPersonId, auth, supabase, person.included_data);
+  await syncDemographicData(contact.id, pcPersonId, pcoAuthHeader, supabase, person.included_data);
   
   // Sync flow moments from custom field data - pass pre-fetched data if available
-  await syncFlowMomentsFromFieldData(contact.id, organizationId, pcPersonId, auth, supabase, person.included_data);
+  await syncFlowMomentsFromFieldData(contact.id, organizationId, pcPersonId, pcoAuthHeader, supabase, person.included_data);
 }
 
 // Helper function to sync demographic data from Planning Center
