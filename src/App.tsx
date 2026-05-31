@@ -43,6 +43,7 @@ const CommunicationsPage = lazy(() => import("./pages/admin/CommunicationsPage")
 const SuperAdminProfilePage = lazy(() => import("./pages/admin/SuperAdminProfilePage"));
 const GroupPublicSignupPage = lazy(() => import("./pages/GroupPublicSignupPage"));
 const GroupDirectoryPage = lazy(() => import("./pages/GroupDirectoryPage"));
+const PcoCallbackPage = lazy(() => import("./pages/PcoCallbackPage"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
