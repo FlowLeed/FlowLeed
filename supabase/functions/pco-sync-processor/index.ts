@@ -971,7 +971,7 @@ async function syncFlowMomentsFromFieldData(
   contactId: string,
   organizationId: string,
   pcPersonId: string,
-  auth: string,
+  pcoAuthHeader: string,
   supabase: any,
   includedData?: any
 ) {
@@ -1021,7 +1021,7 @@ async function syncFlowMomentsFromFieldData(
         `https://api.planningcenteronline.com/people/v2/people/${pcPersonId}/field_data?include=field_definition`,
         {
           headers: {
-            'Authorization': `Basic ${auth}`,
+            'Authorization': pcoAuthHeader,
             'Content-Type': 'application/json',
           },
         }
