@@ -296,19 +296,45 @@ const IntegrationsPage = () => {
       return;
     }
     setOauthLoading(true);
+    // Open a blank tab synchronously so popup blockers don't kill it during the await.
+    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
+    // Use the top-level window's origin when we're inside the Lovable preview iframe,
+    // so the OAuth redirect_uri matches what's registered in PCO and the callback page loads.
+    let topOrigin = window.location.origin;
+    try {
+      if (window.top && window.top.location && window.top.location.origin) {
+        topOrigin = window.top.location.origin;
+      }
+    } catch {
+      // Cross-origin top — fall back to current origin.
+    }
     try {
       const { data, error } = await supabase.functions.invoke('pco-oauth-start', {
         body: {
           organizationId: userOrgData.organization_id,
           purpose: 'org',
-          redirectOrigin: window.location.origin,
+          redirectOrigin: topOrigin,
         },
       });
       if (error || !data?.authorizeUrl) {
         throw new Error(data?.error || error?.message || 'Failed to start OAuth');
       }
-      window.location.href = data.authorizeUrl;
+      if (popup && !popup.closed) {
+        popup.location.href = data.authorizeUrl;
+      } else {
+        // Popup blocked — break out of the iframe to top, or fall back to current window.
+        try {
+          if (window.top) {
+            window.top.location.href = data.authorizeUrl;
+          } else {
+            window.location.href = data.authorizeUrl;
+          }
+        } catch {
+          window.location.href = data.authorizeUrl;
+        }
+      }
     } catch (e: any) {
+      if (popup && !popup.closed) popup.close();
       toast.error(e.message);
       setOauthLoading(false);
     }
