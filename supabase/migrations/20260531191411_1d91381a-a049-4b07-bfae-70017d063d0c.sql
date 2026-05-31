@@ -1,0 +1,1 @@
+ALTER TABLE public.integrations ALTER COLUMN sync_frequency SET DEFAULT 'daily';
