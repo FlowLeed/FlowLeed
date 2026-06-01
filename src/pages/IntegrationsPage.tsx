@@ -575,6 +575,32 @@ const IntegrationsPage = () => {
               </div>
             )}
 
+            {/* Legacy PAT → OAuth migration prompt */}
+            {planningCenterIntegration?.auth_type === 'pat' && planningCenterIntegration?.status !== 'reauth_required' && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-amber-700 dark:text-amber-400 mb-1">
+                      Upgrade to OAuth connection
+                    </h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      You're connected with a legacy Personal Access Token. Switching to OAuth removes the need to manage tokens manually, refreshes automatically, and unlocks per-user permission enforcement. Your sync settings and mappings are preserved.
+                    </p>
+                    <Button
+                      size="sm"
+                      onClick={handleConnectPcoOAuth}
+                      disabled={oauthLoading || !userOrgData?.organization_id}
+                    >
+                      {oauthLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                      Switch to OAuth
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
             {/* OAuth: connected account label */}
             {planningCenterIntegration?.auth_type === 'oauth' && planningCenterIntegration?.provider_account_name && (
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-sm">
