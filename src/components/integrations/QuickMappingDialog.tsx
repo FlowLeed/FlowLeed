@@ -56,6 +56,7 @@ export function QuickMappingDialog({
   const [selectedListId, setSelectedListId] = useState<string>('');
   const [selectedFlowId, setSelectedFlowId] = useState<string>('');
   const [selectedStageId, setSelectedStageId] = useState<string>('');
+  const [listPopoverOpen, setListPopoverOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
