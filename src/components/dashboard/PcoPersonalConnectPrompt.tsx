@@ -30,14 +30,20 @@ export function PcoPersonalConnectPrompt() {
 
       // Only prompt if the org actually uses Planning Center on OAuth
       const { data: integ } = await supabase
-        .from("integrations")
-        .select("auth_type,status")
+        .from("integrations_public")
+        .select("auth_type,status,oauth_connected_by_user_id")
         .eq("organization_id", organization.id)
         .eq("service_name", "planning_center")
         .maybeSingle();
 
       if (!integ || integ.auth_type !== "oauth") {
         setStatus("na");
+        return;
+      }
+
+      // If this user is the one who connected the org-level OAuth, treat as connected.
+      if (integ.oauth_connected_by_user_id === user.id) {
+        setStatus("ok");
         return;
       }
 
@@ -66,6 +72,7 @@ export function PcoPersonalConnectPrompt() {
     };
     check();
   }, [user?.id, organization?.id]);
+
 
   const dismissDialog = () => {
     if (user?.id && organization?.id) {
