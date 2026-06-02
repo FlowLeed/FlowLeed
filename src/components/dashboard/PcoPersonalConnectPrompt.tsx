@@ -134,7 +134,7 @@ export function PcoPersonalConnectPrompt() {
             <DialogDescription>
               {isReauth
                 ? "Your Planning Center session expired. Reconnect so FlowLeed keeps showing the people you can see in PCO."
-                : "Sign in with your personal Planning Center account so FlowLeed only shows you the people and data you can see in PCO."}
+                : "Connect Planning Center to FlowLeed so you can turn data into care, follow-up, and real ministry action."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
