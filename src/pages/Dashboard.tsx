@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PcoPersonalConnectPrompt } from "@/components/dashboard/PcoPersonalConnectPrompt";
 
 
 const Dashboard = () => {
@@ -147,6 +148,8 @@ const Dashboard = () => {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
+
+      <PcoPersonalConnectPrompt />
 
       {shouldShowOnboarding && (
         <OnboardingProgressBar
