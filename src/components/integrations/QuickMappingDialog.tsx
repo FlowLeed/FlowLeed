@@ -403,29 +403,65 @@ export function QuickMappingDialog({
                 </Tooltip>
               </div>
               
-              <Select value={selectedListId} onValueChange={setSelectedListId} disabled={listsLoading || refreshListsMutation.isPending}>
-                <SelectTrigger>
-                  <SelectValue 
-                    placeholder={
-                      listsLoading || refreshListsMutation.isPending 
-                        ? "Loading latest lists..." 
-                        : "Select a Planning Center list"
-                    } 
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {cachedLists?.map((list) => (
-                    <SelectItem key={list.external_list_id} value={list.external_list_id}>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">{list.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {list.member_count} people • {list.list_type || 'Static'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {(() => {
+                const selectedList = cachedLists?.find(l => l.external_list_id === selectedListId);
+                const disabled = listsLoading || refreshListsMutation.isPending;
+                return (
+                  <Popover open={listPopoverOpen} onOpenChange={setListPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={listPopoverOpen}
+                        disabled={disabled}
+                        className="w-full justify-between font-normal"
+                      >
+                        {selectedList ? (
+                          <span className="truncate">{selectedList.name}</span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {disabled ? 'Loading latest lists...' : 'Select a Planning Center list'}
+                          </span>
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search lists..." />
+                        <CommandList>
+                          <CommandEmpty>No lists found.</CommandEmpty>
+                          <CommandGroup>
+                            {cachedLists?.map((list) => (
+                              <CommandItem
+                                key={list.external_list_id}
+                                value={list.name}
+                                onSelect={() => {
+                                  setSelectedListId(list.external_list_id);
+                                  setListPopoverOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    selectedListId === list.external_list_id ? 'opacity-100' : 'opacity-0'
+                                  )}
+                                />
+                                <div className="flex flex-col items-start min-w-0">
+                                  <span className="font-medium truncate">{list.name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {list.member_count} people • {list.list_type || 'Static'}
+                                  </span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                );
+              })()}
               
               {(listsLoading || refreshListsMutation.isPending) && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
