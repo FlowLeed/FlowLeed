@@ -149,6 +149,8 @@ const Dashboard = () => {
     <div className="flex flex-col h-full overflow-hidden">
       <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
 
+      <PcoPersonalConnectPrompt />
+
       {shouldShowOnboarding && (
         <OnboardingProgressBar
           currentStep={isOwner ? ownerOnboarding.currentStep : memberOnboarding.currentStep}
