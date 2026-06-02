@@ -45,6 +45,7 @@ export function PcoPersonalConnectPrompt() {
         .from("user_pco_connections")
         .select("status")
         .eq("organization_id", organization.id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       let next: Status;
