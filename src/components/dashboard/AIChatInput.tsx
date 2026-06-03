@@ -60,7 +60,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
           onInput={handleInput}
           placeholder="Ask about your people, tasks, church health..."
           rows={2}
-          className="w-full resize-none bg-transparent px-4 py-2 text-sm leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none"
+          className="w-full resize-none bg-transparent px-4 py-2 text-base md:text-sm leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none"
           disabled={isLoading}
         />
         <div className="flex items-center justify-end px-3 pb-3">
