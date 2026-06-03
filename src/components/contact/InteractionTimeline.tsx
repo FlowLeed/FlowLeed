@@ -153,17 +153,17 @@ export const InteractionTimeline: React.FC<InteractionTimelineProps> = ({
                 </div>
                 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge className={getInteractionColor(interaction.interaction_type)}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+                    <div className="flex items-start gap-2 min-w-0 flex-wrap">
+                      <Badge className={`${getInteractionColor(interaction.interaction_type)} whitespace-nowrap shrink-0`}>
                         {getInteractionIcon(interaction.interaction_type)}
-                        <span className="ml-1 capitalize">{interaction.interaction_type}</span>
+                        <span className="ml-1 capitalize">{interaction.interaction_type.replace(/_/g, ' ')}</span>
                       </Badge>
                       {interaction.subject && (
-                        <span className="text-sm font-medium">{interaction.subject}</span>
+                        <span className="text-sm font-medium min-w-0 break-words">{interaction.subject}</span>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                       {formatDistanceToNow(new Date(interaction.completed_at || interaction.created_at), { 
                         addSuffix: true 
                       })}
