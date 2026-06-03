@@ -6,7 +6,6 @@ import { useTasksPageData, useAllScheduledTasks } from "@/hooks/useTasksPageData
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { TaskContactRow } from "@/components/tasks/TaskContactRow";
 import { ScheduledTaskItem } from "@/components/tasks/ScheduledTaskItem";
-import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { PersonalMetrics } from "@/components/dashboard/PersonalMetrics";
 import { TeamActivityFeed } from "@/components/dashboard/TeamActivityFeed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
