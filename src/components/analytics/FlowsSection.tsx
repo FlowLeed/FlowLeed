@@ -110,7 +110,7 @@ export const FlowsSection = () => {
                 radius={[8, 8, 0, 0]}
                 onClick={(data) => {
                   const flow = flows?.find((f) => f.name === data.name);
-                  if (flow) navigate(`/flows/${flow.id}`);
+                  if (flow) navigate(`/flows/${flow.id}/analytics`);
                 }}
                 className="cursor-pointer"
               />
@@ -148,7 +148,7 @@ export const FlowsSection = () => {
                   <TableRow
                     key={flow.id}
                     className="cursor-pointer"
-                    onClick={() => navigate(`/flows/${flow.id}`)}
+                    onClick={() => navigate(`/flows/${flow.id}/analytics`)}
                   >
                     <TableCell className="font-light">{flow.name}</TableCell>
                     <TableCell className="text-right">{flow.activePeople ?? 0}</TableCell>
