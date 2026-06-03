@@ -32,49 +32,8 @@ const GroupsPage = () => {
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [selectedSource, setSelectedSource] = useState<"all" | "pco" | "flowleed">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [syncing, setSyncing] = useState(false);
   const queryClient = useQueryClient();
 
-  const handleSyncFromPco = async () => {
-    if (!organization?.id) return;
-    setSyncing(true);
-    try {
-      const { data: integ } = await supabase
-        .from("integrations")
-        .select("id")
-        .eq("organization_id", organization.id)
-        .eq("service_name", "planning_center")
-        .eq("status", "active")
-        .maybeSingle();
-      if (!integ) { toast.error("Planning Center not connected"); return; }
-      toast.info("Syncing groups…", { description: "This may take a minute." });
-      let more = true, safety = 0;
-      while (more && safety < 10) {
-        safety++;
-        const { data, error } = await supabase.functions.invoke("pco-sync-groups", {
-          body: { integrationId: integ.id },
-        });
-        if (error) throw error;
-        more = !!data?.hasMore;
-      }
-      toast.info("Syncing attendance…");
-      more = true; safety = 0;
-      while (more && safety < 10) {
-        safety++;
-        const { data, error } = await supabase.functions.invoke("pco-sync-group-attendance", {
-          body: { integrationId: integ.id },
-        });
-        if (error) throw error;
-        more = !!data?.hasMore;
-      }
-      toast.success("Groups synced from Planning Center");
-      queryClient.invalidateQueries({ queryKey: ["groups"] });
-    } catch (e: any) {
-      toast.error("Sync failed", { description: e.message });
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   if (!organization) {
     return (
