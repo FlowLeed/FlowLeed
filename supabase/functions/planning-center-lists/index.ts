@@ -204,34 +204,72 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
 
 async function fetchPlanningCenterLists(integrationId: string, userId: string) {
   try {
-    console.log('Fetching PC lists for integration:', integrationId);
-    
-    // Get integration credentials
+    console.log('Fetching PC lists for integration:', integrationId, 'user:', userId);
+
+    // Get integration to derive organization_id and detect the org-OAuth connector
     const { data: integration, error: integrationError } = await supabase
       .from('integrations')
-      .select('credentials, settings, organization_id')
+      .select('organization_id, oauth_connected_by_user_id, auth_type')
       .eq('id', integrationId)
       .single();
 
     if (integrationError || !integration) {
       console.error('Integration not found:', integrationError);
-      return new Response('Integration not found', { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Integration not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Fetch ALL lists from Planning Center API with pagination
-    const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
+    // Resolve auth header per-user. If the caller is the one who connected
+    // the org-level OAuth, fall back to the org token (their access == org access).
+    let pcoAuthHeader: string;
+    try {
+      const isOrgConnector =
+        integration.auth_type === 'oauth' &&
+        integration.oauth_connected_by_user_id === userId;
+
+      if (isOrgConnector) {
+        const bundle = await getPcoAuthHeader(supabase, integrationId);
+        pcoAuthHeader = bundle.header;
+      } else {
+        pcoAuthHeader = await getUserPcoAuthHeader(
+          supabase,
+          userId,
+          integration.organization_id,
+        );
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg === 'USER_PCO_NOT_CONNECTED' || msg === 'USER_PCO_REAUTH_REQUIRED') {
+        return new Response(JSON.stringify({ error: msg }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      throw e;
+    }
+
+    // Fetch ALL lists visible to this user from PCO with pagination
     let allLists: any[] = [];
     let nextUrl: string | null = 'https://api.planningcenteronline.com/people/v2/lists?per_page=100';
 
     while (nextUrl) {
       console.log(`Fetching lists from: ${nextUrl}`);
-      
+
       const response = await fetch(nextUrl, {
         headers: {
           'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
       });
+
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: 'USER_PCO_REAUTH_REQUIRED' }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`PC API error: ${response.status}`);
@@ -240,35 +278,13 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
       const data = await response.json();
       const lists = data.data || [];
       allLists = allLists.concat(lists);
-      
-      // Check for next page
+
       nextUrl = data.links?.next || null;
-      
+
       console.log(`Fetched ${lists.length} lists, total so far: ${allLists.length}`);
     }
 
     console.log(`Total lists fetched: ${allLists.length}`);
-
-    // First, delete old cached metadata for this integration to avoid duplicates
-    await supabase
-      .from('integration_list_metadata')
-      .delete()
-      .eq('integration_id', integrationId);
-
-    // Cache fresh list metadata
-    for (const list of allLists) {
-      await supabase
-        .from('integration_list_metadata')
-        .insert({
-          integration_id: integrationId,
-          external_list_id: list.id,
-          name: list.attributes.name,
-          description: list.attributes.description,
-          member_count: list.attributes.total_people || 0,
-          list_type: list.attributes.list_type || 'static',
-          last_updated_at: list.attributes.updated_at,
-        });
-    }
 
     return new Response(JSON.stringify({ lists: allLists }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
