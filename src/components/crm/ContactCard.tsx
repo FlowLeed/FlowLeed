@@ -7,6 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { differenceInDays } from "date-fns";
+import { useEngagementScore } from "@/hooks/useCheckinData";
+import { EngagementBadge } from "@/components/contact/EngagementBadge";
 
 // Helper function to calculate days in current stage
 const getDaysInStage = (stageEnteredAt?: string): number => {
