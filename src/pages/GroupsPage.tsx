@@ -3,7 +3,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { useCampuses } from "@/hooks/useCampuses";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, Search, X, Filter } from "lucide-react";
+import { ExternalLink, Plus, Users, HelpCircle, Search, X, Filter } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
