@@ -1,25 +1,14 @@
-import * as amplitude from '@amplitude/analytics-browser';
+import * as amplitude from '@amplitude/unified';
 
-const API_KEY = import.meta.env.VITE_AMPLITUDE_API_KEY as string | undefined;
+const API_KEY = 'b13e88c41d7f13678b0c273d876e067c';
 
 let initialized = false;
 
 export function initAnalytics() {
-  if (initialized || !API_KEY) {
-    if (!API_KEY) {
-      console.warn('[analytics] VITE_AMPLITUDE_API_KEY not set — Amplitude disabled.');
-    }
-    return;
-  }
-  amplitude.init(API_KEY, {
-    autocapture: {
-      attribution: true,
-      pageViews: true,
-      sessions: true,
-      formInteractions: true,
-      fileDownloads: true,
-      elementInteractions: true,
-    },
+  if (initialized || typeof window === 'undefined') return;
+  amplitude.initAll(API_KEY, {
+    analytics: { autocapture: true },
+    sessionReplay: { sampleRate: 1 },
   });
   initialized = true;
 }

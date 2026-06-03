@@ -1,31 +1,41 @@
-## Goal
-Show each user only the PCO lists their **own** Planning Center account can see when creating/editing list mappings — no per-user caching.
+
+# Switch Amplitude to `@amplitude/unified` (Analytics + Session Replay)
+
+The Amplitude wizard prompt specifies the `@amplitude/unified` package (which bundles Analytics + Session Replay) and a specific `initAll(...)` call with the API key hardcoded. We previously installed `@amplitude/analytics-browser`. This plan migrates to the wizard's recommended setup.
 
 ## Changes
 
-### 1. Edge function: `supabase/functions/planning-center-lists/index.ts`
-- In the `fetchLists` action, replace `getPcoAuthHeader(supabase, integrationId)` with `getUserPcoAuthHeader(supabase, userId, organizationId)`.
-  - Derive `userId` from the JWT (function already runs with `verify_jwt = false`, so read `Authorization` header and call `supabase.auth.getUser(token)`).
-  - Look up `organization_id` from the `integrations` row using `integrationId`.
-- Catch `USER_PCO_NOT_CONNECTED` and `USER_PCO_REAUTH_REQUIRED` and return them as structured JSON errors (HTTP 200 with `{ error: 'USER_PCO_NOT_CONNECTED' }` so the client can branch).
-- Leave all other actions (org-level sync, member fetching, etc.) untouched — they continue using `getPcoAuthHeader`.
+1. **Swap the npm package**
+   - Remove `@amplitude/analytics-browser`
+   - Install `@amplitude/unified`
 
-### 2. Frontend: `src/components/integrations/PlanningCenterListBrowser.tsx`
-- Replace the `useQuery` against `integration_list_metadata` with a `useQuery` that invokes `planning-center-lists` (`action: 'fetchLists'`) and returns the live PCO response mapped to the existing `PlanningCenterList` shape.
-- Remove the separate "Refresh" mutation — the same query is refetched via `refetch()`; keep the Refresh button wired to `refetch()`.
-- Handle two new error states with inline prompts:
-  - `USER_PCO_NOT_CONNECTED` → "Connect your Planning Center account to see your lists" + link/button to profile PCO connect (reuse pattern from `PcoPersonalConnectPrompt`).
-  - `USER_PCO_REAUTH_REQUIRED` → "Your Planning Center session expired. Reconnect to continue." + same connect action.
-- Add a small loading spinner state for the live fetch (already present).
+2. **Rewrite `src/lib/analytics.ts`**
+   - Import `* as amplitude from '@amplitude/unified'`
+   - Replace `initAnalytics()` with a single `initAll` call:
+     ```ts
+     amplitude.initAll('b13e88c41d7f13678b0c273d876e067c', {
+       analytics: { autocapture: true },
+       sessionReplay: { sampleRate: 1 },
+     });
+     ```
+   - Keep the `initialized` guard so init only runs once per app lifecycle
+   - Keep helper exports already used elsewhere: `identifyUser`, `resetUser`, `trackEvent`
+   - Remove the `VITE_AMPLITUDE_API_KEY` env-var path (wizard says hardcode the key; it's a publishable client-side key)
 
-### 3. No DB migration
-- `integration_list_metadata` table stays as-is (still used elsewhere for org-level metadata / sync mappings). We simply stop reading from it in the browser.
+3. **`src/main.tsx`** — unchanged; it already calls `initAnalytics()` once at module load (client-side only, before React renders). This satisfies the "initialize once" and "client-side only" rules.
 
-## Out of scope
-- Sharing lists between users.
-- Changing how mappings sync (auto-sync keeps using the org token — mappings are org-shared resources).
-- Any change to `pipeline_contacts` or moment mappings.
+4. **`src/hooks/useAuth.tsx`** — unchanged; continues to call `identifyUser` on sign-in and `resetUser` on sign-out.
 
-## Technical notes
-- `planning-center-lists` currently has `verify_jwt = false` in `config.toml`. We'll read the user JWT manually inside the function via `supabase.auth.getUser(authHeader)` so we can identify the calling user without changing the function's public contract.
-- The existing `getUserPcoAuthHeader` helper in `_shared/pco-auth.ts` already handles refresh + reauth flagging, so no auth plumbing changes are needed.
+## Notes / Rules compliance
+
+- This is a JavaScript (React + Vite) app → SDK install is appropriate.
+- All Amplitude code lives in `src/` and runs only in the browser (no SSR in this project).
+- `initialized` flag + module-level singleton ensures `initAll` runs exactly once.
+- No new event-tracking call sites added in this pass — `autocapture: true` + `sessionReplay.sampleRate: 1` covers page views, clicks, form interactions, sessions, and full session replay automatically. Custom `trackEvent(...)` calls can be sprinkled into business handlers in a follow-up.
+
+## Verification steps (after build)
+
+1. Reload the preview and open the browser console — confirm no Amplitude warnings/errors.
+2. Click around the app to fire autocaptured events.
+3. Check the Amplitude dashboard (or the setup page that issued this wizard) to confirm events arrive.
+4. Once confirmed, ship to production.
