@@ -29,6 +29,7 @@ export interface FlowStage {
   color?: string;
   is_start_step?: boolean;
   is_end_step?: boolean;
+  description?: string | null;
   default_assignee_user_id?: string;
   defaultAssignee?: {
     name: string;
