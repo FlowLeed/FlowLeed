@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { identifyUser, resetUser } from '@/lib/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -48,6 +49,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        if (session?.user) {
+          identifyUser(session.user.id, {
+            email: session.user.email,
+          });
+        }
 
         // Track login when user signs in
         if (event === 'SIGNED_IN' && session?.user) {
@@ -147,6 +154,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     sessionStorage.removeItem('last_tracked_login');
+    resetUser();
     await supabase.auth.signOut();
   };
 
