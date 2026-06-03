@@ -353,7 +353,8 @@ export const FlowSettingsDialog = ({
               color: step.color,
               stage_order: step.stage_order,
               is_start_step: step.is_start_step || false,
-              is_end_step: step.is_end_step || false
+              is_end_step: step.is_end_step || false,
+              description: step.description ?? null
             });
 
           if (insertError) throw insertError;
@@ -366,7 +367,8 @@ export const FlowSettingsDialog = ({
               color: step.color,
               stage_order: step.stage_order,
               is_start_step: step.is_start_step || false,
-              is_end_step: step.is_end_step || false
+              is_end_step: step.is_end_step || false,
+              description: step.description ?? null
             })
             .eq('id', step.id);
 
