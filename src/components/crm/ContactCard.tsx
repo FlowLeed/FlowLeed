@@ -89,7 +89,6 @@ export const ContactCard: React.FC<ContactCardProps> = ({
                   ) : (
                     <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
                   )}
-                  <EngagementBadge score={engagementScore} compact />
                 </div>
               </>}
           </div>
