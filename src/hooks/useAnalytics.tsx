@@ -107,7 +107,6 @@ export const useFlowAnalytics = () => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
-      // SECURITY FIX: Always get organization from server-validated membership
       const { data: orgMembers } = await supabase
         .from("organization_members")
         .select("organization_id")
@@ -119,6 +118,9 @@ export const useFlowAnalytics = () => {
       }
 
       const organizationId = orgMembers[0].organization_id;
+      const STALLED_DAYS = 30;
+      const stalledCutoff = new Date();
+      stalledCutoff.setDate(stalledCutoff.getDate() - STALLED_DAYS);
 
       const { data: flows } = await supabase
         .from("pipelines")
@@ -126,70 +128,99 @@ export const useFlowAnalytics = () => {
           id,
           name,
           icon,
-          pipeline_contacts(count),
           pipeline_stages(id, name, is_start_step, is_end_step)
         `)
         .eq("organization_id", organizationId);
 
-      const flowAnalytics = await Promise.all(
-        (flows || []).map(async (flow) => {
-          const startStage = flow.pipeline_stages.find(s => s.is_start_step);
-          const endStage = flow.pipeline_stages.find(s => s.is_end_step);
+      const flowIds = (flows || []).map((f) => f.id);
 
-          let startCount = 0;
-          let endCount = 0;
-          let avgTimeInFlow = null;
+      const { data: allPc } = await supabase
+        .from("pipeline_contacts")
+        .select("pipeline_id, stage_id, contact_id, entered_start_at, completed_end_at, stage_entered_at")
+        .in("pipeline_id", flowIds.length > 0 ? flowIds : ["00000000-0000-0000-0000-000000000000"]);
 
-          if (startStage) {
-            const { count } = await supabase
-              .from("pipeline_contacts")
-              .select("*", { count: "exact", head: true })
-              .eq("pipeline_id", flow.id)
-              .eq("stage_id", startStage.id);
-            startCount = count || 0;
-          }
+      const contactIds = Array.from(new Set((allPc || []).map((p) => p.contact_id)));
+      const scoreMap = new Map<string, number>();
+      if (contactIds.length > 0) {
+        const chunkSize = 500;
+        for (let i = 0; i < contactIds.length; i += chunkSize) {
+          const chunk = contactIds.slice(i, i + chunkSize);
+          const { data: scores } = await supabase
+            .from("contact_engagement_scores")
+            .select("contact_id, score")
+            .in("contact_id", chunk);
+          (scores || []).forEach((s) => scoreMap.set(s.contact_id, s.score ?? 0));
+        }
+      }
 
-          if (endStage) {
-            const { count } = await supabase
-              .from("pipeline_contacts")
-              .select("*", { count: "exact", head: true })
-              .eq("pipeline_id", flow.id)
-              .eq("stage_id", endStage.id);
-            endCount = count || 0;
+      const flowAnalytics = (flows || []).map((flow) => {
+        const startStage = flow.pipeline_stages.find((s) => s.is_start_step);
+        const endStage = flow.pipeline_stages.find((s) => s.is_end_step);
+        const pcs = (allPc || []).filter((p) => p.pipeline_id === flow.id);
 
-            // Calculate average time in flow
-            const { data: completedContacts } = await supabase
-              .from("pipeline_contacts")
-              .select("entered_start_at, completed_end_at")
-              .eq("pipeline_id", flow.id)
-              .not("entered_start_at", "is", null)
-              .not("completed_end_at", "is", null);
+        const totalContacts = pcs.length;
+        const startCount = startStage ? pcs.filter((p) => p.stage_id === startStage.id).length : 0;
+        const endCount = endStage ? pcs.filter((p) => p.stage_id === endStage.id).length : 0;
+        const activePeople = endStage
+          ? pcs.filter((p) => p.stage_id !== endStage.id).length
+          : totalContacts;
 
-            if (completedContacts && completedContacts.length > 0) {
-              const totalDays = completedContacts.reduce((sum, contact) => {
-                const start = new Date(contact.entered_start_at!);
-                const end = new Date(contact.completed_end_at!);
-                const days = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-                return sum + days;
-              }, 0);
-              avgTimeInFlow = totalDays / completedContacts.length;
-            }
-          }
+        const peopleStalled = pcs.filter((p) => {
+          if (endStage && p.stage_id === endStage.id) return false;
+          const entered = p.stage_entered_at ? new Date(p.stage_entered_at) : null;
+          return entered ? entered < stalledCutoff : false;
+        }).length;
 
-          const conversionRate = startCount > 0 ? (endCount / startCount) * 100 : 0;
+        const completed = pcs.filter((p) => p.entered_start_at && p.completed_end_at);
+        let avgTimeInFlow: number | null = null;
+        if (completed.length > 0) {
+          const totalDays = completed.reduce((sum, c) => {
+            const s = new Date(c.entered_start_at!).getTime();
+            const e = new Date(c.completed_end_at!).getTime();
+            return sum + (e - s) / (1000 * 60 * 60 * 24);
+          }, 0);
+          avgTimeInFlow = totalDays / completed.length;
+        }
 
-          return {
-            id: flow.id,
-            name: flow.name,
-            icon: flow.icon,
-            totalContacts: (flow.pipeline_contacts as any)[0]?.count || 0,
-            startCount,
-            endCount,
-            conversionRate,
-            avgTimeInFlow,
-          };
-        })
-      );
+        const conversionRate = startCount > 0 ? (endCount / startCount) * 100 : 0;
+        const completionRate = totalContacts > 0 ? (endCount / totalContacts) * 100 : 0;
+
+        const startScores = startStage
+          ? pcs
+              .filter((p) => p.stage_id === startStage.id)
+              .map((p) => scoreMap.get(p.contact_id))
+              .filter((s): s is number => typeof s === "number")
+          : [];
+        const completedScores = endStage
+          ? pcs
+              .filter((p) => p.stage_id === endStage.id)
+              .map((p) => scoreMap.get(p.contact_id))
+              .filter((s): s is number => typeof s === "number")
+          : [];
+        const avg = (arr: number[]) =>
+          arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+        const startAvg = avg(startScores);
+        const completedAvg = avg(completedScores);
+        const engagementLift =
+          startAvg !== null && completedAvg !== null ? completedAvg - startAvg : null;
+
+        return {
+          id: flow.id,
+          name: flow.name,
+          icon: flow.icon,
+          totalContacts,
+          startCount,
+          endCount,
+          activePeople,
+          peopleStalled,
+          conversionRate,
+          completionRate,
+          avgTimeInFlow,
+          engagementLift,
+          entryAvgScore: startAvg,
+          completedAvgScore: completedAvg,
+        };
+      });
 
       return flowAnalytics;
     },
