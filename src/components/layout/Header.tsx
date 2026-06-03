@@ -334,7 +334,7 @@ export const Header: React.FC<HeaderProps> = ({
     return 'U';
   })();
   const { toggle: toggleMobileSidebar } = useMobileSidebar();
-  const hasToolbarActions = !!(onSettingsClick || (viewMode && onViewModeChange) || onToggleSelectMode || (contactCounts && onFilterChange) || onDocsClick);
+  const hasToolbarActions = !!(onSettingsClick || (viewMode && onViewModeChange) || onToggleSelectMode || (contactCounts && onFilterChange) || onDocsClick || onAnalyticsClick);
   const hasActiveFilter = !!(selectedFilter || showCompleted || selectedEngagementFilter || selectedCampusFilter);
 
   return (
@@ -467,6 +467,17 @@ export const Header: React.FC<HeaderProps> = ({
                 />
               )}
 
+              {onAnalyticsClick && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={onAnalyticsClick} className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100">
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Analytics</TooltipContent>
+                </Tooltip>
+              )}
+
               {onDocsClick && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -528,6 +539,12 @@ export const Header: React.FC<HeaderProps> = ({
                       onCampusFilterChange={onCampusFilterChange}
                     />
                   </div>
+                )}
+                {onAnalyticsClick && (
+                  <DropdownMenuItem onClick={onAnalyticsClick}>
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    Analytics
+                  </DropdownMenuItem>
                 )}
                 {onDocsClick && (
                   <DropdownMenuItem onClick={onDocsClick}>
