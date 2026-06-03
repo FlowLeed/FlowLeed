@@ -45,6 +45,7 @@ const SuperAdminProfilePage = lazy(() => import("./pages/admin/SuperAdminProfile
 const GroupPublicSignupPage = lazy(() => import("./pages/GroupPublicSignupPage"));
 const GroupDirectoryPage = lazy(() => import("./pages/GroupDirectoryPage"));
 const PcoCallbackPage = lazy(() => import("./pages/PcoCallbackPage"));
+const DevMobilePreviewPage = lazy(() => import("./pages/DevMobilePreviewPage"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -69,6 +70,8 @@ const App = () => (
               <Route path="/groups/directory" element={<GroupDirectoryPage />} />
               <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
+              <Route path="/pco/callback" element={<PcoCallbackPage />} />
+              <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
               
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
