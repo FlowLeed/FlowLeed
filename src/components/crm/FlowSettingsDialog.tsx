@@ -780,60 +780,73 @@ export const FlowSettingsDialog = ({
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className="flex items-center gap-2 p-3 border rounded-md bg-background"
+                            className="flex flex-col gap-2 p-3 border rounded-md bg-background"
                           >
-                            <div {...provided.dragHandleProps}>
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            <div className="flex items-center gap-2">
+                              <div {...provided.dragHandleProps}>
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <Input
+                                value={step.name}
+                                onChange={(e) => updateStepName(index, e.target.value)}
+                                className="flex-1"
+                              />
+                              <input
+                                type="color"
+                                value={step.color}
+                                onChange={(e) => {
+                                  const updatedSteps = [...flowSteps];
+                                  updatedSteps[index].color = e.target.value;
+                                  setFlowSteps(updatedSteps);
+                                }}
+                                className="w-10 h-10 rounded cursor-pointer"
+                              />
+
+                              {/* Start/End Markers */}
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  variant={step.is_start_step ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => markAsStartStep(index)}
+                                  className="h-8 px-2"
+                                  title="Mark as start step"
+                                >
+                                  <Flag className="h-3 w-3 mr-1" />
+                                  Start
+                                </Button>
+                                <Button
+                                  variant={step.is_end_step ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={() => markAsEndStep(index)}
+                                  className="h-8 px-2"
+                                  title="Mark as end step"
+                                >
+                                  <FlagTriangleRight className="h-3 w-3 mr-1" />
+                                  End
+                                </Button>
+                              </div>
+
+                              {flowSteps.length > 1 && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeStep(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
-                            <Input
-                              value={step.name}
-                              onChange={(e) => updateStepName(index, e.target.value)}
-                              className="flex-1"
-                            />
-                            <input
-                              type="color"
-                              value={step.color}
+                            <Textarea
+                              value={step.description ?? ""}
                               onChange={(e) => {
                                 const updatedSteps = [...flowSteps];
-                                updatedSteps[index].color = e.target.value;
+                                updatedSteps[index].description = e.target.value;
                                 setFlowSteps(updatedSteps);
                               }}
-                              className="w-10 h-10 rounded cursor-pointer"
+                              placeholder="Step description (optional)"
+                              rows={2}
+                              className="text-sm"
                             />
-                            
-                            {/* Start/End Markers */}
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant={step.is_start_step ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => markAsStartStep(index)}
-                                className="h-8 px-2"
-                                title="Mark as start step"
-                              >
-                                <Flag className="h-3 w-3 mr-1" />
-                                Start
-                              </Button>
-                              <Button
-                                variant={step.is_end_step ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => markAsEndStep(index)}
-                                className="h-8 px-2"
-                                title="Mark as end step"
-                              >
-                                <FlagTriangleRight className="h-3 w-3 mr-1" />
-                                End
-                              </Button>
-                            </div>
-                            
-                            {flowSteps.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeStep(index)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
                           </div>
                         )}
                       </Draggable>
