@@ -338,7 +338,7 @@ export const Header: React.FC<HeaderProps> = ({
   const hasActiveFilter = !!(selectedFilter || showCompleted || selectedEngagementFilter || selectedCampusFilter);
 
   return (
-    <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#FAFAFA' }}>
+    <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#FAFAFA', paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="flex items-center gap-2 h-14 px-2 md:px-4">
         {/* Left: hamburger + flow icon + title */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
