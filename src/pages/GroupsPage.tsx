@@ -182,7 +182,7 @@ const GroupsPage = () => {
               {filteredGroups.length !== groups.length && ` of ${groups.length}`}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleSyncFromPco} disabled={syncing}>
               <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Syncing…" : "Sync from PCO"}
