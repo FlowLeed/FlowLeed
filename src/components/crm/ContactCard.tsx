@@ -119,9 +119,12 @@ export const ContactCard: React.FC<ContactCardProps> = ({
         </div>}
 
       {contact.campusName && (
-        <div className="flex items-center gap-1 mb-2 text-xs text-muted-foreground">
-          <Building2 className="h-3 w-3" />
-          <span>{contact.campusName}</span>
+        <div className="flex items-center justify-between gap-1 mb-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Building2 className="h-3 w-3" />
+            <span>{contact.campusName}</span>
+          </div>
+          <EngagementBadge score={engagementScore} compact />
         </div>
       )}
 
