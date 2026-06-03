@@ -3,7 +3,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { useCampuses } from "@/hooks/useCampuses";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Plus, Users, RefreshCw, HelpCircle, Search, X, Filter } from "lucide-react";
+import { ExternalLink, Plus, Users, HelpCircle, Search, X, Filter } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,8 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 const GroupsPage = () => {
@@ -32,49 +30,8 @@ const GroupsPage = () => {
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [selectedSource, setSelectedSource] = useState<"all" | "pco" | "flowleed">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [syncing, setSyncing] = useState(false);
   const queryClient = useQueryClient();
 
-  const handleSyncFromPco = async () => {
-    if (!organization?.id) return;
-    setSyncing(true);
-    try {
-      const { data: integ } = await supabase
-        .from("integrations")
-        .select("id")
-        .eq("organization_id", organization.id)
-        .eq("service_name", "planning_center")
-        .eq("status", "active")
-        .maybeSingle();
-      if (!integ) { toast.error("Planning Center not connected"); return; }
-      toast.info("Syncing groups…", { description: "This may take a minute." });
-      let more = true, safety = 0;
-      while (more && safety < 10) {
-        safety++;
-        const { data, error } = await supabase.functions.invoke("pco-sync-groups", {
-          body: { integrationId: integ.id },
-        });
-        if (error) throw error;
-        more = !!data?.hasMore;
-      }
-      toast.info("Syncing attendance…");
-      more = true; safety = 0;
-      while (more && safety < 10) {
-        safety++;
-        const { data, error } = await supabase.functions.invoke("pco-sync-group-attendance", {
-          body: { integrationId: integ.id },
-        });
-        if (error) throw error;
-        more = !!data?.hasMore;
-      }
-      toast.success("Groups synced from Planning Center");
-      queryClient.invalidateQueries({ queryKey: ["groups"] });
-    } catch (e: any) {
-      toast.error("Sync failed", { description: e.message });
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   if (!organization) {
     return (
@@ -183,10 +140,6 @@ const GroupsPage = () => {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleSyncFromPco} disabled={syncing}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Syncing…" : "Sync from PCO"}
-            </Button>
             <Button variant="outline" size="sm" asChild>
               <a href="/groups/directory" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4 mr-2" />

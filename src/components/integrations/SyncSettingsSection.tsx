@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Clock, RefreshCw, CheckSquare } from "lucide-react";
+import { Clock, RefreshCw } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -102,34 +102,63 @@ export function SyncSettingsSection({
     updateAutoSyncMutation.mutate(checked);
   };
 
+  const [syncingGroups, setSyncingGroups] = useState(false);
+  const syncingAll = isSyncing || syncCheckins.isPending || syncingGroups;
+
+  const handleSyncEverything = async () => {
+    // Kick off people sync (handled by parent)
+    onSyncNow();
+    // Kick off check-ins sync
+    syncCheckins.mutate(integrationId);
+    // Run groups + attendance sync to completion
+    setSyncingGroups(true);
+    try {
+      let more = true, safety = 0;
+      while (more && safety < 15) {
+        safety++;
+        const { data, error } = await supabase.functions.invoke("pco-sync-groups", {
+          body: { integrationId },
+        });
+        if (error) throw error;
+        more = !!data?.hasMore;
+      }
+      more = true; safety = 0;
+      while (more && safety < 15) {
+        safety++;
+        const { data, error } = await supabase.functions.invoke("pco-sync-group-attendance", {
+          body: { integrationId },
+        });
+        if (error) throw error;
+        more = !!data?.hasMore;
+      }
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+      toast({ title: "Groups synced", description: "Groups and attendance are up to date." });
+    } catch (e: any) {
+      toast({ title: "Groups sync failed", description: e.message, variant: "destructive" });
+    } finally {
+      setSyncingGroups(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4" />
           <h3 className="font-medium">Sync Settings</h3>
         </div>
-        <Button 
-          onClick={onSyncNow} 
-          disabled={isSyncing}
-          size="sm"
-          variant="outline"
-          className="shrink-0"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-          {isSyncing ? 'Syncing...' : 'Sync All People'}
-        </Button>
         <Button
-          onClick={() => syncCheckins.mutate(integrationId)}
-          disabled={syncCheckins.isPending}
+          onClick={handleSyncEverything}
+          disabled={syncingAll}
           size="sm"
           variant="outline"
           className="shrink-0"
         >
-          <CheckSquare className={`h-4 w-4 mr-2 ${syncCheckins.isPending ? 'animate-spin' : ''}`} />
-          {syncCheckins.isPending ? 'Syncing...' : 'Sync Check-Ins'}
+          <RefreshCw className={`h-4 w-4 mr-2 ${syncingAll ? 'animate-spin' : ''}`} />
+          {syncingAll ? 'Syncing...' : 'Sync Everything'}
         </Button>
       </div>
+
 
       <div className="flex items-center justify-between py-3 border-b">
         <div className="space-y-0.5">
