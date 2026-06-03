@@ -160,7 +160,7 @@ const GroupDetailPage = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
       <div className="space-y-6">
         {/* Back Button */}
         <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => navigate("/groups")}>
