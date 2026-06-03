@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw, RefreshCw, Menu, MoreHorizontal } from "lucide-react";
+import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, BarChart3, RotateCcw, RefreshCw, Menu, MoreHorizontal } from "lucide-react";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
@@ -93,6 +93,7 @@ interface HeaderProps {
   onToggleSelectMode?: () => void;
   onSelectAll?: () => void;
   onDocsClick?: () => void;
+  onAnalyticsClick?: () => void;
   flowType?: 'linear' | 'recurring';
   cycleDays?: number;
   selectedEngagementFilter?: string | null;
@@ -125,6 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSelectMode,
   onSelectAll,
   onDocsClick,
+  onAnalyticsClick,
   flowType,
   cycleDays,
   selectedEngagementFilter,
@@ -332,7 +334,7 @@ export const Header: React.FC<HeaderProps> = ({
     return 'U';
   })();
   const { toggle: toggleMobileSidebar } = useMobileSidebar();
-  const hasToolbarActions = !!(onSettingsClick || (viewMode && onViewModeChange) || onToggleSelectMode || (contactCounts && onFilterChange) || onDocsClick);
+  const hasToolbarActions = !!(onSettingsClick || (viewMode && onViewModeChange) || onToggleSelectMode || (contactCounts && onFilterChange) || onDocsClick || onAnalyticsClick);
   const hasActiveFilter = !!(selectedFilter || showCompleted || selectedEngagementFilter || selectedCampusFilter);
 
   return (
@@ -465,6 +467,17 @@ export const Header: React.FC<HeaderProps> = ({
                 />
               )}
 
+              {onAnalyticsClick && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={onAnalyticsClick} className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100">
+                      <BarChart3 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Analytics</TooltipContent>
+                </Tooltip>
+              )}
+
               {onDocsClick && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -526,6 +539,12 @@ export const Header: React.FC<HeaderProps> = ({
                       onCampusFilterChange={onCampusFilterChange}
                     />
                   </div>
+                )}
+                {onAnalyticsClick && (
+                  <DropdownMenuItem onClick={onAnalyticsClick}>
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    Analytics
+                  </DropdownMenuItem>
                 )}
                 {onDocsClick && (
                   <DropdownMenuItem onClick={onDocsClick}>

@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const FlowPage = lazy(() => import("./pages/FlowPage"));
 const FlowDocumentationPage = lazy(() => import("./pages/FlowDocumentationPage"));
+const FlowAnalyticsPage = lazy(() => import("./pages/FlowAnalyticsPage"));
 const UserProfilePage = lazy(() => import("./pages/UserProfilePage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const TeamPage = lazy(() => import("./pages/TeamPage"));
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/" element={<Dashboard />} />
               <Route path="/flows/:flowId" element={<FlowPage />} />
               <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
+              <Route path="/flows/:flowId/analytics" element={<FlowAnalyticsPage />} />
               <Route path="/contacts" element={<ContactsPage />} />
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
               <Route path="/groups" element={<GroupsPage />} />
