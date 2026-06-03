@@ -12,7 +12,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const TasksPage = () => {
   const { user } = useAuth();
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const { data: needingAttention, isLoading: loadingAttention } = useTasksPageData(user?.id);
   const { data: scheduledTasks, isLoading: loadingScheduled } = useAllScheduledTasks(user?.id);
@@ -96,8 +95,6 @@ const TasksPage = () => {
           />
         </div>
       </div>
-
-      <CreateTaskDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
     </div>
   );
 };
