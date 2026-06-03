@@ -142,10 +142,6 @@ const GroupsPage = () => {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleSyncFromPco} disabled={syncing}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Syncing…" : "Sync from PCO"}
-            </Button>
             <Button variant="outline" size="sm" asChild>
               <a href="/groups/directory" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4 mr-2" />
