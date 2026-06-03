@@ -3,6 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.tsx'
 import './index.css'
 import { registerPushServiceWorker } from './lib/push'
+import { initAnalytics } from './lib/analytics'
+
+initAnalytics();
 
 // PHASE 3: Configure aggressive caching for better performance
 const queryClient = new QueryClient({
