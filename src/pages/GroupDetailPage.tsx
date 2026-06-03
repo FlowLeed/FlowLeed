@@ -160,7 +160,7 @@ const GroupDetailPage = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
       <div className="space-y-6">
         {/* Back Button */}
         <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => navigate("/groups")}>
@@ -195,23 +195,23 @@ const GroupDetailPage = () => {
               </div>
             )}
           </div>
-          <div className="p-6">
-            <div className="flex items-start justify-between gap-4">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold tracking-tight">{group.name}</h1>
-                  <Badge variant="secondary">
-                    {group.pco_group_type_name?.split(":")[0].trim() ||
-                      groupTypeLabels[group.group_type]}
-                  </Badge>
-                </div>
+                <Badge variant="secondary" className="mb-2">
+                  {group.pco_group_type_name?.split(":")[0].trim() ||
+                    groupTypeLabels[group.group_type]}
+                </Badge>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight break-words">
+                  {group.name}
+                </h1>
                 {group.description && (
-                  <p className="text-muted-foreground mb-2 whitespace-pre-line">
+                  <p className="text-sm sm:text-base text-muted-foreground mt-2 mb-2 whitespace-pre-line break-words">
                     {group.description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim()}
                   </p>
                 )}
                 {leaderProfile && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mt-2">
                     <Avatar className="h-5 w-5">
                       <AvatarImage src={leaderProfile.avatar_url || undefined} />
                       <AvatarFallback className="text-[10px]">{leaderProfile.full_name?.[0]}</AvatarFallback>
@@ -220,7 +220,7 @@ const GroupDetailPage = () => {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
                 {group.allow_public_signup && group.public_signup_token && (
                   <Button variant="outline" size="icon" onClick={copySignupLink} title="Share signup link">
                     {linkCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
@@ -243,6 +243,7 @@ const GroupDetailPage = () => {
               </div>
             </div>
           </div>
+
         </Card>
 
         {/* Group Info Cards */}
