@@ -51,6 +51,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
     phone,
     stageEnteredAt
   } = contact;
+  const { data: engagementScore } = useEngagementScore(contact.id);
   const handleCardClick = (e: React.MouseEvent) => {
     if (isSelectMode) {
       e.preventDefault();
