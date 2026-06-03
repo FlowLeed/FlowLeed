@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { Header } from "@/components/layout/Header";
-import { Button } from "@/components/ui/button";
-import { Plus, Users, CalendarCheck } from "lucide-react";
+import { Users, CalendarCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasksPageData, useAllScheduledTasks } from "@/hooks/useTasksPageData";
