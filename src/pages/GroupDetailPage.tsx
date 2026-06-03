@@ -491,10 +491,10 @@ const GroupDetailPage = () => {
                     return (
                       <Card key={meeting.id}>
                         <CardHeader>
-                          <div className="flex items-start justify-between gap-4">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                             <div className="flex-1 min-w-0">
-                              <CardTitle>{meeting.title}</CardTitle>
-                              <CardDescription>
+                              <CardTitle className="text-base sm:text-lg break-words">{meeting.title}</CardTitle>
+                              <CardDescription className="break-words">
                                 {new Date(meeting.meeting_date).toLocaleDateString()} • {meeting.duration_minutes} min • {meeting.location || "No location"}
                               </CardDescription>
                               <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -514,7 +514,7 @@ const GroupDetailPage = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                               <Badge variant={meeting.status === "completed" ? "secondary" : "default"}>
                                 {meeting.status}
                               </Badge>
@@ -534,10 +534,13 @@ const GroupDetailPage = () => {
                         </CardHeader>
                         {meeting.description && (
                           <CardContent>
-                            <p className="text-sm text-muted-foreground">{meeting.description}</p>
+                            <p className="text-sm text-muted-foreground break-words">
+                              {meeting.description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim()}
+                            </p>
                           </CardContent>
                         )}
                       </Card>
+
                     );
                   })}
                 </div>
