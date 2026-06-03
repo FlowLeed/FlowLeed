@@ -151,13 +151,13 @@ export const FlowsSection = () => {
                     onClick={() => navigate(`/flows/${flow.id}`)}
                   >
                     <TableCell className="font-light">{flow.name}</TableCell>
-                    <TableCell className="text-right">{flow.activePeople}</TableCell>
-                    <TableCell className="text-right">{flow.endCount}</TableCell>
+                    <TableCell className="text-right">{flow.activePeople ?? 0}</TableCell>
+                    <TableCell className="text-right">{flow.endCount ?? 0}</TableCell>
                     <TableCell className="text-right">
-                      {flow.completionRate.toFixed(1)}%
+                      {(flow.completionRate ?? 0).toFixed(1)}%
                     </TableCell>
                     <TableCell className="text-right">
-                      {flow.avgTimeInFlow !== null ? flow.avgTimeInFlow.toFixed(1) : "N/A"}
+                      {typeof flow.avgTimeInFlow === "number" ? flow.avgTimeInFlow.toFixed(1) : "N/A"}
                     </TableCell>
                     <TableCell className="text-right">
                       {flow.peopleStalled > 0 ? (
