@@ -1,11 +1,11 @@
 import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Calendar, List } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Loader2, Users, Calendar, List, Link2, AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface PlanningCenterList {
   id: string;
@@ -24,96 +24,98 @@ interface PlanningCenterListBrowserProps {
   selectedListId?: string;
 }
 
-export function PlanningCenterListBrowser({ 
-  integrationId, 
-  onSelectList, 
-  selectedListId 
-}: PlanningCenterListBrowserProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+type FetchResult =
+  | { kind: 'ok'; lists: PlanningCenterList[] }
+  | { kind: 'not_connected' }
+  | { kind: 'reauth_required' };
 
-  // Get cached lists from database
-  const { data: cachedLists, isLoading } = useQuery({
-    queryKey: ['cached-lists', integrationId],
+export function PlanningCenterListBrowser({
+  integrationId,
+  onSelectList,
+  selectedListId,
+}: PlanningCenterListBrowserProps) {
+  const navigate = useNavigate();
+
+  const { data, isLoading, isFetching, refetch, error } = useQuery<FetchResult>({
+    queryKey: ['pco-user-lists', integrationId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('integration_list_metadata')
-        .select('external_list_id, name, description, member_count, list_type, last_updated_at')
-        .eq('integration_id', integrationId)
-        .order('name');
-      
+      const { data, error } = await supabase.functions.invoke('planning-center-lists', {
+        body: { action: 'fetchLists', integrationId },
+      });
       if (error) throw error;
-      
-      // Transform to match expected format
-      return data.map(item => ({
-        id: item.external_list_id,
+      if (data?.error === 'USER_PCO_NOT_CONNECTED') return { kind: 'not_connected' };
+      if (data?.error === 'USER_PCO_REAUTH_REQUIRED') return { kind: 'reauth_required' };
+      const lists: PlanningCenterList[] = (data?.lists ?? []).map((l: any) => ({
+        id: l.id,
         attributes: {
-          name: item.name,
-          description: item.description,
-          total_people: item.member_count,
-          list_type: item.list_type,
-          updated_at: item.last_updated_at,
-        }
-      })) as PlanningCenterList[];
+          name: l.attributes?.name,
+          description: l.attributes?.description,
+          total_people: l.attributes?.total_people,
+          list_type: l.attributes?.list_type,
+          updated_at: l.attributes?.updated_at,
+        },
+      }));
+      return { kind: 'ok', lists };
     },
     enabled: !!integrationId,
+    staleTime: 60_000,
   });
-
-  // Mutation for refreshing lists
-  const refreshMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('planning-center-lists', {
-        body: {
-          action: 'fetchLists',
-          integrationId,
-        },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['cached-lists', integrationId] });
-      toast({
-        title: 'Lists refreshed',
-        description: 'Planning Center lists have been updated.',
-      });
-    },
-    onError: () => {
-      toast({
-        title: 'Error',
-        description: 'Failed to refresh lists. Please try again.',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleRefresh = () => {
-    refreshMutation.mutate();
-  };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-6 w-6 animate-spin" />
-        <span className="ml-2">Loading Planning Center lists...</span>
+        <span className="ml-2">Loading your Planning Center lists...</span>
       </div>
     );
   }
 
-  if (!cachedLists || cachedLists.length === 0) {
+  if (error) {
+    return (
+      <div className="text-center p-8">
+        <p className="text-sm text-destructive mb-4">Failed to load lists. Please try again.</p>
+        <Button onClick={() => refetch()}>Retry</Button>
+      </div>
+    );
+  }
+
+  if (data?.kind === 'not_connected' || data?.kind === 'reauth_required') {
+    const isReauth = data.kind === 'reauth_required';
+    return (
+      <div className="text-center p-8 border border-dashed rounded-lg">
+        <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center mx-auto mb-3">
+          {isReauth ? (
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+          ) : (
+            <Link2 className="h-5 w-5 text-primary" />
+          )}
+        </div>
+        <h3 className="text-base font-semibold mb-1">
+          {isReauth ? 'Reconnect your Planning Center account' : 'Connect your Planning Center account'}
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          FlowLeed shows only the lists your own PCO account can see.
+        </p>
+        <Button onClick={() => navigate('/profile')}>
+          {isReauth ? 'Reconnect' : 'Connect Planning Center'}
+        </Button>
+      </div>
+    );
+  }
+
+  const lists = data?.kind === 'ok' ? data.lists : [];
+
+  if (lists.length === 0) {
     return (
       <div className="text-center p-8">
         <List className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold mb-2">No Lists Found</h3>
         <p className="text-muted-foreground mb-4">
-          No Planning Center lists were found for this integration.
+          Your Planning Center account doesn't have any visible lists.
         </p>
-        <Button onClick={handleRefresh} disabled={refreshMutation.isPending}>
-          {refreshMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : null}
-          Refresh Lists
+        <Button onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Refresh
         </Button>
       </div>
     );
@@ -123,21 +125,18 @@ export function PlanningCenterListBrowser({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Select a Planning Center List</h3>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={refreshMutation.isPending}
-        >
-          {refreshMutation.isPending ? (
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          {isFetching ? (
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : null}
+          ) : (
+            <RefreshCw className="h-4 w-4 mr-2" />
+          )}
           Refresh
         </Button>
       </div>
 
       <div className="grid gap-3 max-h-96 overflow-y-auto">
-        {cachedLists.map((list) => (
+        {lists.map((list) => (
           <Card
             key={list.id}
             className={`cursor-pointer transition-colors hover:bg-accent ${
