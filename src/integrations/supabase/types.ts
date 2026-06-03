@@ -2836,6 +2836,7 @@ export type Database = {
           color: string | null
           created_at: string
           default_assignee_user_id: string | null
+          description: string | null
           id: string
           is_end_step: boolean
           is_start_step: boolean
@@ -2848,6 +2849,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           default_assignee_user_id?: string | null
+          description?: string | null
           id?: string
           is_end_step?: boolean
           is_start_step?: boolean
@@ -2860,6 +2862,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           default_assignee_user_id?: string | null
+          description?: string | null
           id?: string
           is_end_step?: boolean
           is_start_step?: boolean

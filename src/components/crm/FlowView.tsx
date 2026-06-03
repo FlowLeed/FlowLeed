@@ -658,7 +658,8 @@ export const FlowView: React.FC<FlowViewProps> = ({
             color: s.color || '#3b82f6',
             stage_order: index,
             is_start_step: s.is_start_step,
-            is_end_step: s.is_end_step
+            is_end_step: s.is_end_step,
+            description: s.description ?? null
           }))}
           organizationId={organization.id}
           onSave={() => {

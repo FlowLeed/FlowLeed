@@ -80,6 +80,7 @@ const convertDbPipelineToFrontend = (dbPipeline: any, stages: any[], contacts: a
           color: stage.color,
           is_start_step: stage.is_start_step,
           is_end_step: stage.is_end_step,
+          description: stage.description,
           default_assignee_user_id: stage.default_assignee_user_id,
           defaultAssignee: defaultAssigneeProfile ? {
             name: defaultAssigneeProfile.full_name || defaultAssigneeProfile.email || "Unknown User",
@@ -891,6 +892,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ children }) => {
           stage_order: stage.stage_order,
           is_start_step: stage.is_start_step,
           is_end_step: stage.is_end_step,
+          description: stage.description ?? null,
           default_assignee_user_id: null  // Clear assignees - team isn't copied
         }));
 
