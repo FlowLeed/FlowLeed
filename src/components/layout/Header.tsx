@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, RotateCcw, RefreshCw, Menu, MoreHorizontal } from "lucide-react";
+import { Plus, Search, LogOut, User, Settings, Workflow, Settings2, X, Trash2, GripVertical, LayoutGrid, Table2, Users, MessageSquare, Calendar, Heart, CheckSquare, SquareCheck, ArrowLeft, BookOpen, BarChart3, RotateCcw, RefreshCw, Menu, MoreHorizontal } from "lucide-react";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { iconMap, iconOptions } from "@/lib/flowIcons";
@@ -93,6 +93,7 @@ interface HeaderProps {
   onToggleSelectMode?: () => void;
   onSelectAll?: () => void;
   onDocsClick?: () => void;
+  onAnalyticsClick?: () => void;
   flowType?: 'linear' | 'recurring';
   cycleDays?: number;
   selectedEngagementFilter?: string | null;
@@ -125,6 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSelectMode,
   onSelectAll,
   onDocsClick,
+  onAnalyticsClick,
   flowType,
   cycleDays,
   selectedEngagementFilter,
