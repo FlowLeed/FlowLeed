@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Flow, Contact } from "@/types/crm";
 import { FlowStage } from "./FlowStage";
 import { FlowTableView } from "./FlowTableView";
-import { FlowMetricsBar } from "./FlowMetricsBar";
+
 import { ContactFormDialog } from "./ContactFormDialog";
 import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
@@ -562,6 +562,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
         }}
         onSettingsClick={() => setIsSettingsOpen(true)}
         onDocsClick={() => navigate(`/flows/${flow.id}/documentation`)}
+        onAnalyticsClick={() => navigate(`/flows/${flow.id}/analytics`)}
         teamMembers={teamMembers}
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}
@@ -582,7 +583,6 @@ export const FlowView: React.FC<FlowViewProps> = ({
         onCampusFilterChange={setSelectedCampusFilter}
       />
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
-        <FlowMetricsBar flowId={flow.id} />
         {viewMode === 'kanban' ? (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4">
