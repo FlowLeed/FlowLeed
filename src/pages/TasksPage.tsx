@@ -26,12 +26,6 @@ const TasksPage = () => {
         title="Tasks"
         showFlowIcon={false}
         showAddButton={false}
-        rightContent={
-          <Button size="sm" onClick={() => setShowCreateDialog(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add to Flow
-          </Button>
-        }
       />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="max-w-4xl mx-auto p-6 space-y-6">
