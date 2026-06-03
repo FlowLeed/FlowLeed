@@ -5,6 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
+import { MetricCard } from "./MetricCard";
+import { Users, CheckCircle2, Clock, AlertTriangle, TrendingUp, Activity } from "lucide-react";
 
 export const FlowsSection = () => {
   const { data: flows, isLoading } = useFlowAnalytics();
@@ -24,14 +26,65 @@ export const FlowsSection = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
+        <Skeleton className="h-[120px]" />
         <Skeleton className="h-[300px]" />
         <Skeleton className="h-[400px]" />
       </div>
     );
   }
 
+  // Aggregate overview metrics across all flows
+  const totalActive = flows?.reduce((s, f) => s + f.activePeople, 0) ?? 0;
+  const totalCompleted = flows?.reduce((s, f) => s + f.endCount, 0) ?? 0;
+  const totalPeople = flows?.reduce((s, f) => s + f.totalContacts, 0) ?? 0;
+  const totalStalled = flows?.reduce((s, f) => s + f.peopleStalled, 0) ?? 0;
+  const overallCompletion = totalPeople > 0 ? (totalCompleted / totalPeople) * 100 : 0;
+  const completionTimes = (flows ?? [])
+    .map((f) => f.avgTimeInFlow)
+    .filter((v): v is number => typeof v === "number");
+  const overallAvgTime =
+    completionTimes.length > 0
+      ? completionTimes.reduce((a, b) => a + b, 0) / completionTimes.length
+      : null;
+  const lifts = (flows ?? [])
+    .map((f) => f.engagementLift)
+    .filter((v): v is number => typeof v === "number");
+  const overallLift =
+    lifts.length > 0 ? lifts.reduce((a, b) => a + b, 0) / lifts.length : null;
+
+  const formatLift = (v: number | null) =>
+    v === null ? "N/A" : `${v >= 0 ? "+" : ""}${v.toFixed(1)}`;
+
   return (
     <div className="space-y-6">
+      {/* Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <MetricCard title="Active in Flows" value={totalActive} icon={Users} />
+        <MetricCard title="Completed" value={totalCompleted} icon={CheckCircle2} />
+        <MetricCard
+          title="Completion %"
+          value={`${overallCompletion.toFixed(1)}%`}
+          icon={Activity}
+        />
+        <MetricCard
+          title="Avg Time to Complete"
+          value={overallAvgTime !== null ? `${overallAvgTime.toFixed(1)}d` : "N/A"}
+          icon={Clock}
+        />
+        <MetricCard
+          title="People Stalled"
+          value={totalStalled}
+          icon={AlertTriangle}
+          description="No stage change in 30+ days"
+        />
+        <MetricCard
+          title="Engagement Lift"
+          value={formatLift(overallLift)}
+          icon={TrendingUp}
+          description="Completed avg − Entry avg"
+        />
+      </div>
+
       {/* Flow Distribution Chart */}
       <Card>
         <CardHeader>
@@ -66,41 +119,67 @@ export const FlowsSection = () => {
         </CardContent>
       </Card>
 
-      {/* Flow Conversion Rates Table */}
+      {/* Per-Flow Performance Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Flow Conversion Rates</CardTitle>
-          <CardDescription>Track how people progress from start to end</CardDescription>
+          <CardTitle>Flow Performance</CardTitle>
+          <CardDescription>
+            Performance metrics for each flow — active people, completion, time, stalls, and engagement lift
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Flow Name</TableHead>
-                <TableHead className="text-right">Total People</TableHead>
-                <TableHead className="text-right">Conversion Rate</TableHead>
-                <TableHead className="text-right">Avg. Time (days)</TableHead>
+                <TableHead>Flow</TableHead>
+                <TableHead className="text-right">Active</TableHead>
+                <TableHead className="text-right">Completed</TableHead>
+                <TableHead className="text-right">Completion %</TableHead>
+                <TableHead className="text-right">Avg Time (d)</TableHead>
+                <TableHead className="text-right">Stalled</TableHead>
+                <TableHead className="text-right">Engagement Lift</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {flows?.map((flow) => {
-                const status = getConversionStatus(flow.conversionRate);
+                const status = getConversionStatus(flow.completionRate);
                 return (
                   <TableRow
                     key={flow.id}
                     className="cursor-pointer"
                     onClick={() => navigate(`/flows/${flow.id}`)}
                   >
-                    <TableCell className="font-light">
-                      {flow.name}
-                    </TableCell>
-                    <TableCell className="text-right">{flow.totalContacts}</TableCell>
+                    <TableCell className="font-light">{flow.name}</TableCell>
+                    <TableCell className="text-right">{flow.activePeople}</TableCell>
+                    <TableCell className="text-right">{flow.endCount}</TableCell>
                     <TableCell className="text-right">
-                      {flow.conversionRate.toFixed(1)}%
+                      {flow.completionRate.toFixed(1)}%
                     </TableCell>
                     <TableCell className="text-right">
-                      {flow.avgTimeInFlow ? flow.avgTimeInFlow.toFixed(1) : "N/A"}
+                      {flow.avgTimeInFlow !== null ? flow.avgTimeInFlow.toFixed(1) : "N/A"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {flow.peopleStalled > 0 ? (
+                        <span className="text-destructive font-medium">{flow.peopleStalled}</span>
+                      ) : (
+                        flow.peopleStalled
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {flow.engagementLift === null ? (
+                        <span className="text-muted-foreground">N/A</span>
+                      ) : (
+                        <span
+                          className={
+                            flow.engagementLift >= 0
+                              ? "text-emerald-600 font-medium"
+                              : "text-destructive font-medium"
+                          }
+                        >
+                          {formatLift(flow.engagementLift)}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={status.variant}>{status.label}</Badge>
@@ -110,7 +189,7 @@ export const FlowsSection = () => {
               })}
               {flows?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No flows found
                   </TableCell>
                 </TableRow>
