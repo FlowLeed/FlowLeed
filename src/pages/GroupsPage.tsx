@@ -12,8 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 const GroupsPage = () => {
