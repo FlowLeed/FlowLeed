@@ -1,21 +1,17 @@
-import { useState } from "react";
 import { Header } from "@/components/layout/Header";
-import { Button } from "@/components/ui/button";
-import { Plus, Users, CalendarCheck } from "lucide-react";
+import { Users, CalendarCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasksPageData, useAllScheduledTasks } from "@/hooks/useTasksPageData";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { TaskContactRow } from "@/components/tasks/TaskContactRow";
 import { ScheduledTaskItem } from "@/components/tasks/ScheduledTaskItem";
-import { CreateTaskDialog } from "@/components/tasks/CreateTaskDialog";
 import { PersonalMetrics } from "@/components/dashboard/PersonalMetrics";
 import { TeamActivityFeed } from "@/components/dashboard/TeamActivityFeed";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const TasksPage = () => {
   const { user } = useAuth();
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const { data: needingAttention, isLoading: loadingAttention } = useTasksPageData(user?.id);
   const { data: scheduledTasks, isLoading: loadingScheduled } = useAllScheduledTasks(user?.id);
@@ -29,12 +25,6 @@ const TasksPage = () => {
         title="Tasks"
         showFlowIcon={false}
         showAddButton={false}
-        rightContent={
-          <Button size="sm" onClick={() => setShowCreateDialog(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add to Flow
-          </Button>
-        }
       />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -105,8 +95,6 @@ const TasksPage = () => {
           />
         </div>
       </div>
-
-      <CreateTaskDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} />
     </div>
   );
 };
