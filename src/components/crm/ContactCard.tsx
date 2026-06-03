@@ -80,7 +80,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
                 <Link to={`/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`} className="hover:text-blue-600 transition-colors">
                   <h4 title={name} className="text-sm cursor-pointer truncate font-light">{name}</h4>
                 </Link>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
                   {isCompleted ? (
                     <Badge variant="secondary" className="text-xs gap-1 py-0 h-5">
                       <CheckCircle2 className="h-3 w-3" />
@@ -89,6 +89,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
                   ) : (
                     <span>In stage: {getDaysInStage(stageEnteredAt)} days</span>
                   )}
+                  <EngagementBadge score={engagementScore} compact />
                 </div>
               </>}
           </div>
