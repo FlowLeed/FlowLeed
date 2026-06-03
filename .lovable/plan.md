@@ -1,28 +1,31 @@
-## Add optional Step description
+## Goal
+Show each user only the PCO lists their **own** Planning Center account can see when creating/editing list mappings — no per-user caching.
 
-Add an optional `description` field to flow steps (stages), editable in the Flow Settings dialog and persisted to the database.
+## Changes
 
-### Scope
+### 1. Edge function: `supabase/functions/planning-center-lists/index.ts`
+- In the `fetchLists` action, replace `getPcoAuthHeader(supabase, integrationId)` with `getUserPcoAuthHeader(supabase, userId, organizationId)`.
+  - Derive `userId` from the JWT (function already runs with `verify_jwt = false`, so read `Authorization` header and call `supabase.auth.getUser(token)`).
+  - Look up `organization_id` from the `integrations` row using `integrationId`.
+- Catch `USER_PCO_NOT_CONNECTED` and `USER_PCO_REAUTH_REQUIRED` and return them as structured JSON errors (HTTP 200 with `{ error: 'USER_PCO_NOT_CONNECTED' }` so the client can branch).
+- Leave all other actions (org-level sync, member fetching, etc.) untouched — they continue using `getPcoAuthHeader`.
 
-- Add `description text` column to `public.pipeline_stages` (nullable).
-- In **FlowSettingsDialog** (`src/components/crm/FlowSettingsDialog.tsx`):
-  - Extend the local `flowSteps` state type with `description?: string | null`.
-  - Add a small `Textarea` (or compact `Input`) under each step row labeled "Description (optional)" — placed below the existing name/color/start/end controls.
-  - Include `description` in both the insert and update branches of the save loop.
-  - Pass `description` through `initialFlowStages` from the parent so existing values prefill on open.
-- In **FlowContext** (`src/contexts/FlowContext.tsx`) and any stage-fetching hooks, include the new `description` column on stages so it flows into the settings dialog.
+### 2. Frontend: `src/components/integrations/PlanningCenterListBrowser.tsx`
+- Replace the `useQuery` against `integration_list_metadata` with a `useQuery` that invokes `planning-center-lists` (`action: 'fetchLists'`) and returns the live PCO response mapped to the existing `PlanningCenterList` shape.
+- Remove the separate "Refresh" mutation — the same query is refetched via `refetch()`; keep the Refresh button wired to `refetch()`.
+- Handle two new error states with inline prompts:
+  - `USER_PCO_NOT_CONNECTED` → "Connect your Planning Center account to see your lists" + link/button to profile PCO connect (reuse pattern from `PcoPersonalConnectPrompt`).
+  - `USER_PCO_REAUTH_REQUIRED` → "Your Planning Center session expired. Reconnect to continue." + same connect action.
+- Add a small loading spinner state for the live fetch (already present).
 
-### Out of scope (not changing)
+### 3. No DB migration
+- `integration_list_metadata` table stays as-is (still used elsewhere for org-level metadata / sync mappings). We simply stop reading from it in the browser.
 
-- No display of the description on the kanban/table views, AI prompts, or analytics — this iteration only adds the field and its editor.
-- No required validation; field is fully optional and nullable.
+## Out of scope
+- Sharing lists between users.
+- Changing how mappings sync (auto-sync keeps using the org token — mappings are org-shared resources).
+- Any change to `pipeline_contacts` or moment mappings.
 
-### Technical notes
-
-- Migration: `ALTER TABLE public.pipeline_stages ADD COLUMN description text;` — no GRANT changes needed (existing grants cover new column).
-- Types in `src/integrations/supabase/types.ts` regenerate automatically after the migration runs.
-- The `flowStages` prop type on FlowSettingsDialog (and the analogous shape in `FlowView.tsx` line ~655 where stages are passed in) needs `description?: string | null` added.
-
-### Open question
-
-Should the step description also be shown anywhere user-facing (e.g. as a tooltip on the kanban column header or as helper text on the stage in the Add-to-Flow dialog), or only stored for now and surfaced later? Default: store only, no display, until you ask for it.
+## Technical notes
+- `planning-center-lists` currently has `verify_jwt = false` in `config.toml`. We'll read the user JWT manually inside the function via `supabase.auth.getUser(authHeader)` so we can identify the calling user without changing the function's public contract.
+- The existing `getUserPcoAuthHeader` helper in `_shared/pco-auth.ts` already handles refresh + reauth flagging, so no auth plumbing changes are needed.
