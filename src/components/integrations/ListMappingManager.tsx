@@ -57,11 +57,11 @@ interface ListMapping {
   pipelines: {
     name: string;
     icon?: string;
-  };
+  } | null;
   pipeline_stages: {
     name: string;
     color?: string;
-  };
+  } | null;
 }
 
 interface ListMappingManagerProps {
