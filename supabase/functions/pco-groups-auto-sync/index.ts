@@ -63,14 +63,17 @@ Deno.serve(async (req) => {
           if (error) { console.error('[groups-auto] groups err', error.message); break; }
           more = data?.hasMore === true;
         }
-        // Then attendance
+        // Then attendance — drain cursor fully if possible
         more = true; round = 0;
-        while (more && round < MAX_ROUNDS) {
+        while (more && round < MAX_ATT_ROUNDS) {
           round++;
           const { data, error } = await supabase.functions.invoke('pco-sync-group-attendance',
             { body: { integrationId: integ.id } });
           if (error) { console.error('[groups-auto] att err', error.message); break; }
           more = data?.hasMore === true;
+        }
+        if (more) {
+          console.warn(`[groups-auto] org ${integ.organization_id} attendance cursor did not drain in ${MAX_ATT_ROUNDS} rounds`);
         }
         triggered++;
       } catch (e) {
