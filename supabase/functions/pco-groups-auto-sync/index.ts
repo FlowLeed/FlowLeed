@@ -35,6 +35,8 @@ Deno.serve(async (req) => {
     for (const integ of integrations) {
       const meta = (integ.metadata as any) || {};
       const last = meta.last_groups_sync_at;
+      const lastAtt = meta.last_groups_attendance_sync_at;
+      const attCursor = meta.groups_attendance_cursor_idx;
       const freq = integ.sync_frequency || 'daily';
 
       let due = !last;
@@ -43,6 +45,11 @@ Deno.serve(async (req) => {
         if (freq === 'daily' && hrs >= 24) due = true;
         else if (freq === 'twice_daily' && hrs >= 12) due = true;
       }
+      // Also due if the attendance pipeline hasn't finished since the last
+      // groups sync (cursor stuck mid-list, or attendance never completed).
+      const attIncomplete = attCursor !== undefined && attCursor !== null;
+      const attStale = last && (!lastAtt || new Date(lastAtt) < new Date(last));
+      if (attIncomplete || attStale) due = true;
       if (!due) continue;
 
       try {
