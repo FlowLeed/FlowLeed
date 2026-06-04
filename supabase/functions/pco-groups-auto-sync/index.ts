@@ -7,6 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 const MAX_ROUNDS = 15;
+const MAX_ATT_ROUNDS = 40;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -35,6 +36,8 @@ Deno.serve(async (req) => {
     for (const integ of integrations) {
       const meta = (integ.metadata as any) || {};
       const last = meta.last_groups_sync_at;
+      const lastAtt = meta.last_groups_attendance_sync_at;
+      const attCursor = meta.groups_attendance_cursor_idx;
       const freq = integ.sync_frequency || 'daily';
 
       let due = !last;
@@ -43,6 +46,11 @@ Deno.serve(async (req) => {
         if (freq === 'daily' && hrs >= 24) due = true;
         else if (freq === 'twice_daily' && hrs >= 12) due = true;
       }
+      // Also due if the attendance pipeline hasn't finished since the last
+      // groups sync (cursor stuck mid-list, or attendance never completed).
+      const attIncomplete = attCursor !== undefined && attCursor !== null;
+      const attStale = last && (!lastAtt || new Date(lastAtt) < new Date(last));
+      if (attIncomplete || attStale) due = true;
       if (!due) continue;
 
       try {
@@ -55,14 +63,17 @@ Deno.serve(async (req) => {
           if (error) { console.error('[groups-auto] groups err', error.message); break; }
           more = data?.hasMore === true;
         }
-        // Then attendance
+        // Then attendance — drain cursor fully if possible
         more = true; round = 0;
-        while (more && round < MAX_ROUNDS) {
+        while (more && round < MAX_ATT_ROUNDS) {
           round++;
           const { data, error } = await supabase.functions.invoke('pco-sync-group-attendance',
             { body: { integrationId: integ.id } });
           if (error) { console.error('[groups-auto] att err', error.message); break; }
           more = data?.hasMore === true;
+        }
+        if (more) {
+          console.warn(`[groups-auto] org ${integ.organization_id} attendance cursor did not drain in ${MAX_ATT_ROUNDS} rounds`);
         }
         triggered++;
       } catch (e) {
