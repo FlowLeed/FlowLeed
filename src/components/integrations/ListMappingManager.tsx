@@ -57,11 +57,11 @@ interface ListMapping {
   pipelines: {
     name: string;
     icon?: string;
-  };
+  } | null;
   pipeline_stages: {
     name: string;
     color?: string;
-  };
+  } | null;
 }
 
 interface ListMappingManagerProps {
@@ -262,9 +262,9 @@ export function ListMappingManager({ integrationId, onCreateMapping }: ListMappi
             <CardContent className="pt-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>{mapping.pipelines.name}</span>
+                  <span>{mapping.pipelines?.name ?? <em className="text-destructive">Deleted flow</em>}</span>
                   <ArrowRight className="h-3 w-3" />
-                  <span>{mapping.pipeline_stages.name}</span>
+                  <span>{mapping.pipeline_stages?.name ?? <em className="text-destructive">Deleted stage</em>}</span>
                 </div>
                 <Button
                   variant="outline"
