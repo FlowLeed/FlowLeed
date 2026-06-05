@@ -215,7 +215,50 @@ export const ContactFilters = ({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Engagement</label>
+              <label className="text-sm font-medium">Signal</label>
+              <Select
+                value={filters.signal}
+                onValueChange={(value) => onFilterChange("signal", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Signal" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Signals</SelectItem>
+                  <SelectItem value="drifting">Drifting</SelectItem>
+                  <SelectItem value="slowing">Slowing</SelectItem>
+                  <SelectItem value="steady">Steady</SelectItem>
+                  <SelectItem value="thriving">Thriving</SelectItem>
+                  <SelectItem value="new">New</SelectItem>
+                  <SelectItem value="none">Unscored</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Active marker</label>
+              <Select
+                value={filters.markerKey}
+                onValueChange={(value) => onFilterChange("markerKey", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Any marker" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="all">Any marker</SelectItem>
+                  {(markerCatalog || [])
+                    .filter((m) => !m.is_phase_two)
+                    .map((m) => (
+                      <SelectItem key={m.key} value={m.key}>
+                        {m.label} ({m.contact_count})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Engagement level</label>
               <Select
                 value={filters.engagementLevel}
                 onValueChange={(value) => onFilterChange("engagementLevel", value)}
@@ -234,6 +277,7 @@ export const ContactFilters = ({
                 </SelectContent>
               </Select>
             </div>
+
 
             {/* Campus filter - only show if campuses exist */}
             <div className="space-y-2">
