@@ -30,6 +30,22 @@ interface SearchContact {
   }>;
 }
 
+interface SearchContactRow {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  avatar: string | null;
+}
+
+interface SearchFlowRow {
+  contact_id: string;
+  pipelines: {
+    name: string;
+    icon: string | null;
+  } | null;
+}
+
 interface GlobalSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -121,8 +137,9 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
 
         if (error) throw error;
 
-        const contactIds = data?.map((contact) => contact.id) || [];
-        let flowRows: any[] = [];
+        const contactRows = (data || []) as SearchContactRow[];
+        const contactIds = contactRows.map((contact) => contact.id);
+        let flowRows: SearchFlowRow[] = [];
 
         if (contactIds.length > 0) {
           const { data: flowsData, error: flowsError } = await supabase
@@ -139,14 +156,14 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
           if (flowsError) {
             console.warn('Flow lookup failed for global search results:', flowsError);
           } else {
-            flowRows = flowsData || [];
+            flowRows = (flowsData || []) as SearchFlowRow[];
           }
         }
 
         // Transform the data to group flows by contact without letting flow lookup hide contacts
         const contactsMap = new Map<string, SearchContact>();
         
-        data?.forEach((contact: any) => {
+        contactRows.forEach((contact) => {
           if (!contactsMap.has(contact.id)) {
             contactsMap.set(contact.id, {
               id: contact.id,
@@ -159,7 +176,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
           }
         });
 
-        flowRows.forEach((pc: any) => {
+        flowRows.forEach((pc) => {
           const existingContact = contactsMap.get(pc.contact_id);
           if (existingContact && pc.pipelines && !existingContact.flows.some(f => f.name === pc.pipelines.name)) {
             existingContact.flows.push({
