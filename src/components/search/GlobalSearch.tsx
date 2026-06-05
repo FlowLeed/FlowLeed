@@ -30,6 +30,22 @@ interface SearchContact {
   }>;
 }
 
+interface SearchContactRow {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  avatar: string | null;
+}
+
+interface SearchFlowRow {
+  contact_id: string;
+  pipelines: {
+    name: string;
+    icon: string | null;
+  } | null;
+}
+
 interface GlobalSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -107,13 +123,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             name,
             email,
             phone,
-            avatar,
-            pipeline_contacts(
-              pipelines(
-                name,
-                icon
-              )
-            )
+            avatar
           `)
           .eq('organization_id', organization.id)
           .or((() => {
@@ -122,14 +132,38 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             const phonePart = phoneFilter ? `,${phoneFilter}` : '';
             return `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`;
           })())
+          .order('name', { ascending: true })
           .limit(8);
 
         if (error) throw error;
 
-        // Transform the data to group flows by contact
+        const contactRows = (data || []) as SearchContactRow[];
+        const contactIds = contactRows.map((contact) => contact.id);
+        let flowRows: SearchFlowRow[] = [];
+
+        if (contactIds.length > 0) {
+          const { data: flowsData, error: flowsError } = await supabase
+            .from('pipeline_contacts')
+            .select(`
+              contact_id,
+              pipelines(
+                name,
+                icon
+              )
+            `)
+            .in('contact_id', contactIds);
+
+          if (flowsError) {
+            console.warn('Flow lookup failed for global search results:', flowsError);
+          } else {
+            flowRows = (flowsData || []) as SearchFlowRow[];
+          }
+        }
+
+        // Transform the data to group flows by contact without letting flow lookup hide contacts
         const contactsMap = new Map<string, SearchContact>();
         
-        data?.forEach((contact: any) => {
+        contactRows.forEach((contact) => {
           if (!contactsMap.has(contact.id)) {
             contactsMap.set(contact.id, {
               id: contact.id,
@@ -140,16 +174,16 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
               flows: []
             });
           }
-          
-          const existingContact = contactsMap.get(contact.id)!;
-          contact.pipeline_contacts?.forEach((pc: any) => {
-            if (pc.pipelines && !existingContact.flows.some(f => f.name === pc.pipelines.name)) {
-              existingContact.flows.push({
-                name: pc.pipelines.name,
-                icon: pc.pipelines.icon || 'Users'
-              });
-            }
-          });
+        });
+
+        flowRows.forEach((pc) => {
+          const existingContact = contactsMap.get(pc.contact_id);
+          if (existingContact && pc.pipelines && !existingContact.flows.some(f => f.name === pc.pipelines.name)) {
+            existingContact.flows.push({
+              name: pc.pipelines.name,
+              icon: pc.pipelines.icon || 'Users'
+            });
+          }
         });
 
         setSearchResults(Array.from(contactsMap.values()));
