@@ -107,13 +107,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             name,
             email,
             phone,
-            avatar,
-            pipeline_contacts(
-              pipelines(
-                name,
-                icon
-              )
-            )
+            avatar
           `)
           .eq('organization_id', organization.id)
           .or((() => {
@@ -122,11 +116,34 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
             const phonePart = phoneFilter ? `,${phoneFilter}` : '';
             return `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`;
           })())
+          .order('name', { ascending: true })
           .limit(8);
 
         if (error) throw error;
 
-        // Transform the data to group flows by contact
+        const contactIds = data?.map((contact) => contact.id) || [];
+        let flowRows: any[] = [];
+
+        if (contactIds.length > 0) {
+          const { data: flowsData, error: flowsError } = await supabase
+            .from('pipeline_contacts')
+            .select(`
+              contact_id,
+              pipelines(
+                name,
+                icon
+              )
+            `)
+            .in('contact_id', contactIds);
+
+          if (flowsError) {
+            console.warn('Flow lookup failed for global search results:', flowsError);
+          } else {
+            flowRows = flowsData || [];
+          }
+        }
+
+        // Transform the data to group flows by contact without letting flow lookup hide contacts
         const contactsMap = new Map<string, SearchContact>();
         
         data?.forEach((contact: any) => {
@@ -140,16 +157,16 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
               flows: []
             });
           }
-          
-          const existingContact = contactsMap.get(contact.id)!;
-          contact.pipeline_contacts?.forEach((pc: any) => {
-            if (pc.pipelines && !existingContact.flows.some(f => f.name === pc.pipelines.name)) {
-              existingContact.flows.push({
-                name: pc.pipelines.name,
-                icon: pc.pipelines.icon || 'Users'
-              });
-            }
-          });
+        });
+
+        flowRows.forEach((pc: any) => {
+          const existingContact = contactsMap.get(pc.contact_id);
+          if (existingContact && pc.pipelines && !existingContact.flows.some(f => f.name === pc.pipelines.name)) {
+            existingContact.flows.push({
+              name: pc.pipelines.name,
+              icon: pc.pipelines.icon || 'Users'
+            });
+          }
         });
 
         setSearchResults(Array.from(contactsMap.values()));
