@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/table";
 import { User, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from "lucide-react";
 import { useState } from "react";
-import { EngagementBadge } from "@/components/contact/EngagementBadge";
+import { SignalChip, SIGNAL_RISK_ORDER } from "@/components/contact/SignalChip";
+import type { SignalLevel } from "@/hooks/useContactSignal";
 
 interface ContactsTableProps {
   contacts: any[];
@@ -20,7 +21,8 @@ interface ContactsTableProps {
 
 export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: ContactsTableProps) => {
   const navigate = useNavigate();
-  const [sortField, setSortField] = useState<string | null>(null);
+  // Default sort: most at risk first
+  const [sortField, setSortField] = useState<string | null>("signal");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const handleSort = (field: string) => {
@@ -39,9 +41,14 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
       : <ArrowDown className="h-4 w-4 ml-1 inline" />;
   };
 
-  const sortedContacts = sortField ? [...contacts].sort((a, b) => {
-    let aVal = a[sortField];
-    let bVal = b[sortField];
+  const getScore = (c: any) => {
+    const s = c.contact_engagement_scores;
+    return Array.isArray(s) ? s[0] : s;
+  };
+
+  const sortedContacts = sortField ? [...(contacts || [])].sort((a, b) => {
+    let aVal: any = a[sortField];
+    let bVal: any = b[sortField];
     
     if (sortField === 'name') {
       aVal = a.name?.toLowerCase() || '';
@@ -52,11 +59,11 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
     } else if (sortField === 'campus') {
       aVal = a.campuses?.name?.toLowerCase() || '';
       bVal = b.campuses?.name?.toLowerCase() || '';
-    } else if (sortField === 'engagement') {
-      const aScores = a.contact_engagement_scores;
-      const bScores = b.contact_engagement_scores;
-      aVal = (Array.isArray(aScores) ? aScores[0]?.score : aScores?.score) ?? -1;
-      bVal = (Array.isArray(bScores) ? bScores[0]?.score : bScores?.score) ?? -1;
+    } else if (sortField === 'signal') {
+      const aSig = getScore(a)?.signal as SignalLevel | undefined;
+      const bSig = getScore(b)?.signal as SignalLevel | undefined;
+      aVal = aSig ? SIGNAL_RISK_ORDER[aSig] : 99;
+      bVal = bSig ? SIGNAL_RISK_ORDER[bSig] : 99;
     }
     
     if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -105,6 +112,12 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
             </TableHead>
             <TableHead 
               className="cursor-pointer select-none group"
+              onClick={() => handleSort('signal')}
+            >
+              Signal{getSortIcon('signal')}
+            </TableHead>
+            <TableHead 
+              className="cursor-pointer select-none group"
               onClick={() => handleSort('email')}
             >
               Email{getSortIcon('email')}
@@ -114,12 +127,6 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
               onClick={() => handleSort('phone')}
             >
               Phone{getSortIcon('phone')}
-            </TableHead>
-            <TableHead 
-              className="cursor-pointer select-none group"
-              onClick={() => handleSort('engagement')}
-            >
-              Engagement{getSortIcon('engagement')}
             </TableHead>
             <TableHead 
               className="cursor-pointer select-none group"
@@ -137,8 +144,7 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
         </TableHeader>
         <TableBody>
           {sortedContacts.map((contact, index) => {
-            const scores = contact.contact_engagement_scores;
-            const engagementScore = Array.isArray(scores) ? scores[0] : scores;
+            const score = getScore(contact);
             return (
               <TableRow
                 key={contact.id}
@@ -160,18 +166,14 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
                     <span className="font-medium">{contact.name}</span>
                   </div>
                 </TableCell>
+                <TableCell>
+                  <SignalChip signal={(score?.signal as SignalLevel) ?? null} />
+                </TableCell>
                 <TableCell className="text-muted-foreground">
                   {contact.email || "—"}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {contact.phone || "—"}
-                </TableCell>
-                <TableCell>
-                  {engagementScore ? (
-                    <EngagementBadge score={engagementScore} />
-                  ) : (
-                    <span className="text-muted-foreground text-sm">—</span>
-                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {contact.campuses?.name ? (
