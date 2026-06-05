@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Users can view contacts in flows they have access to" ON public.pipeline_contacts;
