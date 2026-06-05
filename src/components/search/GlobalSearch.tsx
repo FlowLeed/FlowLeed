@@ -45,6 +45,13 @@ interface SearchFlowRow {
   } | null;
 }
 
+interface SearchVisibleContactsRpc {
+  rpc(
+    functionName: 'search_visible_contacts',
+    args: { _organization_id: string; _search_term: string; _limit: number }
+  ): PromiseLike<{ data: SearchContactRow[] | null; error: Error | null }>;
+}
+
 interface GlobalSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -115,7 +122,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
     const timeoutId = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await (supabase as unknown as SearchVisibleContactsRpc)
           .rpc('search_visible_contacts', {
             _organization_id: organization.id,
             _search_term: searchQuery,
