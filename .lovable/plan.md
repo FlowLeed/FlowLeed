@@ -1,43 +1,82 @@
+# Fix Contact Search Timeout (Per-Row RLS Function Call)
+
+## Problem
+The `contacts` SELECT policy calls `can_user_see_contact(auth.uid(), id)` for **every row** Postgres scans. On Promise Center (~21k contacts) any org-wide query — global search, contacts list, dashboard counts — runs that `SECURITY DEFINER` function ~21k times. Each call does an `EXISTS` against `user_pco_visible_people` (also ~21k rows for Janelle). The query either hits the statement timeout or PostgREST returns an empty payload, so Janelle sees "No contacts found" even though Alexa exists. Direct lookups (household → click person) only invoke the function once, which is why those still work.
+
+Confirmed: this is not a permission/data problem. It's a planner problem — the function is opaque to the planner, so it can't be hoisted, batched, or index-optimized.
+
 ## Goal
+Org-wide contact queries return in <500 ms regardless of org size, while still respecting per-user PCO visibility when an org has `pco_enforce_user_permissions = true`.
 
-Make daily group-attendance sync reliable so meetings like Promise & Pour's June 1 session populate without manual intervention, and backfill The Promise Center now.
+## Fix — single migration
 
-## Root cause
+Replace the per-row function call with an **inlined, set-based predicate** Postgres can plan against indexes. No frontend, edge-function, or types changes.
 
-`supabase/functions/pco-groups-auto-sync/index.ts` decides whether an org is "due" using only `metadata.last_groups_sync_at`, which is set the moment `pco-sync-groups` finishes. The follow-up `pco-sync-group-attendance` paginates through groups via `groups_attendance_cursor_idx` in batches of 25. If the attendance loop doesn't reach the end of the group list in one orchestration run (timeout, error, or just many groups), the cursor is left mid-list AND the org is marked "synced today" — so the next 24h of cron runs skip the org, leaving past-week attendance unsynced.
+### Steps
 
-For Promise Center: cursor stuck at 125/140, `last_groups_attendance_sync_at` missing, but `last_groups_sync_at` set today → org skipped for 24h, and Promise & Pour (group index ~72) never gets a second pass when PCO attendance is actually entered.
+1. **Add the composite index the predicate needs** (idempotent):
+   ```sql
+   CREATE INDEX IF NOT EXISTS idx_upvp_user_org_person
+     ON public.user_pco_visible_people (user_id, organization_id, pc_person_id);
+   ```
+   (Also confirm `contacts (organization_id, pc_person_id)` is indexed; add if missing.)
 
-## Changes
+2. **Drop & recreate** the `"Users can view contacts in their organization"` SELECT policy on `public.contacts` with this `USING`:
+   ```sql
+   EXISTS (
+     SELECT 1 FROM public.organization_members om
+     WHERE om.organization_id = contacts.organization_id
+       AND om.user_id = auth.uid()
+   )
+   AND (
+     -- Enforcement off → everyone in the org sees everything
+     NOT COALESCE(
+       (SELECT pco_enforce_user_permissions
+          FROM public.organizations
+         WHERE id = contacts.organization_id), false)
+     -- Owners/admins always see everything
+     OR EXISTS (
+       SELECT 1 FROM public.organization_members om2
+       WHERE om2.organization_id = contacts.organization_id
+         AND om2.user_id = auth.uid()
+         AND om2.role IN ('owner','admin')
+     )
+     -- Contact isn't tied to a PCO person → visible
+     OR contacts.pc_person_id IS NULL
+     -- User has no active personal PCO connection → don't gate them
+     OR NOT EXISTS (
+       SELECT 1 FROM public.user_pco_connections upc
+       WHERE upc.user_id = auth.uid()
+         AND upc.organization_id = contacts.organization_id
+         AND upc.status = 'active'
+     )
+     -- Otherwise must be in the user's visible set
+     OR EXISTS (
+       SELECT 1 FROM public.user_pco_visible_people v
+       WHERE v.user_id = auth.uid()
+         AND v.organization_id = contacts.organization_id
+         AND v.pc_person_id = contacts.pc_person_id
+     )
+   )
+   ```
 
-### 1. Fix the cadence gate in `pco-groups-auto-sync/index.ts`
+   Why this is fast:
+   - The two org-scoped subqueries (`pco_enforce_user_permissions`, admin check) are parameter-free for a single query and Postgres caches them as initplans — evaluated **once**, not per row.
+   - When enforcement is off, the planner short-circuits the entire OR branch and the policy collapses to the org-membership check.
+   - When enforcement is on, the remaining `EXISTS` against `user_pco_visible_people` is a single index lookup per row on `idx_upvp_user_org_person`, no SQL function call, no SECURITY DEFINER overhead.
 
-Treat an org as "due" when EITHER (a) cadence elapsed since `last_groups_sync_at` OR (b) attendance pipeline hasn't completed since the last groups sync (i.e., `groups_attendance_cursor_idx` is still set, or `last_groups_attendance_sync_at` < `last_groups_sync_at`). This guarantees the attendance loop keeps getting kicked until its cursor fully drains.
+3. **Keep `can_user_see_contact`** in the database — other edge functions call it directly. No code changes needed.
 
-### 2. Make the attendance orchestration loop more resilient
-
-In the same orchestrator, raise `MAX_ROUNDS` from 15 → 40 for the attendance phase and, after the loop, if `hasMore` is still true, log a clear warning so it's visible in edge function logs.
-
-### 3. Re-fetch attendance for past meetings even when no new meetings were upserted
-
-In `pco-sync-group-attendance/index.ts`, the per-group attendance fetch is currently driven by `meetingRows` (events just returned from PCO). That's fine because PCO returns past events in the 90-day lookback every run, so they'll be re-processed. No change needed here — confirming behavior.
-
-### 4. Backfill The Promise Center now
-
-After deploy, manually invoke `pco-sync-group-attendance` for integration `9a1f2c7e-f256-4a39-9ec3-7a1ae5db23cf` repeatedly until `hasMore=false`, then verify `group_attendance` rows appear for meeting `08bf7a80-6bf5-4548-8ae3-8df1351ee155` (Promise & Pour, June 1).
-
-### 5. Save memory
-
-Update `mem://integrations/pco-groups-sync` to record that the orchestrator's cadence gate must consider attendance-cursor completion, not just groups-sync completion.
-
-## Out of scope
-
-- No schema changes.
-- No UI changes (no per-group "Resync" button this round — can add later if still needed).
-- No change to `pco-sync-groups` itself.
+## Out of Scope
+- No frontend changes (search, contacts list, hooks).
+- No edge-function changes.
+- No change to custom-fields/PCO-tabs filtering (separate concern).
+- No removal of `user_pco_visible_people` or the enforcement toggle.
 
 ## Verification
-
-- Edge logs for `pco-groups-auto-sync` show attendance loop running to `hasMore=false` for Promise Center.
-- `integrations.metadata` for `9a1f2c7e…` has `last_groups_attendance_sync_at` set and `groups_attendance_cursor_idx` cleared.
-- `SELECT count(*) FROM group_attendance WHERE group_meeting_id='08bf7a80-6bf5-4548-8ae3-8df1351ee155'` returns 6 present + 3 absent (matches PCO's 6/9).
+1. As Janelle on Promise Center, global search for "Alexa Yarmolatii" returns Alexa in <1s.
+2. `/contacts` loads for Promise Center without timeout.
+3. With `pco_enforce_user_permissions=true` and a personal PCO connection that excludes a person, that person does **not** appear in search/list (visibility still enforced).
+4. Owners/admins always see all contacts.
+5. With enforcement off, all members see all contacts.
+6. `EXPLAIN ANALYZE` on the search query shows an Index Scan on `idx_upvp_user_org_person` and no function calls in the plan.
