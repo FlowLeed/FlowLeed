@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       try {
         const header = await getUserPcoAuthHeader(admin, c.user_id, c.organization_id);
         const seen = new Set<string>();
-        let next: string | null = `${PCO_BASE}/people/v2/people?per_page=100&fields[Person]=id`;
+        let next: string | null = `${PCO_BASE}/people/v2/people?per_page=100&fields[Person]=id&where[status]=active`;
         let pages = 0;
 
         while (next && pages < MAX_PAGES) {

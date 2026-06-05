@@ -63,7 +63,9 @@ Deno.serve(async (req) => {
     const header = await getUserPcoAuthHeader(admin, user.id, organizationId);
 
     const seen = new Set<string>();
-    let next: string | null = `${PCO_BASE}/people/v2/people?per_page=100&fields[Person]=id`;
+    // Only sync active people — matches PCO's default People UI count and
+    // excludes archived/inactive/deceased records.
+    let next: string | null = `${PCO_BASE}/people/v2/people?per_page=100&fields[Person]=id&where[status]=active`;
     let pages = 0;
 
     while (next && pages < MAX_PAGES) {
