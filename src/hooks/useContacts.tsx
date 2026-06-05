@@ -108,11 +108,25 @@ export const useContacts = (filters: ContactFilters) => {
         }
       }
 
+      // Marker filter: get contact IDs that have the marker
+      let contactIdsWithMarker: string[] | null = null;
+      if (filters.markerKey && filters.markerKey !== "all") {
+        const { data: markerRows } = await supabase
+          .from("contact_markers")
+          .select("contact_id")
+          .eq("organization_id", organizationId)
+          .eq("marker_key", filters.markerKey);
+        contactIdsWithMarker = (markerRows || []).map((r: any) => r.contact_id);
+        if (contactIdsWithMarker.length === 0) {
+          return [];
+        }
+      }
+
       // Build base query
       let query = supabase
         .from("contacts")
         .select(`
-          contact_engagement_scores(score, engagement_level, weeks_attended_last_12, streak_weeks, last_checkin_at, volunteer_checkins_90d),
+          contact_engagement_scores(score, engagement_level, signal, weeks_attended_last_12, streak_weeks, last_checkin_at, volunteer_checkins_90d),
           *,
           campuses(id, name),
           contact_tags(tag),
@@ -130,6 +144,11 @@ export const useContacts = (filters: ContactFilters) => {
         query = query.in("id", contactIdsInFlow);
       }
 
+      // Apply marker filter
+      if (contactIdsWithMarker !== null) {
+        query = query.in("id", contactIdsWithMarker);
+      }
+
       // Apply assigned-to filter at query level (for specific users)
       if (contactIdsAssignedToUser !== null) {
         // Intersect with flow filter if both are applied
@@ -144,6 +163,7 @@ export const useContacts = (filters: ContactFilters) => {
           query = query.in("id", contactIdsAssignedToUser);
         }
       }
+
 
       // Apply search filter — sanitize to avoid PostgREST syntax issues with parens/commas
       if (filters.searchTerm) {
@@ -197,6 +217,17 @@ export const useContacts = (filters: ContactFilters) => {
         });
         console.log('After engagement filter:', filteredData.length);
       }
+
+      // Apply signal filter
+      if (filters.signal && filters.signal !== "all") {
+        filteredData = filteredData.filter(contact => {
+          const scores = contact.contact_engagement_scores;
+          const score = Array.isArray(scores) ? scores[0] : scores;
+          if (filters.signal === "none") return !score?.signal;
+          return score?.signal === filters.signal;
+        });
+      }
+
 
       // Apply "no-flows" filter client-side (exclude contacts that are in flows)
       if (contactIdsNotInFlows !== null && contactIdsNotInFlows.length > 0) {
