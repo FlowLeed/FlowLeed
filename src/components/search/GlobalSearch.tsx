@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
-import { buildPhoneOrFilter } from "@/lib/phoneSearch";
 import type { LucideIcon } from 'lucide-react';
 
 interface SearchContact {
@@ -116,24 +115,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ open, onOpenChange }
     const timeoutId = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('contacts')
-          .select(`
-            id,
-            name,
-            email,
-            phone,
-            avatar
-          `)
-          .eq('organization_id', organization.id)
-          .or((() => {
-            const sanitized = searchQuery.replace(/[(),]/g, '').trim();
-            const phoneFilter = buildPhoneOrFilter(searchQuery);
-            const phonePart = phoneFilter ? `,${phoneFilter}` : '';
-            return `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`;
-          })())
-          .order('name', { ascending: true })
-          .limit(8);
+        const { data, error } = await (supabase as any)
+          .rpc('search_visible_contacts', {
+            _organization_id: organization.id,
+            _search_term: searchQuery,
+            _limit: 8,
+          });
 
         if (error) throw error;
 
