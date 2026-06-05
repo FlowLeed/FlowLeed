@@ -581,6 +581,7 @@ export type Database = {
           last_checkin_at: string | null
           organization_id: string
           score: number | null
+          signal: string | null
           streak_weeks: number | null
           total_checkins_30d: number | null
           total_checkins_90d: number | null
@@ -594,6 +595,7 @@ export type Database = {
           last_checkin_at?: string | null
           organization_id: string
           score?: number | null
+          signal?: string | null
           streak_weeks?: number | null
           total_checkins_30d?: number | null
           total_checkins_90d?: number | null
@@ -607,6 +609,7 @@ export type Database = {
           last_checkin_at?: string | null
           organization_id?: string
           score?: number | null
+          signal?: string | null
           streak_weeks?: number | null
           total_checkins_30d?: number | null
           total_checkins_90d?: number | null
@@ -736,6 +739,68 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      contact_markers: {
+        Row: {
+          computed_at: string
+          contact_id: string
+          id: string
+          marker_key: string
+          organization_id: string
+          polarity: string
+          value_numeric: number | null
+          value_text: string | null
+        }
+        Insert: {
+          computed_at?: string
+          contact_id: string
+          id?: string
+          marker_key: string
+          organization_id: string
+          polarity: string
+          value_numeric?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          computed_at?: string
+          contact_id?: string
+          id?: string
+          marker_key?: string
+          organization_id?: string
+          polarity?: string
+          value_numeric?: number | null
+          value_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_markers_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_markers_marker_key_fkey"
+            columns: ["marker_key"]
+            isOneToOne: false
+            referencedRelation: "marker_definitions"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "contact_markers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_markers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_notes: {
         Row: {
@@ -1922,6 +1987,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marker_definitions: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          is_phase_two: boolean
+          key: string
+          label: string
+          polarity: string
+          requires_integration: string | null
+          sort_order: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          is_phase_two?: boolean
+          key: string
+          label: string
+          polarity: string
+          requires_integration?: string | null
+          sort_order?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          is_phase_two?: boolean
+          key?: string
+          label?: string
+          polarity?: string
+          requires_integration?: string | null
+          sort_order?: number
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -3674,6 +3775,22 @@ export type Database = {
         Args: { _session_id: string }
         Returns: boolean
       }
+      get_contact_signal: {
+        Args: { p_contact_id: string }
+        Returns: {
+          category: string
+          description: string
+          engagement_level: string
+          label: string
+          marker_key: string
+          polarity: string
+          score: number
+          signal: string
+          sort_order: number
+          value_numeric: number
+          value_text: string
+        }[]
+      }
       get_engagement_snapshot: {
         Args: { p_as_of: string; p_org_id: string }
         Returns: {
@@ -3697,6 +3814,20 @@ export type Database = {
       get_impersonation_org_id: {
         Args: { _admin_user_id: string }
         Returns: string
+      }
+      get_marker_catalog: {
+        Args: { p_org_id: string }
+        Returns: {
+          category: string
+          contact_count: number
+          description: string
+          is_phase_two: boolean
+          key: string
+          label: string
+          polarity: string
+          requires_integration: string
+          sort_order: number
+        }[]
       }
       get_org_checkin_counts: {
         Args: {
@@ -3779,6 +3910,10 @@ export type Database = {
           _session_id: string
         }
         Returns: string
+      }
+      recompute_contact_markers: {
+        Args: { p_org_id: string }
+        Returns: undefined
       }
       replace_user_pco_visible_people: {
         Args: { _ids: string[]; _org: string; _user: string }
