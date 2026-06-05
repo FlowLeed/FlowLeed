@@ -3784,6 +3784,20 @@ export type Database = {
         Args: { _ids: string[]; _org: string; _user: string }
         Returns: number
       }
+      search_visible_contacts: {
+        Args: {
+          _limit?: number
+          _organization_id: string
+          _search_term: string
+        }
+        Returns: {
+          avatar: string
+          email: string
+          id: string
+          name: string
+          phone: string
+        }[]
+      }
       seed_default_moment_types: {
         Args: { org_id: string }
         Returns: undefined
