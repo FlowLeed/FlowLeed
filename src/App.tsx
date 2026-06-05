@@ -31,6 +31,7 @@ const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 const InvitePage = lazy(() => import("./pages/InvitePage"));
 const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
 const ContactsPage = lazy(() => import("./pages/ContactsPage"));
+const SignalsPage = lazy(() => import("./pages/SignalsPage"));
 const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const CallsPage = lazy(() => import("./pages/CallsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
@@ -80,6 +81,7 @@ const App = () => (
               <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
               <Route path="/flows/:flowId/analytics" element={<FlowAnalyticsPage />} />
               <Route path="/contacts" element={<ContactsPage />} />
+              <Route path="/signals" element={<SignalsPage />} />
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
               <Route path="/groups" element={<GroupsPage />} />
               <Route path="/groups/:groupId" element={<GroupDetailPage />} />
