@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
@@ -520,6 +520,10 @@ export const Sidebar = () => {
     icon: Users,
     path: "/contacts"
   }, {
+    title: "Signals",
+    icon: Activity,
+    path: "/signals"
+  }, {
     title: "Analytics",
     icon: BarChart3,
     path: "/analytics"
@@ -532,6 +536,7 @@ export const Sidebar = () => {
     icon: CheckSquare,
     path: "/tasks"
   }];
+
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
   const allFlowItems: SidebarItem[] = Object.entries(flows).map(([key, flow]) => ({
