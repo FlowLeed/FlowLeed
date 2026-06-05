@@ -20,6 +20,8 @@ export interface ContactFilters {
   lastInteractionDays: string;
   engagementLevel: string;
   campusId: string;
+  signal: string;
+  markerKey: string;
 }
 
 const ContactsPage = () => {
@@ -33,6 +35,8 @@ const ContactsPage = () => {
       : "all";
   })();
   const initialCampus = searchParams.get("campusId") || "all";
+  const initialSignal = searchParams.get("signal") || "all";
+  const initialMarker = searchParams.get("marker") || "all";
   const [filters, setFilters] = useState<ContactFilters>({
     searchTerm: "",
     assignedToUserId: "all",
@@ -40,7 +44,10 @@ const ContactsPage = () => {
     lastInteractionDays: "all",
     engagementLevel: initialEngagement,
     campusId: initialCampus,
+    signal: initialSignal,
+    markerKey: initialMarker,
   });
+
 
   const { organization } = useProfile();
   const queryClient = useQueryClient();
@@ -68,6 +75,8 @@ const ContactsPage = () => {
       lastInteractionDays: "all",
       engagementLevel: "all",
       campusId: "all",
+      signal: "all",
+      markerKey: "all",
     });
   };
 
@@ -77,7 +86,10 @@ const ContactsPage = () => {
     filters.flowId !== "all" ||
     filters.lastInteractionDays !== "all" ||
     filters.engagementLevel !== "all" ||
-    filters.campusId !== "all";
+    filters.campusId !== "all" ||
+    filters.signal !== "all" ||
+    filters.markerKey !== "all";
+
 
   const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null) => {
     if (!organization) {
