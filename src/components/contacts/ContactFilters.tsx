@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCampuses } from "@/hooks/useCampuses";
+import { useMarkerCatalog } from "@/hooks/useMarkerCatalog";
 import type { ContactFilters as Filters } from "@/pages/ContactsPage";
 
 interface ContactFiltersProps {
@@ -37,6 +38,7 @@ export const ContactFilters = ({
   const { user } = useAuth();
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
   const { data: campuses } = useCampuses();
+  const { data: markerCatalog } = useMarkerCatalog();
 
   // Debounce search
   useEffect(() => {
@@ -121,6 +123,8 @@ export const ContactFilters = ({
     filters.lastInteractionDays !== "all",
     filters.engagementLevel !== "all",
     filters.campusId !== "all",
+    filters.signal !== "all",
+    filters.markerKey !== "all",
   ].filter(Boolean).length;
 
   return (
