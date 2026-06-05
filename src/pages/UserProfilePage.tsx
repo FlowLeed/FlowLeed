@@ -29,6 +29,7 @@ import { PcoCustomFieldsCard } from "@/components/contact/PcoCustomFieldsCard";
 import { ContactCheckinsCard } from "@/components/contact/ContactCheckinsCard";
 import { ContactGroupsCard } from "@/components/contact/ContactGroupsCard";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
+import { ActiveMarkersCard } from "@/components/contact/ActiveMarkersCard";
 import { useEngagementScore } from "@/hooks/useCheckinData";
 
 import { ContactStatus } from "@/types/crm";
@@ -1050,8 +1051,12 @@ const UserProfilePage = () => {
         </Card>
       </div>
 
+      {/* Active markers / signal */}
+      <ActiveMarkersCard contactId={contactId!} />
+
       {/* Flow Moments */}
       <FlowMomentsCard contactId={contactId!} />
+
 
       {/* Planning Center custom fields (per-user) */}
       <PcoCustomFieldsCard contactId={contactId!} />
