@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { User, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from "lucide-react";
 import { useState } from "react";
 import { SignalChip, SIGNAL_RISK_ORDER } from "@/components/contact/SignalChip";
@@ -17,9 +18,13 @@ interface ContactsTableProps {
   contacts: any[];
   isLoading: boolean;
   hasActiveFilters: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onToggleSelectAll?: (ids: string[]) => void;
 }
 
-export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: ContactsTableProps) => {
+export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedIds, onToggleSelect, onToggleSelectAll }: ContactsTableProps) => {
+  const selectionEnabled = !!onToggleSelect;
   const navigate = useNavigate();
   // Default sort: most at risk first
   const [sortField, setSortField] = useState<string | null>("signal");
@@ -104,6 +109,20 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30">
+            {selectionEnabled && (
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={
+                    sortedContacts && sortedContacts.length > 0 &&
+                    sortedContacts.every((c: any) => selectedIds?.has(c.id))
+                  }
+                  onCheckedChange={() => {
+                    onToggleSelectAll?.(sortedContacts.map((c: any) => c.id));
+                  }}
+                  aria-label="Select all"
+                />
+              </TableHead>
+            )}
             <TableHead 
               className="cursor-pointer select-none group"
               onClick={() => handleSort('name')}
@@ -145,12 +164,23 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: Contact
         <TableBody>
           {sortedContacts.map((contact, index) => {
             const score = getScore(contact);
+            const isSelected = selectedIds?.has(contact.id);
             return (
               <TableRow
                 key={contact.id}
+                data-state={isSelected ? "selected" : undefined}
                 className={`cursor-pointer hover:bg-muted/50 ${index % 2 === 1 ? 'bg-muted/20' : ''}`}
                 onClick={() => navigate(`/contacts/${contact.id}`)}
               >
+                {selectionEnabled && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => onToggleSelect?.(contact.id)}
+                      aria-label={`Select ${contact.name}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">

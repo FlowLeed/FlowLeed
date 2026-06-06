@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, X, UserPlus, Tag as TagIcon, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { ContactFilters } from "@/components/contacts/ContactFilters";
 import { ContactFormDialog, FlowEnrollmentData } from "@/components/crm/ContactFormDialog";
+import { BulkReassignDialog } from "@/components/crm/BulkReassignDialog";
+import { BulkTagDialog } from "@/components/crm/BulkTagDialog";
+import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
 import { useContacts } from "@/hooks/useContacts";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/hooks/useAuth";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Contact } from "@/types/crm";
@@ -50,18 +55,100 @@ const ContactsPage = () => {
 
 
   const { organization } = useProfile();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { contacts, isLoading } = useContacts(filters);
-  
-  console.log('📄 ContactsPage render:', { 
-    contactsCount: contacts?.length,
-    contactsType: typeof contacts,
-    isArray: Array.isArray(contacts),
-    isLoading,
-    isUndefined: contacts === undefined,
-    isNull: contacts === null,
-    filters 
-  });
+  const { data: orgMembers = [], isLoading: orgMembersLoading } = useOrgMembers(user?.id, true);
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [addToFlowOpen, setAddToFlowOpen] = useState(false);
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [addTagsOpen, setAddTagsOpen] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (ids: string[]) => {
+    setSelectedIds((prev) => {
+      const allSelected = ids.length > 0 && ids.every((id) => prev.has(id));
+      if (allSelected) {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      }
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const teamMembers = useMemo(
+    () => orgMembers.map((m) => ({ id: m.user_id, name: m.full_name, avatar: m.avatar_url || undefined })),
+    [orgMembers]
+  );
+
+  const handleBulkReassign = async (userId: string | null) => {
+    setBulkLoading(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from('contacts')
+        .update({ assigned_to_user_id: userId, updated_at: new Date().toISOString() })
+        .in('id', ids);
+      if (error) throw error;
+      toast.success(`${ids.length} ${ids.length === 1 ? 'person' : 'people'} reassigned`);
+      queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
+      setReassignOpen(false);
+      clearSelection();
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Failed to reassign');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkAddTags = async (tags: string[]) => {
+    setBulkLoading(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { data: existing } = await supabase
+        .from('contact_tags')
+        .select('contact_id, tag')
+        .in('contact_id', ids)
+        .in('tag', tags);
+      const existingSet = new Set((existing ?? []).map((r: any) => `${r.contact_id}::${r.tag}`));
+      const inserts: { contact_id: string; tag: string }[] = [];
+      for (const id of ids) {
+        for (const tag of tags) {
+          if (!existingSet.has(`${id}::${tag}`)) inserts.push({ contact_id: id, tag });
+        }
+      }
+      if (inserts.length > 0) {
+        const { error } = await supabase.from('contact_tags').insert(inserts);
+        if (error) throw error;
+      }
+      toast.success(`Tags added to ${ids.length} ${ids.length === 1 ? 'person' : 'people'}`);
+      queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
+      setAddTagsOpen(false);
+      clearSelection();
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Failed to add tags');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const handleFilterChange = (key: keyof ContactFilters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -231,8 +318,60 @@ const ContactsPage = () => {
           contacts={contacts}
           isLoading={isLoading}
           hasActiveFilters={hasActiveFilters}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
         />
       </div>
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-3 md:p-4 w-[min(640px,calc(100vw-2rem))]">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span className="font-semibold text-sm">
+              {selectedIds.size} {selectedIds.size === 1 ? 'person' : 'people'} selected
+            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => setAddToFlowOpen(true)} disabled={bulkLoading}>
+                <Workflow className="h-4 w-4 mr-2" />
+                Add to Flow
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setReassignOpen(true)} disabled={bulkLoading}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Assign To
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setAddTagsOpen(true)} disabled={bulkLoading}>
+                <TagIcon className="h-4 w-4 mr-2" />
+                Add Tags
+              </Button>
+              <Button variant="ghost" size="sm" onClick={clearSelection} disabled={bulkLoading}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <BulkAddToFlowDialog
+        open={addToFlowOpen}
+        onOpenChange={setAddToFlowOpen}
+        contactIds={Array.from(selectedIds)}
+        onSuccess={clearSelection}
+      />
+
+      <BulkReassignDialog
+        open={reassignOpen}
+        onOpenChange={setReassignOpen}
+        teamMembers={teamMembers}
+        isLoading={orgMembersLoading}
+        onConfirm={handleBulkReassign}
+      />
+
+      <BulkTagDialog
+        open={addTagsOpen}
+        onOpenChange={setAddTagsOpen}
+        mode="add"
+        onConfirm={handleBulkAddTags}
+      />
 
       <ContactFormDialog
         open={showAddDialog}
