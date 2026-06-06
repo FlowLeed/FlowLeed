@@ -6,8 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles, Building2, User, X } from "lucide-react";
 import { useMarkerCatalog, useRecomputeMarkers, type MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
+import { useCampuses } from "@/hooks/useCampuses";
+import { useAuth } from "@/hooks/useAuth";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
 
 const polarityClass: Record<string, string> = {
   positive: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300",
@@ -16,9 +20,15 @@ const polarityClass: Record<string, string> = {
 };
 
 const SignalsPage = () => {
-  const { data: catalog, isLoading } = useMarkerCatalog();
+  const { user } = useAuth();
+  const [campusId, setCampusId] = useState<string | null>(null);
+  const [assignedUserId, setAssignedUserId] = useState<string | null>(null);
+  const { data: campuses } = useCampuses();
+  const { data: members } = useOrgMembers(user?.id, !!user?.id);
+  const { data: catalog, isLoading } = useMarkerCatalog({ campusId, assignedUserId });
   const recompute = useRecomputeMarkers();
   const [filter, setFilter] = useState<"all" | "positive" | "negative" | "phase2">("all");
+  const hasFilters = campusId !== null || assignedUserId !== null;
 
   const filtered = useMemo(() => {
     if (!catalog) return [];
