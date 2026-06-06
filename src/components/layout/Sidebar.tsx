@@ -513,7 +513,7 @@ export const Sidebar = () => {
   
   const pageItems: SidebarItem[] = [{
     title: "FlowLeed AI",
-    icon: LayoutDashboard,
+    icon: Sparkles,
     path: "/"
   }, {
     title: "People",
