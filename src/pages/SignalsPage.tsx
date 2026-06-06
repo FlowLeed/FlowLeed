@@ -7,7 +7,32 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles, Building2, User, X } from "lucide-react";
+import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles, Building2, User, X, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+const markerFormulas: Record<string, string> = {
+  attended_sunday_recent: "Fires when the contact has any service check-in in the last 14 days.",
+  consistent_attender: "Attended a service in at least 3 of the last 4 weeks.",
+  first_time_guest: "Has a check-in flagged as guest in the last 30 days.",
+  kids_checked_in: "A household member checked in (e.g. kids) in the last 30 days.",
+  missed_3_sundays: "Previously regular (4+ lifetime check-ins) AND last service attendance is between 21 and 42 days ago.",
+  drifting_6_weeks: "Previously regular (4+ lifetime check-ins) AND last service attendance is more than 42 days ago (or never recorded).",
+  attendance_dropped: "Attended 4+ of the prior 12 weeks, and the last 12 weeks are ≤ half of that prior count.",
+  in_group: "Active member of at least one small group.",
+  group_attendance_high: "Attended ≥ 66% of the last 3+ group meetings.",
+  group_attendance_mid: "Attended 33–66% of the last 3+ group meetings.",
+  group_attendance_low: "Attended < 33% of the last 4+ group meetings.",
+  group_inactive_30d: "In a group but no group attendance in the last 30 days.",
+  served_recently: "Volunteered / served at least once in the last 30 days.",
+  serves_regularly: "Served 3+ times in the last 90 days.",
+  stopped_serving: "Served 3+ times in the last 180 days, but 0 times in the last 90, and last serve was 60+ days ago.",
+  in_active_flow: "Currently in 1+ active flows.",
+  stuck_in_stage_30d: "Has been in their current flow stage for 30+ days.",
+  flow_moment_recent: "Logged 1+ flow moment (next step) in the last 90 days.",
+  salvation_moment: "Has a salvation decision recorded.",
+  watched_online_recent: "Watched 1+ online events in the last 30 days.",
+  prayer_request_submitted: "Submitted 1+ prayer requests in the last 90 days.",
+};
 import { useMarkerCatalog, useRecomputeMarkers, type MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
 import { useCampuses } from "@/hooks/useCampuses";
 import { useAuth } from "@/hooks/useAuth";
@@ -219,7 +244,28 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
             )}
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <span className="text-2xl font-light">{marker.contact_count}</span>
+            <div className="flex items-center gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="How this is calculated"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs">
+                    <p className="text-xs font-medium mb-1">How it's calculated</p>
+                    <p className="text-xs text-muted-foreground">
+                      {markerFormulas[marker.key] || marker.description}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <span className="text-2xl font-light">{marker.contact_count}</span>
+            </div>
             {!locked && marker.contact_count > 0 && (
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
                 <Link to={`/contacts?marker=${marker.key}`}>
@@ -228,6 +274,7 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
               </Button>
             )}
           </div>
+
         </div>
       </CardContent>
     </Card>
