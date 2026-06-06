@@ -318,8 +318,60 @@ const ContactsPage = () => {
           contacts={contacts}
           isLoading={isLoading}
           hasActiveFilters={hasActiveFilters}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
         />
       </div>
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-3 md:p-4 w-[min(640px,calc(100vw-2rem))]">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span className="font-semibold text-sm">
+              {selectedIds.size} {selectedIds.size === 1 ? 'person' : 'people'} selected
+            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => setAddToFlowOpen(true)} disabled={bulkLoading}>
+                <Workflow className="h-4 w-4 mr-2" />
+                Add to Flow
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setReassignOpen(true)} disabled={bulkLoading}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Assign To
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setAddTagsOpen(true)} disabled={bulkLoading}>
+                <TagIcon className="h-4 w-4 mr-2" />
+                Add Tags
+              </Button>
+              <Button variant="ghost" size="sm" onClick={clearSelection} disabled={bulkLoading}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <BulkAddToFlowDialog
+        open={addToFlowOpen}
+        onOpenChange={setAddToFlowOpen}
+        contactIds={Array.from(selectedIds)}
+        onSuccess={clearSelection}
+      />
+
+      <BulkReassignDialog
+        open={reassignOpen}
+        onOpenChange={setReassignOpen}
+        teamMembers={teamMembers}
+        isLoading={orgMembersLoading}
+        onConfirm={handleBulkReassign}
+      />
+
+      <BulkTagDialog
+        open={addTagsOpen}
+        onOpenChange={setAddTagsOpen}
+        mode="add"
+        onConfirm={handleBulkAddTags}
+      />
 
       <ContactFormDialog
         open={showAddDialog}
