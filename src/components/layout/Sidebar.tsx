@@ -512,7 +512,7 @@ export const Sidebar = () => {
   }, [STORAGE_KEY, showAllFlows, showPinnedOnly, teamMemberFilter]);
   
   const pageItems: SidebarItem[] = [{
-    title: "Dashboard",
+    title: "FlowLeed AI",
     icon: LayoutDashboard,
     path: "/"
   }, {
