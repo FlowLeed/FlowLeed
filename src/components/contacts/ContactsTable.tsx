@@ -109,6 +109,20 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedI
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30">
+            {selectionEnabled && (
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={
+                    sortedContacts && sortedContacts.length > 0 &&
+                    sortedContacts.every((c: any) => selectedIds?.has(c.id))
+                  }
+                  onCheckedChange={() => {
+                    onToggleSelectAll?.(sortedContacts.map((c: any) => c.id));
+                  }}
+                  aria-label="Select all"
+                />
+              </TableHead>
+            )}
             <TableHead 
               className="cursor-pointer select-none group"
               onClick={() => handleSort('name')}
