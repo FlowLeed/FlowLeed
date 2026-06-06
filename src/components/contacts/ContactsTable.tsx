@@ -164,12 +164,23 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedI
         <TableBody>
           {sortedContacts.map((contact, index) => {
             const score = getScore(contact);
+            const isSelected = selectedIds?.has(contact.id);
             return (
               <TableRow
                 key={contact.id}
+                data-state={isSelected ? "selected" : undefined}
                 className={`cursor-pointer hover:bg-muted/50 ${index % 2 === 1 ? 'bg-muted/20' : ''}`}
                 onClick={() => navigate(`/contacts/${contact.id}`)}
               >
+                {selectionEnabled && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => onToggleSelect?.(contact.id)}
+                      aria-label={`Select ${contact.name}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
