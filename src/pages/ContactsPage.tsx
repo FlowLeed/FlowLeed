@@ -55,10 +55,100 @@ const ContactsPage = () => {
 
 
   const { organization } = useProfile();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { contacts, isLoading } = useContacts(filters);
-  
-  console.log('📄 ContactsPage render:', { 
+  const { data: orgMembers = [], isLoading: orgMembersLoading } = useOrgMembers(user?.id, true);
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [addToFlowOpen, setAddToFlowOpen] = useState(false);
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [addTagsOpen, setAddTagsOpen] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (ids: string[]) => {
+    setSelectedIds((prev) => {
+      const allSelected = ids.length > 0 && ids.every((id) => prev.has(id));
+      if (allSelected) {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      }
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const teamMembers = useMemo(
+    () => orgMembers.map((m) => ({ id: m.user_id, name: m.full_name, avatar: m.avatar_url || undefined })),
+    [orgMembers]
+  );
+
+  const handleBulkReassign = async (userId: string | null) => {
+    setBulkLoading(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { error } = await supabase
+        .from('contacts')
+        .update({ assigned_to_user_id: userId, updated_at: new Date().toISOString() })
+        .in('id', ids);
+      if (error) throw error;
+      toast.success(`${ids.length} ${ids.length === 1 ? 'person' : 'people'} reassigned`);
+      queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
+      setReassignOpen(false);
+      clearSelection();
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Failed to reassign');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleBulkAddTags = async (tags: string[]) => {
+    setBulkLoading(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const { data: existing } = await supabase
+        .from('contact_tags')
+        .select('contact_id, tag')
+        .in('contact_id', ids)
+        .in('tag', tags);
+      const existingSet = new Set((existing ?? []).map((r: any) => `${r.contact_id}::${r.tag}`));
+      const inserts: { contact_id: string; tag: string }[] = [];
+      for (const id of ids) {
+        for (const tag of tags) {
+          if (!existingSet.has(`${id}::${tag}`)) inserts.push({ contact_id: id, tag });
+        }
+      }
+      if (inserts.length > 0) {
+        const { error } = await supabase.from('contact_tags').insert(inserts);
+        if (error) throw error;
+      }
+      toast.success(`Tags added to ${ids.length} ${ids.length === 1 ? 'person' : 'people'}`);
+      queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
+      setAddTagsOpen(false);
+      clearSelection();
+    } catch (e: any) {
+      console.error(e);
+      toast.error('Failed to add tags');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
     contactsCount: contacts?.length,
     contactsType: typeof contacts,
     isArray: Array.isArray(contacts),
