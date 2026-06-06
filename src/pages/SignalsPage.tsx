@@ -244,7 +244,28 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
             )}
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <span className="text-2xl font-light">{marker.contact_count}</span>
+            <div className="flex items-center gap-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label="How this is calculated"
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="max-w-xs">
+                    <p className="text-xs font-medium mb-1">How it's calculated</p>
+                    <p className="text-xs text-muted-foreground">
+                      {markerFormulas[marker.key] || marker.description}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <span className="text-2xl font-light">{marker.contact_count}</span>
+            </div>
             {!locked && marker.contact_count > 0 && (
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
                 <Link to={`/contacts?marker=${marker.key}`}>
@@ -253,6 +274,7 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
               </Button>
             )}
           </div>
+
         </div>
       </CardContent>
     </Card>
