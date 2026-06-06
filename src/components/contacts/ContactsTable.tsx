@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { User, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from "lucide-react";
 import { useState } from "react";
 import { SignalChip, SIGNAL_RISK_ORDER } from "@/components/contact/SignalChip";
@@ -17,6 +18,9 @@ interface ContactsTableProps {
   contacts: any[];
   isLoading: boolean;
   hasActiveFilters: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onToggleSelectAll?: (ids: string[]) => void;
 }
 
 export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: ContactsTableProps) => {
