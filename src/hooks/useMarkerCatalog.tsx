@@ -15,16 +15,24 @@ export interface MarkerCatalogEntry {
   contact_count: number;
 }
 
-export function useMarkerCatalog() {
+export interface MarkerCatalogFilters {
+  campusId?: string | null;
+  assignedUserId?: string | null;
+}
+
+export function useMarkerCatalog(filters: MarkerCatalogFilters = {}) {
   const { organization } = useProfile();
+  const { campusId = null, assignedUserId = null } = filters;
   return useQuery({
-    queryKey: ["marker-catalog", organization?.id],
+    queryKey: ["marker-catalog", organization?.id, campusId, assignedUserId],
     enabled: !!organization?.id,
     staleTime: 60_000,
     queryFn: async (): Promise<MarkerCatalogEntry[]> => {
       if (!organization?.id) return [];
       const { data, error } = await supabase.rpc("get_marker_catalog" as any, {
         p_org_id: organization.id,
+        p_campus_id: campusId,
+        p_assigned_user_id: assignedUserId,
       });
       if (error) throw error;
       return ((data as any[]) || []) as MarkerCatalogEntry[];

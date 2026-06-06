@@ -6,8 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles, Building2, User, X } from "lucide-react";
 import { useMarkerCatalog, useRecomputeMarkers, type MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
+import { useCampuses } from "@/hooks/useCampuses";
+import { useAuth } from "@/hooks/useAuth";
+import { useOrgMembers } from "@/hooks/useOrgMembers";
 
 const polarityClass: Record<string, string> = {
   positive: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300",
@@ -16,9 +20,15 @@ const polarityClass: Record<string, string> = {
 };
 
 const SignalsPage = () => {
-  const { data: catalog, isLoading } = useMarkerCatalog();
+  const { user } = useAuth();
+  const [campusId, setCampusId] = useState<string | null>(null);
+  const [assignedUserId, setAssignedUserId] = useState<string | null>(null);
+  const { data: campuses } = useCampuses();
+  const { data: members } = useOrgMembers(user?.id, !!user?.id);
+  const { data: catalog, isLoading } = useMarkerCatalog({ campusId, assignedUserId });
   const recompute = useRecomputeMarkers();
   const [filter, setFilter] = useState<"all" | "positive" | "negative" | "phase2">("all");
+  const hasFilters = campusId !== null || assignedUserId !== null;
 
   const filtered = useMemo(() => {
     if (!catalog) return [];
@@ -67,6 +77,57 @@ const SignalsPage = () => {
       />
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {campuses && campuses.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={campusId ?? "all"}
+                onValueChange={(v) => setCampusId(v === "all" ? null : v)}
+              >
+                <SelectTrigger className="w-[180px] h-9">
+                  <SelectValue placeholder="All Campuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Campuses</SelectItem>
+                  {campuses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {members && members.length > 0 && (
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={assignedUserId ?? "all"}
+                onValueChange={(v) => setAssignedUserId(v === "all" ? null : v)}
+              >
+                <SelectTrigger className="w-[200px] h-9">
+                  <SelectValue placeholder="All Leaders" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Leaders</SelectItem>
+                  {members.map((m) => (
+                    <SelectItem key={m.user_id} value={m.user_id}>{m.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setCampusId(null); setAssignedUserId(null); }}
+              className="gap-1"
+            >
+              <X className="h-3 w-3" /> Clear
+            </Button>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard
             label="Active markers tracked"
