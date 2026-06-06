@@ -3815,20 +3815,39 @@ export type Database = {
         Args: { _admin_user_id: string }
         Returns: string
       }
-      get_marker_catalog: {
-        Args: { p_org_id: string }
-        Returns: {
-          category: string
-          contact_count: number
-          description: string
-          is_phase_two: boolean
-          key: string
-          label: string
-          polarity: string
-          requires_integration: string
-          sort_order: number
-        }[]
-      }
+      get_marker_catalog:
+        | {
+            Args: { p_org_id: string }
+            Returns: {
+              category: string
+              contact_count: number
+              description: string
+              is_phase_two: boolean
+              key: string
+              label: string
+              polarity: string
+              requires_integration: string
+              sort_order: number
+            }[]
+          }
+        | {
+            Args: {
+              p_assigned_user_id?: string
+              p_campus_id?: string
+              p_org_id: string
+            }
+            Returns: {
+              category: string
+              contact_count: number
+              description: string
+              is_phase_two: boolean
+              key: string
+              label: string
+              polarity: string
+              requires_integration: string
+              sort_order: number
+            }[]
+          }
       get_org_checkin_counts: {
         Args: {
           p_campus_id?: string
