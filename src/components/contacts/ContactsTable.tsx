@@ -23,7 +23,8 @@ interface ContactsTableProps {
   onToggleSelectAll?: (ids: string[]) => void;
 }
 
-export const ContactsTable = ({ contacts, isLoading, hasActiveFilters }: ContactsTableProps) => {
+export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedIds, onToggleSelect, onToggleSelectAll }: ContactsTableProps) => {
+  const selectionEnabled = !!onToggleSelect;
   const navigate = useNavigate();
   // Default sort: most at risk first
   const [sortField, setSortField] = useState<string | null>("signal");
