@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Send, Square, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -228,43 +229,60 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
           )}
         </div>
 
-        {dropdownOpen && (
-          <div className="absolute left-3 bottom-full mb-2 z-50 w-72 rounded-xl border border-border bg-popover shadow-xl overflow-hidden">
-            <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border">
-              People
-            </div>
-            <ul className="max-h-72 overflow-y-auto py-1">
-              {mentionResults.map((c, idx) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      insertMention(c);
-                    }}
-                    onMouseEnter={() => setActiveIndex(idx)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
-                      idx === activeIndex ? "bg-accent" : "hover:bg-accent/50"
-                    }`}
-                  >
-                    <Avatar className="h-7 w-7">
-                      <AvatarImage src={c.avatar || undefined} />
-                      <AvatarFallback className="text-[10px]">
-                        {c.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate font-medium">{c.name}</div>
-                      {c.email && (
-                        <div className="truncate text-xs text-muted-foreground">{c.email}</div>
-                      )}
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {dropdownOpen && textareaRef.current && (() => {
+          const rect = textareaRef.current.getBoundingClientRect();
+          const dropdownWidth = 288;
+          const maxHeight = Math.min(320, rect.top - 16);
+          const left = Math.min(rect.left, window.innerWidth - dropdownWidth - 8);
+          return createPortal(
+            <div
+              style={{
+                position: "fixed",
+                left,
+                top: rect.top - 8,
+                transform: "translateY(-100%)",
+                width: dropdownWidth,
+                maxHeight,
+              }}
+              className="z-[100] rounded-xl border border-border bg-popover shadow-xl overflow-hidden flex flex-col"
+            >
+              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border shrink-0">
+                People
+              </div>
+              <ul className="overflow-y-auto py-1 flex-1">
+                {mentionResults.map((c, idx) => (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        insertMention(c);
+                      }}
+                      onMouseEnter={() => setActiveIndex(idx)}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                        idx === activeIndex ? "bg-accent" : "hover:bg-accent/50"
+                      }`}
+                    >
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={c.avatar || undefined} />
+                        <AvatarFallback className="text-[10px]">
+                          {c.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate font-medium">{c.name}</div>
+                        {c.email && (
+                          <div className="truncate text-xs text-muted-foreground">{c.email}</div>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>,
+            document.body
+          );
+        })()}
       </div>
     </div>
   );
