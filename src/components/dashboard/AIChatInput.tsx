@@ -67,27 +67,40 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
   }, [mentionQuery, organization?.id]);
 
   const detectMention = useCallback((value: string, caret: number) => {
-    // Look back from caret for an '@' not preceded by a word char and not followed by whitespace
-    let i = caret - 1;
-    while (i >= 0) {
+    // Look back from caret for the nearest '@' preceded by start-of-string or whitespace.
+    // Allow spaces inside the query so users can type "First Last".
+    let atIndex = -1;
+    for (let i = caret - 1; i >= 0; i--) {
       const ch = value[i];
+      if (ch === "\n") break;
       if (ch === "@") {
         const prev = i > 0 ? value[i - 1] : " ";
-        if (/\s|^/.test(prev) || i === 0) {
-          const fragment = value.slice(i + 1, caret);
-          if (/^[\w\-\.]*$/.test(fragment)) {
-            triggerStartRef.current = i;
-            setMentionQuery(fragment);
-            return;
-          }
+        if (i === 0 || /\s/.test(prev)) {
+          atIndex = i;
         }
         break;
       }
-      if (/\s/.test(ch)) break;
-      i--;
     }
-    triggerStartRef.current = null;
-    setMentionQuery(null);
+    if (atIndex === -1) {
+      triggerStartRef.current = null;
+      setMentionQuery(null);
+      return;
+    }
+    const fragment = value.slice(atIndex + 1, caret);
+    // Reject if too long, contains name-ending punctuation, newline, or more than 2 spaces.
+    const spaceCount = (fragment.match(/ /g) || []).length;
+    const valid =
+      fragment.length <= 40 &&
+      spaceCount <= 2 &&
+      !/[\n,.!?;:]/.test(fragment) &&
+      /^[\w\-\. ]*$/.test(fragment);
+    if (!valid) {
+      triggerStartRef.current = null;
+      setMentionQuery(null);
+      return;
+    }
+    triggerStartRef.current = atIndex;
+    setMentionQuery(fragment);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
