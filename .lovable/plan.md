@@ -1,37 +1,47 @@
+
+## Problem
+
+In `AIChatInput.tsx`, `detectMention` walks back from the caret to find `@`, but **breaks on any whitespace** (`if (/\s/.test(ch)) break;`) and the fragment regex `^[\w\-\.]*$` rejects spaces. So as soon as the user types `@Alexa ` (space) to type the last name, the mention is no longer detected and the dropdown closes — confusing, since the user thinks they're still mid-mention.
+
 ## Goal
 
-Let users type `@` in the dashboard AI chat to open a small dropdown that searches contacts by name. Selecting one inserts the contact's name as a mention token (e.g. `@Alexa Yarmolatii`) and attaches their ID as context so the AI answers about the right person.
+Let the user type `@Alexa Yarmolatii` and keep the dropdown open & filtering against the full multi-word query, while still closing cleanly when they clearly move on.
 
-## UX
+## Approach (recommended)
 
-- In `AIChatInput.tsx` textarea, when the user types `@` (at start or after whitespace), a floating dropdown appears anchored under the caret.
-- Dropdown shows up to 6 contacts with avatar, name, and email/phone subtitle — same data source as global search (`search_visible_contacts` RPC).
-- As the user keeps typing (`@alex...`), the query updates with debounce (~150ms).
-- Keyboard: ↑/↓ to navigate, Enter/Tab to select, Esc to close. Mouse click also selects.
-- On select: replace the `@query` fragment with `@Full Name ` (trailing space) and track the contact ID in a `mentions` array tied to that token.
-- Backspacing into a mention removes the whole token + its entry from `mentions`.
-- Dropdown closes if the user types a space without selecting, or moves the caret out of the trigger.
+**Allow up to 2 spaces inside the active mention query, and stop when:**
+1. The user types a 3rd space, OR
+2. The user types a newline / punctuation that clearly ends a name (`,` `.` `!` `?` `;` `:`), OR
+3. The fragment grows longer than ~40 chars, OR
+4. The user moves the caret before the `@`.
 
-## Context wiring
+This matches Slack / Jira / Linear behavior: they keep the picker open through a space or two so "First Last" works, then close on a clear delimiter.
 
-- `AIChatInput.onSubmit` signature becomes `(message: string, mentions: { id: string; name: string }[])`.
-- `ChatThread` / `Dashboard` pass mentions through to `useDashboardChat.sendMessage`.
-- `useDashboardChat` appends a hidden context line to the outgoing payload, e.g. prepending a system-style note: `Referenced contacts: [{id, name}, ...]` so the edge function/AI can resolve who the user means. No backend changes required — the existing `dashboard-ai-chat` function already receives the messages array; we just enrich the user message body or add it to a `context` field if the function supports it (verify in the function before finalizing).
+### Changes to `src/components/dashboard/AIChatInput.tsx`
 
-## Files to change / add
+1. **`detectMention`** — rewrite the lookback loop:
+   - Walk back from caret to find the nearest `@` preceded by start-of-string or whitespace.
+   - Build `fragment = value.slice(atIndex + 1, caret)`.
+   - Accept the fragment if it matches `/^[\w\-\.][\w\-\.\s]{0,40}$/` AND contains at most 2 spaces AND no name-ending punctuation. Otherwise treat as no active mention.
+   - This lets `@`, `@a`, `@alexa`, `@alexa `, `@alexa y`, `@alexa yarmolatii` all keep the dropdown open.
 
-- `src/components/dashboard/AIChatInput.tsx` — add mention detection, dropdown rendering, keyboard handling, mentions state, updated submit signature.
-- `src/components/dashboard/MentionDropdown.tsx` (new) — presentational dropdown (avatar + name + subtitle), reuses `search_visible_contacts` via a small inline hook.
-- `src/hooks/useMentionSearch.tsx` (new) — debounced wrapper around `supabase.rpc('search_visible_contacts', ...)` returning `{ id, name, avatar, email }[]`.
-- `src/components/dashboard/ChatThread.tsx` and `src/pages/Dashboard.tsx` (or wherever `AIChatInput` is rendered) — forward the new `mentions` arg.
-- `src/hooks/useDashboardChat.tsx` — accept `mentions`, include them in the outbound message (prepend a short `[Context: @Name (id: ...)]` line to the user content, or pass as a separate field if we extend the edge function in a follow-up).
+2. **Visual cue while query has a space** — add a subtle hint row at the top of the dropdown (e.g. "Keep typing last name, or press Esc"). Reuses existing popover styling, no new tokens. This removes the "is this still active?" confusion.
 
-## Out of scope
+3. **Search call** — already uses the raw fragment as `_search_term`; `search_visible_contacts` does ILIKE on full name, so `"alexa yar"` will correctly match "Alexa Yarmolatii". No backend change needed.
 
-- Mentioning flows, groups, or tasks (only people for now).
-- Rendering mentions as styled chips inside the textarea — we keep it as plain `@Name` text with the dropdown helping discovery. A chip-style editor (contenteditable / Tiptap) can be a follow-up if you want richer visuals.
-- Editing the `dashboard-ai-chat` edge function — if you want the AI to receive structured mention IDs (not just names in the text), I'll do that in a second pass.
+4. **`insertMention`** — already replaces from `triggerStartRef` to the current caret with `@${contact.name} `, so multi-word fragments get cleanly replaced by the canonical full name + trailing space. No change needed beyond confirming behavior with the new detection range.
 
-## Question before building
+5. **`handleKeyDown`** — no change. Space stays as a normal character (not a commit key). Enter / Tab still commit the highlighted contact; Escape still cancels. This is important: using Space-to-commit would conflict with typing the last name.
 
-Do you want mentions rendered as styled blue chips (requires switching the textarea to a contenteditable / Tiptap editor — bigger change), or is plain `@Name` text inside the existing textarea fine for v1?
+### Out of scope
+
+- No switch to a contenteditable / Tiptap chip editor (still a v2 idea).
+- No change to `useDashboardChat` or the RPC.
+- No change to how mentions are serialized into the outbound payload.
+
+### Edge cases handled
+
+- `"hello @alexa yarmolatii how are you"` — dropdown closes after the 3rd word because we cap at 2 spaces, so "how" doesn't get pulled into the query.
+- `"email me at user@example.com"` — `@` is preceded by `r` (not whitespace), so no mention is triggered. Existing guard already covers this.
+- Caret moves back before `@` — existing logic already invalidates.
+- User picks a contact mid-typing — `insertMention` replaces the full `@alexa yar` span with `@Alexa Yarmolatii `.
