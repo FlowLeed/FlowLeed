@@ -259,8 +259,13 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
               }}
               className="z-[100] rounded-xl border border-border bg-popover shadow-xl overflow-hidden flex flex-col"
             >
-              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border shrink-0">
-                People
+              <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground border-b border-border shrink-0 flex items-center justify-between gap-2">
+                <span>People</span>
+                {mentionQuery && mentionQuery.includes(" ") && (
+                  <span className="normal-case tracking-normal text-[10px] text-muted-foreground/70">
+                    Keep typing · Esc to cancel
+                  </span>
+                )}
               </div>
               <ul className="overflow-y-auto py-1 flex-1">
                 {mentionResults.map((c, idx) => (
