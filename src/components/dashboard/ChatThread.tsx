@@ -96,7 +96,23 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
               </div>
             ) : (
-              <p className="whitespace-pre-wrap">{msg.content}</p>
+              <p className="whitespace-pre-wrap">
+                {(() => {
+                  // Strip the "[Referenced contacts: ...]" context block from display
+                  const display = msg.content
+                    .replace(/\n*\[Referenced contacts:[^\]]*\]\s*$/i, "")
+                    .trimEnd();
+                  // Bold @mentions
+                  const parts = display.split(/(@[\p{L}\p{M}][\p{L}\p{M}\-\.]*(?:\s[\p{L}\p{M}][\p{L}\p{M}\-\.]*){0,2})/gu);
+                  return parts.map((part, idx) =>
+                    part.startsWith("@") ? (
+                      <strong key={idx} className="font-semibold">{part}</strong>
+                    ) : (
+                      <React.Fragment key={idx}>{part}</React.Fragment>
+                    )
+                  );
+                })()}
+              </p>
             )}
           </div>
           {msg.role === "user" && (
