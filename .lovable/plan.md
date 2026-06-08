@@ -1,47 +1,65 @@
+# Smart list builder for the dashboard AI
 
-## Problem
+Goal: let the AI answer compound questions like *"people who were baptized, are members, served 3+ months, and are in groups"* and let you push that result into any flow with one click.
 
-In `AIChatInput.tsx`, `detectMention` walks back from the caret to find `@`, but **breaks on any whitespace** (`if (/\s/.test(ch)) break;`) and the fragment regex `^[\w\-\.]*$` rejects spaces. So as soon as the user types `@Alexa ` (space) to type the last name, the mention is no longer detected and the dropdown closes — confusing, since the user thinks they're still mid-mention.
+## What we'll build
 
-## Goal
+### 1. New AI tool: `find_contacts_by_criteria`
 
-Let the user type `@Alexa Yarmolatii` and keep the dropdown open & filtering against the full multi-word query, while still closing cleanly when they clearly move on.
+Add a third tool to `supabase/functions/dashboard-ai-chat/index.ts` that filters contacts by any combination of:
 
-## Approach (recommended)
+- **Flow moments** (the church's own "next steps" vocabulary)
+  - e.g. has moment "Baptism", "Salvation", "Welcome Party", etc.
+  - matched by moment-type name (case-insensitive) so the AI can use the church's own words
+- **PCO membership status** (e.g. `Member`, `Regular Attender`, `Guest`)
+- **Groups**
+  - currently in any active group, in a specific group, or in a group for ≥ N days
+- **Serving**
+  - served in last N days, or first serve ≥ N days ago (handles "served at least 3 months")
+- **Engagement markers** (any from `marker_definitions`)
+- **Campus**
+- **Engagement level** (highly_engaged / active / at_risk / inactive)
 
-**Allow up to 2 spaces inside the active mention query, and stop when:**
-1. The user types a 3rd space, OR
-2. The user types a newline / punctuation that clearly ends a name (`,` `.` `!` `?` `;` `:`), OR
-3. The fragment grows longer than ~40 chars, OR
-4. The user moves the caret before the `@`.
+Returns: up to 50 contacts as a markdown list **plus** a machine-readable JSON block at the end so the UI can render an action bar.
 
-This matches Slack / Jira / Linear behavior: they keep the picker open through a space or two so "First Last" works, then close on a clear delimiter.
+### 2. Sync PCO membership status
 
-### Changes to `src/components/dashboard/AIChatInput.tsx`
+Today `contacts` has no membership field. We'll:
 
-1. **`detectMention`** — rewrite the lookback loop:
-   - Walk back from caret to find the nearest `@` preceded by start-of-string or whitespace.
-   - Build `fragment = value.slice(atIndex + 1, caret)`.
-   - Accept the fragment if it matches `/^[\w\-\.][\w\-\.\s]{0,40}$/` AND contains at most 2 spaces AND no name-ending punctuation. Otherwise treat as no active mention.
-   - This lets `@`, `@a`, `@alexa`, `@alexa `, `@alexa y`, `@alexa yarmolatii` all keep the dropdown open.
+- Add `pc_membership text` to `contacts`
+- Update the PCO people sync (`pco-people-sync` / processor) to pull `attributes.membership` and upsert it
+- Backfill on next sync; surface it on the contact profile demographics card
 
-2. **Visual cue while query has a space** — add a subtle hint row at the top of the dropdown (e.g. "Keep typing last name, or press Esc"). Reuses existing popover styling, no new tokens. This removes the "is this still active?" confusion.
+### 3. "Add results to a Flow" action in the chat
 
-3. **Search call** — already uses the raw fragment as `_search_term`; `search_visible_contacts` does ILIKE on full name, so `"alexa yar"` will correctly match "Alexa Yarmolatii". No backend change needed.
+When the AI returns a list via `find_contacts_by_criteria`, the assistant message renders:
 
-4. **`insertMention`** — already replaces from `triggerStartRef` to the current caret with `@${contact.name} `, so multi-word fragments get cleanly replaced by the canonical full name + trailing space. No change needed beyond confirming behavior with the new detection range.
+- The markdown list of names (linked to profiles)
+- An **"Add all to flow…"** button under the message
+- Clicking it opens the existing `BulkAddToFlowDialog` pre-loaded with the contact IDs from that tool call
 
-5. **`handleKeyDown`** — no change. Space stays as a normal character (not a commit key). Enter / Tab still commit the highlighted contact; Escape still cancels. This is important: using Space-to-commit would conflict with typing the last name.
+Technically: the tool emits a hidden `<!--flowleed:contact_ids=[...]-->` marker in its output. `ChatThread` parses it, hides the marker from display, and renders the action bar.
 
-### Out of scope
+### 4. Prompt updates
 
-- No switch to a contenteditable / Tiptap chip editor (still a v2 idea).
-- No change to `useDashboardChat` or the RPC.
-- No change to how mentions are serialized into the outbound payload.
+Expand the system prompt in `dashboard-ai-chat` so the model knows:
+- Flow moments are the canonical "next steps" language
+- "Member" → filter by `pc_membership = 'Member'`
+- "Served at least 3 months" → `first_serve_before_days = 90`
+- Always offer the "Add to flow" follow-up after returning a list
 
-### Edge cases handled
+## Technical details
 
-- `"hello @alexa yarmolatii how are you"` — dropdown closes after the 3rd word because we cap at 2 spaces, so "how" doesn't get pulled into the query.
-- `"email me at user@example.com"` — `@` is preceded by `r` (not whitespace), so no mention is triggered. Existing guard already covers this.
-- Caret moves back before `@` — existing logic already invalidates.
-- User picks a contact mid-typing — `insertMention` replaces the full `@alexa yar` span with `@Alexa Yarmolatii `.
+- DB migration: `ALTER TABLE contacts ADD COLUMN pc_membership text;` + index on `(organization_id, pc_membership)`
+- Edge function: tool implementation queries `contacts` joined with `flow_moments`, `flow_moment_types`, `group_members`, `pco_checkins` (for serving), `contact_markers`, `contact_engagement_scores`; org-scoped via the caller's `organization_id`
+- PCO sync: small patch to where person attributes are mapped — read `attributes.membership`
+- Frontend: `ChatThread.tsx` parses the contact-id marker; new lightweight `ChatResultActions` component shows "Add X people to flow…" → reuses `BulkAddToFlowDialog`
+- No new RLS surface — tool runs under the caller's auth and filters by their organization
+
+## Out of scope (for this pass)
+
+- Saved/named segments — we can add later if you want recurring lists
+- CSV export of the result — easy follow-up
+- Filtering by giving (no giving data synced yet)
+
+Once you approve, I'll ship the migration, edge function tool, PCO sync patch, and the chat action UI together.
