@@ -585,6 +585,11 @@ async function processPersonData(
     source_type: 'planning_center',
     last_synced_at: new Date().toISOString(),
   };
+
+  // Planning Center membership status (e.g. "Member", "Regular Attender", "Guest")
+  if (attributes.membership !== undefined && attributes.membership !== null) {
+    contactData.pc_membership = attributes.membership;
+  }
   
   // Handle email - check both formats (inline and from included)
   const emailAddress = attributes.email_addresses?.[0]?.address 
