@@ -912,6 +912,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             result = await executeSearchPerson(adminClient, orgId, args.query || "", team);
           } else if (fnName === "search_people_in_flow") {
             result = await executeSearchPeopleInFlow(adminClient, orgId, args.flow_name || "", team);
+          } else if (fnName === "find_contacts_by_criteria") {
+            result = await executeFindContactsByCriteria(adminClient, orgId, args);
           } else {
             result = `Unknown tool: ${fnName}`;
           }
