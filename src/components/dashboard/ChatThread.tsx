@@ -164,6 +164,14 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
         </div>
       )}
       <div ref={bottomRef} />
+      {bulkIds && bulkIds.length > 0 && (
+        <BulkAddToFlowDialog
+          open={!!bulkIds}
+          onOpenChange={(o) => { if (!o) setBulkIds(null); }}
+          contactIds={bulkIds}
+          onSuccess={() => setBulkIds(null)}
+        />
+      )}
     </div>
   );
 };
