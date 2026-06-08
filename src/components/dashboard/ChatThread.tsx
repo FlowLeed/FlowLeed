@@ -17,6 +17,8 @@ interface ChatThreadProps {
 export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [bulkIds, setBulkIds] = useState<string[] | null>(null);
+
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
