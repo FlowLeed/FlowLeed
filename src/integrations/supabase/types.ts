@@ -919,6 +919,7 @@ export type Database = {
           notes: string | null
           organization_id: string
           pc_household_id: string | null
+          pc_membership: string | null
           pc_person_id: string | null
           phone: string | null
           source_type: string | null
@@ -937,6 +938,7 @@ export type Database = {
           notes?: string | null
           organization_id: string
           pc_household_id?: string | null
+          pc_membership?: string | null
           pc_person_id?: string | null
           phone?: string | null
           source_type?: string | null
@@ -955,6 +957,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string
           pc_household_id?: string | null
+          pc_membership?: string | null
           pc_person_id?: string | null
           phone?: string | null
           source_type?: string | null
