@@ -1,9 +1,11 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
-import { User, Sparkles, RotateCcw, History } from "lucide-react";
+import { User, Sparkles, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
+
 
 interface ChatThreadProps {
   messages: ChatMessage[];
