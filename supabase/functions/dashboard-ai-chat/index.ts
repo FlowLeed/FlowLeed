@@ -47,7 +47,61 @@ const tools = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "find_contacts_by_criteria",
+      description:
+        "Build a smart list of contacts using ANY combination of filters: flow moments (e.g. baptized, salvation, joined the church), PCO membership status (e.g. Member, Regular Attender, Guest), group membership, serving history (e.g. served 3+ months), engagement markers, engagement level, or campus. Use this whenever the user wants a list of people who meet multiple criteria — e.g. 'people who were baptized, are members, and serve' or 'members who aren't in a group'. After calling, ALWAYS offer to add the results to a Flow.",
+      parameters: {
+        type: "object",
+        properties: {
+          flow_moment_names: {
+            type: "array",
+            items: { type: "string" },
+            description: "Names of flow moments the person MUST have (matched case-insensitively against flow_moment_types.name). Examples: 'Baptism', 'Salvation Decision', 'Welcome Party Attended'.",
+          },
+          pc_membership: {
+            type: "array",
+            items: { type: "string" },
+            description: "Allowed Planning Center membership values. Examples: ['Member'], ['Regular Attender','Member'], ['Guest'].",
+          },
+          in_any_group: {
+            type: "boolean",
+            description: "If true, only include people who are an active member of at least one group. If false, only people NOT in any active group.",
+          },
+          group_name: {
+            type: "string",
+            description: "Restrict to members of a specific group by (partial) name.",
+          },
+          serving_min_days: {
+            type: "number",
+            description: "Minimum number of days the person has been serving (based on earliest volunteer check-in or serving flow moment). Use 90 for '3 months', 180 for '6 months', 365 for '1 year'.",
+          },
+          marker_codes: {
+            type: "array",
+            items: { type: "string" },
+            description: "Engagement marker codes (from marker_definitions) the contact must currently have.",
+          },
+          engagement_level: {
+            type: "array",
+            items: { type: "string", enum: ["new","highly_engaged","active","at_risk","inactive"] },
+            description: "Filter by computed engagement level.",
+          },
+          campus_name: {
+            type: "string",
+            description: "Restrict to a specific campus by (partial) name.",
+          },
+          limit: {
+            type: "number",
+            description: "Max number of contacts to return (default 50, max 200).",
+          },
+        },
+      },
+    },
+  },
 ];
+
 
 // Execute search_person tool
 async function executeSearchPerson(
