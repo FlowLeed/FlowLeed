@@ -85,20 +85,39 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
             `}
           >
             {msg.role === "assistant" ? (
-              <div className="prose prose-base dark:prose-invert max-w-none
-                [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-                [&_p+p]:mt-6
-                prose-headings:font-semibold prose-headings:text-foreground
-                prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-4
-                prose-h3:text-base prose-h3:mt-7 prose-h3:mb-3
-                prose-p:mb-6 prose-p:leading-8
-                prose-ul:my-4 prose-ol:my-4
-                prose-li:my-1.5
-                prose-strong:text-foreground
-                [&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2
-              ">
-                <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
-              </div>
+              (() => {
+                // Extract hidden contact-ids marker emitted by find_contacts_by_criteria
+                const match = msg.content.match(/<!--flowleed:contact_ids=(\[[^\]]*\])-->/);
+                let contactIds: string[] = [];
+                if (match) {
+                  try { contactIds = JSON.parse(match[1]); } catch { /* ignore */ }
+                }
+                const cleanContent = msg.content.replace(/<!--flowleed:contact_ids=\[[^\]]*\]-->\s*/g, "").trimEnd();
+                return (
+                  <div className="prose prose-base dark:prose-invert max-w-none
+                    [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+                    [&_p+p]:mt-6
+                    prose-headings:font-semibold prose-headings:text-foreground
+                    prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-4
+                    prose-h3:text-base prose-h3:mt-7 prose-h3:mb-3
+                    prose-p:mb-6 prose-p:leading-8
+                    prose-ul:my-4 prose-ol:my-4
+                    prose-li:my-1.5
+                    prose-strong:text-foreground
+                    [&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2
+                  ">
+                    <ReactMarkdown components={markdownComponents}>{cleanContent}</ReactMarkdown>
+                    {contactIds.length > 0 && (
+                      <div className="not-prose mt-4 flex flex-wrap gap-2">
+                        <Button size="sm" onClick={() => setBulkIds(contactIds)} className="gap-2">
+                          <ListPlus className="h-4 w-4" />
+                          Add {contactIds.length} {contactIds.length === 1 ? "person" : "people"} to a Flow
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <p className="whitespace-pre-wrap">
                 {(() => {
