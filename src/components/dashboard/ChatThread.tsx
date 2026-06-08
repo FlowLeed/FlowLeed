@@ -1,9 +1,11 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
-import { User, Sparkles, RotateCcw, History } from "lucide-react";
+import { User, Sparkles, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
+
 
 interface ChatThreadProps {
   messages: ChatMessage[];
@@ -15,6 +17,8 @@ interface ChatThreadProps {
 export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const [bulkIds, setBulkIds] = useState<string[] | null>(null);
+
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -81,20 +85,39 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
             `}
           >
             {msg.role === "assistant" ? (
-              <div className="prose prose-base dark:prose-invert max-w-none
-                [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-                [&_p+p]:mt-6
-                prose-headings:font-semibold prose-headings:text-foreground
-                prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-4
-                prose-h3:text-base prose-h3:mt-7 prose-h3:mb-3
-                prose-p:mb-6 prose-p:leading-8
-                prose-ul:my-4 prose-ol:my-4
-                prose-li:my-1.5
-                prose-strong:text-foreground
-                [&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2
-              ">
-                <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
-              </div>
+              (() => {
+                // Extract hidden contact-ids marker emitted by find_contacts_by_criteria
+                const match = msg.content.match(/<!--flowleed:contact_ids=(\[[^\]]*\])-->/);
+                let contactIds: string[] = [];
+                if (match) {
+                  try { contactIds = JSON.parse(match[1]); } catch { /* ignore */ }
+                }
+                const cleanContent = msg.content.replace(/<!--flowleed:contact_ids=\[[^\]]*\]-->\s*/g, "").trimEnd();
+                return (
+                  <div className="prose prose-base dark:prose-invert max-w-none
+                    [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+                    [&_p+p]:mt-6
+                    prose-headings:font-semibold prose-headings:text-foreground
+                    prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-4
+                    prose-h3:text-base prose-h3:mt-7 prose-h3:mb-3
+                    prose-p:mb-6 prose-p:leading-8
+                    prose-ul:my-4 prose-ol:my-4
+                    prose-li:my-1.5
+                    prose-strong:text-foreground
+                    [&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2
+                  ">
+                    <ReactMarkdown components={markdownComponents}>{cleanContent}</ReactMarkdown>
+                    {contactIds.length > 0 && (
+                      <div className="not-prose mt-4 flex flex-wrap gap-2">
+                        <Button size="sm" onClick={() => setBulkIds(contactIds)} className="gap-2">
+                          <ListPlus className="h-4 w-4" />
+                          Add {contactIds.length} {contactIds.length === 1 ? "person" : "people"} to a Flow
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             ) : (
               <p className="whitespace-pre-wrap">
                 {(() => {
@@ -141,6 +164,14 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
         </div>
       )}
       <div ref={bottomRef} />
+      {bulkIds && bulkIds.length > 0 && (
+        <BulkAddToFlowDialog
+          open={!!bulkIds}
+          onOpenChange={(o) => { if (!o) setBulkIds(null); }}
+          contactIds={bulkIds}
+          onSuccess={() => setBulkIds(null)}
+        />
+      )}
     </div>
   );
 };

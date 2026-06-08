@@ -47,7 +47,61 @@ const tools = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "find_contacts_by_criteria",
+      description:
+        "Build a smart list of contacts using ANY combination of filters: flow moments (e.g. baptized, salvation, joined the church), PCO membership status (e.g. Member, Regular Attender, Guest), group membership, serving history (e.g. served 3+ months), engagement markers, engagement level, or campus. Use this whenever the user wants a list of people who meet multiple criteria — e.g. 'people who were baptized, are members, and serve' or 'members who aren't in a group'. After calling, ALWAYS offer to add the results to a Flow.",
+      parameters: {
+        type: "object",
+        properties: {
+          flow_moment_names: {
+            type: "array",
+            items: { type: "string" },
+            description: "Names of flow moments the person MUST have (matched case-insensitively against flow_moment_types.name). Examples: 'Baptism', 'Salvation Decision', 'Welcome Party Attended'.",
+          },
+          pc_membership: {
+            type: "array",
+            items: { type: "string" },
+            description: "Allowed Planning Center membership values. Examples: ['Member'], ['Regular Attender','Member'], ['Guest'].",
+          },
+          in_any_group: {
+            type: "boolean",
+            description: "If true, only include people who are an active member of at least one group. If false, only people NOT in any active group.",
+          },
+          group_name: {
+            type: "string",
+            description: "Restrict to members of a specific group by (partial) name.",
+          },
+          serving_min_days: {
+            type: "number",
+            description: "Minimum number of days the person has been serving (based on earliest volunteer check-in or serving flow moment). Use 90 for '3 months', 180 for '6 months', 365 for '1 year'.",
+          },
+          marker_codes: {
+            type: "array",
+            items: { type: "string" },
+            description: "Engagement marker codes (from marker_definitions) the contact must currently have.",
+          },
+          engagement_level: {
+            type: "array",
+            items: { type: "string", enum: ["new","highly_engaged","active","at_risk","inactive"] },
+            description: "Filter by computed engagement level.",
+          },
+          campus_name: {
+            type: "string",
+            description: "Restrict to a specific campus by (partial) name.",
+          },
+          limit: {
+            type: "number",
+            description: "Max number of contacts to return (default 50, max 200).",
+          },
+        },
+      },
+    },
+  },
 ];
+
 
 // Execute search_person tool
 async function executeSearchPerson(
@@ -328,6 +382,195 @@ async function executeSearchPeopleInFlow(
   return results.join("\n\n");
 }
 
+// Execute find_contacts_by_criteria tool
+async function executeFindContactsByCriteria(
+  adminClient: ReturnType<typeof createClient>,
+  orgId: string,
+  args: any
+): Promise<string> {
+  const limit = Math.min(Math.max(Number(args?.limit) || 50, 1), 200);
+
+  // Start with org contacts
+  let candidateIds: Set<string> | null = null;
+
+  const intersect = (ids: string[]) => {
+    const next = new Set(ids);
+    if (candidateIds === null) {
+      candidateIds = next;
+    } else {
+      candidateIds = new Set([...candidateIds].filter((id) => next.has(id)));
+    }
+  };
+
+  // Flow moments filter
+  if (Array.isArray(args?.flow_moment_names) && args.flow_moment_names.length > 0) {
+    const names: string[] = args.flow_moment_names;
+    const { data: types } = await adminClient
+      .from("flow_moment_types")
+      .select("id, name")
+      .eq("organization_id", orgId);
+    const matchedTypeIds = (types || [])
+      .filter((t: any) => names.some((n) => String(t.name).toLowerCase().includes(String(n).toLowerCase()) || String(n).toLowerCase().includes(String(t.name).toLowerCase())))
+      .map((t: any) => t.id);
+    if (matchedTypeIds.length === 0) return `No flow moments matched: ${names.join(", ")}`;
+    const { data: moments } = await adminClient
+      .from("flow_moments")
+      .select("contact_id")
+      .in("flow_moment_type_id", matchedTypeIds);
+    intersect((moments || []).map((m: any) => m.contact_id).filter(Boolean));
+    if (!candidateIds || candidateIds.size === 0) return "No contacts found matching the flow-moment criteria.";
+  }
+
+  // PCO membership filter
+  if (Array.isArray(args?.pc_membership) && args.pc_membership.length > 0) {
+    const { data } = await adminClient
+      .from("contacts")
+      .select("id")
+      .eq("organization_id", orgId)
+      .in("pc_membership", args.pc_membership);
+    intersect((data || []).map((c: any) => c.id));
+    if (!candidateIds || candidateIds.size === 0) return "No contacts found with that PCO membership status (it may not be synced yet).";
+  }
+
+  // Group membership
+  if (args?.in_any_group === true || args?.in_any_group === false || args?.group_name) {
+    let groupQuery = adminClient
+      .from("groups")
+      .select("id, name")
+      .eq("organization_id", orgId)
+      .eq("status", "active");
+    if (args?.group_name) groupQuery = groupQuery.ilike("name", `%${args.group_name}%`);
+    const { data: groups } = await groupQuery;
+    const groupIds = (groups || []).map((g: any) => g.id);
+    if (groupIds.length > 0) {
+      const { data: members } = await adminClient
+        .from("group_members")
+        .select("contact_id")
+        .in("group_id", groupIds)
+        .eq("status", "active");
+      const memberContactIds = new Set((members || []).map((m: any) => m.contact_id).filter(Boolean));
+      if (args?.in_any_group === false) {
+        // Need to exclude — fetch all org contact ids and filter
+        const { data: allContacts } = await adminClient
+          .from("contacts")
+          .select("id")
+          .eq("organization_id", orgId);
+        intersect((allContacts || []).map((c: any) => c.id).filter((id: string) => !memberContactIds.has(id)));
+      } else {
+        intersect([...memberContactIds] as string[]);
+      }
+    } else if (args?.in_any_group === true || args?.group_name) {
+      return "No matching groups found.";
+    }
+    if (!candidateIds || candidateIds.size === 0) return "No contacts matched the group criteria.";
+  }
+
+  // Serving duration
+  if (typeof args?.serving_min_days === "number" && args.serving_min_days > 0) {
+    const cutoff = new Date(Date.now() - args.serving_min_days * 24 * 60 * 60 * 1000).toISOString();
+    // Earliest volunteer checkin before cutoff
+    const { data: checkins } = await adminClient
+      .from("pco_checkins")
+      .select("contact_id, checked_in_at")
+      .eq("checkin_kind", "volunteer")
+      .lte("checked_in_at", cutoff);
+    const servedIds = new Set((checkins || []).map((c: any) => c.contact_id).filter(Boolean));
+    // Also serving flow moments
+    const { data: servingTypes } = await adminClient
+      .from("flow_moment_types")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("category", "serving");
+    if (servingTypes && servingTypes.length > 0) {
+      const { data: servingMoments } = await adminClient
+        .from("flow_moments")
+        .select("contact_id, occurred_at")
+        .in("flow_moment_type_id", servingTypes.map((t: any) => t.id))
+        .lte("occurred_at", cutoff);
+      (servingMoments || []).forEach((m: any) => m.contact_id && servedIds.add(m.contact_id));
+    }
+    intersect([...servedIds] as string[]);
+    if (!candidateIds || candidateIds.size === 0) return `No contacts have been serving for ${args.serving_min_days}+ days.`;
+  }
+
+  // Markers
+  if (Array.isArray(args?.marker_codes) && args.marker_codes.length > 0) {
+    const { data: defs } = await adminClient
+      .from("marker_definitions")
+      .select("id, code")
+      .in("code", args.marker_codes);
+    const defIds = (defs || []).map((d: any) => d.id);
+    if (defIds.length === 0) return `No markers found for codes: ${args.marker_codes.join(", ")}`;
+    const { data: cm } = await adminClient
+      .from("contact_markers")
+      .select("contact_id")
+      .in("marker_definition_id", defIds);
+    intersect((cm || []).map((m: any) => m.contact_id).filter(Boolean));
+    if (!candidateIds || candidateIds.size === 0) return "No contacts have those markers.";
+  }
+
+  // Engagement level
+  if (Array.isArray(args?.engagement_level) && args.engagement_level.length > 0) {
+    const { data } = await adminClient
+      .from("contact_engagement_scores")
+      .select("contact_id")
+      .eq("organization_id", orgId)
+      .in("engagement_level", args.engagement_level);
+    intersect((data || []).map((c: any) => c.contact_id).filter(Boolean));
+    if (!candidateIds || candidateIds.size === 0) return "No contacts at that engagement level.";
+  }
+
+  // Campus
+  if (args?.campus_name) {
+    const { data: campuses } = await adminClient
+      .from("campuses")
+      .select("id")
+      .eq("organization_id", orgId)
+      .ilike("name", `%${args.campus_name}%`);
+    const campusIds = (campuses || []).map((c: any) => c.id);
+    if (campusIds.length === 0) return `No campus matching "${args.campus_name}".`;
+    const { data } = await adminClient
+      .from("contacts")
+      .select("id")
+      .eq("organization_id", orgId)
+      .in("campus_id", campusIds);
+    intersect((data || []).map((c: any) => c.id));
+    if (!candidateIds || candidateIds.size === 0) return "No contacts at that campus.";
+  }
+
+  // If no filters at all
+  if (candidateIds === null) {
+    return "No criteria were provided. Please specify at least one filter (flow moment, membership, group, serving, marker, engagement level, or campus).";
+  }
+
+  const finalIds = [...candidateIds].slice(0, limit);
+  if (finalIds.length === 0) return "No contacts matched.";
+
+  // Fetch names/emails for the matched ids (constrain to org)
+  const { data: contacts } = await adminClient
+    .from("contacts")
+    .select("id, name, email, pc_membership")
+    .eq("organization_id", orgId)
+    .in("id", finalIds)
+    .order("name");
+
+  const totalMatched = candidateIds.size;
+  const shown = (contacts || []).length;
+
+  const lines: string[] = [];
+  lines.push(`Found **${totalMatched}** contact${totalMatched === 1 ? "" : "s"} matching the criteria${totalMatched > shown ? ` (showing first ${shown})` : ""}:`);
+  lines.push("");
+  for (const c of contacts || []) {
+    const membership = c.pc_membership ? ` _(${c.pc_membership})_` : "";
+    lines.push(`- [${c.name}](/contacts/${c.id})${membership}`);
+  }
+  lines.push("");
+  // Hidden marker for the UI to render an "Add to Flow" action button.
+  lines.push(`<!--flowleed:contact_ids=${JSON.stringify(finalIds)}-->`);
+  return lines.join("\n");
+}
+
+
 function getUserIdFromJwt(authHeader: string): string | null {
   try {
     const token = authHeader.replace("Bearer ", "");
@@ -536,6 +779,7 @@ TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 You have access to tools to look up detailed information about specific people and flows. USE THEM PROACTIVELY:
 - **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, etc.)
 - **search_people_in_flow**: When the user asks who is in a specific flow or wants details about a flow's people, call this tool.
+- **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "people who were baptized and are members", "members serving 3+ months who aren't in a group", "guests from last month"), call this tool. Flow moments are the church's canonical "next steps" language (Baptism, Salvation Decision, Welcome Party, etc.). "Member" maps to pc_membership=["Member"]. "Served at least N months" maps to serving_min_days = N*30. After returning results, ALWAYS finish with a short sentence like "Want to add these people to a Flow?" — the UI will render an action button automatically.
 
 Do NOT guess or make up information about specific people. Always use the tools to look up real data.
 
@@ -669,6 +913,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             result = await executeSearchPerson(adminClient, orgId, args.query || "", team);
           } else if (fnName === "search_people_in_flow") {
             result = await executeSearchPeopleInFlow(adminClient, orgId, args.flow_name || "", team);
+          } else if (fnName === "find_contacts_by_criteria") {
+            result = await executeFindContactsByCriteria(adminClient, orgId, args);
           } else {
             result = `Unknown tool: ${fnName}`;
           }
