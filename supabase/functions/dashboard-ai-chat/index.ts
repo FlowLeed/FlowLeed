@@ -779,6 +779,7 @@ TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 You have access to tools to look up detailed information about specific people and flows. USE THEM PROACTIVELY:
 - **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, etc.)
 - **search_people_in_flow**: When the user asks who is in a specific flow or wants details about a flow's people, call this tool.
+- **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "people who were baptized and are members", "members serving 3+ months who aren't in a group", "guests from last month"), call this tool. Flow moments are the church's canonical "next steps" language (Baptism, Salvation Decision, Welcome Party, etc.). "Member" maps to pc_membership=["Member"]. "Served at least N months" maps to serving_min_days = N*30. After returning results, ALWAYS finish with a short sentence like "Want to add these people to a Flow?" — the UI will render an action button automatically.
 
 Do NOT guess or make up information about specific people. Always use the tools to look up real data.
 
