@@ -385,10 +385,10 @@ export const FlowView: React.FC<FlowViewProps> = ({
 
   const handleDragEnd = (result: DropResult) => {
     const { source, destination } = result;
-    
+
     // Dropped outside the list
     if (!destination) return;
-    
+
     // Check if actually moved
     if (
       source.droppableId === destination.droppableId &&
@@ -396,76 +396,108 @@ export const FlowView: React.FC<FlowViewProps> = ({
     ) {
       return;
     }
-    
+
     // Find the source and destination stages
     const sourceStage = flow.stages.find(stage => stage.id === source.droppableId);
     const destStage = flow.stages.find(stage => stage.id === destination.droppableId);
-    
+
     if (!sourceStage || !destStage) return;
-    
+
     // Get the moved contact without mutating the original array
     const movedContact = sourceStage.contacts[source.index];
-    
+    if (!movedContact) return;
+
+    const isCrossStage = source.droppableId !== destination.droppableId;
+
     // Update contact with new stage info if needed
     let updatedContact = { ...movedContact };
-    if (source.droppableId !== destination.droppableId) {
-      // Status change when moving between columns
+    if (isCrossStage) {
       updatedContact = {
         ...updatedContact,
         status: determineStatus(destination.droppableId),
-        stageEnteredAt: new Date().toISOString() // Set stage entry time on drag-drop
+        stageEnteredAt: new Date().toISOString(),
       };
-      
+
       // Auto-assign if destination stage has a default assignee
       if (destStage.default_assignee_user_id) {
         const assignee = teamMembers.find(m => m.id === destStage.default_assignee_user_id);
         if (assignee) {
           updatedContact.assignedTo = {
             name: assignee.name,
-            avatar: assignee.avatar
+            avatar: assignee.avatar,
           };
         }
       }
-      
+
       toast.success(`Contact moved to ${destStage.name}`);
-      
-      // Trigger confetti if moved to completion stage
+
       if (destStage.is_end_step) {
         setShowConfetti(true);
       }
     }
-    
+
     // Create updated stages with immutable operations
     const updatedStages = flow.stages.map(stage => {
       if (stage.id === source.droppableId) {
-        // Remove contact from source stage
         return {
           ...stage,
-          contacts: stage.contacts.filter((_, index) => index !== source.index)
+          contacts: stage.contacts.filter((_, index) => index !== source.index),
         };
       }
       if (stage.id === destination.droppableId) {
-        // Add contact to destination stage at the correct position
         const newContacts = [...stage.contacts];
         newContacts.splice(destination.index, 0, updatedContact);
-        return {
-          ...stage,
-          contacts: newContacts
-        };
+        return { ...stage, contacts: newContacts };
       }
       return { ...stage };
     });
-    
-    // Update the flow
-    const updatedFlow = {
-      ...flow,
-      stages: updatedStages
-    };
-    
-    // Delay state update to let react-beautiful-dnd finish its animation
+
+    const updatedFlow = { ...flow, stages: updatedStages };
+
+    // Optimistic UI update (keep rAF to avoid react-beautiful-dnd animation invariant)
     requestAnimationFrame(() => {
       onFlowChange?.(updatedFlow);
     });
+
+    // Persist ONLY the moved row directly — fast, reliable, refresh-safe.
+    // (Avoids the heavy whole-flow updateFlow loop racing against page refresh.)
+    (async () => {
+      try {
+        const updateData: Record<string, any> = {
+          stage_id: destination.droppableId,
+          stage_order: destination.index,
+        };
+
+        if (isCrossStage) {
+          updateData.stage_entered_at = new Date().toISOString();
+          if (destStage.default_assignee_user_id) {
+            updateData.assigned_to_user_id = destStage.default_assignee_user_id;
+          }
+          if (destStage.is_end_step) {
+            updateData.completed_end_at = new Date().toISOString();
+          } else {
+            updateData.completed_end_at = null;
+          }
+        }
+
+        const { error } = await supabase
+          .from('pipeline_contacts')
+          .update(updateData)
+          .eq('contact_id', movedContact.id)
+          .eq('pipeline_id', flow.id);
+
+        if (error) throw error;
+
+        // Invalidate dependent queries so other views reflect the move
+        queryClient.invalidateQueries({ queryKey: ['flows'] });
+        queryClient.invalidateQueries({ queryKey: ['contact', movedContact.id] });
+      } catch (err) {
+        console.error('Failed to persist drag move:', err);
+        toast.error('Failed to save move. Reverting.');
+        // Revert optimistic UI
+        onFlowChange?.(flow);
+      }
+    })();
   };
   
   // Helper function to determine status based on stage
