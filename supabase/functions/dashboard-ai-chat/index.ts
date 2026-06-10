@@ -915,6 +915,14 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             result = await executeSearchPeopleInFlow(adminClient, orgId, args.flow_name || "", team);
           } else if (fnName === "find_contacts_by_criteria") {
             result = await executeFindContactsByCriteria(adminClient, orgId, args);
+            // Extract contact ids from the marker so we can append it after the model's stream
+            const m = result.match(/<!--flowleed:contact_ids=(\[[^\]]*\])-->/);
+            if (m) {
+              try {
+                const ids = JSON.parse(m[1]);
+                if (Array.isArray(ids) && ids.length > 0) collectedContactIds = ids;
+              } catch { /* ignore */ }
+            }
           } else {
             result = `Unknown tool: ${fnName}`;
           }
