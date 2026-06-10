@@ -3988,6 +3988,7 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: undefined
       }
+      user_can_manage_group_image: { Args: { _path: string }; Returns: boolean }
       user_has_active_pco_connection: {
         Args: { _org: string; _user: string }
         Returns: boolean
