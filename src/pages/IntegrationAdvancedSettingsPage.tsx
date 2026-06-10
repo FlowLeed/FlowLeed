@@ -39,7 +39,7 @@ const IntegrationAdvancedSettingsPage = () => {
       const serviceName = integrationName?.replace('-', '_');
       const { data, error } = await supabase
         .from('integrations')
-        .select('*')
+        .select('id, organization_id, user_id, service_name, status, metadata, sync_frequency, last_sync_at, auto_sync_all_people, provider_account_name, oauth_scopes, created_at, updated_at')
         .eq('service_name', serviceName)
         .eq('organization_id', userOrgData!.organization_id)
         .single();
