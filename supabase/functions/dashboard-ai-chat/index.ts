@@ -836,6 +836,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     // Tool call loop: make non-streaming calls until we get a final response, then stream it
     const MAX_TOOL_ROUNDS = 5;
     let toolRound = 0;
+    let collectedContactIds: string[] | null = null;
 
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
@@ -915,6 +916,14 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             result = await executeSearchPeopleInFlow(adminClient, orgId, args.flow_name || "", team);
           } else if (fnName === "find_contacts_by_criteria") {
             result = await executeFindContactsByCriteria(adminClient, orgId, args);
+            // Extract contact ids from the marker so we can append it after the model's stream
+            const m = result.match(/<!--flowleed:contact_ids=(\[[^\]]*\])-->/);
+            if (m) {
+              try {
+                const ids = JSON.parse(m[1]);
+                if (Array.isArray(ids) && ids.length > 0) collectedContactIds = ids;
+              } catch { /* ignore */ }
+            }
           } else {
             result = `Unknown tool: ${fnName}`;
           }
@@ -969,7 +978,68 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       });
     }
 
-    return new Response(streamResponse.body, {
+    // Wrap the upstream SSE stream so we can inject a hidden contact-ids marker
+    // right before [DONE], guaranteeing the UI sees it even if the model paraphrases.
+    const upstream = streamResponse.body!;
+    const injected = new ReadableStream({
+      async start(controller) {
+        const reader = upstream.getReader();
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+        let buffer = "";
+        let injectedMarker = false;
+
+        const injectMarker = () => {
+          if (injectedMarker || !collectedContactIds || collectedContactIds.length === 0) return;
+          injectedMarker = true;
+          const content = `\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`;
+          const chunk = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
+          controller.enqueue(encoder.encode(chunk));
+        };
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            // Look for [DONE] marker; inject our marker just before it
+            const doneIdx = buffer.indexOf("data: [DONE]");
+            if (doneIdx !== -1) {
+              const before = buffer.slice(0, doneIdx);
+              const after = buffer.slice(doneIdx);
+              if (before) controller.enqueue(encoder.encode(before));
+              injectMarker();
+              controller.enqueue(encoder.encode(after));
+              buffer = "";
+              // forward any remaining bytes as they arrive
+              while (true) {
+                const r = await reader.read();
+                if (r.done) break;
+                controller.enqueue(r.value);
+              }
+              break;
+            }
+
+            // Flush complete events while keeping a small tail in buffer
+            const lastBreak = buffer.lastIndexOf("\n\n");
+            if (lastBreak !== -1) {
+              controller.enqueue(encoder.encode(buffer.slice(0, lastBreak + 2)));
+              buffer = buffer.slice(lastBreak + 2);
+            }
+          }
+          if (buffer) controller.enqueue(encoder.encode(buffer));
+          // If stream ended without seeing [DONE], still inject
+          injectMarker();
+        } catch (e) {
+          controller.error(e);
+          return;
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(injected, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
