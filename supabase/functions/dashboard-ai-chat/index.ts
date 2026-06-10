@@ -836,6 +836,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     // Tool call loop: make non-streaming calls until we get a final response, then stream it
     const MAX_TOOL_ROUNDS = 5;
     let toolRound = 0;
+    let collectedContactIds: string[] | null = null;
 
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
