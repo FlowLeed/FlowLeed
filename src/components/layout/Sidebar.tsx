@@ -607,11 +607,6 @@ export const Sidebar = () => {
     icon: Phone,
     path: "/calls",
     comingSoon: true
-  }, {
-    title: "Calendar",
-    icon: Calendar,
-    path: "/calendar",
-    comingSoon: true
   }];
 
   const settingsItems: SidebarItem[] = [{
