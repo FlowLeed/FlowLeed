@@ -634,73 +634,8 @@ const IntegrationsPage = () => {
               </div>
             )}
 
-            {!planningCenterIntegration && (
-              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                <h4 className="font-medium text-sm flex items-center gap-2">
-                  <Key className="h-4 w-4" />
-                  Quick Setup Guide
-                </h4>
-                <div className="text-sm text-muted-foreground space-y-3">
-                  <div>
-                    <p className="font-medium text-foreground mb-1">1. Log in to Planning Center</p>
-                    <p>Go to planningcenteronline.com and sign in to your account.</p>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">2. Open API Settings</p>
-                    <p className="mb-2">Visit <a href="https://api.planningcenteronline.com/personal_access_tokens" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://api.planningcenteronline.com/personal_access_tokens</a></p>
-                    <ul className="list-disc list-inside ml-2 space-y-1">
-                      <li>Create a New Personal Access Token</li>
-                      <li>Click "New Personal Access Token"</li>
-                      <li>Give it a clear name, like "FlowLeed Integration"</li>
-                    </ul>
-                    <p className="mt-2">The system will generate your Client ID and Secret</p>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">3. Enter Your Credentials Below</p>
-                    <p>We'll automatically test your connection to make sure everything works.</p>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">4. Pre-Load Your Lists</p>
-                    <p>Your lists will be instantly available for mapping.</p>
-                  </div>
-                  
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded p-2 mt-2">
-                    <p className="text-xs"><span className="font-semibold text-foreground">Important:</span> Copy both your Client ID and Secret right away. The secret is only shown once and cannot be retrieved later.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {!planningCenterIntegration ? <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="pc-app-id">Client ID</Label>
-                  <Input id="pc-app-id" placeholder="Enter your Planning Center Client ID" value={planningCenterForm.appId} onChange={e => setPlanningCenterForm(prev => ({
-                ...prev,
-                appId: e.target.value
-              }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pc-secret">Secret</Label>
-                  <Input id="pc-secret" type="password" placeholder="Enter your Planning Center Secret" value={planningCenterForm.secret} onChange={e => setPlanningCenterForm(prev => ({
-                ...prev,
-                secret: e.target.value
-              }))} />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handlePlanningCenterConnect} disabled={!planningCenterForm.appId || !planningCenterForm.secret || createIntegrationMutation.isPending}>
-                    {createIntegrationMutation.isPending ? 'Connecting...' : 'Connect Planning Center'}
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <a href="https://api.planningcenteronline.com/personal_access_tokens" target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Get API Keys
-                    </a>
-                  </Button>
-                </div>
-              </div> : <div className="space-y-4">
+            {planningCenterIntegration && <div className="space-y-4">
+
                  <div className="flex gap-2">
                    <Button variant="destructive" onClick={handlePlanningCenterDisconnect} disabled={deleteIntegrationMutation.isPending}>
                      {deleteIntegrationMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
