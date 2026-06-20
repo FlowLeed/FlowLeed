@@ -171,13 +171,8 @@ const IntegrationsPage = () => {
       });
     }
   });
-  const handlePlanningCenterConnect = () => {
-    createIntegrationMutation.mutate({
-      appId: planningCenterForm.appId,
-      secret: planningCenterForm.secret
-    });
-  };
   const [oauthLoading, setOauthLoading] = useState(false);
+
   const handleConnectPcoOAuth = async () => {
     if (!userOrgData?.organization_id) {
       toast.error('No organization');
