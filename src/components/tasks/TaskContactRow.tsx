@@ -15,7 +15,7 @@ const getInitials = (name: string) => {
   return name.slice(0, 2).toUpperCase();
 };
 
-export const TaskContactRow = ({ contact }: { contact: TaskContact }) => {
+export const TaskContactRow = ({ contact }: { contact: RowContact }) => {
   const FlowIcon = contact.flowIcon && iconMap[contact.flowIcon] ? iconMap[contact.flowIcon] : null;
   const { data: engagementScore } = useEngagementScore(contact.id);
 
