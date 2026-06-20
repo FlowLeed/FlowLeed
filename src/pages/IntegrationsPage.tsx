@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
-import { ExternalLink, Loader2, CheckCircle, AlertCircle, Key, Database, Calendar, Mail, Zap, Settings } from "lucide-react";
+import { ExternalLink, Loader2, CheckCircle, AlertCircle, Database, Calendar, Mail, Zap, Settings } from "lucide-react";
 import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog";
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
@@ -24,10 +24,8 @@ import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
 const IntegrationsPage = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [planningCenterForm, setPlanningCenterForm] = useState({
-    appId: '',
-    secret: ''
-  });
+  // Planning Center now uses OAuth only — no PAT form state.
+
   const [testingConnection, setTestingConnection] = useState(false);
   const [currentSyncJobId, setCurrentSyncJobId] = useState<string | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
@@ -108,114 +106,8 @@ const IntegrationsPage = () => {
     }
   });
   const planningCenterIntegration = integrations?.[0];
-  const createIntegrationMutation = useMutation({
-    mutationFn: async ({
-      appId,
-      secret
-    }: {
-      appId: string;
-      secret: string;
-    }) => {
-      // Get user's organization
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-      
-      const {
-        data: orgMember,
-        error: orgError
-      } = await supabase.from('organization_members').select('organization_id').eq('user_id', user.id).single();
-      
-      if (orgError || !orgMember?.organization_id) {
-        throw new Error('No organization found for your account. Please join or create an organization first.');
-      }
+  // Legacy PAT-based createIntegrationMutation removed — OAuth is the only connect path.
 
-      // Check for existing integration to prevent duplicates
-      const { data: existing } = await supabase
-        .from('integrations')
-        .select('id')
-        .eq('service_name', 'planning_center')
-        .eq('organization_id', orgMember.organization_id)
-        .maybeSingle();
-
-      if (existing?.id) {
-        throw new Error('Planning Center is already connected for this organization.');
-      }
-      
-      // Create integration with smart defaults
-      const {
-        data,
-        error
-      } = await supabase.from('integrations').insert({
-        service_name: 'planning_center',
-        status: 'connecting', // Temporary status while we test
-        credentials: {
-          application_id: appId,
-          secret
-        },
-        settings: {},
-        sync_frequency: 'daily', // Smart default - once per day
-        organization_id: orgMember.organization_id,
-        user_id: user.id
-      }).select().single();
-      
-      if (error) throw error;
-      
-      // Immediately test the connection
-      const testResult = await supabase.functions.invoke('planning-center-lists', {
-        body: {
-          action: 'testConnection',
-          integrationId: data.id
-        }
-      });
-      
-      if (testResult.error || !testResult.data?.success) {
-        // Delete the integration if test failed
-        await supabase.from('integrations').delete().eq('id', data.id);
-        throw new Error(testResult.data?.error || 'Connection test failed');
-      }
-      
-      // Auto-fetch lists after successful connection
-      try {
-        await supabase.functions.invoke('planning-center-lists', {
-          body: {
-            action: 'fetchLists',
-            integrationId: data.id
-          }
-        });
-      } catch (listError) {
-        console.warn('Failed to pre-fetch lists:', listError);
-        // Don't fail the integration creation for this
-      }
-      
-      return { ...data, connectionTest: testResult.data };
-    },
-    onSuccess: async (data) => {
-      queryClient.invalidateQueries({
-        queryKey: ['integrations', userOrgData?.organization_id]
-      });
-      setPlanningCenterForm({
-        appId: '',
-        secret: ''
-      });
-      toast.success('Integration Connected', {
-        description: `Successfully connected to Planning Center as ${data.connectionTest?.user?.first_name} ${data.connectionTest?.user?.last_name}. Lists have been pre-loaded for quick mapping.`
-      });
-      
-      // Update onboarding progress for pco_connected
-      if (userOrgData?.organization_id) {
-        await updateProgress('pco_connected', true);
-      }
-    },
-    onError: error => {
-      toast.error('Connection Failed', {
-        description: `Failed to connect to Planning Center: ${error.message}`
-      });
-    }
-  });
   const deleteIntegrationMutation = useMutation({
     mutationFn: async (integrationId: string) => {
       const { error } = await supabase
@@ -230,13 +122,8 @@ const IntegrationsPage = () => {
       });
     },
     onSuccess: () => {
-      // Clear form state for fresh reconnection
-      setPlanningCenterForm({
-        appId: '',
-        secret: ''
-      });
       setCurrentSyncJobId(null);
-      
+
       toast.success('Integration Disconnected', {
         description: 'Successfully disconnected from Planning Center'
       });
@@ -284,13 +171,8 @@ const IntegrationsPage = () => {
       });
     }
   });
-  const handlePlanningCenterConnect = () => {
-    createIntegrationMutation.mutate({
-      appId: planningCenterForm.appId,
-      secret: planningCenterForm.secret
-    });
-  };
   const [oauthLoading, setOauthLoading] = useState(false);
+
   const handleConnectPcoOAuth = async () => {
     if (!userOrgData?.organization_id) {
       toast.error('No organization');
@@ -634,73 +516,8 @@ const IntegrationsPage = () => {
               </div>
             )}
 
-            {!planningCenterIntegration && (
-              <div className="bg-muted/50 p-4 rounded-lg space-y-3">
-                <h4 className="font-medium text-sm flex items-center gap-2">
-                  <Key className="h-4 w-4" />
-                  Quick Setup Guide
-                </h4>
-                <div className="text-sm text-muted-foreground space-y-3">
-                  <div>
-                    <p className="font-medium text-foreground mb-1">1. Log in to Planning Center</p>
-                    <p>Go to planningcenteronline.com and sign in to your account.</p>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">2. Open API Settings</p>
-                    <p className="mb-2">Visit <a href="https://api.planningcenteronline.com/personal_access_tokens" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://api.planningcenteronline.com/personal_access_tokens</a></p>
-                    <ul className="list-disc list-inside ml-2 space-y-1">
-                      <li>Create a New Personal Access Token</li>
-                      <li>Click "New Personal Access Token"</li>
-                      <li>Give it a clear name, like "FlowLeed Integration"</li>
-                    </ul>
-                    <p className="mt-2">The system will generate your Client ID and Secret</p>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">3. Enter Your Credentials Below</p>
-                    <p>We'll automatically test your connection to make sure everything works.</p>
-                  </div>
-                  
-                  <div>
-                    <p className="font-medium text-foreground mb-1">4. Pre-Load Your Lists</p>
-                    <p>Your lists will be instantly available for mapping.</p>
-                  </div>
-                  
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded p-2 mt-2">
-                    <p className="text-xs"><span className="font-semibold text-foreground">Important:</span> Copy both your Client ID and Secret right away. The secret is only shown once and cannot be retrieved later.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {!planningCenterIntegration ? <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="pc-app-id">Client ID</Label>
-                  <Input id="pc-app-id" placeholder="Enter your Planning Center Client ID" value={planningCenterForm.appId} onChange={e => setPlanningCenterForm(prev => ({
-                ...prev,
-                appId: e.target.value
-              }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pc-secret">Secret</Label>
-                  <Input id="pc-secret" type="password" placeholder="Enter your Planning Center Secret" value={planningCenterForm.secret} onChange={e => setPlanningCenterForm(prev => ({
-                ...prev,
-                secret: e.target.value
-              }))} />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handlePlanningCenterConnect} disabled={!planningCenterForm.appId || !planningCenterForm.secret || createIntegrationMutation.isPending}>
-                    {createIntegrationMutation.isPending ? 'Connecting...' : 'Connect Planning Center'}
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <a href="https://api.planningcenteronline.com/personal_access_tokens" target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Get API Keys
-                    </a>
-                  </Button>
-                </div>
-              </div> : <div className="space-y-4">
+            {planningCenterIntegration && <div className="space-y-4">
+
                  <div className="flex gap-2">
                    <Button variant="destructive" onClick={handlePlanningCenterDisconnect} disabled={deleteIntegrationMutation.isPending}>
                      {deleteIntegrationMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
