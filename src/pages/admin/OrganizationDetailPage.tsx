@@ -11,8 +11,22 @@ import { StartImpersonationDialog } from '@/components/admin/StartImpersonationD
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw, Pencil, UserCog } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw, Pencil, UserCog, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function OrganizationDetailPage() {
   const { id } = useParams();
