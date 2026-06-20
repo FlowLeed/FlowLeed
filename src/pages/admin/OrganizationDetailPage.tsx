@@ -155,6 +155,15 @@ export default function OrganizationDetailPage() {
                       <UserCog className="h-4 w-4" />
                       Impersonate
                     </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => { setDeleteConfirmText(''); setDeleteDialogOpen(true); }}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
                   </div>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
