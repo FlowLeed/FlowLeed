@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Building2 } from "lucide-react";
 import { iconMap } from "@/lib/flowIcons";
 import type { TaskContact } from "@/hooks/useTasksPageData";
 import { useEngagementScore } from "@/hooks/useCheckinData";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
+
+type RowContact = TaskContact & { campusName?: string | null };
 
 const getInitials = (name: string) => {
   const parts = name.split(" ");
