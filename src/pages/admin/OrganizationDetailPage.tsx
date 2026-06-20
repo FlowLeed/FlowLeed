@@ -207,6 +207,41 @@ export default function OrganizationDetailPage() {
             />
           )}
 
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete organization?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently deletes <strong>{org.name}</strong> and all of its data:
+                  contacts, flows, integrations, Planning Center connections, members, and history.
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-delete">
+                  Type <span className="font-mono font-semibold">{org.name}</span> to confirm
+                </Label>
+                <Input
+                  id="confirm-delete"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={org.name}
+                  autoComplete="off"
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => { e.preventDefault(); handleDelete(); }}
+                  disabled={deleteConfirmText !== org.name || isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete organization'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
