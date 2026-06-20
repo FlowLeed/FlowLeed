@@ -24,10 +24,8 @@ import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
 const IntegrationsPage = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [planningCenterForm, setPlanningCenterForm] = useState({
-    appId: '',
-    secret: ''
-  });
+  // Planning Center now uses OAuth only — no PAT form state.
+
   const [testingConnection, setTestingConnection] = useState(false);
   const [currentSyncJobId, setCurrentSyncJobId] = useState<string | null>(null);
   const [isPreparing, setIsPreparing] = useState(false);
