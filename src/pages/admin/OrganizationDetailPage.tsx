@@ -11,8 +11,22 @@ import { StartImpersonationDialog } from '@/components/admin/StartImpersonationD
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw, Pencil, UserCog } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ArrowLeft, Building2, Calendar, Users, TrendingUp, Activity, Zap, RefreshCw, Pencil, UserCog, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function OrganizationDetailPage() {
   const { id } = useParams();
@@ -20,8 +34,25 @@ export default function OrganizationDetailPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [impersonateDialogOpen, setImpersonateDialogOpen] = useState(false);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const { data: organizations, isLoading, refetch } = useOrganizationsData();
   const { data: healthScoreData, isLoading: healthScoreLoading, recalculate, isRecalculating } = useHealthScore(id);
+
+  const handleDelete = async () => {
+    if (!id || !org) return;
+    setIsDeleting(true);
+    const { error } = await supabase.rpc('admin_delete_organization', { _org_id: id });
+    setIsDeleting(false);
+    if (error) {
+      toast.error('Failed to delete organization', { description: error.message });
+      return;
+    }
+    toast.success(`Organization "${org.name}" deleted`);
+    setDeleteDialogOpen(false);
+    navigate('/fl-admin');
+  };
 
   const org = organizations?.find(o => o.id === id);
 
@@ -124,6 +155,15 @@ export default function OrganizationDetailPage() {
                       <UserCog className="h-4 w-4" />
                       Impersonate
                     </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => { setDeleteConfirmText(''); setDeleteDialogOpen(true); }}
+                      className="gap-2"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
                   </div>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
@@ -166,6 +206,41 @@ export default function OrganizationDetailPage() {
               targetUserId={ownerUserId}
             />
           )}
+
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete organization?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently deletes <strong>{org.name}</strong> and all of its data:
+                  contacts, flows, integrations, Planning Center connections, members, and history.
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-delete">
+                  Type <span className="font-mono font-semibold">{org.name}</span> to confirm
+                </Label>
+                <Input
+                  id="confirm-delete"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder={org.name}
+                  autoComplete="off"
+                />
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => { e.preventDefault(); handleDelete(); }}
+                  disabled={deleteConfirmText !== org.name || isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete organization'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

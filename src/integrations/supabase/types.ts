@@ -3725,6 +3725,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_delete_organization: {
+        Args: { _org_id: string }
+        Returns: undefined
+      }
       admin_get_org_members_activity: {
         Args: { p_org_id: string }
         Returns: {
