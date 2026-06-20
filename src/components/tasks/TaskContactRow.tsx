@@ -50,6 +50,12 @@ export const TaskContactRow = ({ contact }: { contact: RowContact }) => {
             {contact.nextStageName && (
               <span className="text-xs text-muted-foreground">→ {contact.nextStageName}</span>
             )}
+            {contact.campusName && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Building2 className="h-3 w-3" />
+                {contact.campusName}
+              </span>
+            )}
             <EngagementBadge score={engagementScore} compact />
           </div>
         </div>
