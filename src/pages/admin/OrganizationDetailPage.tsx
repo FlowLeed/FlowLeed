@@ -34,8 +34,25 @@ export default function OrganizationDetailPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [impersonateDialogOpen, setImpersonateDialogOpen] = useState(false);
   const [ownerUserId, setOwnerUserId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const { data: organizations, isLoading, refetch } = useOrganizationsData();
   const { data: healthScoreData, isLoading: healthScoreLoading, recalculate, isRecalculating } = useHealthScore(id);
+
+  const handleDelete = async () => {
+    if (!id || !org) return;
+    setIsDeleting(true);
+    const { error } = await supabase.rpc('admin_delete_organization', { _org_id: id });
+    setIsDeleting(false);
+    if (error) {
+      toast.error('Failed to delete organization', { description: error.message });
+      return;
+    }
+    toast.success(`Organization "${org.name}" deleted`);
+    setDeleteDialogOpen(false);
+    navigate('/fl-admin');
+  };
 
   const org = organizations?.find(o => o.id === id);
 
