@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
-import { ExternalLink, Loader2, CheckCircle, AlertCircle, Key, Database, Calendar, Mail, Zap, Settings } from "lucide-react";
+import { ExternalLink, Loader2, CheckCircle, AlertCircle, Database, Calendar, Mail, Zap, Settings } from "lucide-react";
 import { QuickMappingDialog } from "@/components/integrations/QuickMappingDialog";
 import { ListMappingManager } from "@/components/integrations/ListMappingManager";
 import { SyncSettingsSection } from "@/components/integrations/SyncSettingsSection";
