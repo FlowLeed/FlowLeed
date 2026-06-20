@@ -122,13 +122,8 @@ const IntegrationsPage = () => {
       });
     },
     onSuccess: () => {
-      // Clear form state for fresh reconnection
-      setPlanningCenterForm({
-        appId: '',
-        secret: ''
-      });
       setCurrentSyncJobId(null);
-      
+
       toast.success('Integration Disconnected', {
         description: 'Successfully disconnected from Planning Center'
       });
