@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Building2 } from "lucide-react";
 import { iconMap } from "@/lib/flowIcons";
 import type { TaskContact } from "@/hooks/useTasksPageData";
 import { useEngagementScore } from "@/hooks/useCheckinData";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
+
+type RowContact = TaskContact & { campusName?: string | null };
 
 const getInitials = (name: string) => {
   const parts = name.split(" ");
@@ -12,7 +15,7 @@ const getInitials = (name: string) => {
   return name.slice(0, 2).toUpperCase();
 };
 
-export const TaskContactRow = ({ contact }: { contact: TaskContact }) => {
+export const TaskContactRow = ({ contact }: { contact: RowContact }) => {
   const FlowIcon = contact.flowIcon && iconMap[contact.flowIcon] ? iconMap[contact.flowIcon] : null;
   const { data: engagementScore } = useEngagementScore(contact.id);
 
@@ -46,6 +49,12 @@ export const TaskContactRow = ({ contact }: { contact: TaskContact }) => {
             )}
             {contact.nextStageName && (
               <span className="text-xs text-muted-foreground">→ {contact.nextStageName}</span>
+            )}
+            {contact.campusName && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <Building2 className="h-3 w-3" />
+                {contact.campusName}
+              </span>
             )}
             <EngagementBadge score={engagementScore} compact />
           </div>
