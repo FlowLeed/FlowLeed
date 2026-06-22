@@ -82,7 +82,7 @@ const App = () => (
               <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
               <Route path="/flows/:flowId/analytics" element={<FlowAnalyticsPage />} />
               <Route path="/contacts" element={<ContactsPage />} />
-              <Route path="/signals" element={<SignalsPage />} />
+              <Route path="/signals" element={<FeatureGate feature="signals"><SignalsPage /></FeatureGate>} />
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
               <Route path="/groups" element={<GroupsPage />} />
               <Route path="/groups/:groupId" element={<GroupDetailPage />} />
