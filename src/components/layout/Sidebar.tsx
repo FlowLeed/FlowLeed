@@ -531,7 +531,8 @@ export const Sidebar = () => {
   }, {
     title: "Signals",
     icon: Activity,
-    path: "/signals"
+    path: "/signals",
+    beta: true
   }, {
     title: "Analytics",
     icon: BarChart3,
