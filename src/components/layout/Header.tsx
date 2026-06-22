@@ -380,7 +380,9 @@ export const Header: React.FC<HeaderProps> = ({
             )
           )}
           <div className="text-lg font-extralight truncate min-w-0">{title}</div>
+          {titleBadge}
         </div>
+
 
         {/* Right content slot for page-specific controls */}
         {rightContent && (
