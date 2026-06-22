@@ -612,17 +612,20 @@ export const Sidebar = () => {
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
   
-  const connectItems: SidebarItem[] = [{
+  const connectItems: SidebarItem[] = ([{
     title: "Messages",
     icon: MessageSquare,
     path: "/messages",
-    comingSoon: true
+    comingSoon: true,
+    featureKey: "texting" as const,
   }, {
     title: "Calls",
     icon: Phone,
     path: "/calls",
-    comingSoon: true
-  }];
+    comingSoon: true,
+    featureKey: "calling" as const,
+  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" })[])
+    .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
   const settingsItems: SidebarItem[] = [{
     title: "My Profile",
