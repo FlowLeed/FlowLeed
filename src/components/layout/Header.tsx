@@ -67,6 +67,7 @@ interface TeamMember {
 
 interface HeaderProps {
   title: string;
+  titleBadge?: React.ReactNode;
   description?: string;
   showBackButton?: boolean;
   onBackClick?: () => void;
