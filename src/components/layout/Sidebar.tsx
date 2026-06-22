@@ -34,6 +34,7 @@ interface SidebarItem {
   path: string;
   badge?: number;
   comingSoon?: boolean;
+  beta?: boolean;
   flow_type?: 'linear' | 'recurring';
   cycle_days?: number;
   flowId?: string;
