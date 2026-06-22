@@ -354,6 +354,9 @@ export default function OrganizationDetailPage() {
             <HealthScoreCard data={healthScoreData} loading={healthScoreLoading} />
           </div>
 
+          {/* Feature Modules */}
+          {org.id && <OrgFeatureModules organizationId={org.id} />}
+
           {/* Phone Numbers */}
           {org.id && <OrganizationPhoneNumbers organizationId={org.id} />}
 
