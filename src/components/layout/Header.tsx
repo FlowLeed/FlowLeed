@@ -67,6 +67,7 @@ interface TeamMember {
 
 interface HeaderProps {
   title: string;
+  titleBadge?: React.ReactNode;
   description?: string;
   showBackButton?: boolean;
   onBackClick?: () => void;
@@ -104,6 +105,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   title,
+  titleBadge,
   description,
   showBackButton = false,
   onBackClick,
@@ -378,7 +380,9 @@ export const Header: React.FC<HeaderProps> = ({
             )
           )}
           <div className="text-lg font-extralight truncate min-w-0">{title}</div>
+          {titleBadge}
         </div>
+
 
         {/* Right content slot for page-specific controls */}
         {rightContent && (

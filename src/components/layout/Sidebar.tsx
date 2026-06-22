@@ -34,6 +34,7 @@ interface SidebarItem {
   path: string;
   badge?: number;
   comingSoon?: boolean;
+  beta?: boolean;
   flow_type?: 'linear' | 'recurring';
   cycle_days?: number;
   flowId?: string;
@@ -87,6 +88,14 @@ const NavItem = ({
       <span className="font-extralight truncate whitespace-nowrap min-w-0 flex-1">
         {item.title}
       </span>
+      {item.beta && (
+        <Badge
+          variant="outline"
+          className={`ml-auto text-[10px] px-1.5 py-0 h-4 flex-shrink-0 ${isActive ? "border-white/60 text-white" : "border-purple-500/50 text-purple-500"}`}
+        >
+          Beta
+        </Badge>
+      )}
       {item.badge != null && item.badge > 0 && <span className={`ml-auto text-xs rounded-full px-2 py-0.5 flex-shrink-0 ${isActive ? "bg-white text-purple-500" : "bg-purple-500 text-white"}`}>
           {item.badge}
         </span>}
@@ -522,7 +531,8 @@ export const Sidebar = () => {
   }, {
     title: "Signals",
     icon: Activity,
-    path: "/signals"
+    path: "/signals",
+    beta: true
   }, {
     title: "Analytics",
     icon: BarChart3,
