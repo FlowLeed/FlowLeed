@@ -92,8 +92,8 @@ const App = () => (
               <Route path="/integrations/:integrationName/advanced" element={<IntegrationAdvancedSettingsPage />} />
               <Route path="/integrations/church-online/advanced" element={<ChurchOnlineAdvancedPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/messages" element={<MessagesPage />} />
-              <Route path="/calls" element={<CallsPage />} />
+              <Route path="/messages" element={<FeatureGate feature="texting"><MessagesPage /></FeatureGate>} />
+              <Route path="/calls" element={<FeatureGate feature="calling"><CallsPage /></FeatureGate>} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               </Route>
