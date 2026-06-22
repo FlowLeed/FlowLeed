@@ -105,6 +105,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   title,
+  titleBadge,
   description,
   showBackButton = false,
   onBackClick,
