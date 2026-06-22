@@ -508,6 +508,7 @@ export const Sidebar = () => {
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
   const { data: orgMembers = [] } = useOrgMembers(user?.id, isOrgAdmin);
   const { data: flowsByMember } = useFlowTeamMemberships(isOrgAdmin && !!teamMemberFilter);
+  const { isEnabled: isFeatureEnabled } = useOrgFeatures();
 
   // Persist filter selections per user
   useEffect(() => {
