@@ -27,6 +27,7 @@ import { mockConversations } from "@/data/mockMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyFlows } from "@/hooks/useMyFlows";
 import { useFlowPreferences } from "@/hooks/useFlowPreferences";
+import { useOrgFeatures } from "@/hooks/useOrgFeatures";
 import type { LucideIcon } from "lucide-react";
 interface SidebarItem {
   title: string;
