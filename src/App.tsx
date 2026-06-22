@@ -48,6 +48,12 @@ const GroupPublicSignupPage = lazy(() => import("./pages/GroupPublicSignupPage")
 const GroupDirectoryPage = lazy(() => import("./pages/GroupDirectoryPage"));
 const PcoCallbackPage = lazy(() => import("./pages/PcoCallbackPage"));
 const DevMobilePreviewPage = lazy(() => import("./pages/DevMobilePreviewPage"));
+const ContentDashboardPage = lazy(() => import("./pages/content/ContentDashboardPage"));
+const ContentSearchPage = lazy(() => import("./pages/content/ContentSearchPage"));
+const ContentVideoDetailPage = lazy(() => import("./pages/content/ContentVideoDetailPage"));
+const ContentLibraryPage = lazy(() => import("./pages/content/ContentLibraryPage"));
+const ContentChatPage = lazy(() => import("./pages/content/ContentChatPage"));
+const PublicContentPage = lazy(() => import("./pages/content/PublicContentPage"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -74,6 +80,7 @@ const App = () => (
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
+              <Route path="/org/:slug/content" element={<PublicContentPage />} />
               
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
@@ -94,6 +101,11 @@ const App = () => (
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/messages" element={<FeatureGate feature="texting"><MessagesPage /></FeatureGate>} />
               <Route path="/calls" element={<FeatureGate feature="calling"><CallsPage /></FeatureGate>} />
+              <Route path="/content" element={<FeatureGate feature="content"><ContentDashboardPage /></FeatureGate>} />
+              <Route path="/content/search" element={<FeatureGate feature="content"><ContentSearchPage /></FeatureGate>} />
+              <Route path="/content/library" element={<FeatureGate feature="content"><ContentLibraryPage /></FeatureGate>} />
+              <Route path="/content/chat" element={<FeatureGate feature="content"><ContentChatPage /></FeatureGate>} />
+              <Route path="/content/videos/:id" element={<FeatureGate feature="content"><ContentVideoDetailPage /></FeatureGate>} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               </Route>

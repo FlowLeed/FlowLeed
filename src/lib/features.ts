@@ -1,6 +1,6 @@
-import { MessageSquare, Phone, Sparkles, Activity, type LucideIcon } from "lucide-react";
+import { MessageSquare, Phone, Sparkles, Activity, Film, type LucideIcon } from "lucide-react";
 
-export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals";
+export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content";
 
 export interface FeatureModule {
   key: FeatureKey;
@@ -33,6 +33,12 @@ export const FEATURE_MODULES: FeatureModule[] = [
     label: "Signals",
     description: "Engagement signals page and signal chips.",
     icon: Activity,
+  },
+  {
+    key: "content",
+    label: "Content",
+    description: "Semantic video-story discovery: ingest YouTube videos, extract stories with AI, and search by meaning.",
+    icon: Film,
   },
 ];
 
