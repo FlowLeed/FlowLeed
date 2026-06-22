@@ -974,6 +974,290 @@ export type Database = {
           },
         ]
       }
+      content_analyses: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          impact_score: number | null
+          key_quotes: Json | null
+          model: string | null
+          organization_id: string
+          story_patterns: Json | null
+          summary: string | null
+          themes: string[] | null
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          impact_score?: number | null
+          key_quotes?: Json | null
+          model?: string | null
+          organization_id: string
+          story_patterns?: Json | null
+          summary?: string | null
+          themes?: string[] | null
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          impact_score?: number | null
+          key_quotes?: Json | null
+          model?: string | null
+          organization_id?: string
+          story_patterns?: Json | null
+          summary?: string | null
+          themes?: string[] | null
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_analyses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_analyses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_analyses_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "content_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_chat_messages: {
+        Row: {
+          citations: Json | null
+          content: string
+          created_at: string
+          id: string
+          role: string
+          session_id: string
+        }
+        Insert: {
+          citations?: Json | null
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          session_id: string
+        }
+        Update: {
+          citations?: Json | null
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "content_chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_chat_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_chat_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_chat_sessions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_chat_sessions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "content_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_transcript_chunks: {
+        Row: {
+          chunk_index: number
+          created_at: string
+          embedding: string | null
+          end_seconds: number
+          id: string
+          organization_id: string
+          start_seconds: number
+          text: string
+          video_id: string
+        }
+        Insert: {
+          chunk_index: number
+          created_at?: string
+          embedding?: string | null
+          end_seconds?: number
+          id?: string
+          organization_id: string
+          start_seconds?: number
+          text: string
+          video_id: string
+        }
+        Update: {
+          chunk_index?: number
+          created_at?: string
+          embedding?: string | null
+          end_seconds?: number
+          id?: string
+          organization_id?: string
+          start_seconds?: number
+          text?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_transcript_chunks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_transcript_chunks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_transcript_chunks_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "content_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_videos: {
+        Row: {
+          channel_id: string | null
+          channel_name: string | null
+          consent_level: Database["public"]["Enums"]["content_consent_level"]
+          created_at: string
+          description: string | null
+          duration_seconds: number | null
+          error_message: string | null
+          id: string
+          ingest_status: Database["public"]["Enums"]["content_ingest_status"]
+          ingested_by: string | null
+          organization_id: string
+          published_at: string | null
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          url: string
+          youtube_id: string
+        }
+        Insert: {
+          channel_id?: string | null
+          channel_name?: string | null
+          consent_level?: Database["public"]["Enums"]["content_consent_level"]
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          error_message?: string | null
+          id?: string
+          ingest_status?: Database["public"]["Enums"]["content_ingest_status"]
+          ingested_by?: string | null
+          organization_id: string
+          published_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          url: string
+          youtube_id: string
+        }
+        Update: {
+          channel_id?: string | null
+          channel_name?: string | null
+          consent_level?: Database["public"]["Enums"]["content_consent_level"]
+          created_at?: string
+          description?: string | null
+          duration_seconds?: number | null
+          error_message?: string | null
+          id?: string
+          ingest_status?: Database["public"]["Enums"]["content_ingest_status"]
+          ingested_by?: string | null
+          organization_id?: string
+          published_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          url?: string
+          youtube_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_videos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_videos_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_verification_tokens: {
         Row: {
           created_at: string | null
@@ -3982,6 +4266,41 @@ export type Database = {
         }
         Returns: string
       }
+      match_content_chunks: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          p_org_id: string
+          p_video_id?: string
+          query_embedding: string
+        }
+        Returns: {
+          chunk_id: string
+          chunk_index: number
+          end_seconds: number
+          similarity: number
+          start_seconds: number
+          text: string
+          video_id: string
+        }[]
+      }
+      match_content_chunks_public: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          p_org_slug: string
+          query_embedding: string
+        }
+        Returns: {
+          chunk_id: string
+          chunk_index: number
+          end_seconds: number
+          similarity: number
+          start_seconds: number
+          text: string
+          video_id: string
+        }[]
+      }
       recompute_contact_markers: {
         Args: { p_org_id: string }
         Returns: undefined
@@ -4044,6 +4363,14 @@ export type Database = {
       }
     }
     Enums: {
+      content_consent_level: "internal_use" | "public_search"
+      content_ingest_status:
+        | "pending"
+        | "transcribing"
+        | "embedding"
+        | "analyzing"
+        | "ready"
+        | "failed"
       system_role: "super_admin" | "support_admin" | "viewer"
     }
     CompositeTypes: {
@@ -4172,6 +4499,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      content_consent_level: ["internal_use", "public_search"],
+      content_ingest_status: [
+        "pending",
+        "transcribing",
+        "embedding",
+        "analyzing",
+        "ready",
+        "failed",
+      ],
       system_role: ["super_admin", "support_admin", "viewer"],
     },
   },
