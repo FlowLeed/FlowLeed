@@ -1,86 +1,48 @@
-## Redesigned Tasks Page
+## Feature Module Assignment per Organization
 
-Replace the current Tasks page (metrics + upcoming tasks + needs attention + team feed) with a focused, single-purpose page: **a complete list of every contact assigned to the current user**, with search and filters.
+Add ability for fl-admin super admins to enable/disable feature modules per organization. Modules gate UI (sidebar nav + page routes) so non-enabled features are hidden for that org.
 
-### Page layout
+### Initial Modules
+- `texting` — SMS / Messages
+- `calling` — Calls
+- `flowleed_ai` — AI dashboard / suggestions
+- `signals` — Signals page
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│ Header: "My Contacts"   [count badge]                   │
-├─────────────────────────────────────────────────────────┤
-│ Personal Metrics (compact, kept from current page)      │
-├─────────────────────────────────────────────────────────┤
-│ [🔍 Search by name...]                                  │
-│ [Flow ▾] [Stage ▾] [Campus ▾] [Sort: last contact ▾]   │
-├─────────────────────────────────────────────────────────┤
-│ Avatar  Name              Flow · Stage     12d ago  →   │
-│         engagement badge   campus                       │
-│ Avatar  Name              Flow · Stage      3d ago  →   │
-│ ...                                                     │
-└─────────────────────────────────────────────────────────┘
-```
+(Easy to add more later.)
 
-### Contact source ("assigned to me")
+### Database
+New table `public.organization_features`:
+- `organization_id` (FK → organizations)
+- `feature_key` (text)
+- `enabled` (boolean, default true)
+- unique (organization_id, feature_key)
 
-Union of:
-1. `pipeline_contacts.assigned_to_user_id = me` (active, not completed)
-2. `pipeline_stages.default_assignee_user_id = me` for stages currently occupied by a contact (only when that `pipeline_contact` has no explicit assignee — i.e. effective assignment)
-3. `contact_interactions.assigned_to_user_id = me` with `completed_at IS NULL` (open task on the contact)
+RLS:
+- Org members can SELECT their own org's rows (to gate UI)
+- Only super admins (`system_user_roles`) can INSERT/UPDATE/DELETE
 
-Deduplicate by `contact_id`. Each contact appears once; its primary flow/stage is the most recently entered active `pipeline_contact`.
+Helper RPC `get_org_features(_org_id uuid)` returning enabled map.
 
-### Row content
+### Backend / Hook
+- `src/lib/features.ts` — central FEATURE_MODULES registry (key, label, description, icon).
+- `src/hooks/useOrgFeatures.tsx` — fetches enabled features for the current user's org, returns `{ isEnabled(key), features, isLoading }`.
 
-- Avatar + name (links to `/contacts/:id`)
-- Flow badge with icon + stage badge (colored left border) — reuses pattern from `TaskContactRow`
-- Engagement badge (compact)
-- Campus chip (small, muted) when present
-- Right side: "Xd ago" badge based on last `contact_interactions.created_at`; "No contact" if none. Color: destructive ≥30d, secondary ≥14d, outline otherwise.
+### UI Gating (frontend only)
+- `src/components/layout/Sidebar.tsx` — hide nav items for Messages (texting), Calls (calling), Dashboard AI widgets (flowleed_ai), Signals (signals) when disabled.
+- Wrap corresponding routes/pages in `App.tsx` to redirect to `/` with a toast if disabled.
 
-### Filters & search
+### fl-admin UI
+- New component `src/components/admin/OrgFeatureModules.tsx`:
+  - Lists FEATURE_MODULES with a Switch each.
+  - Toggling upserts/deletes a row in `organization_features` (enabled flag).
+  - Shows description + last updated.
+- Mount inside `src/pages/admin/OrganizationDetailPage.tsx` as a new card "Feature Modules" near Phone Numbers section.
 
-- **Search**: client-side substring match on name (case-insensitive).
-- **Flow filter**: dropdown of distinct flows present in the result set.
-- **Stage filter**: dropdown of stages within the selected flow (or all stages when no flow selected).
-- **Campus filter**: dropdown of distinct campuses present.
-- **Sort**: "Last contact (oldest first)" default, "Name A–Z", "Recently assigned".
-- All filters operate client-side on the fetched dataset (assumed ≤ a few hundred rows per user; matches current Tasks page pattern).
+### Technical notes
+- Default behavior: if no row exists for a (org, feature), treat as **enabled** (backwards compatible). Disabling creates a row with `enabled=false`.
+- React Query cache key `['org-features', orgId]` invalidated on toggle.
+- Module registry typed as `as const` for autocomplete.
 
-### Removed from the page
-
-- `My Upcoming Tasks` card (scheduled interactions list)
-- `People I Need to Connect With` section (subsumed — that list is now a sort/filter of the same dataset)
-- `Team Activity Feed`
-
-`PersonalMetrics` is kept at the top as a compact summary.
-
-### Technical implementation
-
-**New hook**: `src/hooks/useMyAssignedContacts.tsx`
-- Single React Query keyed on `userId`.
-- Three parallel Supabase queries:
-  - `pipeline_contacts` where `assigned_to_user_id = userId` and `completed_end_at is null`, selecting `contact_id, pipeline_id, stage_id, created_at`.
-  - `pipeline_stages` where `default_assignee_user_id = userId`, then `pipeline_contacts` in those stages with `assigned_to_user_id is null` and `completed_end_at is null`.
-  - `contact_interactions` where `assigned_to_user_id = userId` and `completed_at is null`, selecting `contact_id`.
-- Collect unique `contactIds`, then batch-fetch:
-  - `contacts` (id, name, avatar, email, campus_id)
-  - `campuses` (id, name) for the referenced campus ids
-  - `pipelines` (id, name, icon)
-  - `pipeline_stages` (id, name, color, stage_order, pipeline_id) — for both the primary stage and next-stage lookup
-  - `contact_interactions` (contact_id, created_at) for last-contact computation
-- Build `MyAssignedContact[]` mirroring `TaskContact` shape, adding `campusName`.
-
-**New page sections**:
-- `src/pages/TasksPage.tsx` rewritten.
-- `src/components/tasks/MyContactsFilters.tsx` (search input + 3 selects + sort select).
-- Reuse `TaskContactRow` (already shows flow/stage/engagement badges). Extend it with optional campus chip, or add `campusName` to the existing row.
-
-**Untouched**:
-- `useTasksPageData`, `useAllScheduledTasks`, `useMyUpcomingTasks`, `useDashboardData` remain (used by Dashboard and other pages).
-- No DB migrations. No edge function changes. Sidebar nav unchanged.
-
-### Empty / loading states
-
-- Loading: `Skeleton` rows (8 placeholders).
-- Empty (no assignments): friendly message "No contacts assigned to you yet."
-- Empty after filters: "No contacts match your filters." with a "Clear filters" button.
+### Out of scope
+- Per-user feature toggles
+- Billing/plan-tier driven feature bundles (can layer on later)
