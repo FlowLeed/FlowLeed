@@ -14,6 +14,7 @@ import { useContentVideo, useContentAnalysis, useContentChunks } from "@/hooks/u
 import { formatTimestamp, youtubeEmbedUrl } from "@/lib/contentUtils";
 import { ContentChat } from "@/components/content/ContentChat";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ContentVideoDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +25,8 @@ export default function ContentVideoDetailPage() {
   const { data: chunks = [] } = useContentChunks(id);
   const { toast } = useToast();
   const qc = useQueryClient();
-  const { isOrgAdmin } = useIsOrgAdmin();
+  const { user } = useAuth();
+  const { isOrgAdmin } = useIsOrgAdmin(user?.id);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const regen = useMutation({
