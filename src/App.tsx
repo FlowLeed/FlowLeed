@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { SuperAdminProtectedRoute } from "./components/admin/SuperAdminProtectedRoute";
 import { SuperAdminLayout } from "./components/admin/SuperAdminLayout";
 import { ImpersonationEscapeHandler } from "./components/ImpersonationEscapeHandler";
+import { FeatureGate } from "./components/FeatureGate";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -81,7 +82,7 @@ const App = () => (
               <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
               <Route path="/flows/:flowId/analytics" element={<FlowAnalyticsPage />} />
               <Route path="/contacts" element={<ContactsPage />} />
-              <Route path="/signals" element={<SignalsPage />} />
+              <Route path="/signals" element={<FeatureGate feature="signals"><SignalsPage /></FeatureGate>} />
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
               <Route path="/groups" element={<GroupsPage />} />
               <Route path="/groups/:groupId" element={<GroupDetailPage />} />
@@ -91,8 +92,8 @@ const App = () => (
               <Route path="/integrations/:integrationName/advanced" element={<IntegrationAdvancedSettingsPage />} />
               <Route path="/integrations/church-online/advanced" element={<ChurchOnlineAdvancedPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/messages" element={<MessagesPage />} />
-              <Route path="/calls" element={<CallsPage />} />
+              <Route path="/messages" element={<FeatureGate feature="texting"><MessagesPage /></FeatureGate>} />
+              <Route path="/calls" element={<FeatureGate feature="calling"><CallsPage /></FeatureGate>} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/tasks" element={<TasksPage />} />
               </Route>

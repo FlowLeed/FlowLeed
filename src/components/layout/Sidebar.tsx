@@ -27,6 +27,7 @@ import { mockConversations } from "@/data/mockMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyFlows } from "@/hooks/useMyFlows";
 import { useFlowPreferences } from "@/hooks/useFlowPreferences";
+import { useOrgFeatures } from "@/hooks/useOrgFeatures";
 import type { LucideIcon } from "lucide-react";
 interface SidebarItem {
   title: string;
@@ -508,6 +509,7 @@ export const Sidebar = () => {
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
   const { data: orgMembers = [] } = useOrgMembers(user?.id, isOrgAdmin);
   const { data: flowsByMember } = useFlowTeamMemberships(isOrgAdmin && !!teamMemberFilter);
+  const { isEnabled: isFeatureEnabled } = useOrgFeatures();
 
   // Persist filter selections per user
   useEffect(() => {
@@ -520,10 +522,11 @@ export const Sidebar = () => {
     } catch {}
   }, [STORAGE_KEY, showAllFlows, showPinnedOnly, teamMemberFilter]);
   
-  const pageItems: SidebarItem[] = [{
+  const pageItems: SidebarItem[] = ([{
     title: "FlowLeed AI",
     icon: Sparkles,
-    path: "/"
+    path: "/",
+    featureKey: "flowleed_ai" as const,
   }, {
     title: "People",
     icon: Users,
@@ -532,7 +535,8 @@ export const Sidebar = () => {
     title: "Signals",
     icon: Activity,
     path: "/signals",
-    beta: true
+    beta: true,
+    featureKey: "signals" as const,
   }, {
     title: "Analytics",
     icon: BarChart3,
@@ -545,7 +549,8 @@ export const Sidebar = () => {
     title: "Tasks",
     icon: CheckSquare,
     path: "/tasks"
-  }];
+  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" })[])
+    .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
@@ -607,17 +612,20 @@ export const Sidebar = () => {
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
   
-  const connectItems: SidebarItem[] = [{
+  const connectItems: SidebarItem[] = ([{
     title: "Messages",
     icon: MessageSquare,
     path: "/messages",
-    comingSoon: true
+    comingSoon: true,
+    featureKey: "texting" as const,
   }, {
     title: "Calls",
     icon: Phone,
     path: "/calls",
-    comingSoon: true
-  }];
+    comingSoon: true,
+    featureKey: "calling" as const,
+  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" })[])
+    .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
   const settingsItems: SidebarItem[] = [{
     title: "My Profile",
