@@ -522,10 +522,11 @@ export const Sidebar = () => {
     } catch {}
   }, [STORAGE_KEY, showAllFlows, showPinnedOnly, teamMemberFilter]);
   
-  const pageItems: SidebarItem[] = [{
+  const pageItems: SidebarItem[] = ([{
     title: "FlowLeed AI",
     icon: Sparkles,
-    path: "/"
+    path: "/",
+    featureKey: "flowleed_ai" as const,
   }, {
     title: "People",
     icon: Users,
@@ -534,7 +535,8 @@ export const Sidebar = () => {
     title: "Signals",
     icon: Activity,
     path: "/signals",
-    beta: true
+    beta: true,
+    featureKey: "signals" as const,
   }, {
     title: "Analytics",
     icon: BarChart3,
@@ -547,7 +549,8 @@ export const Sidebar = () => {
     title: "Tasks",
     icon: CheckSquare,
     path: "/tasks"
-  }];
+  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" })[])
+    .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
