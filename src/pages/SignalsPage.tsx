@@ -85,6 +85,11 @@ const SignalsPage = () => {
     <div className="flex flex-col h-full">
       <Header
         title="Signals"
+        titleBadge={
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-purple-500/50 text-purple-600 dark:text-purple-400">
+            Beta
+          </Badge>
+        }
         showFlowIcon={false}
         showAddButton={false}
         rightContent={
