@@ -85,9 +85,6 @@ export default function PublicContentPage() {
 
         {results.length > 0 ? (
           <div className="space-y-3">
-            {results.map((r) => (
-              <a key={r.chunk_id} href={`https://www.youtube.com/watch?v=${r.video_id.slice(0, 0) /* placeholder */}`} />
-            ))}
             {/* Render results as cards linking to YouTube directly */}
             {results.map((r) => (
               <Card key={r.chunk_id + "-c"} className="p-4 flex gap-4">
