@@ -149,10 +149,39 @@ export default function ContentVideoDetailPage() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="container max-w-6xl py-10 px-6 space-y-6">
-      <Button variant="ghost" onClick={() => navigate(-1)} size="sm" className="-ml-2">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => navigate(-1)} size="sm" className="-ml-2">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        {isOrgAdmin && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this video?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes the video, transcript, analysis, and chat history. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteVideo.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
       <header className="space-y-2">
         {editingTitle ? (
           <div className="flex items-center gap-2">
