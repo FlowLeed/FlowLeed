@@ -2672,6 +2672,7 @@ export type Database = {
           id: string
           last_activity_at: string | null
           last_payment_date: string | null
+          logo_url: string | null
           name: string
           next_billing_date: string | null
           notes: string | null
@@ -2703,6 +2704,7 @@ export type Database = {
           id?: string
           last_activity_at?: string | null
           last_payment_date?: string | null
+          logo_url?: string | null
           name: string
           next_billing_date?: string | null
           notes?: string | null
@@ -2734,6 +2736,7 @@ export type Database = {
           id?: string
           last_activity_at?: string | null
           last_payment_date?: string | null
+          logo_url?: string | null
           name?: string
           next_billing_date?: string | null
           notes?: string | null
