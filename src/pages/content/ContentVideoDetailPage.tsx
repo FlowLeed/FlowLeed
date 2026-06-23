@@ -31,6 +31,9 @@ export default function ContentVideoDetailPage() {
   const { user } = useAuth();
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
+
 
   const regen = useMutation({
     mutationFn: async () => {
