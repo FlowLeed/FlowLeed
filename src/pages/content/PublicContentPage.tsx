@@ -101,7 +101,17 @@ const CATEGORIES: {
 
 export default function PublicContentPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [query, setQuery] = useState("");
+  const storageKey = `public-content-search:${slug ?? ""}`;
+  const initialState = (() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem(storageKey);
+      return raw ? (JSON.parse(raw) as { query: string; activeQuery: string; answer: AskResponse | null }) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const [query, setQuery] = useState(initialState?.query ?? "");
   const [videos, setVideos] = useState<PublicVideo[]>([]);
   const [videoThemes, setVideoThemes] = useState<Record<string, string[]>>({});
   const [activeTheme, setActiveTheme] = useState<string>("__all__");
@@ -110,8 +120,21 @@ export default function PublicContentPage() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<CategoryKey | null>(null);
   const [searching, setSearching] = useState(false);
-  const [answer, setAnswer] = useState<AskResponse | null>(null);
-  const [activeQuery, setActiveQuery] = useState<string>("");
+  const [answer, setAnswer] = useState<AskResponse | null>(initialState?.answer ?? null);
+  const [activeQuery, setActiveQuery] = useState<string>(initialState?.activeQuery ?? "");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (answer && !searching) {
+        sessionStorage.setItem(storageKey, JSON.stringify({ query, activeQuery, answer }));
+      } else if (!answer) {
+        sessionStorage.removeItem(storageKey);
+      }
+    } catch {
+      // ignore
+    }
+  }, [storageKey, query, activeQuery, answer, searching]);
 
   useEffect(() => {
     const load = async () => {
