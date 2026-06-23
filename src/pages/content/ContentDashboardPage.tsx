@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { useContentVideos } from "@/hooks/useContent";
 import { extractYouTubeId, formatTimestamp } from "@/lib/contentUtils";
+import { Header } from "@/components/layout/Header";
 
 export default function ContentDashboardPage() {
   const { organization } = useProfile();
@@ -41,8 +42,11 @@ export default function ContentDashboardPage() {
   });
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="container max-w-5xl py-10 px-6 space-y-10">
+    <div className="flex flex-col h-full">
+      <Header title="Content" showFlowIcon={false} showAddButton={false} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="container max-w-5xl py-10 px-6 space-y-10">
+
 
       <header className="space-y-2">
         <div className="flex items-center justify-between gap-2">
@@ -167,8 +171,10 @@ export default function ContentDashboardPage() {
           </div>
         )}
       </section>
+        </div>
       </div>
     </div>
   );
 
 }
+

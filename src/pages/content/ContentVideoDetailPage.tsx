@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2 } from "lucide-react";
+import { Header } from "@/components/layout/Header";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -147,13 +148,18 @@ export default function ContentVideoDetailPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="container max-w-6xl py-10 px-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate(-1)} size="sm" className="-ml-2">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+    <div className="flex flex-col h-full">
+      <Header
+        title={video.title || "Video"}
+        showFlowIcon={false}
+        showAddButton={false}
+        showBackButton
+        onBackClick={() => navigate(-1)}
+      />
+      <div className="flex-1 overflow-y-auto">
+        <div className="container max-w-6xl py-10 px-6 space-y-6">
+      <div className="flex items-center justify-end">
+
         {isOrgAdmin && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -357,7 +363,9 @@ export default function ContentVideoDetailPage() {
           <ContentChat videoId={video.id} organizationId={video.organization_id} />
         </TabsContent>
       </Tabs>
+        </div>
       </div>
     </div>
   );
 }
+

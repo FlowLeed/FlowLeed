@@ -28,6 +28,7 @@ import { FlowMomentsCard } from "@/components/contact/FlowMomentsCard";
 import { PcoCustomFieldsCard } from "@/components/contact/PcoCustomFieldsCard";
 import { ContactCheckinsCard } from "@/components/contact/ContactCheckinsCard";
 import { ContactGroupsCard } from "@/components/contact/ContactGroupsCard";
+import { Header } from "@/components/layout/Header";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 import { ActiveMarkersCard } from "@/components/contact/ActiveMarkersCard";
 import { useEngagementScore } from "@/hooks/useCheckinData";
@@ -652,15 +653,17 @@ const UserProfilePage = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
+      <Header
+        title={contact.name || "Contact"}
+        showFlowIcon={false}
+        showAddButton={false}
+        showBackButton
+        onBackClick={() => navigate(-1)}
+      />
       <div className="flex-1 overflow-y-auto overflow-x-hidden w-full p-4 md:p-6 space-y-6">
         {/* Enhanced Header */}
         <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </div>
+
         
         <Card>
           <CardContent className="p-4 md:p-6">

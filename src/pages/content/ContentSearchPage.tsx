@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
-import { Search, Loader2, ArrowLeft } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { formatTimestamp } from "@/lib/contentUtils";
+import { Header } from "@/components/layout/Header";
 
 interface SearchResult {
   video_id: string;
@@ -47,15 +48,20 @@ export default function ContentSearchPage() {
   }, [organization?.id]);
 
   return (
-    <div className="container max-w-4xl py-10 px-6 space-y-8">
-      <Button variant="ghost" onClick={() => navigate(-1)} size="sm" className="-ml-2">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
-      <header className="space-y-2">
-        <h1 className="text-3xl font-light">Semantic search</h1>
-        <p className="text-muted-foreground">Find moments by meaning, not just keywords.</p>
-      </header>
+    <div className="flex flex-col h-full">
+      <Header
+        title="Semantic search"
+        showFlowIcon={false}
+        showAddButton={false}
+        showBackButton
+        onBackClick={() => navigate(-1)}
+      />
+      <div className="flex-1 overflow-y-auto">
+        <div className="container max-w-4xl py-10 px-6 space-y-8">
+          <header className="space-y-2">
+            <h1 className="text-3xl font-light">Semantic search</h1>
+            <p className="text-muted-foreground">Find moments by meaning, not just keywords.</p>
+          </header>
 
       <form
         className="flex gap-2"
@@ -110,7 +116,10 @@ export default function ContentSearchPage() {
             </Card>
           </Link>
         ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+

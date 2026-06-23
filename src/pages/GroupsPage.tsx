@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { GroupCard } from "@/components/groups/GroupCard";
 import { CreateGroupDialog } from "@/components/groups/CreateGroupDialog";
 import { useQueryClient } from "@tanstack/react-query";
+import { Header } from "@/components/layout/Header";
 
 const GroupsPage = () => {
   console.log("[GroupsPage] Component rendered");
@@ -128,8 +129,11 @@ const GroupsPage = () => {
 
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-[1600px] mx-auto p-4 sm:p-6 space-y-4">
+    <div className="flex flex-col h-full">
+      <Header title="Groups" showFlowIcon={false} showAddButton={false} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-[1600px] mx-auto p-4 sm:p-6 space-y-4">
+
         {/* Header */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
@@ -341,9 +345,11 @@ const GroupsPage = () => {
           onOpenChange={setCreateDialogOpen}
           organizationId={organization?.id}
         />
+        </div>
       </div>
     </div>
   );
+
 };
 
 export default GroupsPage;

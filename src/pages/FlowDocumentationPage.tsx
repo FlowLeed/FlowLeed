@@ -11,6 +11,7 @@ import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Header } from "@/components/layout/Header";
 
 const FlowDocumentationPage = () => {
   const { flowId } = useParams<{ flowId: string }>();
@@ -205,41 +206,24 @@ const FlowDocumentationPage = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
-      {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <div className="flex flex-col">
-              <h1 className="text-xl font-semibold">{flow.name}</h1>
-              <p className="text-sm text-muted-foreground">Documentation</p>
-            </div>
-          </div>
-
+      <Header
+        title={flow.name}
+        showFlowIcon={false}
+        showAddButton={false}
+        showBackButton
+        onBackClick={handleBack}
+        rightContent={
           <div className="flex items-center gap-3">
             {hasUnsavedChanges && !isSaving && !showSavedIndicator && (
-              <span className="text-sm text-muted-foreground">
-                Unsaved changes
-              </span>
+              <span className="text-sm text-muted-foreground hidden sm:inline">Unsaved changes</span>
             )}
             {showSavedIndicator && (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <Check className="h-4 w-4" />
-                <span>Saved</span>
+                <span className="hidden sm:inline">Saved</span>
               </div>
             )}
-            <Button
-              onClick={handleSave}
-              disabled={!hasUnsavedChanges || isSaving}
-              size="sm"
-            >
+            <Button onClick={handleSave} disabled={!hasUnsavedChanges || isSaving} size="sm">
               {isSaving ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -253,15 +237,9 @@ const FlowDocumentationPage = () => {
               )}
             </Button>
           </div>
-        </div>
+        }
+      />
 
-        {/* Keyboard shortcut hint */}
-        <div className="px-6 pb-3">
-          <p className="text-xs text-muted-foreground">
-            Press <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-muted rounded">⌘</kbd> + <kbd className="px-1.5 py-0.5 text-xs font-semibold bg-muted rounded">S</kbd> to save
-          </p>
-        </div>
-      </div>
 
       {/* Editor Content */}
       <div className="flex-1 overflow-y-auto">
