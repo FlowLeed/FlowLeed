@@ -1,135 +1,198 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Loader2, Film } from "lucide-react";
+import { Search, Loader2, Play } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
-
-interface PublicResult {
-  video_id: string; chunk_id: string; title: string; thumbnail_url: string | null;
-  channel_name: string | null; snippet: string; start_seconds: number; similarity: number;
-}
+import { cn } from "@/lib/utils";
 
 interface PublicVideo {
-  id: string; title: string | null; thumbnail_url: string | null; channel_name: string | null;
+  id: string;
+  title: string | null;
+  thumbnail_url: string | null;
+  channel_name: string | null;
   youtube_id: string;
+  duration_seconds: number | null;
+}
+
+interface VideoTheme {
+  video_id: string;
+  themes: string[];
 }
 
 export default function PublicContentPage() {
   const { slug } = useParams<{ slug: string }>();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<PublicResult[]>([]);
   const [videos, setVideos] = useState<PublicVideo[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [videoThemes, setVideoThemes] = useState<Record<string, string[]>>({});
+  const [activeTheme, setActiveTheme] = useState<string>("__all__");
   const [orgName, setOrgName] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       if (!slug) return;
-      const { data: org } = await supabase.from("organizations")
-        .select("id, name").eq("slug", slug).maybeSingle();
+      setLoading(true);
+      const { data: org } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .eq("slug", slug)
+        .maybeSingle();
       if (org) {
         setOrgName(org.name);
-        const { data } = await supabase.from("content_videos" as any)
-          .select("id, title, thumbnail_url, channel_name, youtube_id")
+        const { data: vids } = await supabase
+          .from("content_videos" as any)
+          .select("id, title, thumbnail_url, channel_name, youtube_id, duration_seconds")
           .eq("organization_id", org.id)
           .eq("consent_level", "public_search")
           .order("created_at", { ascending: false });
-        setVideos((data as unknown as PublicVideo[]) ?? []);
+        const list = (vids as unknown as PublicVideo[]) ?? [];
+        setVideos(list);
+
+        if (list.length) {
+          const { data: analyses } = await supabase
+            .from("content_analyses" as any)
+            .select("video_id, themes")
+            .in("video_id", list.map((v) => v.id));
+          const map: Record<string, string[]> = {};
+          ((analyses as unknown as VideoTheme[]) ?? []).forEach((a) => {
+            map[a.video_id] = a.themes ?? [];
+          });
+          setVideoThemes(map);
+        }
       }
+      setLoading(false);
     };
     load();
   }, [slug]);
 
-  const onSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query.trim() || !slug) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("content-search", {
-        body: { query: query.trim(), orgSlug: slug, public: true },
+  const themeChips = useMemo(() => {
+    const counts = new Map<string, number>();
+    Object.values(videoThemes).forEach((themes) => {
+      themes.forEach((t) => {
+        const key = t.trim().toLowerCase();
+        if (!key) return;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
       });
-      if (error) throw error;
-      setResults((data as { results: PublicResult[] }).results);
-    } finally { setLoading(false); }
-  };
+    });
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([t]) => t);
+  }, [videoThemes]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return videos.filter((v) => {
+      if (activeTheme !== "__all__") {
+        const themes = (videoThemes[v.id] ?? []).map((t) => t.trim().toLowerCase());
+        if (!themes.includes(activeTheme)) return false;
+      }
+      if (q) {
+        const hay = `${v.title ?? ""} ${v.channel_name ?? ""}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [videos, videoThemes, activeTheme, query]);
 
   return (
     <div className="min-h-screen bg-background overflow-y-auto">
-      <div className="container max-w-4xl py-12 px-6 space-y-10">
-        <header className="space-y-2 text-center">
-          <div className="text-sm text-muted-foreground inline-flex items-center gap-2 justify-center">
-            <Film className="h-4 w-4" /> {orgName} · Content
-          </div>
-          <h1 className="text-4xl font-light">Search the library</h1>
-          <p className="text-muted-foreground">Find the stories that matter, by meaning.</p>
+      <div className="container max-w-7xl py-10 px-6 space-y-8">
+        <header className="space-y-1">
+          <h1 className="text-4xl font-bold tracking-tight">Stories Library</h1>
+          <p className="text-muted-foreground">
+            {orgName ? `${orgName} · ` : ""}Manage and track your video stories
+          </p>
         </header>
 
-        <form onSubmit={onSearch} className="flex gap-2 max-w-2xl mx-auto">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by meaning…"
-              className="h-12 pl-10"
-            />
-          </div>
-          <Button type="submit" disabled={loading || !query.trim()} className="h-12 px-6">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
-          </Button>
-        </form>
+        <div className="relative max-w-xl">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search stories..."
+            className="h-12 pl-11 rounded-full bg-muted border-0"
+          />
+        </div>
 
-        {results.length > 0 ? (
-          <div className="space-y-3">
-            {results.map((r) => (
-              <Link key={r.chunk_id + "-c"} to={`/org/${slug}/content/videos/${r.video_id}?t=${Math.floor(r.start_seconds)}`}>
-                <Card className="p-4 flex gap-4 hover:shadow-md transition-shadow">
-                  {r.thumbnail_url && (
-                    <img src={r.thumbnail_url} alt="" className="w-32 h-20 object-cover rounded" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <div className="font-medium truncate">{r.title}</div>
-                      <Badge variant="outline" className="text-xs">{formatTimestamp(r.start_seconds)}</Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground">{r.channel_name}</div>
-                    <p className="text-sm line-clamp-2 mt-1">{r.snippet}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setActiveTheme("__all__")}
+            className={cn(
+              "px-5 h-10 rounded-full text-sm font-medium transition-colors",
+              activeTheme === "__all__"
+                ? "bg-foreground text-background"
+                : "bg-muted text-foreground hover:bg-muted/70",
+            )}
+          >
+            All Stories
+          </button>
+          {themeChips.map((t) => (
+            <button
+              key={t}
+              onClick={() => setActiveTheme(t)}
+              className={cn(
+                "px-5 h-10 rounded-full text-sm font-medium transition-colors capitalize",
+                activeTheme === t
+                  ? "bg-foreground text-background"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+              )}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          </div>
+        ) : filtered.length === 0 ? (
+          <Card className="p-12 text-center text-sm text-muted-foreground">
+            {videos.length === 0
+              ? "This organization hasn't shared any videos publicly yet."
+              : "No stories match your filters."}
+          </Card>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            {filtered.map((v) => (
+              <Link key={v.id} to={`/org/${slug}/content/videos/${v.id}`} className="group">
+                <div className="space-y-3">
+                  <div className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-muted">
+                    {v.thumbnail_url ? (
+                      <img
+                        src={v.thumbnail_url}
+                        alt={v.title ?? ""}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+                        VIDEO THUMBNAIL
+                      </div>
+                    )}
+                    {v.duration_seconds != null && (
+                      <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                        <Play className="h-3 w-3 fill-current" />
+                        {formatTimestamp(v.duration_seconds)}
+                      </div>
+                    )}
                   </div>
-                </Card>
+                  <div className="space-y-1 px-0.5">
+                    <div className="font-semibold text-sm line-clamp-2 leading-snug">
+                      {v.title ?? "Untitled"}
+                    </div>
+                    {v.channel_name && (
+                      <div className="text-xs text-muted-foreground line-clamp-1">
+                        {v.channel_name}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </Link>
             ))}
           </div>
-        ) : (
-          <section className="space-y-4">
-            <h2 className="text-lg font-light">Recent videos</h2>
-            {videos.length === 0 ? (
-              <Card className="p-12 text-center text-sm text-muted-foreground">
-                This organization hasn't shared any videos publicly yet.
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {videos.map((v) => (
-                  <Link key={v.id} to={`/org/${slug}/content/videos/${v.id}`}>
-                    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-                      {v.thumbnail_url && (
-                        <div className="aspect-video bg-muted">
-                          <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="p-3 space-y-1">
-                        <div className="font-medium text-sm line-clamp-2">{v.title}</div>
-                        <div className="text-xs text-muted-foreground">{v.channel_name}</div>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
         )}
       </div>
     </div>
