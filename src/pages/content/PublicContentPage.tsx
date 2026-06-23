@@ -150,7 +150,7 @@ export default function PublicContentPage() {
         setOrgName(org.name);
         const { data: vids } = await supabase
           .from("content_videos" as any)
-          .select("id, title, thumbnail_url, channel_name, youtube_id, duration_seconds")
+          .select("id, title, thumbnail_url, channel_name, short_description, youtube_id, duration_seconds")
           .eq("organization_id", org.id)
           .eq("consent_level", "public_search")
           .order("created_at", { ascending: false });
