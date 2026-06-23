@@ -229,31 +229,6 @@ export default function ContentVideoDetailPage() {
         <TabsContent value="chat" className="mt-6">
           <ContentChat videoId={video.id} organizationId={video.organization_id} />
         </TabsContent>
-
-        {isOrgAdmin && (
-          <TabsContent value="settings" className="mt-6">
-            <Card className="p-6 space-y-4">
-              <div className="space-y-1">
-                <Label className="text-base">Visibility</Label>
-                <p className="text-sm text-muted-foreground">
-                  Public videos are discoverable on your organization's public Content page.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                {video.consent_level === "public_search"
-                  ? <Globe className="h-4 w-4 text-primary" />
-                  : <Lock className="h-4 w-4 text-muted-foreground" />}
-                <Switch
-                  checked={video.consent_level === "public_search"}
-                  onCheckedChange={(v) => setConsent.mutate(v ? "public_search" : "internal_use")}
-                />
-                <span className="text-sm">
-                  {video.consent_level === "public_search" ? "Public (discoverable)" : "Internal use only"}
-                </span>
-              </div>
-            </Card>
-          </TabsContent>
-        )}
       </Tabs>
       </div>
     </div>
