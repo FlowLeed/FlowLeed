@@ -114,7 +114,42 @@ export default function ContentVideoDetailPage() {
         Back
       </Button>
       <header className="space-y-2">
-        <h1 className="text-2xl font-light">{video.title}</h1>
+        {editingTitle ? (
+          <div className="flex items-center gap-2">
+            <Input
+              autoFocus
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && titleDraft.trim()) saveTitle.mutate(titleDraft.trim());
+                if (e.key === "Escape") setEditingTitle(false);
+              }}
+              className="text-2xl h-11 font-light"
+            />
+            <Button size="icon" variant="ghost" disabled={saveTitle.isPending || !titleDraft.trim()} onClick={() => saveTitle.mutate(titleDraft.trim())}>
+              <Check className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="ghost" onClick={() => setEditingTitle(false)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 group">
+            <h1 className="text-2xl font-light">{video.title}</h1>
+            {isOrgAdmin && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => { setTitleDraft(video.title ?? ""); setEditingTitle(true); }}
+                aria-label="Edit title"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>{video.channel_name}</span>
           {video.duration_seconds != null && (
