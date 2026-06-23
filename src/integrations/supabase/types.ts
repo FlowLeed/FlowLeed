@@ -4234,6 +4234,10 @@ export type Database = {
           total_logins_30d: number
         }[]
       }
+      get_public_content_video: {
+        Args: { p_slug: string; p_video_id: string }
+        Returns: Json
+      }
       get_user_organization_role: {
         Args: { _organization_id: string; _user_id: string }
         Returns: string

@@ -85,21 +85,22 @@ export default function PublicContentPage() {
 
         {results.length > 0 ? (
           <div className="space-y-3">
-            {/* Render results as cards linking to YouTube directly */}
             {results.map((r) => (
-              <Card key={r.chunk_id + "-c"} className="p-4 flex gap-4">
-                {r.thumbnail_url && (
-                  <img src={r.thumbnail_url} alt="" className="w-32 h-20 object-cover rounded" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="font-medium truncate">{r.title}</div>
-                    <Badge variant="outline" className="text-xs">{formatTimestamp(r.start_seconds)}</Badge>
+              <Link key={r.chunk_id + "-c"} to={`/org/${slug}/content/videos/${r.video_id}?t=${Math.floor(r.start_seconds)}`}>
+                <Card className="p-4 flex gap-4 hover:shadow-md transition-shadow">
+                  {r.thumbnail_url && (
+                    <img src={r.thumbnail_url} alt="" className="w-32 h-20 object-cover rounded" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="font-medium truncate">{r.title}</div>
+                      <Badge variant="outline" className="text-xs">{formatTimestamp(r.start_seconds)}</Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">{r.channel_name}</div>
+                    <p className="text-sm line-clamp-2 mt-1">{r.snippet}</p>
                   </div>
-                  <div className="text-xs text-muted-foreground">{r.channel_name}</div>
-                  <p className="text-sm line-clamp-2 mt-1">{r.snippet}</p>
-                </div>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
         ) : (
@@ -112,7 +113,7 @@ export default function PublicContentPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {videos.map((v) => (
-                  <a key={v.id} href={`https://www.youtube.com/watch?v=${v.youtube_id}`} target="_blank" rel="noreferrer">
+                  <Link key={v.id} to={`/org/${slug}/content/videos/${v.id}`}>
                     <Card className="overflow-hidden hover:shadow-md transition-shadow">
                       {v.thumbnail_url && (
                         <div className="aspect-video bg-muted">
@@ -124,7 +125,7 @@ export default function PublicContentPage() {
                         <div className="text-xs text-muted-foreground">{v.channel_name}</div>
                       </div>
                     </Card>
-                  </a>
+                  </Link>
                 ))}
               </div>
             )}
