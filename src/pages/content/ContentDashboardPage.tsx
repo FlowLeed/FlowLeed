@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Film, Search, Sparkles, Loader2, AlertCircle, ExternalLink } from "lucide-react";
+import { Film, Search, Sparkles, Loader2, AlertCircle, ExternalLink, Globe, Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
