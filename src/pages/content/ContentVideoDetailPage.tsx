@@ -75,6 +75,7 @@ export default function ContentVideoDetailPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["content-video", id] });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
       toast({ title: "Visibility updated" });
     },
     onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
