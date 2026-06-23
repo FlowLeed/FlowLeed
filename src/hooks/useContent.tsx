@@ -9,6 +9,7 @@ export interface ContentVideo {
   url: string;
   title: string | null;
   channel_name: string | null;
+  short_description: string | null;
   thumbnail_url: string | null;
   duration_seconds: number | null;
   consent_level: "internal_use" | "public_search";
