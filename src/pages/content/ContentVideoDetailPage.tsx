@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Lock, Globe } from "lucide-react";
+import { Loader2, RefreshCw, Lock, Globe, ArrowLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function ContentVideoDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [params] = useSearchParams();
   const startSeconds = Number(params.get("t") ?? "0");
   const { data: video, isLoading } = useContentVideo(id);
@@ -86,6 +87,10 @@ export default function ContentVideoDetailPage() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="container max-w-6xl py-10 px-6 space-y-6">
+      <Button variant="ghost" onClick={() => navigate(-1)} size="sm" className="-ml-2">
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
       <header className="space-y-2">
         <h1 className="text-2xl font-light">{video.title}</h1>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
