@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X, Quote } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
