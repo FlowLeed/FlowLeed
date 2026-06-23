@@ -46,6 +46,9 @@ export default function ContentVideoDetailPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+
 
 
   const retryIngest = useMutation({
