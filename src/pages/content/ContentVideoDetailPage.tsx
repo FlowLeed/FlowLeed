@@ -35,6 +35,21 @@ export default function ContentVideoDetailPage() {
   const [titleDraft, setTitleDraft] = useState("");
 
 
+  const retryIngest = useMutation({
+    mutationFn: async () => {
+      if (!video) throw new Error("no video");
+      const { error } = await supabase.functions.invoke("content-ingest", {
+        body: { youtubeUrl: video.url, organizationId: video.organization_id },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Retrying transcript…" });
+      qc.invalidateQueries({ queryKey: ["content-video", id] });
+    },
+    onError: (e: any) => toast({ title: "Retry failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
+
   const regen = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke("content-analyze", {
@@ -161,7 +176,14 @@ export default function ContentVideoDetailPage() {
             </Badge>
           )}
           {video.ingest_status === "failed" && (
-            <Badge variant="destructive" className="text-xs">Failed: {video.error_message}</Badge>
+            <>
+              <Badge variant="destructive" className="text-xs">Failed: {video.error_message}</Badge>
+              {isOrgAdmin && (
+                <Button size="sm" variant="outline" onClick={() => retryIngest.mutate()} disabled={retryIngest.isPending}>
+                  <RefreshCw className={`h-3 w-3 mr-1 ${retryIngest.isPending ? "animate-spin" : ""}`} /> Retry
+                </Button>
+              )}
+            </>
           )}
         </div>
       </header>
