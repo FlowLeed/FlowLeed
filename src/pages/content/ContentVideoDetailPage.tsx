@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/layout/Header";
 import {
   AlertDialog,
