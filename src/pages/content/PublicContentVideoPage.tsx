@@ -147,6 +147,11 @@ export default function PublicContentVideoPage() {
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-tight">
             {video.title}
           </h1>
+          {video.short_description && (
+            <p className="text-lg md:text-xl text-foreground/75 italic leading-relaxed">
+              {video.short_description}
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             {video.channel_name && <span className="font-medium text-foreground/80">{video.channel_name}</span>}
             {publishedLabel && (
