@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, X, Tag, Search, Pencil, Trash2, GitMerge, Phone } from "lucide-react";
+import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, X, Tag, Search, Pencil, Trash2, GitMerge, Phone, ImageIcon, Upload, Loader2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InviteTeamMemberDialog } from "@/components/team/InviteTeamMemberDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +65,9 @@ const TeamPage = () => {
 
   // Org settings state
   const [orgName, setOrgName] = useState("");
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
   const [isEditingOrgName, setIsEditingOrgName] = useState(false);
 
   // Tag management state
@@ -109,6 +112,68 @@ const TeamPage = () => {
       setOrgName(organization.name);
     }
   }, [organization]);
+
+  // Refresh signed URL whenever the org logo path changes
+  useEffect(() => {
+    const path = (organization as any)?.logo_url as string | null | undefined;
+    if (!path) { setLogoPreviewUrl(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.storage.from('org-logos').createSignedUrl(path, 3600);
+      if (!cancelled) setLogoPreviewUrl(data?.signedUrl ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [(organization as any)?.logo_url]);
+
+  const handleLogoFile = async (file: File) => {
+    if (!organization) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Logo must be under 5 MB');
+      return;
+    }
+    setUploadingLogo(true);
+    try {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const path = `${organization.id}/logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('org-logos')
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { error: updErr } = await supabase
+        .from('organizations')
+        .update({ logo_url: path } as any)
+        .eq('id', organization.id);
+      if (updErr) throw updErr;
+      // Optimistic preview
+      const { data: signed } = await supabase.storage.from('org-logos').createSignedUrl(path, 3600);
+      setLogoPreviewUrl(signed?.signedUrl ?? null);
+      toast.success('Logo updated');
+    } catch (e: any) {
+      console.error('Logo upload failed', e);
+      toast.error(e?.message ?? 'Logo upload failed');
+    } finally {
+      setUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!organization) return;
+    const path = (organization as any).logo_url as string | null;
+    try {
+      if (path) await supabase.storage.from('org-logos').remove([path]);
+      await supabase.from('organizations').update({ logo_url: null } as any).eq('id', organization.id);
+      setLogoPreviewUrl(null);
+      toast.success('Logo removed');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Failed to remove logo');
+    }
+  };
+
   const fetchTeamData = async () => {
     if (!organization) return;
     try {
@@ -412,6 +477,62 @@ const TeamPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Organization Logo */}
+                <div className="space-y-2">
+                  <Label>Organization Logo</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="h-20 w-20 rounded-lg border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+                      {logoPreviewUrl ? (
+                        <img src={logoPreviewUrl} alt="Organization logo" className="h-full w-full object-contain" />
+                      ) : (
+                        <ImageIcon className="h-7 w-7 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleLogoFile(f);
+                        }}
+                      />
+                      {canManageMembers ? (
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => logoInputRef.current?.click()}
+                            disabled={uploadingLogo}
+                          >
+                            {uploadingLogo ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4 mr-2" />
+                            )}
+                            {logoPreviewUrl ? "Replace logo" : "Upload logo"}
+                          </Button>
+                          {logoPreviewUrl && (
+                            <Button variant="ghost" size="sm" onClick={handleRemoveLogo} disabled={uploadingLogo}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Only owners and admins can change the logo.
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG, WEBP or SVG. Square works best. Max 5 MB.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="orgName">Organization Name</Label>
                   <div className="flex gap-2">
