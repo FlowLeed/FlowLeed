@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X } from "lucide-react";
+import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X, Quote } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,15 +23,21 @@ interface VideoTheme {
   themes: string[];
 }
 
-interface SearchHit {
+interface AskSource {
+  index: number;
   video_id: string;
   chunk_id: string;
-  title: string;
+  title: string | null;
   thumbnail_url: string | null;
   channel_name: string | null;
   snippet: string;
   start_seconds: number;
   similarity: number;
+}
+
+interface AskResponse {
+  answer: string;
+  sources: AskSource[];
 }
 
 type CategoryKey = "transformation" | "faith" | "family" | "hope";
@@ -103,7 +110,7 @@ export default function PublicContentPage() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<CategoryKey | null>(null);
   const [searching, setSearching] = useState(false);
-  const [searchHits, setSearchHits] = useState<SearchHit[] | null>(null);
+  const [answer, setAnswer] = useState<AskResponse | null>(null);
   const [activeQuery, setActiveQuery] = useState<string>("");
 
   useEffect(() => {
@@ -174,24 +181,30 @@ export default function PublicContentPage() {
     setQuery(q);
     setSearching(true);
     setOpenCategory(null);
+    setAnswer({ answer: "", sources: [] });
     try {
-      const { data, error } = await supabase.functions.invoke("content-search", {
+      const { data, error } = await supabase.functions.invoke("content-ask", {
         body: { query: q, orgSlug: slug, public: true },
       });
       if (error) throw error;
-      setSearchHits(((data as any)?.results ?? []) as SearchHit[]);
+      const payload = (data as AskResponse) ?? { answer: "", sources: [] };
+      setAnswer(payload);
     } catch {
-      setSearchHits([]);
+      setAnswer({
+        answer: "Something went wrong while searching. Please try again.",
+        sources: [],
+      });
     } finally {
       setSearching(false);
     }
   };
 
   const clearSearch = () => {
-    setSearchHits(null);
+    setAnswer(null);
     setActiveQuery("");
     setQuery("");
   };
+
 
   return (
     <div className="h-screen overflow-y-auto bg-background">
