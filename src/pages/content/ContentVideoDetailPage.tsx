@@ -120,10 +120,34 @@ export default function ContentVideoDetailPage() {
           <TabsTrigger value="transcript">Transcript</TabsTrigger>
           <TabsTrigger value="quotes">Quotes</TabsTrigger>
           <TabsTrigger value="chat">Chat</TabsTrigger>
-          {isOrgAdmin && <TabsTrigger value="settings">Settings</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4 mt-6">
+          {isOrgAdmin && (
+            <Card className="p-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {video.consent_level === "public_search"
+                  ? <Globe className="h-4 w-4 text-primary" />
+                  : <Lock className="h-4 w-4 text-muted-foreground" />}
+                <div className="space-y-0.5">
+                  <Label htmlFor="visibility-toggle" className="text-sm">
+                    Public {video.consent_level === "public_search" ? "— On" : "— Off"}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {video.consent_level === "public_search"
+                      ? "Discoverable on your org's public Content page."
+                      : "Internal use only."}
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="visibility-toggle"
+                checked={video.consent_level === "public_search"}
+                disabled={setConsent.isPending}
+                onCheckedChange={(v) => setConsent.mutate(v ? "public_search" : "internal_use")}
+              />
+            </Card>
+          )}
           {!analysis ? (
             <Card className="p-6 text-sm text-muted-foreground">
               {video.ingest_status === "ready" ? "No analysis yet." : "Analysis will appear once processing completes."}
