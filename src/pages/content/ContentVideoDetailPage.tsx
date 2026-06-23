@@ -120,39 +120,28 @@ export default function ContentVideoDetailPage() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="transcript">Transcript</TabsTrigger>
-          <TabsTrigger value="quotes">Quotes</TabsTrigger>
-          <TabsTrigger value="chat">Chat</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4 mt-6">
+        <div className="flex items-center justify-between gap-4">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="transcript">Transcript</TabsTrigger>
+            <TabsTrigger value="quotes">Quotes</TabsTrigger>
+            <TabsTrigger value="chat">Chat</TabsTrigger>
+          </TabsList>
           {isOrgAdmin && (
-            <Card className="p-4 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                {video.consent_level === "public_search"
-                  ? <Globe className="h-4 w-4 text-primary" />
-                  : <Lock className="h-4 w-4 text-muted-foreground" />}
-                <div className="space-y-0.5">
-                  <Label htmlFor="visibility-toggle" className="text-sm">
-                    Public {video.consent_level === "public_search" ? "— On" : "— Off"}
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {video.consent_level === "public_search"
-                      ? "Discoverable on your org's public Content page."
-                      : "Internal use only."}
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="visibility-toggle" className="text-sm">Public</Label>
               <Switch
                 id="visibility-toggle"
                 checked={video.consent_level === "public_search"}
                 disabled={setConsent.isPending}
                 onCheckedChange={(v) => setConsent.mutate(v ? "public_search" : "internal_use")}
               />
-            </Card>
+            </div>
           )}
+        </div>
+
+        <TabsContent value="overview" className="space-y-4 mt-6">
+
           {!analysis ? (
             <Card className="p-6 text-sm text-muted-foreground">
               {video.ingest_status === "ready" ? "No analysis yet." : "Analysis will appear once processing completes."}
