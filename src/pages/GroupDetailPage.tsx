@@ -21,6 +21,7 @@ import { TakeAttendanceDialog } from "@/components/groups/TakeAttendanceDialog";
 import { SignupRequestsDialog } from "@/components/groups/SignupRequestsDialog";
 import { useGroupSignupRequests } from "@/hooks/useGroupSignupRequests";
 import { GroupAvatar } from "@/components/groups/GroupAvatar";
+import { Header } from "@/components/layout/Header";
 
 const groupTypeLabels: Record<string, string> = {
   small_group: "Small Group",
@@ -160,13 +161,17 @@ const GroupDetailPage = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-      <div className="space-y-6">
-        {/* Back Button */}
-        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => navigate("/groups")}>
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back
-        </Button>
+    <div className="flex flex-col h-full">
+      <Header
+        title={group.name || "Group"}
+        showFlowIcon={false}
+        showAddButton={false}
+        showBackButton
+        onBackClick={() => navigate("/groups")}
+      />
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="space-y-6">
+
 
         {/* Hero Banner */}
         <Card className="overflow-hidden">
