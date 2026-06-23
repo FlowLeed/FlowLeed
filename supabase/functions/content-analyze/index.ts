@@ -136,6 +136,10 @@ Deno.serve(async (req) => {
     await admin.from("content_videos").update({
       ingest_status: "ready",
       error_message: null,
+      // Only auto-fill short_description if not already set (preserve admin edits)
+      ...(typeof parsed.short_description === "string" && parsed.short_description.trim()
+        ? { short_description: parsed.short_description.trim().slice(0, 240) }
+        : {}),
     }).eq("id", videoId);
 
     return new Response(JSON.stringify({ ok: true }), {
