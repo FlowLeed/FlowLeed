@@ -14,6 +14,7 @@ interface PublicVideo {
   title: string | null;
   thumbnail_url: string | null;
   channel_name: string | null;
+  short_description: string | null;
   youtube_id: string;
   duration_seconds: number | null;
 }
