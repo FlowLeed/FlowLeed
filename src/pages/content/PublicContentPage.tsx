@@ -157,30 +157,53 @@ export default function PublicContentPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-            {filtered.map((v) => (
-              <Link key={v.id} to={`/org/${slug}/content/videos/${v.id}`} className="group">
-                <div className="space-y-3">
+            {filtered.map((v) => {
+              const isPlaying = playingId === v.id;
+              return (
+                <div key={v.id} className="space-y-3 group">
                   <div className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-muted">
-                    {v.thumbnail_url ? (
-                      <img
-                        src={v.thumbnail_url}
-                        alt={v.title ?? ""}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                    {isPlaying ? (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${v.youtube_id}?autoplay=1&rel=0`}
+                        title={v.title ?? "Video"}
+                        className="absolute inset-0 w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-                        VIDEO THUMBNAIL
-                      </div>
-                    )}
-                    {v.duration_seconds != null && (
-                      <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
-                        <Play className="h-3 w-3 fill-current" />
-                        {formatTimestamp(v.duration_seconds)}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPlayingId(v.id)}
+                        className="absolute inset-0 w-full h-full text-left"
+                        aria-label={`Play ${v.title ?? "video"}`}
+                      >
+                        {v.thumbnail_url ? (
+                          <img
+                            src={v.thumbnail_url}
+                            alt={v.title ?? ""}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
+                            VIDEO THUMBNAIL
+                          </div>
+                        )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                          <div className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play className="h-6 w-6 fill-current text-black ml-0.5" />
+                          </div>
+                        </div>
+                        {v.duration_seconds != null && (
+                          <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                            <Play className="h-3 w-3 fill-current" />
+                            {formatTimestamp(v.duration_seconds)}
+                          </div>
+                        )}
+                      </button>
                     )}
                   </div>
-                  <div className="space-y-1 px-0.5">
-                    <div className="font-semibold text-sm line-clamp-2 leading-snug">
+                  <Link to={`/org/${slug}/content/videos/${v.id}`} className="block space-y-1 px-0.5">
+                    <div className="font-semibold text-sm line-clamp-2 leading-snug hover:underline">
                       {v.title ?? "Untitled"}
                     </div>
                     {v.channel_name && (
@@ -188,11 +211,12 @@ export default function PublicContentPage() {
                         {v.channel_name}
                       </div>
                     )}
-                  </div>
+                  </Link>
                 </div>
-              </Link>
-            ))}
+              );
+            })}
           </div>
+
         )}
       </div>
     </div>
