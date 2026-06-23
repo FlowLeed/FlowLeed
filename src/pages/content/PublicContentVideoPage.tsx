@@ -156,7 +156,7 @@ export default function PublicContentVideoPage() {
             {publishedLabel && <span>{publishedLabel}</span>}
             {video.duration_seconds ? (
               <>
-                <span className="text-muted-foreground/50">·</span>
+                {publishedLabel && <span className="text-muted-foreground/50">·</span>}
                 <span>{formatTimestamp(video.duration_seconds)}</span>
               </>
             ) : null}
