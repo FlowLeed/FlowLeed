@@ -617,9 +617,11 @@ const GroupDetailPage = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </div>
       </div>
     </div>
   );
+
 };
 
 export default GroupDetailPage;
