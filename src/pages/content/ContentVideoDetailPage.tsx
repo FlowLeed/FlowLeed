@@ -363,7 +363,9 @@ export default function ContentVideoDetailPage() {
           <ContentChat videoId={video.id} organizationId={video.organization_id} />
         </TabsContent>
       </Tabs>
+        </div>
       </div>
     </div>
   );
 }
+
