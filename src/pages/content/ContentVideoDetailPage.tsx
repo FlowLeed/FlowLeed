@@ -61,6 +61,19 @@ export default function ContentVideoDetailPage() {
     onError: (e: any) => toast({ title: "Retry failed", description: e?.message ?? String(e), variant: "destructive" }),
   });
 
+  const deleteVideo = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("content_videos" as any).delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Video deleted" });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      navigate(-1);
+    },
+    onError: (e: any) => toast({ title: "Delete failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
+
   const regen = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke("content-analyze", {
