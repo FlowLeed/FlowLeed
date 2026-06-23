@@ -345,9 +345,11 @@ const GroupsPage = () => {
           onOpenChange={setCreateDialogOpen}
           organizationId={organization?.id}
         />
+        </div>
       </div>
     </div>
   );
+
 };
 
 export default GroupsPage;
