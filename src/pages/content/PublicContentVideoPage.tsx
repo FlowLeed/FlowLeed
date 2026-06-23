@@ -33,6 +33,7 @@ export default function PublicContentVideoPage() {
 
   const initialT = Number(params.get("t") ?? 0) || 0;
   const [currentSeek, setCurrentSeek] = useState(initialT);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -55,6 +56,7 @@ export default function PublicContentVideoPage() {
 
   const jumpTo = (sec: number) => {
     setCurrentSeek(sec);
+    setPlaying(true);
     const next = new URLSearchParams(params);
     next.set("t", String(Math.floor(sec)));
     setParams(next, { replace: true });
@@ -100,17 +102,44 @@ export default function PublicContentVideoPage() {
         </div>
 
         {/* Player */}
-        <div className="aspect-video w-full bg-black rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5">
-          <iframe
-            ref={iframeRef}
-            key={embedSrc}
-            src={embedSrc}
-            title={video.title ?? "Video"}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="relative aspect-video w-full bg-black rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5">
+          {playing ? (
+            <iframe
+              ref={iframeRef}
+              key={embedSrc}
+              src={`${embedSrc}${embedSrc.includes("?") ? "&" : "?"}autoplay=1`}
+              title={video.title ?? "Video"}
+              className="absolute inset-0 w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setPlaying(true)}
+              className="group absolute inset-0 w-full h-full"
+              aria-label={`Play ${video.title ?? "video"}`}
+            >
+              {video.thumbnail_url ? (
+                <img
+                  src={video.thumbnail_url}
+                  alt={video.title ?? ""}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : null}
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                <div className="h-16 w-16 rounded-full bg-white/95 flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                  <Play className="h-7 w-7 fill-current text-black ml-1" />
+                </div>
+              </div>
+            </button>
+          )}
+          {/* Mask YouTube title chrome on hover during playback */}
+          {playing && (
+            <div className="pointer-events-none absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black to-transparent opacity-0" />
+          )}
         </div>
+
 
         {/* Title block */}
         <div className="space-y-3">
