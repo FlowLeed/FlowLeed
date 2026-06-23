@@ -116,7 +116,10 @@ export default function ContentSearchPage() {
             </Card>
           </Link>
         ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
