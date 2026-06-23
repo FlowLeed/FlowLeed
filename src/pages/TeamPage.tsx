@@ -477,6 +477,62 @@ const TeamPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Organization Logo */}
+                <div className="space-y-2">
+                  <Label>Organization Logo</Label>
+                  <div className="flex items-center gap-4">
+                    <div className="h-20 w-20 rounded-lg border bg-muted/30 flex items-center justify-center overflow-hidden shrink-0">
+                      {logoPreviewUrl ? (
+                        <img src={logoPreviewUrl} alt="Organization logo" className="h-full w-full object-contain" />
+                      ) : (
+                        <ImageIcon className="h-7 w-7 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleLogoFile(f);
+                        }}
+                      />
+                      {canManageMembers ? (
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => logoInputRef.current?.click()}
+                            disabled={uploadingLogo}
+                          >
+                            {uploadingLogo ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4 mr-2" />
+                            )}
+                            {logoPreviewUrl ? "Replace logo" : "Upload logo"}
+                          </Button>
+                          {logoPreviewUrl && (
+                            <Button variant="ghost" size="sm" onClick={handleRemoveLogo} disabled={uploadingLogo}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remove
+                            </Button>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Only owners and admins can change the logo.
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        PNG, JPG, WEBP or SVG. Square works best. Max 5 MB.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="orgName">Organization Name</Label>
                   <div className="flex gap-2">
