@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X, Quote } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X } from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -325,110 +325,91 @@ export default function PublicContentPage() {
               </Button>
             </div>
 
-            <Card className="p-6 md:p-8 bg-gradient-to-br from-violet-50/60 via-background to-background border-violet-200/50">
-              <div className="flex items-start gap-3">
-                <div className="h-9 w-9 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  {searching && !answer.answer ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-                      <Loader2 className="h-4 w-4 animate-spin" /> Listening to your library…
-                    </div>
-                  ) : (
-                    <div className="prose prose-sm md:prose-base max-w-none prose-p:leading-relaxed prose-p:text-foreground/90 prose-strong:text-foreground">
-                      <ReactMarkdown
-                        components={{
-                          p: ({ children }) => {
-                            // Turn [#n] markers into clickable chips that scroll to the source card.
-                            const render = (node: any): any => {
-                              if (typeof node === "string") {
-                                const parts = node.split(/(\[#\d+\])/g);
-                                return parts.map((part, i) => {
-                                  const m = part.match(/^\[#(\d+)\]$/);
-                                  if (!m) return part;
-                                  const idx = Number(m[1]);
-                                  return (
-                                    <a
-                                      key={i}
-                                      href={`#source-${idx}`}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        document
-                                          .getElementById(`source-${idx}`)
-                                          ?.scrollIntoView({ behavior: "smooth", block: "center" });
-                                      }}
-                                      className="inline-flex items-center justify-center mx-0.5 px-1.5 h-5 rounded-md text-[11px] font-semibold bg-violet-100 text-violet-700 hover:bg-violet-200 no-underline align-middle"
-                                    >
-                                      {idx}
-                                    </a>
-                                  );
-                                });
-                              }
-                              if (Array.isArray(node)) return node.map(render);
-                              return node;
-                            };
-                            return <p>{render(children)}</p>;
-                          },
-                        }}
-                      >
-                        {answer.answer}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                </div>
+            <div className="flex items-start gap-3">
+              <div className="h-9 w-9 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+                <Sparkles className="h-4 w-4" />
               </div>
-            </Card>
-
-            {answer.sources.length > 0 && (
-              <div className="space-y-3">
-                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Sources from the library
-                </div>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {answer.sources.map((s) => (
-                    <Link
-                      key={s.chunk_id}
-                      id={`source-${s.index}`}
-                      to={`/org/${slug}/content/videos/${s.video_id}?t=${Math.floor(s.start_seconds)}`}
-                      className="group flex gap-3 p-3 rounded-xl border hover:border-violet-300 hover:bg-violet-50/40 transition-colors"
-                    >
-                      <div className="relative w-32 aspect-video rounded-lg overflow-hidden bg-muted shrink-0">
-                        {s.thumbnail_url ? (
-                          <img
-                            src={s.thumbnail_url}
-                            alt=""
-                            className="absolute inset-0 w-full h-full object-cover"
-                          />
-                        ) : null}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <div className="h-9 w-9 rounded-full bg-white/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Play className="h-4 w-4 fill-current text-black ml-0.5" />
-                          </div>
+              <div className="min-w-0 flex-1 space-y-5">
+                {searching && !answer.answer ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                    <Loader2 className="h-4 w-4 animate-spin" /> Listening to your library…
+                  </div>
+                ) : (
+                  (() => {
+                    const sourceMap = new Map(answer.sources.map((s) => [s.index, s]));
+                    const paragraphs = answer.answer
+                      .split(/\n{2,}/)
+                      .map((p) => p.trim())
+                      .filter(Boolean);
+                    return paragraphs.map((para, pIdx) => {
+                      const cited: number[] = [];
+                      const seen = new Set<number>();
+                      const re = /\[#(\d+)\]/g;
+                      let m;
+                      while ((m = re.exec(para)) !== null) {
+                        const idx = Number(m[1]);
+                        if (!seen.has(idx) && sourceMap.has(idx)) {
+                          cited.push(idx);
+                          seen.add(idx);
+                        }
+                      }
+                      const cleaned = para.replace(/\s*\[#\d+\]/g, "");
+                      return (
+                        <div key={pIdx} className="space-y-3">
+                          <p className="text-[15px] leading-relaxed text-foreground/90">
+                            {cleaned}
+                          </p>
+                          {cited.map((idx) => {
+                            const s = sourceMap.get(idx)!;
+                            return (
+                              <Link
+                                key={s.chunk_id}
+                                to={`/org/${slug}/content/videos/${s.video_id}?t=${Math.floor(s.start_seconds)}`}
+                                className="group flex gap-3 p-3 rounded-xl border bg-card hover:border-violet-300 hover:shadow-sm transition-all"
+                              >
+                                <div className="relative w-28 aspect-video rounded-lg overflow-hidden bg-muted shrink-0">
+                                  {s.thumbnail_url ? (
+                                    <img
+                                      src={s.thumbnail_url}
+                                      alt=""
+                                      className="absolute inset-0 w-full h-full object-cover"
+                                    />
+                                  ) : null}
+                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                    <div className="h-8 w-8 rounded-full bg-white/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <Play className="h-3.5 w-3.5 fill-current text-black ml-0.5" />
+                                    </div>
+                                  </div>
+                                  <div className="absolute top-1.5 left-1.5 px-1.5 h-5 inline-flex items-center rounded-md bg-black/70 text-white text-[10px] font-semibold gap-1">
+                                    <Play className="h-2.5 w-2.5 fill-current" />
+                                    {formatTimestamp(s.start_seconds)}
+                                  </div>
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-baseline gap-2 mb-1">
+                                    <span className="font-semibold text-sm truncate">
+                                      {s.title ?? "Untitled"}
+                                    </span>
+                                    {s.channel_name && (
+                                      <span className="text-[11px] text-muted-foreground truncate">
+                                        · {s.channel_name}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <blockquote className="border-l-2 border-violet-300 pl-3 text-[13px] italic text-muted-foreground line-clamp-3 leading-relaxed">
+                                    "{s.snippet.trim()}"
+                                  </blockquote>
+                                </div>
+                              </Link>
+                            );
+                          })}
                         </div>
-                        <div className="absolute top-1.5 left-1.5 px-1.5 h-5 inline-flex items-center rounded-md bg-black/70 text-white text-[10px] font-semibold">
-                          {formatTimestamp(s.start_seconds)}
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-md bg-violet-100 text-violet-700 text-[11px] font-semibold shrink-0">
-                            {s.index}
-                          </span>
-                          <span className="font-semibold text-sm line-clamp-1">
-                            {s.title ?? "Untitled"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed flex gap-1.5">
-                          <Quote className="h-3 w-3 shrink-0 mt-0.5 text-violet-400" />
-                          <span>{s.snippet}</span>
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                      );
+                    });
+                  })()
+                )}
               </div>
-            )}
+            </div>
           </section>
         )}
 
