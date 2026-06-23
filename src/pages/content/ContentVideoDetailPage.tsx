@@ -64,6 +64,23 @@ export default function ContentVideoDetailPage() {
     },
     onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
   });
+  const saveTitle = useMutation({
+    mutationFn: async (title: string) => {
+      const { error } = await supabase
+        .from("content_videos" as any)
+        .update({ title })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["content-video", id] });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      setEditingTitle(false);
+      toast({ title: "Title updated" });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
+
 
   // Postmessage seek
   const seekTo = (seconds: number) => {
