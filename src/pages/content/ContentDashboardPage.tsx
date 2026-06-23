@@ -128,10 +128,19 @@ export default function ContentDashboardPage() {
               <Link to={`/content/videos/${v.id}`} key={v.id}>
                 <Card className="overflow-hidden hover:shadow-md transition-shadow">
                   {v.thumbnail_url && (
-                    <div className="aspect-video bg-muted overflow-hidden">
+                    <div className="relative aspect-video bg-muted overflow-hidden">
                       <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                      <div
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-sm"
+                        title={v.consent_level === "public_search" ? "Public" : "Internal only"}
+                      >
+                        {v.consent_level === "public_search"
+                          ? <Globe className="h-3.5 w-3.5" />
+                          : <Lock className="h-3.5 w-3.5" />}
+                      </div>
                     </div>
                   )}
+
                   <div className="p-4 space-y-2">
                     <div className="font-medium line-clamp-2">{v.title ?? "Untitled"}</div>
                     <div className="text-xs text-muted-foreground line-clamp-1">{v.channel_name}</div>
