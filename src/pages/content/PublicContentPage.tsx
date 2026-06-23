@@ -14,6 +14,7 @@ interface PublicVideo {
   title: string | null;
   thumbnail_url: string | null;
   channel_name: string | null;
+  short_description: string | null;
   youtube_id: string;
   duration_seconds: number | null;
 }
@@ -149,7 +150,7 @@ export default function PublicContentPage() {
         setOrgName(org.name);
         const { data: vids } = await supabase
           .from("content_videos" as any)
-          .select("id, title, thumbnail_url, channel_name, youtube_id, duration_seconds")
+          .select("id, title, thumbnail_url, channel_name, short_description, youtube_id, duration_seconds")
           .eq("organization_id", org.id)
           .eq("consent_level", "public_search")
           .order("created_at", { ascending: false });
@@ -531,11 +532,11 @@ export default function PublicContentPage() {
                         <div className="font-semibold text-sm line-clamp-2 leading-snug hover:underline">
                           {v.title ?? "Untitled"}
                         </div>
-                        {v.channel_name && (
-                          <div className="text-xs text-muted-foreground line-clamp-1">
-                            {v.channel_name}
+                        {v.short_description ? (
+                          <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                            {v.short_description}
                           </div>
-                        )}
+                        ) : null}
                       </Link>
                     </div>
                   );

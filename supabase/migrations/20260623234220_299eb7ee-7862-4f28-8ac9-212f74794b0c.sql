@@ -1,0 +1,1 @@
+ALTER TABLE public.content_videos ADD COLUMN IF NOT EXISTS short_description text;

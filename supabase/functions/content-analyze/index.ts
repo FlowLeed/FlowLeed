@@ -19,6 +19,7 @@ const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const SYSTEM = `You analyze transcripts of videos (often sermons, talks, or stories) and extract narrative structure.
 Always respond as JSON matching this shape:
 {
+  "short_description": string (ONE emotional sentence, max ~120 chars, that captures the main human highlight or story beat — written in the third person, present tense, no quotes, no period at the end is fine. Examples: "Finds hope after losing her father", "Walks away from addiction and finds a new family", "Discovers faith in the middle of a dark season"),
   "summary": string (2-4 sentences),
   "themes": string[] (3-7 short tags),
   "story_patterns": [{"name": string, "description": string}],
@@ -135,6 +136,9 @@ Deno.serve(async (req) => {
     await admin.from("content_videos").update({
       ingest_status: "ready",
       error_message: null,
+      ...(typeof parsed.short_description === "string" && parsed.short_description.trim()
+        ? { short_description: parsed.short_description.trim().slice(0, 240) }
+        : {}),
     }).eq("id", videoId);
 
     return new Response(JSON.stringify({ ok: true }), {
