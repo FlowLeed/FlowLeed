@@ -153,13 +153,7 @@ export default function PublicContentVideoPage() {
             </p>
           )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-            {video.channel_name && <span className="font-medium text-foreground/80">{video.channel_name}</span>}
-            {publishedLabel && (
-              <>
-                <span className="text-muted-foreground/50">·</span>
-                <span>{publishedLabel}</span>
-              </>
-            )}
+            {publishedLabel && <span>{publishedLabel}</span>}
             {video.duration_seconds ? (
               <>
                 <span className="text-muted-foreground/50">·</span>
