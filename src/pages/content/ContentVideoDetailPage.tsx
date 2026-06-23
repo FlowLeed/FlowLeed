@@ -248,6 +248,51 @@ export default function ContentVideoDetailPage() {
           </div>
         )}
 
+        {/* Public short description (story highlight) */}
+        {editingDescription ? (
+          <div className="space-y-2">
+            <Textarea
+              autoFocus
+              value={descriptionDraft}
+              onChange={(e) => setDescriptionDraft(e.target.value.slice(0, 240))}
+              placeholder="One emotional sentence that captures the story (shown on the public library)"
+              rows={2}
+              className="text-sm"
+            />
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] text-muted-foreground">
+                {descriptionDraft.length}/240 · Shown on public library cards
+              </div>
+              <div className="flex gap-1">
+                <Button size="sm" variant="ghost" onClick={() => setEditingDescription(false)}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={() => saveDescription.mutate(descriptionDraft)} disabled={saveDescription.isPending}>
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="group flex items-start gap-2">
+            <p className={`text-sm flex-1 leading-relaxed ${video.short_description ? "text-foreground/80 italic" : "text-muted-foreground"}`}>
+              {video.short_description || (isOrgAdmin ? "Add a one-sentence story highlight…" : "")}
+            </p>
+            {isOrgAdmin && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                onClick={() => { setDescriptionDraft(video.short_description ?? ""); setEditingDescription(true); }}
+                aria-label="Edit description"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
+
+
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>{video.channel_name}</span>
           {video.duration_seconds != null && (
