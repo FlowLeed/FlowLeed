@@ -23,6 +23,7 @@ interface SearchResult {
 
 export default function ContentSearchPage() {
   const { organization } = useProfile();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const initial = params.get("q") ?? "";
   const [query, setQuery] = useState(initial);
