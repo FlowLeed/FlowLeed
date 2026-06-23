@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X } from "lucide-react";
+import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X, Quote } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,15 +23,21 @@ interface VideoTheme {
   themes: string[];
 }
 
-interface SearchHit {
+interface AskSource {
+  index: number;
   video_id: string;
   chunk_id: string;
-  title: string;
+  title: string | null;
   thumbnail_url: string | null;
   channel_name: string | null;
   snippet: string;
   start_seconds: number;
   similarity: number;
+}
+
+interface AskResponse {
+  answer: string;
+  sources: AskSource[];
 }
 
 type CategoryKey = "transformation" | "faith" | "family" | "hope";
@@ -103,7 +110,7 @@ export default function PublicContentPage() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [openCategory, setOpenCategory] = useState<CategoryKey | null>(null);
   const [searching, setSearching] = useState(false);
-  const [searchHits, setSearchHits] = useState<SearchHit[] | null>(null);
+  const [answer, setAnswer] = useState<AskResponse | null>(null);
   const [activeQuery, setActiveQuery] = useState<string>("");
 
   useEffect(() => {
@@ -174,24 +181,30 @@ export default function PublicContentPage() {
     setQuery(q);
     setSearching(true);
     setOpenCategory(null);
+    setAnswer({ answer: "", sources: [] });
     try {
-      const { data, error } = await supabase.functions.invoke("content-search", {
+      const { data, error } = await supabase.functions.invoke("content-ask", {
         body: { query: q, orgSlug: slug, public: true },
       });
       if (error) throw error;
-      setSearchHits(((data as any)?.results ?? []) as SearchHit[]);
+      const payload = (data as AskResponse) ?? { answer: "", sources: [] };
+      setAnswer(payload);
     } catch {
-      setSearchHits([]);
+      setAnswer({
+        answer: "Something went wrong while searching. Please try again.",
+        sources: [],
+      });
     } finally {
       setSearching(false);
     }
   };
 
   const clearSearch = () => {
-    setSearchHits(null);
+    setAnswer(null);
     setActiveQuery("");
     setQuery("");
   };
+
 
   return (
     <div className="h-screen overflow-y-auto bg-background">
@@ -300,58 +313,128 @@ export default function PublicContentPage() {
           )}
         </section>
 
-        {/* Search results */}
-        {searchHits !== null && (
-          <section className="space-y-4">
+        {/* AI answer */}
+        {answer !== null && (
+          <section className="space-y-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
-                {searchHits.length} {searchHits.length === 1 ? "result" : "results"} for
-                <span className="text-muted-foreground font-normal"> "{activeQuery}"</span>
-              </h2>
+              <div className="text-sm text-muted-foreground">
+                Asked: <span className="text-foreground font-medium">"{activeQuery}"</span>
+              </div>
               <Button variant="ghost" size="sm" onClick={clearSearch}>
                 <X className="h-4 w-4 mr-1" /> Clear
               </Button>
             </div>
-            {searching ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Searching…
-              </div>
-            ) : searchHits.length === 0 ? (
-              <Card className="p-8 text-center text-sm text-muted-foreground">
-                No matches found. Try rephrasing your question.
-              </Card>
-            ) : (
-              <div className="grid gap-3">
-                {searchHits.map((h) => (
-                  <Link
-                    key={h.chunk_id}
-                    to={`/org/${slug}/content/videos/${h.video_id}?t=${Math.floor(h.start_seconds)}`}
-                    className="flex gap-4 p-3 rounded-xl border hover:border-foreground/20 hover:bg-muted/40 transition-colors"
-                  >
-                    {h.thumbnail_url && (
-                      <img
-                        src={h.thumbnail_url}
-                        alt=""
-                        className="w-28 h-20 object-cover rounded-lg shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className="font-medium text-foreground line-clamp-1">{h.title}</span>
-                        <span>·</span>
-                        <span>{formatTimestamp(h.start_seconds)}</span>
-                      </div>
-                      <p className="text-sm line-clamp-2">{h.snippet}</p>
+
+            <Card className="p-6 md:p-8 bg-gradient-to-br from-violet-50/60 via-background to-background border-violet-200/50">
+              <div className="flex items-start gap-3">
+                <div className="h-9 w-9 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  {searching && !answer.answer ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Listening to your library…
                     </div>
-                  </Link>
-                ))}
+                  ) : (
+                    <div className="prose prose-sm md:prose-base max-w-none prose-p:leading-relaxed prose-p:text-foreground/90 prose-strong:text-foreground">
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => {
+                            // Turn [#n] markers into clickable chips that scroll to the source card.
+                            const render = (node: any): any => {
+                              if (typeof node === "string") {
+                                const parts = node.split(/(\[#\d+\])/g);
+                                return parts.map((part, i) => {
+                                  const m = part.match(/^\[#(\d+)\]$/);
+                                  if (!m) return part;
+                                  const idx = Number(m[1]);
+                                  return (
+                                    <a
+                                      key={i}
+                                      href={`#source-${idx}`}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        document
+                                          .getElementById(`source-${idx}`)
+                                          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                      }}
+                                      className="inline-flex items-center justify-center mx-0.5 px-1.5 h-5 rounded-md text-[11px] font-semibold bg-violet-100 text-violet-700 hover:bg-violet-200 no-underline align-middle"
+                                    >
+                                      {idx}
+                                    </a>
+                                  );
+                                });
+                              }
+                              if (Array.isArray(node)) return node.map(render);
+                              return node;
+                            };
+                            return <p>{render(children)}</p>;
+                          },
+                        }}
+                      >
+                        {answer.answer}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            {answer.sources.length > 0 && (
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Sources from the library
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {answer.sources.map((s) => (
+                    <Link
+                      key={s.chunk_id}
+                      id={`source-${s.index}`}
+                      to={`/org/${slug}/content/videos/${s.video_id}?t=${Math.floor(s.start_seconds)}`}
+                      className="group flex gap-3 p-3 rounded-xl border hover:border-violet-300 hover:bg-violet-50/40 transition-colors"
+                    >
+                      <div className="relative w-32 aspect-video rounded-lg overflow-hidden bg-muted shrink-0">
+                        {s.thumbnail_url ? (
+                          <img
+                            src={s.thumbnail_url}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        ) : null}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <div className="h-9 w-9 rounded-full bg-white/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play className="h-4 w-4 fill-current text-black ml-0.5" />
+                          </div>
+                        </div>
+                        <div className="absolute top-1.5 left-1.5 px-1.5 h-5 inline-flex items-center rounded-md bg-black/70 text-white text-[10px] font-semibold">
+                          {formatTimestamp(s.start_seconds)}
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center justify-center h-5 w-5 rounded-md bg-violet-100 text-violet-700 text-[11px] font-semibold shrink-0">
+                            {s.index}
+                          </span>
+                          <span className="font-semibold text-sm line-clamp-1">
+                            {s.title ?? "Untitled"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed flex gap-1.5">
+                          <Quote className="h-3 w-3 shrink-0 mt-0.5 text-violet-400" />
+                          <span>{s.snippet}</span>
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
           </section>
         )}
 
         {/* Library */}
-        {searchHits === null && (
+        {answer === null && (
+
           <>
             {themeChips.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
