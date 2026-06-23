@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X } from "lucide-react";
+import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,6 +59,19 @@ export default function ContentVideoDetailPage() {
       qc.invalidateQueries({ queryKey: ["content-video", id] });
     },
     onError: (e: any) => toast({ title: "Retry failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
+
+  const deleteVideo = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("content_videos" as any).delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Video deleted" });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      navigate(-1);
+    },
+    onError: (e: any) => toast({ title: "Delete failed", description: e?.message ?? String(e), variant: "destructive" }),
   });
 
   const regen = useMutation({
@@ -125,10 +149,39 @@ export default function ContentVideoDetailPage() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="container max-w-6xl py-10 px-6 space-y-6">
-      <Button variant="ghost" onClick={() => navigate(-1)} size="sm" className="-ml-2">
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => navigate(-1)} size="sm" className="-ml-2">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        {isOrgAdmin && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this video?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes the video, transcript, analysis, and chat history. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteVideo.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
       <header className="space-y-2">
         {editingTitle ? (
           <div className="flex items-center gap-2">
