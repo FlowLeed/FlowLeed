@@ -56,6 +56,7 @@ export default function PublicContentVideoPage() {
 
   const jumpTo = (sec: number) => {
     setCurrentSeek(sec);
+    setPlaying(true);
     const next = new URLSearchParams(params);
     next.set("t", String(Math.floor(sec)));
     setParams(next, { replace: true });
