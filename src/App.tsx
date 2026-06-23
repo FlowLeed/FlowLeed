@@ -54,6 +54,7 @@ const ContentVideoDetailPage = lazy(() => import("./pages/content/ContentVideoDe
 const ContentLibraryPage = lazy(() => import("./pages/content/ContentLibraryPage"));
 const ContentChatPage = lazy(() => import("./pages/content/ContentChatPage"));
 const PublicContentPage = lazy(() => import("./pages/content/PublicContentPage"));
+const PublicContentVideoPage = lazy(() => import("./pages/content/PublicContentVideoPage"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
               <Route path="/org/:slug/content" element={<PublicContentPage />} />
+              <Route path="/org/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
               
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
