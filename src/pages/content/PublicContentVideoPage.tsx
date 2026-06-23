@@ -33,6 +33,7 @@ export default function PublicContentVideoPage() {
 
   const initialT = Number(params.get("t") ?? 0) || 0;
   const [currentSeek, setCurrentSeek] = useState(initialT);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const load = async () => {
