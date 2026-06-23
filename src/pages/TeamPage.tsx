@@ -112,6 +112,68 @@ const TeamPage = () => {
       setOrgName(organization.name);
     }
   }, [organization]);
+
+  // Refresh signed URL whenever the org logo path changes
+  useEffect(() => {
+    const path = (organization as any)?.logo_url as string | null | undefined;
+    if (!path) { setLogoPreviewUrl(null); return; }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.storage.from('org-logos').createSignedUrl(path, 3600);
+      if (!cancelled) setLogoPreviewUrl(data?.signedUrl ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [(organization as any)?.logo_url]);
+
+  const handleLogoFile = async (file: File) => {
+    if (!organization) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Logo must be under 5 MB');
+      return;
+    }
+    setUploadingLogo(true);
+    try {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const path = `${organization.id}/logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('org-logos')
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { error: updErr } = await supabase
+        .from('organizations')
+        .update({ logo_url: path } as any)
+        .eq('id', organization.id);
+      if (updErr) throw updErr;
+      // Optimistic preview
+      const { data: signed } = await supabase.storage.from('org-logos').createSignedUrl(path, 3600);
+      setLogoPreviewUrl(signed?.signedUrl ?? null);
+      toast.success('Logo updated');
+    } catch (e: any) {
+      console.error('Logo upload failed', e);
+      toast.error(e?.message ?? 'Logo upload failed');
+    } finally {
+      setUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!organization) return;
+    const path = (organization as any).logo_url as string | null;
+    try {
+      if (path) await supabase.storage.from('org-logos').remove([path]);
+      await supabase.from('organizations').update({ logo_url: null } as any).eq('id', organization.id);
+      setLogoPreviewUrl(null);
+      toast.success('Logo removed');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Failed to remove logo');
+    }
+  };
+
   const fetchTeamData = async () => {
     if (!organization) return;
     try {
