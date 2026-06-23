@@ -48,6 +48,10 @@ export default function ContentSearchPage() {
 
   return (
     <div className="container max-w-4xl py-10 px-6 space-y-8">
+      <Button variant="ghost" onClick={() => navigate(-1)} size="sm" className="-ml-2">
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
       <header className="space-y-2">
         <h1 className="text-3xl font-light">Semantic search</h1>
         <p className="text-muted-foreground">Find moments by meaning, not just keywords.</p>
