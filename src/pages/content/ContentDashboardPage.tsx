@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Film, Search, Sparkles, Loader2, AlertCircle } from "lucide-react";
+import { Film, Search, Sparkles, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -43,8 +43,18 @@ export default function ContentDashboardPage() {
   return (
     <div className="container max-w-5xl py-10 px-6 space-y-10">
       <header className="space-y-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Film className="h-4 w-4" /> Content
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Film className="h-4 w-4" /> Content
+          </div>
+          {organization?.slug && (
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <a href={`/org/${organization.slug}/content`} target="_blank" rel="noreferrer" title="Open public library">
+                <ExternalLink className="h-3.5 w-3.5" />
+                Public library
+              </a>
+            </Button>
+          )}
         </div>
         <h1 className="text-4xl font-light tracking-tight">Discover the stories inside your videos.</h1>
         <p className="text-muted-foreground max-w-2xl">
