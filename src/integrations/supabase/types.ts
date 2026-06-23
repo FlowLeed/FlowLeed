@@ -1197,6 +1197,7 @@ export type Database = {
           ingested_by: string | null
           organization_id: string
           published_at: string | null
+          short_description: string | null
           thumbnail_url: string | null
           title: string | null
           updated_at: string
@@ -1216,6 +1217,7 @@ export type Database = {
           ingested_by?: string | null
           organization_id: string
           published_at?: string | null
+          short_description?: string | null
           thumbnail_url?: string | null
           title?: string | null
           updated_at?: string
@@ -1235,6 +1237,7 @@ export type Database = {
           ingested_by?: string | null
           organization_id?: string
           published_at?: string | null
+          short_description?: string | null
           thumbnail_url?: string | null
           title?: string | null
           updated_at?: string
