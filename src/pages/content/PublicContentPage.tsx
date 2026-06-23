@@ -29,6 +29,8 @@ export default function PublicContentPage() {
   const [activeTheme, setActiveTheme] = useState<string>("__all__");
   const [orgName, setOrgName] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
 
   useEffect(() => {
     const load = async () => {
