@@ -18,6 +18,7 @@ interface Analysis {
 interface Video {
   id: string; youtube_id: string; title: string | null; channel_name: string | null;
   thumbnail_url: string | null; duration_seconds: number | null; description: string | null;
+  short_description: string | null;
   published_at: string | null;
 }
 
