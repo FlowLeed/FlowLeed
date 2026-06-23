@@ -100,7 +100,7 @@ export default function PublicContentPage() {
   }, [videos, videoThemes, activeTheme, query]);
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto">
+    <div className="h-screen overflow-y-auto bg-background">
       <div className="container max-w-7xl py-10 px-6 space-y-8">
         <header className="space-y-1">
           <h1 className="text-4xl font-bold tracking-tight">Stories Library</h1>
