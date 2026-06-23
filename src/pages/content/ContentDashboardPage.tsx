@@ -41,7 +41,9 @@ export default function ContentDashboardPage() {
   });
 
   return (
-    <div className="container max-w-5xl py-10 px-6 space-y-10">
+    <div className="h-full overflow-y-auto">
+      <div className="container max-w-5xl py-10 px-6 space-y-10">
+
       <header className="space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
