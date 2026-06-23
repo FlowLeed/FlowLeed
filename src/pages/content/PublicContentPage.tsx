@@ -532,11 +532,11 @@ export default function PublicContentPage() {
                         <div className="font-semibold text-sm line-clamp-2 leading-snug hover:underline">
                           {v.title ?? "Untitled"}
                         </div>
-                        {v.channel_name && (
-                          <div className="text-xs text-muted-foreground line-clamp-1">
-                            {v.channel_name}
+                        {v.short_description ? (
+                          <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                            {v.short_description}
                           </div>
-                        )}
+                        ) : null}
                       </Link>
                     </div>
                   );
