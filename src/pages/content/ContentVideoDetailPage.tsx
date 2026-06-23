@@ -35,6 +35,21 @@ export default function ContentVideoDetailPage() {
   const [titleDraft, setTitleDraft] = useState("");
 
 
+  const retryIngest = useMutation({
+    mutationFn: async () => {
+      if (!video) throw new Error("no video");
+      const { error } = await supabase.functions.invoke("content-ingest", {
+        body: { youtubeUrl: video.url, organizationId: video.organization_id },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Retrying transcript…" });
+      qc.invalidateQueries({ queryKey: ["content-video", id] });
+    },
+    onError: (e: any) => toast({ title: "Retry failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
+
   const regen = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.functions.invoke("content-analyze", {
