@@ -65,6 +65,9 @@ const TeamPage = () => {
 
   // Org settings state
   const [orgName, setOrgName] = useState("");
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
   const [isEditingOrgName, setIsEditingOrgName] = useState(false);
 
   // Tag management state
