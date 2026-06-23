@@ -171,8 +171,10 @@ export default function ContentDashboardPage() {
           </div>
         )}
       </section>
+        </div>
       </div>
     </div>
   );
 
 }
+
