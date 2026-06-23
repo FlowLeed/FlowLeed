@@ -126,6 +126,25 @@ export default function ContentVideoDetailPage() {
     onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
   });
 
+  const saveDescription = useMutation({
+    mutationFn: async (short_description: string) => {
+      const { error } = await supabase
+        .from("content_videos" as any)
+        .update({ short_description: short_description.trim() || null })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["content-video", id] });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      setEditingDescription(false);
+      toast({ title: "Description updated" });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
+
+
+
 
   // Postmessage seek
   const seekTo = (seconds: number) => {
