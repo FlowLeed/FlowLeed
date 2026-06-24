@@ -330,7 +330,16 @@ export default function PublicContentPage() {
             {heroVideo && (
               <>
                 {heroPlaying ? (
-                  <section className="mt-4 md:mt-6 flex justify-center">
+                  <section className="mt-4 md:mt-6 flex flex-col items-center gap-3">
+                    <div className="w-full max-w-[420px] flex justify-start">
+                      <button
+                        onClick={() => setHeroPlaying(false)}
+                        className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-4 py-2 transition"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                      </button>
+                    </div>
                     <div className="relative w-full max-w-[420px] aspect-[9/16] rounded-3xl overflow-hidden bg-black">
                       <iframe
                         src={`https://www.youtube.com/embed/${heroVideo.youtube_id}?autoplay=1&rel=0`}
@@ -339,6 +348,13 @@ export default function PublicContentPage() {
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
+                      <button
+                        onClick={() => setHeroPlaying(false)}
+                        aria-label="Close video"
+                        className="absolute top-3 right-3 z-10 h-9 w-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
                     </div>
                   </section>
                 ) : (
