@@ -388,7 +388,7 @@ export default function PublicContentPage() {
                         {heroThumb && (
                           <>
                             {/* Desktop poster */}
-                            <div className="hidden md:block absolute right-10 lg:right-16 top-1/2 -translate-y-1/2 w-[260px] lg:w-[300px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-[1]">
+                            <div className="hidden md:block absolute right-10 lg:right-16 top-1/2 -translate-y-1/2 w-[260px] lg:w-[300px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-20">
                               <img
                                 src={heroThumb}
                                 alt={heroVideo.title ?? ""}
@@ -408,7 +408,7 @@ export default function PublicContentPage() {
                               )}
                             </div>
                             {/* Mobile poster */}
-                            <div className="md:hidden absolute left-1/2 -translate-x-1/2 top-6 w-[55%] max-w-[220px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-[1]">
+                            <div className="md:hidden absolute left-1/2 -translate-x-1/2 top-6 w-[55%] max-w-[220px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-20">
                               <img
                                 src={heroThumb}
                                 alt={heroVideo.title ?? ""}
@@ -435,7 +435,7 @@ export default function PublicContentPage() {
 
                   {/* Mobile overlay content (bottom) */}
                   {!heroPlaying && (
-                    <div className="relative z-10 flex md:hidden flex-col justify-end w-full p-6 pb-7 gap-3">
+                    <div className="relative z-10 flex md:hidden flex-col justify-end w-full p-6 pb-7 gap-3 pointer-events-none">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/15 backdrop-blur w-fit text-[10px] font-bold tracking-wider uppercase">
                         <Zap className="h-3 w-3 fill-current" />
                         Trending Now
