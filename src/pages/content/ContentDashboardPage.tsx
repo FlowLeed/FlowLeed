@@ -147,7 +147,11 @@ export default function ContentDashboardPage() {
 
                   <div className="p-4 space-y-2">
                     <div className="font-medium line-clamp-2">{v.title ?? "Untitled"}</div>
-                    <div className="text-xs text-muted-foreground line-clamp-1">{v.channel_name}</div>
+                    {v.short_description ? (
+                      <div className="text-xs text-muted-foreground line-clamp-2 italic">{v.short_description}</div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground line-clamp-1">{v.channel_name}</div>
+                    )}
                     <div className="flex items-center gap-2 pt-1">
                       {v.ingest_status !== "ready" && v.ingest_status !== "failed" && (
                         <Badge variant="secondary" className="text-xs gap-1">
