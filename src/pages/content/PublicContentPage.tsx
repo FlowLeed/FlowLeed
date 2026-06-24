@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Loader2, Play, Sparkles, Users, Heart, Sunrise, Home, X } from "lucide-react";
+import { Search, Loader2, Play, Sparkles, Zap, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -41,65 +41,6 @@ interface AskResponse {
   sources: AskSource[];
 }
 
-type CategoryKey = "transformation" | "faith" | "family" | "hope";
-
-const CATEGORIES: {
-  key: CategoryKey;
-  label: string;
-  icon: typeof Users;
-  color: string;
-  prompts: string[];
-}[] = [
-  {
-    key: "transformation",
-    label: "Transformation",
-    icon: Sunrise,
-    color: "from-amber-50 to-orange-50 text-amber-700 border-amber-200",
-    prompts: [
-      "Stories of life-changing moments",
-      "Someone overcoming addiction",
-      "A turning point that changed everything",
-      "Finding purpose after hitting rock bottom",
-    ],
-  },
-  {
-    key: "faith",
-    label: "Faith",
-    icon: Sparkles,
-    color: "from-violet-50 to-purple-50 text-violet-700 border-violet-200",
-    prompts: [
-      "Stories about answered prayer",
-      "Encountering God for the first time",
-      "Stepping out in faith",
-      "Quotes about trusting God",
-    ],
-  },
-  {
-    key: "family",
-    label: "Family",
-    icon: Home,
-    color: "from-emerald-50 to-teal-50 text-emerald-700 border-emerald-200",
-    prompts: [
-      "Restored family relationships",
-      "Parents and kids finding faith together",
-      "Marriage rebuilt after hard times",
-      "Stories about forgiveness at home",
-    ],
-  },
-  {
-    key: "hope",
-    label: "Hope",
-    icon: Heart,
-    color: "from-rose-50 to-pink-50 text-rose-700 border-rose-200",
-    prompts: [
-      "Stories of healing after loss",
-      "Hope in the middle of suffering",
-      "Quotes about new beginnings",
-      "Light after a dark season",
-    ],
-  },
-];
-
 export default function PublicContentPage() {
   const { slug } = useParams<{ slug: string }>();
   const storageKey = `public-content-search:${slug ?? ""}`;
@@ -119,7 +60,7 @@ export default function PublicContentPage() {
   const [orgName, setOrgName] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const [openCategory, setOpenCategory] = useState<CategoryKey | null>(null);
+  const [heroPlaying, setHeroPlaying] = useState(false);
   const [searching, setSearching] = useState(false);
   const [answer, setAnswer] = useState<AskResponse | null>(initialState?.answer ?? null);
   const [activeQuery, setActiveQuery] = useState<string>(initialState?.activeQuery ?? "");
@@ -185,26 +126,27 @@ export default function PublicContentPage() {
     });
     return Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
+      .slice(0, 10)
       .map(([t]) => t);
   }, [videoThemes]);
 
-  const filtered = useMemo(() => {
-    return videos.filter((v) => {
+  const heroVideo = videos[0] ?? null;
+  const gridVideos = useMemo(() => {
+    const rest = heroVideo ? videos.filter((v) => v.id !== heroVideo.id) : videos;
+    return rest.filter((v) => {
       if (activeTheme !== "__all__") {
         const themes = (videoThemes[v.id] ?? []).map((t) => t.trim().toLowerCase());
         if (!themes.includes(activeTheme)) return false;
       }
       return true;
     });
-  }, [videos, videoThemes, activeTheme]);
+  }, [videos, videoThemes, activeTheme, heroVideo]);
 
   const runAISearch = async (q: string) => {
     if (!q.trim() || !slug) return;
     setActiveQuery(q);
     setQuery(q);
     setSearching(true);
-    setOpenCategory(null);
     setAnswer({ answer: "", sources: [] });
     try {
       const { data, error } = await supabase.functions.invoke("content-ask", {
@@ -229,153 +171,78 @@ export default function PublicContentPage() {
     setQuery("");
   };
 
-
   return (
-    <div className="h-screen overflow-y-auto bg-background">
-      <div className="container max-w-6xl py-4 px-6 space-y-6">
-        {slug && (
-          <div className="flex justify-center">
-            <img
-              src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
-              alt={orgName ? `${orgName} logo` : "Organization logo"}
-              className="object-contain"
-              style={{ height: "5rem", width: "auto", maxWidth: "100%" }}
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-            />
-          </div>
-        )}
-        {/* AI Hero */}
-        <section className="text-center space-y-5 pt-2">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Discover Stories That Matter
-          </h1>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            {orgName ? `Search across ${orgName}'s ` : "Search across your "}
-            video library using natural language. Find the perfect story, quote, or
-            moment in seconds.
-          </p>
-
+    <div className="h-screen overflow-y-auto bg-[#0a0a0f] text-white">
+      {/* Top Bar */}
+      <header className="sticky top-0 z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-white/5">
+        <div className="container max-w-7xl flex items-center gap-6 py-4 px-6">
+          {slug && (
+            <div className="flex items-center shrink-0">
+              <img
+                src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
+                alt={orgName ? `${orgName} logo` : "Organization logo"}
+                className="object-contain"
+                style={{ height: "2.5rem", width: "auto", maxWidth: "12rem" }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+            </div>
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               runAISearch(query);
             }}
-            className="max-w-3xl mx-auto"
+            className="flex-1 max-w-2xl ml-auto"
           >
-            <div className="flex items-center gap-2 rounded-2xl border bg-card shadow-sm pl-4 pr-2 py-2">
-              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 hover:border-white/20 transition-colors pl-5 pr-2 py-1.5">
+              <Search className="h-4 w-4 text-white/40 shrink-0" />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Try: 'Find stories about transformation' or 'Quotes about new life'"
-                className="border-0 bg-transparent h-11 focus-visible:ring-0 px-2 text-base"
+                className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/30"
               />
-              <Button
-                type="submit"
-                disabled={!query.trim() || searching}
-                className="rounded-xl h-11 px-5 gap-2"
-              >
-                {searching ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                Search
-              </Button>
+              {query && (
+                <Button
+                  type="submit"
+                  disabled={searching}
+                  size="sm"
+                  className="rounded-full h-8 px-4 bg-white text-black hover:bg-white/90"
+                >
+                  {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                </Button>
+              )}
             </div>
           </form>
+        </div>
+      </header>
 
-          {/* Category prompts */}
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            {CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              const isOpen = openCategory === cat.key;
-              return (
-                <button
-                  key={cat.key}
-                  type="button"
-                  onClick={() => setOpenCategory(isOpen ? null : cat.key)}
-                  className={cn(
-                    "inline-flex items-center gap-2 px-5 h-11 rounded-full text-sm font-medium border bg-gradient-to-br transition-all",
-                    cat.color,
-                    isOpen ? "ring-2 ring-offset-2 ring-foreground/10 scale-105" : "hover:scale-105",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {openCategory && (
-            <Card className="max-w-3xl mx-auto p-5 text-left">
-              {(() => {
-                const cat = CATEGORIES.find((c) => c.key === openCategory)!;
-                const Icon = cat.icon;
-                return (
-                  <>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <Icon className="h-4 w-4" />
-                        {cat.label}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setOpenCategory(null)}
-                        className="text-muted-foreground hover:text-foreground"
-                        aria-label="Close suggestions"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <div className="divide-y">
-                      {cat.prompts.map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          onClick={() => runAISearch(p)}
-                          className="w-full text-left py-3 text-sm hover:text-primary transition-colors"
-                        >
-                          {p}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
-            </Card>
-          )}
-        </section>
-
-        {/* AI answer */}
-        {answer !== null && (
-          <section className="space-y-5">
+      <main className="container max-w-7xl px-6 pb-20">
+        {/* AI Answer takes over */}
+        {answer !== null ? (
+          <section className="space-y-5 pt-8">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Asked: <span className="text-foreground font-medium">"{activeQuery}"</span>
+              <div className="text-sm text-white/50">
+                Asked: <span className="text-white font-medium">"{activeQuery}"</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={clearSearch}>
+              <Button variant="ghost" size="sm" onClick={clearSearch} className="text-white/70 hover:text-white hover:bg-white/10">
                 <X className="h-4 w-4 mr-1" /> Clear
               </Button>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="h-9 w-9 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+              <div className="h-9 w-9 rounded-full bg-violet-500/20 text-violet-300 flex items-center justify-center shrink-0">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1 space-y-5">
                 {searching && !answer.answer ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+                  <div className="flex items-center gap-2 text-sm text-white/50 py-2">
                     <Loader2 className="h-4 w-4 animate-spin" /> Listening to your library…
                   </div>
                 ) : (
                   (() => {
                     const sourceMap = new Map(answer.sources.map((s) => [s.index, s]));
-                    const paragraphs = answer.answer
-                      .split(/\n{2,}/)
-                      .map((p) => p.trim())
-                      .filter(Boolean);
+                    const paragraphs = answer.answer.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
                     return paragraphs.map((para, pIdx) => {
                       const cited: number[] = [];
                       const seen = new Set<number>();
@@ -391,30 +258,19 @@ export default function PublicContentPage() {
                       const cleaned = para.replace(/\s*\[#\d+\]/g, "");
                       return (
                         <div key={pIdx} className="space-y-3">
-                          <p className="text-[15px] leading-relaxed text-foreground/90">
-                            {cleaned}
-                          </p>
+                          <p className="text-[15px] leading-relaxed text-white/90">{cleaned}</p>
                           {cited.map((idx) => {
                             const s = sourceMap.get(idx)!;
                             return (
                               <Link
                                 key={s.chunk_id}
                                 to={`/org/${slug}/content/videos/${s.video_id}?t=${Math.floor(s.start_seconds)}`}
-                                className="group flex gap-3 p-3 rounded-xl border bg-card hover:border-violet-300 hover:shadow-sm transition-all"
+                                className="group flex gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-white/10 transition-all"
                               >
-                                <div className="relative w-28 aspect-video rounded-lg overflow-hidden bg-muted shrink-0">
+                                <div className="relative w-28 aspect-video rounded-lg overflow-hidden bg-black shrink-0">
                                   {s.thumbnail_url ? (
-                                    <img
-                                      src={s.thumbnail_url}
-                                      alt=""
-                                      className="absolute inset-0 w-full h-full object-cover"
-                                    />
+                                    <img src={s.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
                                   ) : null}
-                                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                                    <div className="h-8 w-8 rounded-full bg-white/95 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Play className="h-3.5 w-3.5 fill-current text-black ml-0.5" />
-                                    </div>
-                                  </div>
                                   <div className="absolute top-1.5 left-1.5 px-1.5 h-5 inline-flex items-center rounded-md bg-black/70 text-white text-[10px] font-semibold gap-1">
                                     <Play className="h-2.5 w-2.5 fill-current" />
                                     {formatTimestamp(s.start_seconds)}
@@ -422,16 +278,12 @@ export default function PublicContentPage() {
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-baseline gap-2 mb-1">
-                                    <span className="font-semibold text-sm truncate">
-                                      {s.title ?? "Untitled"}
-                                    </span>
+                                    <span className="font-semibold text-sm truncate">{s.title ?? "Untitled"}</span>
                                     {s.channel_name && (
-                                      <span className="text-[11px] text-muted-foreground truncate">
-                                        · {s.channel_name}
-                                      </span>
+                                      <span className="text-[11px] text-white/40 truncate">· {s.channel_name}</span>
                                     )}
                                   </div>
-                                  <blockquote className="border-l-2 border-violet-300 pl-3 text-[13px] italic text-muted-foreground line-clamp-3 leading-relaxed">
+                                  <blockquote className="border-l-2 border-violet-400/60 pl-3 text-[13px] italic text-white/60 line-clamp-3 leading-relaxed">
                                     "{s.snippet.trim()}"
                                   </blockquote>
                                 </div>
@@ -446,21 +298,81 @@ export default function PublicContentPage() {
               </div>
             </div>
           </section>
-        )}
-
-        {/* Library */}
-        {answer === null && (
-
+        ) : (
           <>
+            {/* Immersive Hero */}
+            {heroVideo && (
+              <section className="relative mt-6 rounded-3xl overflow-hidden min-h-[520px] flex">
+                {/* Background */}
+                <div className="absolute inset-0">
+                  {heroPlaying ? (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${heroVideo.youtube_id}?autoplay=1&rel=0`}
+                      title={heroVideo.title ?? "Featured video"}
+                      className="absolute inset-0 w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <>
+                      {heroVideo.thumbnail_url ? (
+                        <img
+                          src={heroVideo.thumbnail_url}
+                          alt=""
+                          className="absolute inset-0 w-full h-full object-cover opacity-60"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/85 to-[#0a0a0f]/40" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent" />
+                    </>
+                  )}
+                </div>
+
+                {!heroPlaying && (
+                  <div className="relative z-10 flex flex-col justify-center max-w-2xl p-10 md:p-14 gap-6">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 backdrop-blur w-fit text-[11px] font-bold tracking-wider uppercase">
+                      <Zap className="h-3 w-3 fill-current" />
+                      Trending Now
+                    </div>
+                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
+                      {heroVideo.title ?? "Discover Stories That Matter"}
+                    </h1>
+                    <p className="text-base text-white/70 max-w-lg leading-relaxed">
+                      {heroVideo.short_description ??
+                        `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
+                    </p>
+                    <div className="flex items-center gap-3 pt-2">
+                      <Button
+                        onClick={() => setHeroPlaying(true)}
+                        className="rounded-full h-12 px-6 bg-white text-black hover:bg-white/90 font-semibold gap-2"
+                      >
+                        <Play className="h-4 w-4 fill-current" />
+                        Watch Now
+                      </Button>
+                      <Link
+                        to={`/org/${slug}/content/videos/${heroVideo.id}`}
+                        className="text-sm text-white/70 hover:text-white px-4 py-3"
+                      >
+                        More info
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Theme Chips */}
             {themeChips.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 mt-10">
                 <button
                   onClick={() => setActiveTheme("__all__")}
                   className={cn(
-                    "px-5 h-10 rounded-full text-sm font-medium transition-colors",
+                    "px-5 h-10 rounded-full text-sm font-medium transition-colors border",
                     activeTheme === "__all__"
-                      ? "bg-foreground text-background"
-                      : "bg-muted text-foreground hover:bg-muted/70",
+                      ? "bg-white text-black border-white"
+                      : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
                   )}
                 >
                   All Stories
@@ -470,10 +382,10 @@ export default function PublicContentPage() {
                     key={t}
                     onClick={() => setActiveTheme(t)}
                     className={cn(
-                      "px-5 h-10 rounded-full text-sm font-medium transition-colors capitalize",
+                      "px-5 h-10 rounded-full text-sm font-medium transition-colors capitalize border",
                       activeTheme === t
-                        ? "bg-foreground text-background"
-                        : "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                        ? "bg-white text-black border-white"
+                        : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
                     )}
                   >
                     {t}
@@ -482,81 +394,88 @@ export default function PublicContentPage() {
               </div>
             )}
 
-            {loading ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-              </div>
-            ) : filtered.length === 0 ? (
-              <Card className="p-12 text-center text-sm text-muted-foreground">
-                {videos.length === 0
-                  ? "This organization hasn't shared any videos publicly yet."
-                  : "No stories match your filters."}
-              </Card>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                {filtered.map((v) => {
-                  const isPlaying = playingId === v.id;
-                  return (
-                    <div key={v.id} className="space-y-3 group">
-                      <div className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-muted">
-                        {isPlaying ? (
-                          <iframe
-                            src={`https://www.youtube.com/embed/${v.youtube_id}?autoplay=1&rel=0`}
-                            title={v.title ?? "Video"}
-                            className="absolute inset-0 w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setPlayingId(v.id)}
-                            className="absolute inset-0 w-full h-full text-left"
-                            aria-label={`Play ${v.title ?? "video"}`}
-                          >
-                            {v.thumbnail_url ? (
-                              <img
-                                src={v.thumbnail_url}
-                                alt={v.title ?? ""}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
-                              />
-                            ) : (
-                              <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-                                VIDEO THUMBNAIL
+            {/* Grid */}
+            <div className="mt-6">
+              {loading ? (
+                <div className="flex items-center gap-2 text-sm text-white/50 py-10">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+                </div>
+              ) : gridVideos.length === 0 ? (
+                <Card className="p-12 text-center text-sm text-white/50 bg-white/5 border-white/10">
+                  {videos.length === 0
+                    ? "This organization hasn't shared any videos publicly yet."
+                    : "No stories match your filters."}
+                </Card>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+                  {gridVideos.map((v) => {
+                    const isPlaying = playingId === v.id;
+                    return (
+                      <div key={v.id} className="space-y-3 group">
+                        <div className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-white/5">
+                          {isPlaying ? (
+                            <iframe
+                              src={`https://www.youtube.com/embed/${v.youtube_id}?autoplay=1&rel=0`}
+                              title={v.title ?? "Video"}
+                              className="absolute inset-0 w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setPlayingId(v.id)}
+                              className="absolute inset-0 w-full h-full text-left"
+                              aria-label={`Play ${v.title ?? "video"}`}
+                            >
+                              {v.thumbnail_url ? (
+                                <img
+                                  src={v.thumbnail_url}
+                                  alt={v.title ?? ""}
+                                  className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
+                                  VIDEO
+                                </div>
+                              )}
+                              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
+                                <div className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Play className="h-6 w-6 fill-current text-black ml-0.5" />
+                                </div>
                               </div>
-                            )}
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
-                              <div className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Play className="h-6 w-6 fill-current text-black ml-0.5" />
+                              {v.duration_seconds != null && (
+                                <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                                  <Play className="h-3 w-3 fill-current" />
+                                  {formatTimestamp(v.duration_seconds)}
+                                </div>
+                              )}
+                              <div className="absolute inset-x-0 bottom-0 p-4 space-y-1">
+                                <div className="font-semibold text-sm text-white line-clamp-2 leading-snug">
+                                  {v.title ?? "Untitled"}
+                                </div>
+                                {v.short_description && (
+                                  <div className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
+                                    {v.short_description}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                            {v.duration_seconds != null && (
-                              <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
-                                <Play className="h-3 w-3 fill-current" />
-                                {formatTimestamp(v.duration_seconds)}
-                              </div>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                      <Link to={`/org/${slug}/content/videos/${v.id}`} className="block space-y-1 px-0.5">
-                        <div className="font-semibold text-sm line-clamp-2 leading-snug hover:underline">
-                          {v.title ?? "Untitled"}
+                            </button>
+                          )}
                         </div>
-                        {v.short_description ? (
-                          <div className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                            {v.short_description}
-                          </div>
-                        ) : null}
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                        <Link to={`/org/${slug}/content/videos/${v.id}`} className="sr-only">
+                          {v.title ?? "Untitled"}
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </>
         )}
-      </div>
+      </main>
     </div>
   );
 }
