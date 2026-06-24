@@ -329,10 +329,9 @@ export default function PublicContentPage() {
             {/* Immersive Hero */}
             {heroVideo && (
               <>
-                <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[340px] md:min-h-[520px] flex">
-                  {/* Background */}
-                  <div className="absolute inset-0">
-                    {heroPlaying ? (
+                {heroPlaying ? (
+                  <section className="mt-4 md:mt-6 flex justify-center">
+                    <div className="relative w-full max-w-[420px] aspect-[9/16] rounded-3xl overflow-hidden bg-black">
                       <iframe
                         src={`https://www.youtube.com/embed/${heroVideo.youtube_id}?autoplay=1&rel=0`}
                         title={heroVideo.title ?? "Featured video"}
@@ -340,7 +339,12 @@ export default function PublicContentPage() {
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
-                    ) : (
+                    </div>
+                  </section>
+                ) : (
+                <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[340px] md:min-h-[520px] flex">
+                  {/* Background */}
+                  <div className="absolute inset-0">
                       <>
                         {heroVideo.thumbnail_url ? (
                           <img
@@ -354,7 +358,6 @@ export default function PublicContentPage() {
                         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/85 to-[#0a0a0f]/40 hidden md:block" />
                         <div className="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/40 md:via-transparent to-transparent md:to-transparent" />
                       </>
-                    )}
                   </div>
 
                   {/* Mobile centered play */}
@@ -405,6 +408,7 @@ export default function PublicContentPage() {
                     </div>
                   )}
                 </section>
+                )}
 
                 {/* Mobile title block (below hero) */}
                 {!heroPlaying && (
