@@ -370,6 +370,67 @@ export default function ContentVideoDetailPage() {
         />
       </div>
 
+      {isOrgAdmin && (
+        <Card className="p-4 flex items-center gap-4">
+          <div className="w-28 aspect-video rounded-md overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+            {resolveThumb(video.thumbnail_url, video.youtube_id) ? (
+              <img
+                src={resolveThumb(video.thumbnail_url, video.youtube_id)!}
+                onError={handleYoutubeThumbError}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium">Thumbnail</div>
+            <div className="text-xs text-muted-foreground">
+              {video.thumbnail_url
+                ? "Custom thumbnail uploaded. Shown on the public library."
+                : "Using YouTube's auto-poster. Upload a custom image to override."}
+            </div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadThumbnail(f);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingThumb}
+          >
+            {uploadingThumb ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-1" />
+            )}
+            {video.thumbnail_url ? "Replace" : "Upload"}
+          </Button>
+          {video.thumbnail_url && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => clearThumbnail.mutate()}
+              disabled={clearThumbnail.isPending}
+            >
+              Clear
+            </Button>
+          )}
+        </Card>
+      )}
+
+
+
       <Tabs defaultValue="overview">
         <div className="flex items-center justify-between gap-4">
           <TabsList>
