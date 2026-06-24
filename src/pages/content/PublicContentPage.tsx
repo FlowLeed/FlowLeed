@@ -231,38 +231,25 @@ export default function PublicContentPage() {
 
 
   return (
-    <div className="h-screen overflow-y-auto bg-[#fdfcfb]">
-      <div className="container max-w-5xl px-6 pt-16 pb-10 space-y-12">
-        {/* AI Hero — editorial minimal */}
-        <section className="text-center">
-          {/* Brand lockup */}
-          <div className="inline-flex items-center gap-3 mb-10">
-            {slug && (
-              <img
-                src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
-                alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="h-9 w-9 object-contain rounded-md"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-            )}
-            {orgName && (
-              <div className="text-left leading-tight">
-                <span className="block text-[10px] font-bold uppercase tracking-[0.3em] text-stone-400">Stories from</span>
-                <span className="block text-[11px] font-bold uppercase tracking-[0.25em] text-stone-900">{orgName}</span>
-              </div>
-            )}
-          </div>
-
-          <h1
-            className="text-5xl md:text-7xl text-stone-900 tracking-tight leading-[1.05] mb-5"
-            style={{ fontFamily: "'Instrument Serif', serif" }}
-          >
+    <div className="h-screen overflow-y-auto bg-background">
+      <div className="container max-w-6xl py-8 px-6 space-y-10">
+        {slug && (
+          <img
+            src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
+            alt={orgName ? `${orgName} logo` : "Organization logo"}
+            className="h-10 w-10 object-contain"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+          />
+        )}
+        {/* AI Hero */}
+        <section className="text-center space-y-5 pt-2">
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
             Discover Stories That Matter
           </h1>
-
-          <p className="text-stone-500 text-base md:text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
-            Search {orgName ? `${orgName}'s ` : "our "}video library in plain English.
-            Find the perfect story, quote, or moment in seconds.
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            {orgName ? `Search across ${orgName}'s ` : "Search across your "}
+            video library using natural language. Find the perfect story, quote, or
+            moment in seconds.
           </p>
 
           <form
@@ -270,38 +257,33 @@ export default function PublicContentPage() {
               e.preventDefault();
               runAISearch(query);
             }}
-            className="max-w-2xl mx-auto"
+            className="max-w-3xl mx-auto"
           >
-            <div className="relative group">
-              <div className="absolute -inset-1.5 bg-stone-100 rounded-[22px] opacity-0 group-focus-within:opacity-100 transition-opacity" />
-              <div className="relative flex items-center bg-white border border-stone-200 rounded-2xl p-2 shadow-sm group-hover:shadow-md focus-within:shadow-lg transition-all">
-                <div className="pl-4 pr-2 text-stone-400">
-                  <Search className="h-5 w-5" />
-                </div>
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Try: 'Find stories about transformation' or 'Quotes about new life'"
-                  className="border-0 bg-transparent h-11 focus-visible:ring-0 px-2 text-sm md:text-base placeholder:text-stone-400"
-                />
-                <Button
-                  type="submit"
-                  disabled={!query.trim() || searching}
-                  className="rounded-xl h-11 px-5 gap-2 bg-stone-900 hover:bg-stone-800 text-white shadow-sm"
-                >
-                  {searching ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4 opacity-80" />
-                  )}
-                  Search
-                </Button>
-              </div>
+            <div className="flex items-center gap-2 rounded-2xl border bg-card shadow-sm pl-4 pr-2 py-2">
+              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Try: 'Find stories about transformation' or 'Quotes about new life'"
+                className="border-0 bg-transparent h-11 focus-visible:ring-0 px-2 text-base"
+              />
+              <Button
+                type="submit"
+                disabled={!query.trim() || searching}
+                className="rounded-xl h-11 px-5 gap-2"
+              >
+                {searching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                Search
+              </Button>
             </div>
           </form>
 
           {/* Category prompts */}
-          <div className="flex flex-wrap items-center justify-center gap-2.5 mt-8">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
               const isOpen = openCategory === cat.key;
@@ -311,12 +293,12 @@ export default function PublicContentPage() {
                   type="button"
                   onClick={() => setOpenCategory(isOpen ? null : cat.key)}
                   className={cn(
-                    "inline-flex items-center gap-2 px-4 h-9 rounded-full text-[13px] font-medium border bg-gradient-to-br transition-all",
+                    "inline-flex items-center gap-2 px-5 h-11 rounded-full text-sm font-medium border bg-gradient-to-br transition-all",
                     cat.color,
-                    isOpen ? "ring-2 ring-offset-2 ring-stone-300 scale-[1.03]" : "hover:scale-[1.03]",
+                    isOpen ? "ring-2 ring-offset-2 ring-foreground/10 scale-105" : "hover:scale-105",
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5 opacity-70" />
+                  <Icon className="h-4 w-4" />
                   {cat.label}
                 </button>
               );
