@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2 } from "lucide-react";
+import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2, Upload, ImageIcon } from "lucide-react";
+import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/layout/Header";
 import {
@@ -142,7 +143,50 @@ export default function ContentVideoDetailPage() {
     },
     onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
 
+  const uploadThumbnail = async (file: File) => {
+    if (!video) return;
+    try {
+      setUploadingThumb(true);
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${video.organization_id}/${video.id}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("content-thumbnails")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("content-thumbnails").getPublicUrl(path);
+      const { error: updErr } = await supabase
+        .from("content_videos" as any)
+        .update({ thumbnail_url: pub.publicUrl })
+        .eq("id", video.id);
+      if (updErr) throw updErr;
+      qc.invalidateQueries({ queryKey: ["content-video", video.id] });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      toast({ title: "Thumbnail updated" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setUploadingThumb(false);
+    }
+  };
+
+  const clearThumbnail = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("content_videos" as any)
+        .update({ thumbnail_url: null })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["content-video", id] });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      toast({ title: "Thumbnail cleared — using YouTube fallback" });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
 
 
 
@@ -325,6 +369,67 @@ export default function ContentVideoDetailPage() {
           allowFullScreen
         />
       </div>
+
+      {isOrgAdmin && (
+        <Card className="p-4 flex items-center gap-4">
+          <div className="w-28 aspect-video rounded-md overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+            {resolveThumb(video.thumbnail_url, video.youtube_id) ? (
+              <img
+                src={resolveThumb(video.thumbnail_url, video.youtube_id)!}
+                onError={handleYoutubeThumbError}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <ImageIcon className="h-5 w-5 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium">Thumbnail</div>
+            <div className="text-xs text-muted-foreground">
+              {video.thumbnail_url
+                ? "Custom thumbnail uploaded. Shown on the public library."
+                : "Using YouTube's auto-poster. Upload a custom image to override."}
+            </div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadThumbnail(f);
+              e.target.value = "";
+            }}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingThumb}
+          >
+            {uploadingThumb ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4 mr-1" />
+            )}
+            {video.thumbnail_url ? "Replace" : "Upload"}
+          </Button>
+          {video.thumbnail_url && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => clearThumbnail.mutate()}
+              disabled={clearThumbnail.isPending}
+            >
+              Clear
+            </Button>
+          )}
+        </Card>
+      )}
+
+
 
       <Tabs defaultValue="overview">
         <div className="flex items-center justify-between gap-4">
