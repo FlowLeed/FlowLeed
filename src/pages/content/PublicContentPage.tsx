@@ -232,14 +232,14 @@ export default function PublicContentPage() {
 
   return (
     <div className="h-screen overflow-y-auto bg-background">
-      <div className="container max-w-6xl py-8 px-6 space-y-10">
+      <div className="container max-w-6xl py-4 px-6 space-y-6">
         {slug && (
           <div className="flex justify-center">
             <img
               src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
               alt={orgName ? `${orgName} logo` : "Organization logo"}
-              className="h-30 w-30 object-contain"
-              style={{ height: "7.5rem", width: "7.5rem" }}
+              className="object-contain"
+              style={{ height: "15rem", width: "auto", maxWidth: "100%" }}
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
             />
           </div>
