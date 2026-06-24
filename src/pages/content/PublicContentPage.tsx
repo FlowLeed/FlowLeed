@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
+import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { cn } from "@/lib/utils";
 
 interface PublicVideo {
