@@ -359,7 +359,7 @@ export default function PublicContentPage() {
                     </div>
                   </section>
                 ) : (
-                <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[340px] md:min-h-[520px] flex">
+                <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[480px] md:min-h-[520px] flex">
                   {/* Background */}
                   <div className="absolute inset-0">
                       <>
@@ -370,30 +370,45 @@ export default function PublicContentPage() {
                               src={heroThumb}
                               alt=""
                               onError={handleYoutubeThumbError}
-                              className="absolute inset-0 w-full h-full object-cover opacity-40 md:opacity-60"
+                              className="absolute inset-0 w-full h-full object-cover"
                             />
                           ) : (
                             <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
                           );
                         })()}
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/85 to-[#0a0a0f]/40 hidden md:block" />
-                        <div className="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/40 md:via-transparent to-transparent md:to-transparent" />
+                        {/* Desktop: darken left side for text legibility */}
+                        <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-[#0a0a0f]/95 via-[#0a0a0f]/60 to-transparent" />
+                        {/* Mobile: dark at bottom for text, transparent at top */}
+                        <div className="absolute inset-0 md:hidden bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/70 to-transparent" />
                       </>
                   </div>
 
-                  {/* Mobile centered play */}
+                  {/* Mobile play button (centered, above text) */}
                   {!heroPlaying && (
-                    <div className="relative z-10 flex md:hidden flex-col items-center justify-center w-full gap-3 py-16">
-                      <button
-                        onClick={() => setHeroPlaying(true)}
-                        aria-label="Play featured story"
-                        className="h-20 w-20 rounded-full border border-white/30 bg-white/5 backdrop-blur flex items-center justify-center hover:bg-white/10 transition"
-                      >
-                        <Play className="h-7 w-7 fill-current text-white ml-1" />
-                      </button>
-                      <div className="text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase">
-                        Featured Story
+                    <button
+                      onClick={() => setHeroPlaying(true)}
+                      aria-label="Play featured story"
+                      className="md:hidden absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-16 w-16 rounded-full border border-white/40 bg-black/30 backdrop-blur flex items-center justify-center hover:bg-black/50 transition"
+                    >
+                      <Play className="h-6 w-6 fill-current text-white ml-1" />
+                    </button>
+                  )}
+
+                  {/* Mobile overlay content (bottom) */}
+                  {!heroPlaying && (
+                    <div className="relative z-10 flex md:hidden flex-col justify-end w-full p-6 pb-7 gap-3">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/15 backdrop-blur w-fit text-[10px] font-bold tracking-wider uppercase">
+                        <Zap className="h-3 w-3 fill-current" />
+                        Trending Now
                       </div>
+                      <h1 className="text-3xl font-bold tracking-tight leading-[1.1]">
+                        {heroVideo.title ?? "Discover Stories That Matter"}
+                      </h1>
+                      {heroVideo.short_description && (
+                        <p className="text-sm text-white/75 leading-relaxed">
+                          {heroVideo.short_description}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -407,7 +422,7 @@ export default function PublicContentPage() {
                       <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
                         {heroVideo.title ?? "Discover Stories That Matter"}
                       </h1>
-                      <p className="text-base text-white/70 max-w-lg leading-relaxed">
+                      <p className="text-base text-white/80 max-w-lg leading-relaxed">
                         {heroVideo.short_description ??
                           `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
                       </p>
@@ -431,23 +446,6 @@ export default function PublicContentPage() {
                 </section>
                 )}
 
-                {/* Mobile title block (below hero) */}
-                {!heroPlaying && (
-                  <div className="md:hidden mt-5 space-y-3">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 w-fit text-[10px] font-bold tracking-wider uppercase">
-                      <Zap className="h-3 w-3 fill-current" />
-                      Trending Now
-                    </div>
-                    <h1 className="text-3xl font-bold tracking-tight leading-[1.1]">
-                      {heroVideo.title ?? "Discover Stories That Matter"}
-                    </h1>
-                    {heroVideo.short_description && (
-                      <p className="text-sm text-white/60 leading-relaxed">
-                        {heroVideo.short_description}
-                      </p>
-                    )}
-                  </div>
-                )}
               </>
             )}
 
