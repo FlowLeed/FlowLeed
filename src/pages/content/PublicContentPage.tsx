@@ -516,17 +516,21 @@ export default function PublicContentPage() {
                               className="absolute inset-0 w-full h-full text-left"
                               aria-label={`Play ${v.title ?? "video"}`}
                             >
-                              {v.thumbnail_url ? (
-                                <img
-                                  src={v.thumbnail_url}
-                                  alt={v.title ?? ""}
-                                  className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
-                                />
-                              ) : (
-                                <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
-                                  VIDEO
-                                </div>
-                              )}
+                              {(() => {
+                                const tileThumb = resolveThumb(v.thumbnail_url, v.youtube_id);
+                                return tileThumb ? (
+                                  <img
+                                    src={tileThumb}
+                                    alt={v.title ?? ""}
+                                    onError={handleYoutubeThumbError}
+                                    className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                                  />
+                                ) : (
+                                  <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
+                                    VIDEO
+                                  </div>
+                                );
+                              })()}
                               <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
                               <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
                                 <div className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
