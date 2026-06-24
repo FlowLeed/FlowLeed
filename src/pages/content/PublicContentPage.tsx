@@ -235,6 +235,14 @@ export default function PublicContentPage() {
       <div className="container max-w-6xl py-12 px-6 space-y-10">
         {/* AI Hero */}
         <section className="text-center space-y-5 pt-6">
+          {slug && (
+            <img
+              src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
+              alt={orgName ? `${orgName} logo` : "Organization logo"}
+              className="mx-auto h-16 w-16 object-contain rounded-lg"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          )}
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
             Discover Stories That Matter
           </h1>
