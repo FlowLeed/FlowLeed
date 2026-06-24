@@ -359,40 +359,79 @@ export default function PublicContentPage() {
                     </div>
                   </section>
                 ) : (
-                <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[480px] md:min-h-[520px] flex">
-                  {/* Background */}
-                  <div className="absolute inset-0">
+                <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[520px] md:min-h-[560px] flex">
+                  {(() => {
+                    const heroThumb = resolveThumb(heroVideo.thumbnail_url, heroVideo.youtube_id);
+                    return (
                       <>
-                        {(() => {
-                          const heroThumb = resolveThumb(heroVideo.thumbnail_url, heroVideo.youtube_id);
-                          return heroThumb ? (
+                        {/* Blurred ambient backdrop (uses the same thumb, heavily blurred) */}
+                        <div className="absolute inset-0">
+                          {heroThumb ? (
                             <img
                               src={heroThumb}
                               alt=""
                               onError={handleYoutubeThumbError}
-                              className="absolute inset-0 w-full h-full object-cover"
+                              aria-hidden
+                              className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-60"
                             />
                           ) : (
                             <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
-                          );
-                        })()}
-                        {/* Desktop: darken left side for text legibility */}
-                        <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-[#0a0a0f]/95 via-[#0a0a0f]/60 to-transparent" />
-                        {/* Mobile: dark at bottom for text, transparent at top */}
-                        <div className="absolute inset-0 md:hidden bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/70 to-transparent" />
-                      </>
-                  </div>
+                          )}
+                          <div className="absolute inset-0 bg-[#0a0a0f]/55" />
+                          {/* Desktop: left-side darken for text */}
+                          <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/70 to-transparent" />
+                          {/* Mobile: bottom darken for text */}
+                          <div className="absolute inset-x-0 bottom-0 h-2/3 md:hidden bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/80 to-transparent" />
+                        </div>
 
-                  {/* Mobile play button (centered, above text) */}
-                  {!heroPlaying && (
-                    <button
-                      onClick={() => setHeroPlaying(true)}
-                      aria-label="Play featured story"
-                      className="md:hidden absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 h-16 w-16 rounded-full border border-white/40 bg-black/30 backdrop-blur flex items-center justify-center hover:bg-black/50 transition"
-                    >
-                      <Play className="h-6 w-6 fill-current text-white ml-1" />
-                    </button>
-                  )}
+                        {/* Portrait poster — desktop right, mobile centered */}
+                        {heroThumb && (
+                          <>
+                            {/* Desktop poster */}
+                            <div className="hidden md:block absolute right-10 lg:right-16 top-1/2 -translate-y-1/2 w-[260px] lg:w-[300px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-[1]">
+                              <img
+                                src={heroThumb}
+                                alt={heroVideo.title ?? ""}
+                                onError={handleYoutubeThumbError}
+                                className="w-full h-full object-cover"
+                              />
+                              {!heroPlaying && (
+                                <button
+                                  onClick={() => setHeroPlaying(true)}
+                                  aria-label="Play featured story"
+                                  className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition"
+                                >
+                                  <span className="h-14 w-14 rounded-full border border-white/60 bg-black/40 backdrop-blur flex items-center justify-center">
+                                    <Play className="h-5 w-5 fill-current text-white ml-0.5" />
+                                  </span>
+                                </button>
+                              )}
+                            </div>
+                            {/* Mobile poster */}
+                            <div className="md:hidden absolute left-1/2 -translate-x-1/2 top-6 w-[55%] max-w-[220px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-[1]">
+                              <img
+                                src={heroThumb}
+                                alt={heroVideo.title ?? ""}
+                                onError={handleYoutubeThumbError}
+                                className="w-full h-full object-cover"
+                              />
+                              {!heroPlaying && (
+                                <button
+                                  onClick={() => setHeroPlaying(true)}
+                                  aria-label="Play featured story"
+                                  className="absolute inset-0 flex items-center justify-center bg-black/20"
+                                >
+                                  <span className="h-12 w-12 rounded-full border border-white/60 bg-black/40 backdrop-blur flex items-center justify-center">
+                                    <Play className="h-4 w-4 fill-current text-white ml-0.5" />
+                                  </span>
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Mobile overlay content (bottom) */}
                   {!heroPlaying && (
@@ -414,7 +453,7 @@ export default function PublicContentPage() {
 
                   {/* Desktop overlay content */}
                   {!heroPlaying && (
-                    <div className="relative z-10 hidden md:flex flex-col justify-center max-w-2xl p-10 md:p-14 gap-6">
+                    <div className="relative z-10 hidden md:flex flex-col justify-center max-w-xl p-10 md:p-14 gap-6">
                       <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 backdrop-blur w-fit text-[11px] font-bold tracking-wider uppercase">
                         <Zap className="h-3 w-3 fill-current" />
                         Trending Now
@@ -445,6 +484,7 @@ export default function PublicContentPage() {
                   )}
                 </section>
                 )}
+
 
               </>
             )}
