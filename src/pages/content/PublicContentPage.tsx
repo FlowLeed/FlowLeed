@@ -363,15 +363,19 @@ export default function PublicContentPage() {
                   {/* Background */}
                   <div className="absolute inset-0">
                       <>
-                        {heroVideo.thumbnail_url ? (
-                          <img
-                            src={heroVideo.thumbnail_url}
-                            alt=""
-                            className="absolute inset-0 w-full h-full object-cover opacity-40 md:opacity-60"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
-                        )}
+                        {(() => {
+                          const heroThumb = resolveThumb(heroVideo.thumbnail_url, heroVideo.youtube_id);
+                          return heroThumb ? (
+                            <img
+                              src={heroThumb}
+                              alt=""
+                              onError={handleYoutubeThumbError}
+                              className="absolute inset-0 w-full h-full object-cover opacity-40 md:opacity-60"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
+                          );
+                        })()}
                         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/85 to-[#0a0a0f]/40 hidden md:block" />
                         <div className="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/40 md:via-transparent to-transparent md:to-transparent" />
                       </>
