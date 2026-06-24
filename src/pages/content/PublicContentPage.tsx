@@ -435,7 +435,7 @@ export default function PublicContentPage() {
 
                   {/* Mobile overlay content (bottom) */}
                   {!heroPlaying && (
-                    <div className="relative z-10 flex md:hidden flex-col justify-end w-full p-6 pb-7 gap-3">
+                    <div className="relative z-10 flex md:hidden flex-col justify-end w-full p-6 pb-7 gap-3 pointer-events-none">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/15 backdrop-blur w-fit text-[10px] font-bold tracking-wider uppercase">
                         <Zap className="h-3 w-3 fill-current" />
                         Trending Now
