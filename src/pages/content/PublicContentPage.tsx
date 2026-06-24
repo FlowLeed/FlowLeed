@@ -171,28 +171,27 @@ export default function PublicContentPage() {
     setQuery("");
   };
 
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   return (
     <div className="h-screen overflow-y-auto bg-[#0a0a0f] text-white">
       {/* Top Bar */}
       <header className="sticky top-0 z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-white/5">
-        <div className="container max-w-7xl flex items-center gap-6 py-4 px-6">
+        <div className="container max-w-7xl flex items-center gap-3 md:gap-6 py-3 md:py-4 px-4 md:px-6">
           {slug && (
             <div className="flex items-center shrink-0">
               <img
                 src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
                 alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="object-contain"
-                style={{ height: "2.5rem", width: "auto", maxWidth: "12rem" }}
+                className="object-contain h-8 md:h-10 w-auto max-w-[10rem] md:max-w-[12rem]"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
             </div>
           )}
+          {/* Desktop search */}
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              runAISearch(query);
-            }}
-            className="flex-1 max-w-2xl ml-auto"
+            onSubmit={(e) => { e.preventDefault(); runAISearch(query); }}
+            className="hidden md:block flex-1 max-w-2xl ml-auto"
           >
             <div className="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 hover:border-white/20 transition-colors pl-5 pr-2 py-1.5">
               <Search className="h-4 w-4 text-white/40 shrink-0" />
@@ -203,18 +202,45 @@ export default function PublicContentPage() {
                 className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/30"
               />
               {query && (
-                <Button
-                  type="submit"
-                  disabled={searching}
-                  size="sm"
-                  className="rounded-full h-8 px-4 bg-white text-black hover:bg-white/90"
-                >
+                <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-4 bg-white text-black hover:bg-white/90">
                   {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 </Button>
               )}
             </div>
           </form>
+          {/* Mobile search icon */}
+          <button
+            type="button"
+            onClick={() => setMobileSearchOpen((v) => !v)}
+            className="md:hidden ml-auto h-10 w-10 inline-flex items-center justify-center rounded-full text-white/80 hover:bg-white/10"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5" />
+          </button>
         </div>
+        {/* Mobile expandable search */}
+        {mobileSearchOpen && (
+          <form
+            onSubmit={(e) => { e.preventDefault(); runAISearch(query); setMobileSearchOpen(false); }}
+            className="md:hidden px-4 pb-3"
+          >
+            <div className="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 pl-4 pr-1 py-1">
+              <Search className="h-4 w-4 text-white/40 shrink-0" />
+              <Input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ask anything…"
+                className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/30"
+              />
+              {query && (
+                <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-3 bg-white text-black hover:bg-white/90">
+                  {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                </Button>
+              )}
+            </div>
+          </form>
+        )}
       </header>
 
       <main className="container max-w-7xl px-6 pb-20">
