@@ -171,28 +171,27 @@ export default function PublicContentPage() {
     setQuery("");
   };
 
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
   return (
     <div className="h-screen overflow-y-auto bg-[#0a0a0f] text-white">
       {/* Top Bar */}
       <header className="sticky top-0 z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-white/5">
-        <div className="container max-w-7xl flex items-center gap-6 py-4 px-6">
+        <div className="container max-w-7xl flex items-center gap-3 md:gap-6 py-3 md:py-4 px-4 md:px-6">
           {slug && (
             <div className="flex items-center shrink-0">
               <img
                 src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
                 alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="object-contain"
-                style={{ height: "2.5rem", width: "auto", maxWidth: "12rem" }}
+                className="object-contain h-8 md:h-10 w-auto max-w-[10rem] md:max-w-[12rem]"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
             </div>
           )}
+          {/* Desktop search */}
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              runAISearch(query);
-            }}
-            className="flex-1 max-w-2xl ml-auto"
+            onSubmit={(e) => { e.preventDefault(); runAISearch(query); }}
+            className="hidden md:block flex-1 max-w-2xl ml-auto"
           >
             <div className="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 hover:border-white/20 transition-colors pl-5 pr-2 py-1.5">
               <Search className="h-4 w-4 text-white/40 shrink-0" />
@@ -203,18 +202,45 @@ export default function PublicContentPage() {
                 className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/30"
               />
               {query && (
-                <Button
-                  type="submit"
-                  disabled={searching}
-                  size="sm"
-                  className="rounded-full h-8 px-4 bg-white text-black hover:bg-white/90"
-                >
+                <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-4 bg-white text-black hover:bg-white/90">
                   {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
                 </Button>
               )}
             </div>
           </form>
+          {/* Mobile search icon */}
+          <button
+            type="button"
+            onClick={() => setMobileSearchOpen((v) => !v)}
+            className="md:hidden ml-auto h-10 w-10 inline-flex items-center justify-center rounded-full text-white/80 hover:bg-white/10"
+            aria-label="Search"
+          >
+            <Search className="h-5 w-5" />
+          </button>
         </div>
+        {/* Mobile expandable search */}
+        {mobileSearchOpen && (
+          <form
+            onSubmit={(e) => { e.preventDefault(); runAISearch(query); setMobileSearchOpen(false); }}
+            className="md:hidden px-4 pb-3"
+          >
+            <div className="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 pl-4 pr-1 py-1">
+              <Search className="h-4 w-4 text-white/40 shrink-0" />
+              <Input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ask anything…"
+                className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/30"
+              />
+              {query && (
+                <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-3 bg-white text-black hover:bg-white/90">
+                  {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                </Button>
+              )}
+            </div>
+          </form>
+        )}
       </header>
 
       <main className="container max-w-7xl px-6 pb-20">
@@ -302,74 +328,111 @@ export default function PublicContentPage() {
           <>
             {/* Immersive Hero */}
             {heroVideo && (
-              <section className="relative mt-6 rounded-3xl overflow-hidden min-h-[520px] flex">
-                {/* Background */}
-                <div className="absolute inset-0">
-                  {heroPlaying ? (
-                    <iframe
-                      src={`https://www.youtube.com/embed/${heroVideo.youtube_id}?autoplay=1&rel=0`}
-                      title={heroVideo.title ?? "Featured video"}
-                      className="absolute inset-0 w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <>
-                      {heroVideo.thumbnail_url ? (
-                        <img
-                          src={heroVideo.thumbnail_url}
-                          alt=""
-                          className="absolute inset-0 w-full h-full object-cover opacity-60"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/85 to-[#0a0a0f]/40" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0f] via-transparent to-transparent" />
-                    </>
-                  )}
-                </div>
+              <>
+                <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[340px] md:min-h-[520px] flex">
+                  {/* Background */}
+                  <div className="absolute inset-0">
+                    {heroPlaying ? (
+                      <iframe
+                        src={`https://www.youtube.com/embed/${heroVideo.youtube_id}?autoplay=1&rel=0`}
+                        title={heroVideo.title ?? "Featured video"}
+                        className="absolute inset-0 w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <>
+                        {heroVideo.thumbnail_url ? (
+                          <img
+                            src={heroVideo.thumbnail_url}
+                            alt=""
+                            className="absolute inset-0 w-full h-full object-cover opacity-40 md:opacity-60"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/85 to-[#0a0a0f]/40 hidden md:block" />
+                        <div className="absolute inset-0 bg-gradient-to-b md:bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/40 md:via-transparent to-transparent md:to-transparent" />
+                      </>
+                    )}
+                  </div>
 
+                  {/* Mobile centered play */}
+                  {!heroPlaying && (
+                    <div className="relative z-10 flex md:hidden flex-col items-center justify-center w-full gap-3 py-16">
+                      <button
+                        onClick={() => setHeroPlaying(true)}
+                        aria-label="Play featured story"
+                        className="h-20 w-20 rounded-full border border-white/30 bg-white/5 backdrop-blur flex items-center justify-center hover:bg-white/10 transition"
+                      >
+                        <Play className="h-7 w-7 fill-current text-white ml-1" />
+                      </button>
+                      <div className="text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase">
+                        Featured Story
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Desktop overlay content */}
+                  {!heroPlaying && (
+                    <div className="relative z-10 hidden md:flex flex-col justify-center max-w-2xl p-10 md:p-14 gap-6">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 backdrop-blur w-fit text-[11px] font-bold tracking-wider uppercase">
+                        <Zap className="h-3 w-3 fill-current" />
+                        Trending Now
+                      </div>
+                      <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
+                        {heroVideo.title ?? "Discover Stories That Matter"}
+                      </h1>
+                      <p className="text-base text-white/70 max-w-lg leading-relaxed">
+                        {heroVideo.short_description ??
+                          `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
+                      </p>
+                      <div className="flex items-center gap-3 pt-2">
+                        <Button
+                          onClick={() => setHeroPlaying(true)}
+                          className="rounded-full h-12 px-6 bg-white text-black hover:bg-white/90 font-semibold gap-2"
+                        >
+                          <Play className="h-4 w-4 fill-current" />
+                          Watch Now
+                        </Button>
+                        <Link
+                          to={`/org/${slug}/content/videos/${heroVideo.id}`}
+                          className="text-sm text-white/70 hover:text-white px-4 py-3"
+                        >
+                          More info
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                {/* Mobile title block (below hero) */}
                 {!heroPlaying && (
-                  <div className="relative z-10 flex flex-col justify-center max-w-2xl p-10 md:p-14 gap-6">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 backdrop-blur w-fit text-[11px] font-bold tracking-wider uppercase">
+                  <div className="md:hidden mt-5 space-y-3">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 w-fit text-[10px] font-bold tracking-wider uppercase">
                       <Zap className="h-3 w-3 fill-current" />
                       Trending Now
                     </div>
-                    <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
+                    <h1 className="text-3xl font-bold tracking-tight leading-[1.1]">
                       {heroVideo.title ?? "Discover Stories That Matter"}
                     </h1>
-                    <p className="text-base text-white/70 max-w-lg leading-relaxed">
-                      {heroVideo.short_description ??
-                        `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
-                    </p>
-                    <div className="flex items-center gap-3 pt-2">
-                      <Button
-                        onClick={() => setHeroPlaying(true)}
-                        className="rounded-full h-12 px-6 bg-white text-black hover:bg-white/90 font-semibold gap-2"
-                      >
-                        <Play className="h-4 w-4 fill-current" />
-                        Watch Now
-                      </Button>
-                      <Link
-                        to={`/org/${slug}/content/videos/${heroVideo.id}`}
-                        className="text-sm text-white/70 hover:text-white px-4 py-3"
-                      >
-                        More info
-                      </Link>
-                    </div>
+                    {heroVideo.short_description && (
+                      <p className="text-sm text-white/60 leading-relaxed">
+                        {heroVideo.short_description}
+                      </p>
+                    )}
                   </div>
                 )}
-              </section>
+              </>
             )}
 
             {/* Theme Chips */}
             {themeChips.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 mt-10">
+              <div className="flex md:flex-wrap items-center gap-2 mt-6 md:mt-10 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
                 <button
                   onClick={() => setActiveTheme("__all__")}
                   className={cn(
-                    "px-5 h-10 rounded-full text-sm font-medium transition-colors border",
+                    "shrink-0 px-5 h-10 rounded-full text-sm font-medium transition-colors border",
                     activeTheme === "__all__"
                       ? "bg-white text-black border-white"
                       : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
@@ -382,7 +445,7 @@ export default function PublicContentPage() {
                     key={t}
                     onClick={() => setActiveTheme(t)}
                     className={cn(
-                      "px-5 h-10 rounded-full text-sm font-medium transition-colors capitalize border",
+                      "shrink-0 px-5 h-10 rounded-full text-sm font-medium transition-colors capitalize border",
                       activeTheme === t
                         ? "bg-white text-black border-white"
                         : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
@@ -407,7 +470,7 @@ export default function PublicContentPage() {
                     : "No stories match your filters."}
                 </Card>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                   {gridVideos.map((v) => {
                     const isPlaying = playingId === v.id;
                     return (
