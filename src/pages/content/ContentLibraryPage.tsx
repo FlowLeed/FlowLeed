@@ -36,7 +36,11 @@ export default function ContentLibraryPage() {
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{v.title}</div>
-                      <div className="text-xs text-muted-foreground truncate">{v.channel_name}</div>
+                      {v.short_description ? (
+                        <div className="text-xs text-muted-foreground line-clamp-1 italic">{v.short_description}</div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground truncate">{v.channel_name}</div>
+                      )}
                       <div className="flex items-center gap-2 mt-1">
                         {v.ingest_status !== "ready" && v.ingest_status !== "failed" && (
                           <Badge variant="secondary" className="text-xs gap-1">
