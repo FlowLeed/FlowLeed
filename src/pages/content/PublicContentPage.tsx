@@ -408,6 +408,7 @@ export default function PublicContentPage() {
                     </div>
                   )}
                 </section>
+                )}
 
                 {/* Mobile title block (below hero) */}
                 {!heroPlaying && (
