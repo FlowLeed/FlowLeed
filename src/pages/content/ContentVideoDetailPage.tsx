@@ -143,7 +143,50 @@ export default function ContentVideoDetailPage() {
     },
     onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingThumb, setUploadingThumb] = useState(false);
 
+  const uploadThumbnail = async (file: File) => {
+    if (!video) return;
+    try {
+      setUploadingThumb(true);
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${video.organization_id}/${video.id}-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("content-thumbnails")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("content-thumbnails").getPublicUrl(path);
+      const { error: updErr } = await supabase
+        .from("content_videos" as any)
+        .update({ thumbnail_url: pub.publicUrl })
+        .eq("id", video.id);
+      if (updErr) throw updErr;
+      qc.invalidateQueries({ queryKey: ["content-video", video.id] });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      toast({ title: "Thumbnail updated" });
+    } catch (e: any) {
+      toast({ title: "Upload failed", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setUploadingThumb(false);
+    }
+  };
+
+  const clearThumbnail = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("content_videos" as any)
+        .update({ thumbnail_url: null })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["content-video", id] });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      toast({ title: "Thumbnail cleared — using YouTube fallback" });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
 
 
 
