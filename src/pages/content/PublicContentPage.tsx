@@ -408,7 +408,7 @@ export default function PublicContentPage() {
                               )}
                             </div>
                             {/* Mobile poster */}
-                            <div className="md:hidden absolute left-1/2 -translate-x-1/2 top-6 w-[55%] max-w-[220px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-[1]">
+                            <div className="md:hidden absolute left-1/2 -translate-x-1/2 top-6 w-[55%] max-w-[220px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-20">
                               <img
                                 src={heroThumb}
                                 alt={heroVideo.title ?? ""}
