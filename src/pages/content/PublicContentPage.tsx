@@ -349,13 +349,6 @@ export default function PublicContentPage() {
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
                       />
-                      <button
-                        onClick={() => setHeroPlaying(false)}
-                        aria-label="Close video"
-                        className="absolute top-3 right-3 z-10 h-9 w-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
                     </div>
                   </section>
                 ) : (
