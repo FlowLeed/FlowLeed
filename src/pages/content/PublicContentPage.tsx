@@ -234,12 +234,15 @@ export default function PublicContentPage() {
     <div className="h-screen overflow-y-auto bg-background">
       <div className="container max-w-6xl py-8 px-6 space-y-10">
         {slug && (
-          <img
-            src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
-            alt={orgName ? `${orgName} logo` : "Organization logo"}
-            className="h-10 w-10 object-contain"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
+          <div className="flex justify-center">
+            <img
+              src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
+              alt={orgName ? `${orgName} logo` : "Organization logo"}
+              className="h-30 w-30 object-contain"
+              style={{ height: "7.5rem", width: "7.5rem" }}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          </div>
         )}
         {/* AI Hero */}
         <section className="text-center space-y-5 pt-2">
