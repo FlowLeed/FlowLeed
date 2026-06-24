@@ -388,7 +388,7 @@ export default function PublicContentPage() {
                         {heroThumb && (
                           <>
                             {/* Desktop poster */}
-                            <div className="hidden md:block absolute right-10 lg:right-16 top-1/2 -translate-y-1/2 w-[260px] lg:w-[300px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-[1]">
+                            <div className="hidden md:block absolute right-10 lg:right-16 top-1/2 -translate-y-1/2 w-[260px] lg:w-[300px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-20">
                               <img
                                 src={heroThumb}
                                 alt={heroVideo.title ?? ""}
