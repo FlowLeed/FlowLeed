@@ -232,17 +232,20 @@ export default function PublicContentPage() {
 
   return (
     <div className="h-screen overflow-y-auto bg-background">
-      <div className="container max-w-6xl py-12 px-6 space-y-10">
-        {/* AI Hero */}
-        <section className="text-center space-y-5 pt-6">
-          {slug && (
+      <div className="container max-w-6xl py-8 px-6 space-y-10">
+        {slug && (
+          <div className="flex items-center gap-2">
             <img
               src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
               alt={orgName ? `${orgName} logo` : "Organization logo"}
-              className="mx-auto h-24 w-24 md:h-28 md:w-28 object-contain"
+              className="h-9 w-9 object-contain"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
             />
-          )}
+            {orgName && <span className="text-sm font-medium text-foreground/80">{orgName}</span>}
+          </div>
+        )}
+        {/* AI Hero */}
+        <section className="text-center space-y-5 pt-2">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
             Discover Stories That Matter
           </h1>
