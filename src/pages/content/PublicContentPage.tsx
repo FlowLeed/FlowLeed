@@ -239,7 +239,7 @@ export default function PublicContentPage() {
               src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
               alt={orgName ? `${orgName} logo` : "Organization logo"}
               className="object-contain"
-              style={{ height: "15rem", width: "auto", maxWidth: "100%" }}
+              style={{ height: "7rem", width: "auto", maxWidth: "100%" }}
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
             />
           </div>
