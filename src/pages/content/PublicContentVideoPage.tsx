@@ -126,76 +126,91 @@ export default function PublicContentVideoPage() {
       </header>
 
       <main className="container max-w-5xl px-4 md:px-6 pb-20">
-        {/* Immersive Hero — wide 16:9 video with text overlay */}
-        <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden ring-1 ring-white/10 bg-black">
-          <div className="relative w-full aspect-video">
-            {playing ? (
-              <iframe
-                ref={iframeRef}
-                key={embedSrc}
-                src={`${embedSrc}${embedSrc.includes("?") ? "&" : "?"}autoplay=1`}
-                title={video.title ?? "Video"}
-                className="absolute inset-0 w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
+        {/* Immersive Hero — portrait player with ambient backdrop */}
+        <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[560px] md:min-h-[640px] flex flex-col md:flex-row">
+          {/* Blurred ambient backdrop */}
+          <div className="absolute inset-0">
+            {heroThumb ? (
+              <img
+                src={heroThumb}
+                alt=""
+                onError={handleYoutubeThumbError}
+                aria-hidden
+                className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-60"
               />
             ) : (
-              <>
-                {heroThumb && (
-                  <img
-                    src={heroThumb}
-                    alt={video.title ?? ""}
-                    onError={handleYoutubeThumbError}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                )}
-                {/* Gradient overlay — darker at bottom for legibility */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
+            )}
+            <div className="absolute inset-0 bg-[#0a0a0f]/55" />
+            <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/70 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-2/3 md:hidden bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/80 to-transparent" />
+          </div>
 
-                {/* Text overlay */}
-                <div className="absolute inset-x-0 bottom-0 p-5 md:p-10 pointer-events-none">
-                  <div className="max-w-3xl space-y-2 md:space-y-3">
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/70">
-                      {publishedLabel && <span>{publishedLabel}</span>}
-                      {publishedLabel && video.duration_seconds ? <span className="text-white/40">·</span> : null}
-                      {video.duration_seconds ? <span>{formatTimestamp(video.duration_seconds)}</span> : null}
-                    </div>
-                    <h1 className="text-2xl md:text-5xl font-bold tracking-tight leading-[1.05] drop-shadow-lg">
-                      {video.title}
-                    </h1>
-                    {video.short_description && (
-                      <p className="text-sm md:text-base text-white/85 leading-relaxed italic drop-shadow max-w-2xl">
-                        {video.short_description}
-                      </p>
-                    )}
-                    {analysis?.themes && analysis.themes.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {analysis.themes.map((t) => (
-                          <Badge
-                            key={t}
-                            variant="secondary"
-                            className="font-normal capitalize bg-white/15 backdrop-blur text-white/90 hover:bg-white/20 border-0"
-                          >
-                            {t}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Play button — centered, clickable */}
+          {/* Portrait player — desktop right, mobile centered top */}
+          <div className="relative z-20 order-1 md:order-2 w-full md:w-auto flex md:block justify-center md:justify-end md:absolute md:right-10 lg:right-16 md:top-1/2 md:-translate-y-1/2 pt-6 md:pt-0">
+            <div className="relative w-[60%] max-w-[240px] md:w-[280px] lg:w-[320px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
+              {playing ? (
+                <iframe
+                  ref={iframeRef}
+                  key={embedSrc}
+                  src={`${embedSrc}${embedSrc.includes("?") ? "&" : "?"}autoplay=1`}
+                  title={video.title ?? "Video"}
+                  className="absolute inset-0 w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
                 <button
                   type="button"
                   onClick={() => setPlaying(true)}
                   aria-label={`Play ${video.title ?? "video"}`}
-                  className="absolute inset-0 w-full h-full flex items-center justify-center group"
+                  className="absolute inset-0 w-full h-full group"
                 >
-                  <span className="h-16 w-16 md:h-20 md:w-20 rounded-full border border-white/60 bg-black/40 backdrop-blur flex items-center justify-center group-hover:scale-110 group-hover:bg-black/60 transition-transform">
-                    <Play className="h-6 w-6 md:h-7 md:w-7 fill-current text-white ml-1" />
-                  </span>
+                  {heroThumb && (
+                    <img
+                      src={heroThumb}
+                      alt={video.title ?? ""}
+                      onError={handleYoutubeThumbError}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition">
+                    <span className="h-14 w-14 rounded-full border border-white/60 bg-black/40 backdrop-blur flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Play className="h-5 w-5 fill-current text-white ml-0.5" />
+                    </span>
+                  </div>
                 </button>
-              </>
+              )}
+            </div>
+          </div>
+
+          {/* Text content — desktop left, mobile bottom */}
+          <div className="relative z-10 order-2 md:order-1 flex flex-col justify-end md:justify-center md:max-w-xl w-full p-6 md:p-14 gap-3 md:gap-5">
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/60">
+              {publishedLabel && <span>{publishedLabel}</span>}
+              {publishedLabel && video.duration_seconds ? <span className="text-white/30">·</span> : null}
+              {video.duration_seconds ? <span>{formatTimestamp(video.duration_seconds)}</span> : null}
+            </div>
+            <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-[1.05]">
+              {video.title}
+            </h1>
+            {video.short_description && (
+              <p className="text-sm md:text-base text-white/75 leading-relaxed italic">
+                {video.short_description}
+              </p>
+            )}
+            {analysis?.themes && analysis.themes.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {analysis.themes.map((t) => (
+                  <Badge
+                    key={t}
+                    variant="secondary"
+                    className="font-normal capitalize bg-white/10 text-white/80 hover:bg-white/15 border-0"
+                  >
+                    {t}
+                  </Badge>
+                ))}
+              </div>
             )}
           </div>
         </section>
