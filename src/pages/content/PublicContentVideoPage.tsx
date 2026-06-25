@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Film, Loader2, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -36,8 +36,6 @@ export default function PublicContentVideoPage() {
   const [orgName, setOrgName] = useState<string>("");
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [, setChunks] = useState<Chunk[]>([]);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
   const initialT = Number(params.get("t") ?? 0) || 0;
   const [currentSeek, setCurrentSeek] = useState(initialT);
   const [playing, setPlaying] = useState(false);

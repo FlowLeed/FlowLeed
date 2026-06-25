@@ -5,7 +5,7 @@ import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2, U
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/layout/Header";
-import { YouTubePlayer } from "@/components/content/YouTubePlayer";
+import { YouTubePlayer, type YouTubePlayerHandle } from "@/components/content/YouTubePlayer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,7 +45,7 @@ export default function ContentVideoDetailPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<YouTubePlayerHandle>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [editingDescription, setEditingDescription] = useState(false);
@@ -218,21 +218,12 @@ export default function ContentVideoDetailPage() {
 
 
 
-  // Postmessage seek
   const seekTo = (seconds: number) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: "command", func: "seekTo", args: [seconds, true] }),
-      "*",
-    );
-    iframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: "command", func: "playVideo", args: [] }),
-      "*",
-    );
+    playerRef.current?.seekTo(seconds, true);
   };
 
   useEffect(() => {
-    if (startSeconds > 0 && iframeRef.current) {
-      // give iframe a moment to load
+    if (startSeconds > 0) {
       const t = setTimeout(() => seekTo(startSeconds), 1500);
       return () => clearTimeout(t);
     }
@@ -390,6 +381,7 @@ export default function ContentVideoDetailPage() {
 
       <div className="aspect-video rounded-lg overflow-hidden bg-black">
         <YouTubePlayer
+          ref={playerRef}
           youtubeId={video.youtube_id}
           title={video.title}
           startSeconds={startSeconds || undefined}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { ExternalLink, Loader2, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,10 @@ type YouTubePlayerProps = {
   startSeconds?: number;
   autoplay?: boolean;
   className?: string;
+};
+
+export type YouTubePlayerHandle = {
+  seekTo: (seconds: number, play?: boolean) => void;
 };
 
 type YouTubePlayerInstance = {
@@ -63,12 +67,26 @@ function loadYouTubeApi() {
   return youtubeApiPromise;
 }
 
-export function YouTubePlayer({ youtubeId, title, startSeconds, autoplay = false, className }: YouTubePlayerProps) {
+export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(function YouTubePlayer(
+  { youtubeId, title, startSeconds, autoplay = false, className },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YouTubePlayerInstance | null>(null);
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(youtubeId)}${startSeconds ? `&t=${Math.floor(startSeconds)}s` : ""}`;
+
+  useImperativeHandle(ref, () => ({
+    seekTo: (seconds: number, play = true) => {
+      const player = playerRef.current as (YouTubePlayerInstance & {
+        seekTo?: (seconds: number, allowSeekAhead: boolean) => void;
+        playVideo?: () => void;
+      }) | null;
+      player?.seekTo?.(seconds, true);
+      if (play) player?.playVideo?.();
+    },
+  }));
 
   useEffect(() => {
     let cancelled = false;
@@ -149,4 +167,4 @@ export function YouTubePlayer({ youtubeId, title, startSeconds, autoplay = false
       )}
     </div>
   );
-}
+});
