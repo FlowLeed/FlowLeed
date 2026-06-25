@@ -7,6 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp, youtubeEmbedUrl } from "@/lib/contentUtils";
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 
+// Toggle to re-enable the one-sentence story highlight under the title.
+const SHOW_PUBLIC_DESCRIPTIONS = false;
+
+
 interface Chunk { id: string; chunk_index: number; text: string; start_seconds: number; end_seconds: number; }
 interface Analysis {
   summary: string | null;
@@ -194,7 +198,7 @@ export default function PublicContentVideoPage() {
             <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-[1.05]">
               {video.title}
             </h1>
-            {video.short_description && (
+            {SHOW_PUBLIC_DESCRIPTIONS && video.short_description && (
               <p className="text-sm md:text-base text-white/75 leading-relaxed italic">
                 {video.short_description}
               </p>

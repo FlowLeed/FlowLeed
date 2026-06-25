@@ -10,6 +10,10 @@ import { formatTimestamp } from "@/lib/contentUtils";
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { cn } from "@/lib/utils";
 
+// Toggle to re-enable the one-sentence story highlight on public pages
+// (hero subtitle + video card subtitles). Set to `true` to show.
+const SHOW_PUBLIC_DESCRIPTIONS = false;
+
 interface PublicVideo {
   id: string;
   title: string | null;
@@ -437,7 +441,7 @@ export default function PublicContentPage() {
                       <h1 className="text-3xl font-bold tracking-tight leading-[1.1]">
                         {heroVideo.title ?? "Discover Stories That Matter"}
                       </h1>
-                      {heroVideo.short_description && (
+                      {SHOW_PUBLIC_DESCRIPTIONS && heroVideo.short_description && (
                         <p className="text-sm text-white/75 leading-relaxed">
                           {heroVideo.short_description}
                         </p>
@@ -455,10 +459,12 @@ export default function PublicContentPage() {
                       <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
                         {heroVideo.title ?? "Discover Stories That Matter"}
                       </h1>
-                      <p className="text-base text-white/80 max-w-lg leading-relaxed">
-                        {heroVideo.short_description ??
-                          `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
-                      </p>
+                      {SHOW_PUBLIC_DESCRIPTIONS && (
+                        <p className="text-base text-white/80 max-w-lg leading-relaxed">
+                          {heroVideo.short_description ??
+                            `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
+                        </p>
+                      )}
                       <div className="flex items-center gap-3 pt-2">
                         <Button
                           onClick={() => setHeroPlaying(true)}
@@ -579,7 +585,7 @@ export default function PublicContentPage() {
                                 <div className="font-semibold text-sm text-white line-clamp-2 leading-snug">
                                   {v.title ?? "Untitled"}
                                 </div>
-                                {v.short_description && (
+                                {SHOW_PUBLIC_DESCRIPTIONS && v.short_description && (
                                   <div className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
                                     {v.short_description}
                                   </div>
