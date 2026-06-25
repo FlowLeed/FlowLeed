@@ -1,0 +1,2 @@
+ALTER TABLE public.content_videos ADD COLUMN IF NOT EXISTS is_featured boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS content_videos_featured_idx ON public.content_videos(organization_id) WHERE is_featured = true;

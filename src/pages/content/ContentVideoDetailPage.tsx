@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2, Upload, ImageIcon } from "lucide-react";
+import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2, Upload, ImageIcon, Star } from "lucide-react";
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/layout/Header";
@@ -110,6 +110,33 @@ export default function ContentVideoDetailPage() {
     },
     onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
   });
+
+  const setFeatured = useMutation({
+    mutationFn: async (is_featured: boolean) => {
+      if (!video) throw new Error("no video");
+      if (is_featured) {
+        // Ensure only one featured per organization
+        const { error: clearErr } = await supabase
+          .from("content_videos" as any)
+          .update({ is_featured: false })
+          .eq("organization_id", video.organization_id)
+          .neq("id", video.id);
+        if (clearErr) throw clearErr;
+      }
+      const { error } = await supabase
+        .from("content_videos" as any)
+        .update({ is_featured })
+        .eq("id", video.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["content-video", id] });
+      qc.invalidateQueries({ queryKey: ["content-videos"] });
+      toast({ title: "Featured updated" });
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e?.message ?? String(e), variant: "destructive" }),
+  });
+
   const saveTitle = useMutation({
     mutationFn: async (title: string) => {
       const { error } = await supabase

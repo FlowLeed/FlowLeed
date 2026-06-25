@@ -1195,6 +1195,7 @@ export type Database = {
           id: string
           ingest_status: Database["public"]["Enums"]["content_ingest_status"]
           ingested_by: string | null
+          is_featured: boolean
           organization_id: string
           published_at: string | null
           short_description: string | null
@@ -1215,6 +1216,7 @@ export type Database = {
           id?: string
           ingest_status?: Database["public"]["Enums"]["content_ingest_status"]
           ingested_by?: string | null
+          is_featured?: boolean
           organization_id: string
           published_at?: string | null
           short_description?: string | null
@@ -1235,6 +1237,7 @@ export type Database = {
           id?: string
           ingest_status?: Database["public"]["Enums"]["content_ingest_status"]
           ingested_by?: string | null
+          is_featured?: boolean
           organization_id?: string
           published_at?: string | null
           short_description?: string | null
