@@ -216,7 +216,8 @@ export default function PublicContentPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask anything — 'stories about transformation'…"
-                  className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/40"
+                  style={{ fontSize: "16px" }}
+                  className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-base text-white placeholder:text-white/40"
                 />
                 <Button
                   type="submit"
@@ -253,7 +254,8 @@ export default function PublicContentPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask anything…"
-                  className="h-9 min-w-0 border-0 bg-transparent px-1 text-sm text-white placeholder:text-white/40 focus-visible:ring-0"
+                  style={{ fontSize: "16px" }}
+                  className="h-9 min-w-0 border-0 bg-transparent px-1 text-base text-white placeholder:text-white/40 focus-visible:ring-0"
                 />
                 {query && (
                   <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-3 bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:from-fuchsia-400 hover:to-violet-400 text-white border-0">
