@@ -18,10 +18,10 @@ export default function ContentLibraryPage() {
         showBackButton
         onBackClick={() => navigate(-1)}
       />
-      <div className="flex-1 overflow-y-auto">
-        <div className="container max-w-5xl py-10 px-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="container max-w-5xl space-y-6 px-4 py-6 sm:px-6 md:py-10">
           <header>
-            <h1 className="text-3xl font-light">Library</h1>
+            <h1 className="text-2xl font-light md:text-3xl">Library</h1>
             <p className="text-muted-foreground text-sm">{videos.length} video{videos.length === 1 ? "" : "s"}</p>
           </header>
           {isLoading ? (
@@ -30,9 +30,9 @@ export default function ContentLibraryPage() {
             <div className="space-y-2">
               {videos.map((v) => (
                 <Link to={`/content/videos/${v.id}`} key={v.id}>
-                  <Card className="p-3 flex gap-3 hover:shadow-sm transition-shadow">
+                  <Card className="flex gap-3 p-3 transition-shadow hover:shadow-sm">
                     {v.thumbnail_url && (
-                      <div className="relative w-28 h-16 flex-shrink-0">
+                      <div className="relative h-16 w-24 flex-shrink-0 sm:w-28">
                         <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover rounded" />
                         {v.is_featured && (
                           <div
@@ -45,13 +45,13 @@ export default function ContentLibraryPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{v.title}</div>
+                      <div className="font-medium line-clamp-2 sm:truncate">{v.title}</div>
                       {v.short_description ? (
                         <div className="text-xs text-muted-foreground line-clamp-1 italic">{v.short_description}</div>
                       ) : (
                         <div className="text-xs text-muted-foreground truncate">{v.channel_name}</div>
                       )}
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="mt-1 flex flex-wrap items-center gap-2">
                         {v.ingest_status !== "ready" && v.ingest_status !== "failed" && (
                           <Badge variant="secondary" className="text-xs gap-1">
                             <Loader2 className="h-3 w-3 animate-spin" /> {v.ingest_status}
@@ -65,7 +65,7 @@ export default function ContentLibraryPage() {
                         {v.duration_seconds != null && (
                           <span className="text-xs text-muted-foreground">{formatTimestamp(v.duration_seconds)}</span>
                         )}
-                        <Badge variant="outline" className="text-xs ml-auto">
+                        <Badge variant="outline" className="text-xs sm:ml-auto">
                           {v.consent_level === "public_search" ? "Public" : "Internal"}
                         </Badge>
                       </div>

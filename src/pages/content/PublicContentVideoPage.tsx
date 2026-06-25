@@ -74,7 +74,7 @@ export default function PublicContentVideoPage() {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#0a0a0f] text-white">
+      <div className="flex h-[100dvh] items-center justify-center bg-[#0a0a0f] text-white">
         <Loader2 className="h-6 w-6 animate-spin text-white/50" />
       </div>
     );
@@ -82,7 +82,7 @@ export default function PublicContentVideoPage() {
 
   if (notFound || !video) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#0a0a0f] p-6 text-white">
+      <div className="flex h-[100dvh] items-center justify-center bg-[#0a0a0f] p-6 text-white">
         <div className="p-10 text-center max-w-md space-y-3 rounded-2xl border border-white/10 bg-white/5">
           <Film className="h-8 w-8 mx-auto text-white/40" />
           <h1 className="text-xl font-light">Video not available</h1>
@@ -102,23 +102,23 @@ export default function PublicContentVideoPage() {
   const heroThumb = resolveThumb(video.thumbnail_url, video.youtube_id);
 
   return (
-    <div className="h-screen overflow-y-auto overflow-x-hidden bg-[#0a0a0f] text-white">
+    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[#0a0a0f] text-white">
       {/* Top Bar — matches library */}
-      <header className="sticky top-0 z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-white/5">
-        <div className="container max-w-7xl flex items-center gap-3 md:gap-6 py-3 md:py-4 px-4 md:px-6">
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a0f]/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 md:gap-6 md:px-6 md:py-4">
           {slug && (
             <Link to={`/org/${slug}/content`} className="flex items-center shrink-0">
               <img
                 src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
                 alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="object-contain h-8 md:h-10 w-auto max-w-[10rem] md:max-w-[12rem]"
+                className="h-8 w-auto max-w-[min(12rem,calc(100vw-8rem))] object-contain md:h-10 md:max-w-[12rem]"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
             </Link>
           )}
           <Link
             to={`/org/${slug}/content`}
-            className="ml-auto inline-flex items-center gap-2 text-sm text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-4 py-2 transition"
+            className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white md:px-4"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -126,9 +126,9 @@ export default function PublicContentVideoPage() {
         </div>
       </header>
 
-      <main className="container max-w-5xl px-4 md:px-6 pb-20">
+       <main className="mx-auto w-full max-w-5xl px-4 pb-20 md:px-6">
         {/* Immersive Hero — portrait player with ambient backdrop */}
-        <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[560px] md:min-h-[640px] flex flex-col md:flex-row">
+         <section className="relative mt-4 flex min-h-[560px] flex-col overflow-hidden rounded-2xl md:mt-6 md:min-h-[640px] md:flex-row md:rounded-3xl">
           {/* Blurred ambient backdrop */}
           <div className="absolute inset-0">
             {heroThumb ? (
@@ -137,7 +137,7 @@ export default function PublicContentVideoPage() {
                 alt=""
                 onError={handleYoutubeThumbError}
                 aria-hidden
-                className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-60"
+                 className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-60"
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
@@ -148,8 +148,8 @@ export default function PublicContentVideoPage() {
           </div>
 
           {/* Portrait player — desktop right, mobile centered top */}
-          <div className="relative z-20 order-1 md:order-2 w-full md:w-auto flex md:block justify-center md:justify-end md:absolute md:right-10 lg:right-16 md:top-1/2 md:-translate-y-1/2 pt-6 md:pt-0">
-            <div className="relative w-full max-w-none md:w-[280px] md:max-w-[280px] lg:w-[320px] lg:max-w-[320px] aspect-[9/16] md:rounded-2xl rounded-none overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
+           <div className="relative z-20 order-1 flex w-full justify-center pt-5 md:absolute md:right-10 md:top-1/2 md:order-2 md:block md:w-auto md:-translate-y-1/2 md:justify-end md:pt-0 lg:right-16">
+             <div className="relative aspect-[9/16] w-full max-w-[360px] overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10 md:w-[280px] md:max-w-[280px] lg:w-[320px] lg:max-w-[320px]">
               {playing ? (
                 <YouTubePlayer
                   youtubeId={video.youtube_id}
@@ -184,13 +184,13 @@ export default function PublicContentVideoPage() {
           </div>
 
           {/* Text content — desktop left, mobile bottom */}
-          <div className="relative z-10 order-2 md:order-1 flex flex-col justify-end md:justify-center md:max-w-xl w-full p-6 md:p-14 gap-3 md:gap-5">
+           <div className="relative z-10 order-2 flex w-full min-w-0 flex-col justify-end gap-3 p-5 md:order-1 md:max-w-xl md:justify-center md:gap-5 md:p-14">
             <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/60">
               {publishedLabel && <span>{publishedLabel}</span>}
               {publishedLabel && video.duration_seconds ? <span className="text-white/30">·</span> : null}
               {video.duration_seconds ? <span>{formatTimestamp(video.duration_seconds)}</span> : null}
             </div>
-            <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-[1.05]">
+             <h1 className="break-words text-3xl font-bold leading-[1.05] tracking-tight md:text-5xl">
               {video.title}
             </h1>
             {SHOW_PUBLIC_DESCRIPTIONS && video.short_description && (
@@ -237,13 +237,13 @@ export default function PublicContentVideoPage() {
                 <button
                   key={i}
                   onClick={() => jumpTo(q.start_seconds)}
-                  className="group w-full text-left p-4 rounded-xl border border-white/10 bg-white/[0.03] hover:border-violet-400/40 hover:bg-white/[0.06] transition-all flex gap-4 items-start"
+                   className="group flex w-full flex-col items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left transition-all hover:border-violet-400/40 hover:bg-white/[0.06] sm:flex-row sm:gap-4"
                 >
                   <div className="shrink-0 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white text-black text-xs font-mono font-semibold">
                     <Play className="h-3 w-3 fill-current" />
                     {formatTimestamp(q.start_seconds)}
                   </div>
-                  <p className="text-[15px] leading-relaxed flex-1 text-white/85 group-hover:text-white">
+                   <p className="min-w-0 flex-1 text-[15px] leading-relaxed text-white/85 group-hover:text-white">
                     "{q.text}"
                   </p>
                 </button>

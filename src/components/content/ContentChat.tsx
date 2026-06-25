@@ -117,8 +117,8 @@ export const ContentChat = ({ organizationId, videoId }: Props) => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+    <div className="flex min-w-0 flex-col gap-4">
+      <div className="max-h-[60vh] space-y-4 overflow-y-auto overflow-x-hidden">
         {messages.length === 0 && (
           <Card className="p-6 text-sm text-muted-foreground">
             Ask anything about {videoId ? "this video" : "your video library"}. Answers cite the exact moments.
@@ -126,7 +126,7 @@ export const ContentChat = ({ organizationId, videoId }: Props) => {
         )}
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex justify-end" : ""}>
-            <div className={`max-w-[85%] rounded-lg p-3 ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+            <div className={`max-w-[92%] rounded-lg p-3 sm:max-w-[85%] ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
               <div className="whitespace-pre-wrap text-sm">{m.content || (streaming ? "…" : "")}</div>
               {m.citations && m.citations.length > 0 && (
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -134,10 +134,10 @@ export const ContentChat = ({ organizationId, videoId }: Props) => {
                     <Link
                       key={c.chunk_id}
                       to={`/content/videos/${c.video_id}?t=${c.start_seconds}`}
-                      className="flex gap-2 bg-background border rounded p-2 hover:shadow-sm transition-shadow"
+                      className="flex min-w-0 gap-2 rounded border bg-background p-2 transition-shadow hover:shadow-sm"
                     >
                       {c.thumbnail_url && (
-                        <img src={c.thumbnail_url} alt="" className="w-16 h-16 object-cover rounded flex-shrink-0" />
+                         <img src={c.thumbnail_url} alt="" className="h-14 w-14 flex-shrink-0 rounded object-cover sm:h-16 sm:w-16" />
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium truncate">[{c.id}] {c.title}</div>

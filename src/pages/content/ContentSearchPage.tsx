@@ -56,15 +56,15 @@ export default function ContentSearchPage() {
         showBackButton
         onBackClick={() => navigate(-1)}
       />
-      <div className="flex-1 overflow-y-auto">
-        <div className="container max-w-4xl py-10 px-6 space-y-8">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="container max-w-4xl space-y-6 px-4 py-6 sm:px-6 md:space-y-8 md:py-10">
           <header className="space-y-2">
-            <h1 className="text-3xl font-light">Semantic search</h1>
+            <h1 className="text-2xl font-light md:text-3xl">Semantic search</h1>
             <p className="text-muted-foreground">Find moments by meaning, not just keywords.</p>
           </header>
 
       <form
-        className="flex gap-2"
+        className="flex flex-col gap-2 sm:flex-row"
         onSubmit={(e) => {
           e.preventDefault();
           if (!query.trim()) return;
@@ -81,7 +81,7 @@ export default function ContentSearchPage() {
             placeholder="Try: stories about doubt and renewal…"
           />
         </div>
-        <Button type="submit" disabled={search.isPending || !query.trim()} className="h-12 px-6">
+        <Button type="submit" disabled={search.isPending || !query.trim()} className="h-12 px-6 sm:w-auto">
           {search.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
         </Button>
       </form>
@@ -95,13 +95,13 @@ export default function ContentSearchPage() {
         {results.map((r) => (
           <Link key={r.chunk_id} to={`/content/videos/${r.video_id}?t=${r.start_seconds}`}>
             <Card className="p-4 hover:shadow-md transition-shadow">
-              <div className="flex gap-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                 {r.thumbnail_url && (
-                  <img src={r.thumbnail_url} alt="" className="w-32 h-20 object-cover rounded flex-shrink-0" />
+                  <img src={r.thumbnail_url} alt="" className="h-auto w-full rounded object-contain sm:h-20 sm:w-32 sm:object-cover" />
                 )}
                 <div className="flex-1 min-w-0 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="font-medium truncate">{r.title}</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="min-w-0 flex-1 font-medium line-clamp-2 sm:truncate">{r.title}</div>
                     <Badge variant="outline" className="text-xs">
                       {formatTimestamp(r.start_seconds)}
                     </Badge>
