@@ -227,7 +227,7 @@ export default function PublicContentPage() {
             className="md:hidden ml-auto h-10 w-10 inline-flex items-center justify-center rounded-full text-white/80 hover:bg-white/10"
             aria-label="Search"
           >
-            <Search className="h-5 w-5" />
+            <AiSparkleIcon className="h-5 w-5 text-fuchsia-300 drop-shadow-[0_0_6px_rgba(232,121,249,0.6)]" />
           </button>
         </div>
         {/* Mobile expandable search */}
@@ -236,20 +236,21 @@ export default function PublicContentPage() {
             onSubmit={(e) => { e.preventDefault(); runAISearch(query); setMobileSearchOpen(false); }}
             className="md:hidden px-4 pb-3"
           >
-            <div className="flex items-center gap-2 rounded-full bg-white/5 border border-white/10 pl-4 pr-1 py-1">
-              <Search className="h-4 w-4 text-white/40 shrink-0" />
-              <Input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Ask anything…"
-                className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/30"
-              />
-              {query && (
-                <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-3 bg-white text-black hover:bg-white/90">
-                  {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                </Button>
-              )}
+            <div className="rounded-full p-[1.5px] bg-gradient-to-r from-fuchsia-500/70 via-violet-500/70 to-sky-400/70 shadow-[0_0_24px_-8px_rgba(168,85,247,0.55)]">
+              <div className="flex items-center gap-2 rounded-full bg-[#0b0b12]/90 backdrop-blur-xl pl-4 pr-1 py-1">
+                <AiSparkleIcon className="h-4 w-4 text-fuchsia-300 shrink-0" />
+                <Input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Ask anything…"
+                  className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/40"
+                />
+                {query && (
+                  <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-3 bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:from-fuchsia-400 hover:to-violet-400 text-white border-0">
+                    {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AiSparkleIcon className="h-3.5 w-3.5" />}
+                  </Button>
+                )}
             </div>
           </form>
         )}
