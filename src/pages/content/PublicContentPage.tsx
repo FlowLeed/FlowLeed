@@ -310,7 +310,7 @@ export default function PublicContentPage() {
                               >
                                 <div className="relative w-full sm:w-32 aspect-video rounded-lg overflow-hidden bg-black shrink-0 mb-3 sm:mb-0">
                                   {s.thumbnail_url ? (
-                                    <img src={s.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                                    <img src={s.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-contain" />
                                   ) : null}
                                   <div className="absolute top-1.5 left-1.5 px-1.5 h-5 inline-flex items-center rounded-md bg-black/70 text-white text-[10px] font-semibold gap-1">
                                     <Play className="h-2.5 w-2.5 fill-current" />
