@@ -148,7 +148,7 @@ export default function PublicContentVideoPage() {
 
           {/* Portrait player — desktop right, mobile centered top */}
           <div className="relative z-20 order-1 md:order-2 w-full md:w-auto flex md:block justify-center md:justify-end md:absolute md:right-10 lg:right-16 md:top-1/2 md:-translate-y-1/2 pt-6 md:pt-0">
-            <div className="relative w-[60%] max-w-[240px] md:w-[280px] lg:w-[320px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
+            <div className="relative w-[85%] max-w-[360px] md:w-[280px] lg:w-[320px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
               {playing ? (
                 <iframe
                   ref={iframeRef}
