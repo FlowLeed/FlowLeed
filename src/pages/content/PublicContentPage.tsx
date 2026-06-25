@@ -446,7 +446,7 @@ export default function PublicContentPage() {
                     <div className="relative z-10 flex md:hidden flex-col justify-end w-full p-6 pb-7 gap-3 pointer-events-none">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/15 backdrop-blur w-fit text-[10px] font-bold tracking-wider uppercase">
                         <Zap className="h-3 w-3 fill-current" />
-                        Trending Now
+                        Featured
                       </div>
                       <h1 className="text-3xl font-bold tracking-tight leading-[1.1]">
                         {heroVideo.title ?? "Discover Stories That Matter"}
@@ -464,7 +464,7 @@ export default function PublicContentPage() {
                     <div className="relative z-10 hidden md:flex flex-col justify-center max-w-xl p-10 md:p-14 gap-6">
                       <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 backdrop-blur w-fit text-[11px] font-bold tracking-wider uppercase">
                         <Zap className="h-3 w-3 fill-current" />
-                        Trending Now
+                        Featured
                       </div>
                       <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
                         {heroVideo.title ?? "Discover Stories That Matter"}
