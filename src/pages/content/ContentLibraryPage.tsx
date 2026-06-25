@@ -29,7 +29,7 @@ export default function ContentLibraryPage() {
           ) : (
             <div className="space-y-2">
               {videos.map((v) => (
-                <Link to={`/content/videos/${v.id}`} key={v.id}>
+                <Link to={`/content/videos/${v.id}`} key={v.id} className="block">
                   <Card className="flex gap-3 p-3 transition-shadow hover:shadow-sm">
                     {v.thumbnail_url && (
                       <div className="relative h-16 w-24 flex-shrink-0 sm:w-28">

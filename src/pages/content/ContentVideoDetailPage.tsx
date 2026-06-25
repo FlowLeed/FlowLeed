@@ -368,7 +368,7 @@ export default function ContentVideoDetailPage() {
           )}
           {video.ingest_status === "failed" && (
             <>
-              <Badge variant="destructive" className="text-xs">Failed: {video.error_message}</Badge>
+              <Badge variant="destructive" className="max-w-full whitespace-normal break-words text-xs">Failed: {video.error_message}</Badge>
               {isOrgAdmin && (
                 <Button size="sm" variant="outline" onClick={() => retryIngest.mutate()} disabled={retryIngest.isPending}>
                   <RefreshCw className={`h-3 w-3 mr-1 ${retryIngest.isPending ? "animate-spin" : ""}`} /> Retry

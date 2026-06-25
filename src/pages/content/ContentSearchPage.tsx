@@ -93,7 +93,7 @@ export default function ContentSearchPage() {
 
       <div className="space-y-4">
         {results.map((r) => (
-          <Link key={r.chunk_id} to={`/content/videos/${r.video_id}?t=${r.start_seconds}`}>
+          <Link key={r.chunk_id} to={`/content/videos/${r.video_id}?t=${r.start_seconds}`} className="block">
             <Card className="p-4 hover:shadow-md transition-shadow">
               <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                 {r.thumbnail_url && (

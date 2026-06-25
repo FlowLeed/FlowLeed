@@ -129,7 +129,7 @@ export default function ContentDashboardPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((v) => (
-              <Link to={`/content/videos/${v.id}`} key={v.id}>
+              <Link to={`/content/videos/${v.id}`} key={v.id} className="block">
                 <Card className="overflow-hidden hover:shadow-md transition-shadow">
                   {v.thumbnail_url && (
                     <div className="relative aspect-video bg-muted overflow-hidden">
