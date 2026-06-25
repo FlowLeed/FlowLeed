@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Film, Search, Sparkles, Loader2, AlertCircle, ExternalLink, Globe, Lock } from "lucide-react";
+import { Film, Search, Sparkles, Loader2, AlertCircle, ExternalLink, Globe, Lock, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -134,6 +134,14 @@ export default function ContentDashboardPage() {
                   {v.thumbnail_url && (
                     <div className="relative aspect-video bg-muted overflow-hidden">
                       <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                      {v.is_featured && (
+                        <div
+                          className="absolute top-2 left-2 h-7 px-2 rounded-full bg-amber-500 text-white flex items-center gap-1 text-[11px] font-semibold backdrop-blur-sm shadow"
+                          title="Featured on public library"
+                        >
+                          <Star className="h-3 w-3 fill-current" /> Featured
+                        </div>
+                      )}
                       <div
                         className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-sm"
                         title={v.consent_level === "public_search" ? "Public" : "Internal only"}
