@@ -7,6 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp, youtubeEmbedUrl } from "@/lib/contentUtils";
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 
+// Toggle to re-enable the one-sentence story highlight under the title.
+const SHOW_PUBLIC_DESCRIPTIONS = false;
+
+
 interface Chunk { id: string; chunk_index: number; text: string; start_seconds: number; end_seconds: number; }
 interface Analysis {
   summary: string | null;
