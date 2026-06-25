@@ -10,6 +10,10 @@ import { formatTimestamp } from "@/lib/contentUtils";
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { cn } from "@/lib/utils";
 
+// Toggle to re-enable the one-sentence story highlight on public pages
+// (hero subtitle + video card subtitles). Set to `true` to show.
+const SHOW_PUBLIC_DESCRIPTIONS = false;
+
 interface PublicVideo {
   id: string;
   title: string | null;
