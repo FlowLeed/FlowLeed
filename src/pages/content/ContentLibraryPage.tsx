@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Star } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useContentVideos } from "@/hooks/useContent";
@@ -32,7 +32,17 @@ export default function ContentLibraryPage() {
                 <Link to={`/content/videos/${v.id}`} key={v.id}>
                   <Card className="p-3 flex gap-3 hover:shadow-sm transition-shadow">
                     {v.thumbnail_url && (
-                      <img src={v.thumbnail_url} alt="" className="w-28 h-16 object-cover rounded flex-shrink-0" />
+                      <div className="relative w-28 h-16 flex-shrink-0">
+                        <img src={v.thumbnail_url} alt="" className="w-full h-full object-cover rounded" />
+                        {v.is_featured && (
+                          <div
+                            className="absolute top-1 left-1 h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center shadow"
+                            title="Featured"
+                          >
+                            <Star className="h-3 w-3 fill-current" />
+                          </div>
+                        )}
+                      </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{v.title}</div>
