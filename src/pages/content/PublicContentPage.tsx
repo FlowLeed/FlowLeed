@@ -459,10 +459,12 @@ export default function PublicContentPage() {
                       <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
                         {heroVideo.title ?? "Discover Stories That Matter"}
                       </h1>
-                      <p className="text-base text-white/80 max-w-lg leading-relaxed">
-                        {heroVideo.short_description ??
-                          `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
-                      </p>
+                      {SHOW_PUBLIC_DESCRIPTIONS && (
+                        <p className="text-base text-white/80 max-w-lg leading-relaxed">
+                          {heroVideo.short_description ??
+                            `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
+                        </p>
+                      )}
                       <div className="flex items-center gap-3 pt-2">
                         <Button
                           onClick={() => setHeroPlaying(true)}
