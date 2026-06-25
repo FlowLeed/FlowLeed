@@ -13,7 +13,7 @@ export function youtubeEmbedUrl(youtubeId: string, startSeconds?: number) {
   const params = new URLSearchParams({ enablejsapi: "1", rel: "0", playsinline: "1" });
   if (startSeconds && startSeconds > 0) params.set("start", String(startSeconds));
   if (typeof window !== "undefined") params.set("origin", window.location.origin);
-  return `https://www.youtube-nocookie.com/embed/${youtubeId}?${params.toString()}`;
+  return `https://www.youtube.com/embed/${youtubeId}?${params.toString()}`;
 }
 
 export function extractYouTubeId(url: string): string | null {

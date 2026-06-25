@@ -5,6 +5,7 @@ import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2, U
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/layout/Header";
+import { YouTubePlayer, type YouTubePlayerHandle } from "@/components/content/YouTubePlayer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useContentVideo, useContentAnalysis, useContentChunks } from "@/hooks/useContent";
-import { formatTimestamp, youtubeEmbedUrl } from "@/lib/contentUtils";
+import { formatTimestamp } from "@/lib/contentUtils";
 import { ContentChat } from "@/components/content/ContentChat";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,7 +45,7 @@ export default function ContentVideoDetailPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<YouTubePlayerHandle>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
   const [editingDescription, setEditingDescription] = useState(false);
@@ -217,21 +218,12 @@ export default function ContentVideoDetailPage() {
 
 
 
-  // Postmessage seek
   const seekTo = (seconds: number) => {
-    iframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: "command", func: "seekTo", args: [seconds, true] }),
-      "*",
-    );
-    iframeRef.current?.contentWindow?.postMessage(
-      JSON.stringify({ event: "command", func: "playVideo", args: [] }),
-      "*",
-    );
+    playerRef.current?.seekTo(seconds, true);
   };
 
   useEffect(() => {
-    if (startSeconds > 0 && iframeRef.current) {
-      // give iframe a moment to load
+    if (startSeconds > 0) {
       const t = setTimeout(() => seekTo(startSeconds), 1500);
       return () => clearTimeout(t);
     }
@@ -388,12 +380,11 @@ export default function ContentVideoDetailPage() {
       </header>
 
       <div className="aspect-video rounded-lg overflow-hidden bg-black">
-        <iframe
-          ref={iframeRef}
-          src={youtubeEmbedUrl(video.youtube_id, startSeconds || undefined)}
-          className="w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
+        <YouTubePlayer
+          ref={playerRef}
+          youtubeId={video.youtube_id}
+          title={video.title}
+          startSeconds={startSeconds || undefined}
         />
       </div>
 

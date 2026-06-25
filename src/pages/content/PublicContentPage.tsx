@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Search, Loader2, Play, Sparkles, Zap, X, ArrowLeft } from "lucide-react";
 import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
+import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -355,12 +356,11 @@ export default function PublicContentPage() {
                       </button>
                     </div>
                     <div className="relative w-full max-w-[420px] aspect-[9/16] rounded-3xl overflow-hidden bg-black">
-                      <iframe
-                        src={`https://www.youtube-nocookie.com/embed/${heroVideo.youtube_id}?autoplay=1&rel=0&playsinline=1`}
+                      <YouTubePlayer
+                        youtubeId={heroVideo.youtube_id}
                         title={heroVideo.title ?? "Featured video"}
-                        className="absolute inset-0 w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
+                        autoplay
+                        className="absolute inset-0"
                       />
                     </div>
                   </section>
@@ -548,12 +548,11 @@ export default function PublicContentPage() {
                       <div key={v.id} className="space-y-3 group">
                         <div className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-white/5">
                           {isPlaying ? (
-                            <iframe
-                              src={`https://www.youtube-nocookie.com/embed/${v.youtube_id}?autoplay=1&rel=0&playsinline=1`}
+                            <YouTubePlayer
+                              youtubeId={v.youtube_id}
                               title={v.title ?? "Video"}
-                              className="absolute inset-0 w-full h-full"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                              allowFullScreen
+                              autoplay
+                              className="absolute inset-0"
                             />
                           ) : (
                             <button
