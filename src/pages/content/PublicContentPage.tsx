@@ -585,7 +585,7 @@ export default function PublicContentPage() {
                                 <div className="font-semibold text-sm text-white line-clamp-2 leading-snug">
                                   {v.title ?? "Untitled"}
                                 </div>
-                                {v.short_description && (
+                                {SHOW_PUBLIC_DESCRIPTIONS && v.short_description && (
                                   <div className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
                                     {v.short_description}
                                   </div>
