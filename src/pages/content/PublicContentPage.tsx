@@ -258,21 +258,21 @@ export default function PublicContentPage() {
         )}
       </header>
 
-      <main className="container max-w-7xl px-6 pb-20">
+      <main className="container max-w-7xl px-4 md:px-6 pb-20">
         {/* AI Answer takes over */}
         {answer !== null ? (
-          <section className="space-y-5 pt-8">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-white/50">
+          <section className="space-y-5 pt-6 md:pt-8">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-white/50 min-w-0 truncate">
                 Asked: <span className="text-white font-medium">"{activeQuery}"</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={clearSearch} className="text-white/70 hover:text-white hover:bg-white/10">
+              <Button variant="ghost" size="sm" onClick={clearSearch} className="shrink-0 text-white/70 hover:text-white hover:bg-white/10">
                 <X className="h-4 w-4 mr-1" /> Clear
               </Button>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="h-9 w-9 rounded-full bg-violet-500/20 text-violet-300 flex items-center justify-center shrink-0">
+              <div className="hidden sm:flex h-9 w-9 rounded-full bg-violet-500/20 text-violet-300 items-center justify-center shrink-0">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1 space-y-5">
@@ -306,9 +306,9 @@ export default function PublicContentPage() {
                               <Link
                                 key={s.chunk_id}
                                 to={`/org/${slug}/content/videos/${s.video_id}?t=${Math.floor(s.start_seconds)}`}
-                                className="group flex gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-white/10 transition-all"
+                                className="group block sm:flex sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-white/10 transition-all"
                               >
-                                <div className="relative w-28 aspect-video rounded-lg overflow-hidden bg-black shrink-0">
+                                <div className="relative w-full sm:w-32 aspect-video rounded-lg overflow-hidden bg-black shrink-0 mb-3 sm:mb-0">
                                   {s.thumbnail_url ? (
                                     <img src={s.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
                                   ) : null}
@@ -318,10 +318,12 @@ export default function PublicContentPage() {
                                   </div>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-baseline gap-2 mb-1">
-                                    <span className="font-semibold text-sm truncate">{s.title ?? "Untitled"}</span>
+                                  <div className="mb-1.5">
+                                    <div className="font-semibold text-sm text-white leading-snug break-words">
+                                      {s.title ?? "Untitled"}
+                                    </div>
                                     {s.channel_name && (
-                                      <span className="text-[11px] text-white/40 truncate">· {s.channel_name}</span>
+                                      <div className="text-[11px] text-white/40 truncate mt-0.5">{s.channel_name}</div>
                                     )}
                                   </div>
                                   <blockquote className="border-l-2 border-violet-400/60 pl-3 text-[13px] italic text-white/60 line-clamp-3 leading-relaxed">
