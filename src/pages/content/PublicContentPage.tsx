@@ -18,6 +18,7 @@ interface PublicVideo {
   short_description: string | null;
   youtube_id: string;
   duration_seconds: number | null;
+  is_featured?: boolean;
 }
 
 interface VideoTheme {
@@ -92,7 +93,7 @@ export default function PublicContentPage() {
         setOrgName(org.name);
         const { data: vids } = await supabase
           .from("content_videos" as any)
-          .select("id, title, thumbnail_url, channel_name, short_description, youtube_id, duration_seconds")
+          .select("id, title, thumbnail_url, channel_name, short_description, youtube_id, duration_seconds, is_featured")
           .eq("organization_id", org.id)
           .eq("consent_level", "public_search")
           .order("created_at", { ascending: false });
@@ -131,7 +132,7 @@ export default function PublicContentPage() {
       .map(([t]) => t);
   }, [videoThemes]);
 
-  const heroVideo = videos[0] ?? null;
+  const heroVideo = useMemo(() => videos.find((v) => v.is_featured) ?? videos[0] ?? null, [videos]);
   const gridVideos = useMemo(() => {
     const rest = heroVideo ? videos.filter((v) => v.id !== heroVideo.id) : videos;
     return rest.filter((v) => {
