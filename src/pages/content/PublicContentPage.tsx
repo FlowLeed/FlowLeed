@@ -177,6 +177,9 @@ export default function PublicContentPage() {
     setAnswer(null);
     setActiveQuery("");
     setQuery("");
+    setHeroPlaying(false);
+    setPlayingId(null);
+    setMobileSearchOpen(false);
   };
 
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
