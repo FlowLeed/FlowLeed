@@ -44,12 +44,12 @@ export default function ContentDashboardPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Content" showFlowIcon={false} showAddButton={false} />
-      <div className="flex-1 overflow-y-auto">
-        <div className="container max-w-5xl py-10 px-6 space-y-10">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="container max-w-5xl space-y-8 px-4 py-6 sm:px-6 md:space-y-10 md:py-10">
 
 
       <header className="space-y-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Film className="h-4 w-4" /> Content
           </div>
@@ -62,16 +62,16 @@ export default function ContentDashboardPage() {
             </Button>
           )}
         </div>
-        <h1 className="text-4xl font-light tracking-tight">Discover the stories inside your videos.</h1>
+        <h1 className="text-3xl font-light tracking-tight md:text-4xl">Discover the stories inside your videos.</h1>
         <p className="text-muted-foreground max-w-2xl">
           Paste a YouTube URL to ingest, analyze and semantically search any video your team uses.
         </p>
       </header>
 
-      <Card className="p-6 space-y-4">
+      <Card className="space-y-4 p-4 sm:p-6">
         <div className="text-sm font-medium">Ingest a video</div>
         <form
-          className="flex gap-2"
+          className="flex flex-col gap-2 sm:flex-row"
           onSubmit={(e) => { e.preventDefault(); if (url.trim()) ingest.mutate(url.trim()); }}
         >
           <Input
@@ -80,16 +80,16 @@ export default function ContentDashboardPage() {
             onChange={(e) => setUrl(e.target.value)}
             className="h-11"
           />
-          <Button type="submit" disabled={ingest.isPending || !url.trim()} className="h-11 px-6">
+          <Button type="submit" disabled={ingest.isPending || !url.trim()} className="h-11 px-6 sm:w-auto">
             {ingest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ingest"}
           </Button>
         </form>
       </Card>
 
-      <Card className="p-6 space-y-4">
+      <Card className="space-y-4 p-4 sm:p-6">
         <div className="text-sm font-medium">Search your library</div>
         <form
-          className="flex gap-2"
+          className="flex flex-col gap-2 sm:flex-row"
           onSubmit={(e) => {
             e.preventDefault();
             if (query.trim()) window.location.href = `/content/search?q=${encodeURIComponent(query.trim())}`;
@@ -104,7 +104,7 @@ export default function ContentDashboardPage() {
               className="h-11 pl-10"
             />
           </div>
-          <Button type="submit" disabled={!query.trim()} className="h-11 px-6">Search</Button>
+          <Button type="submit" disabled={!query.trim()} className="h-11 px-6 sm:w-auto">Search</Button>
         </form>
         <div className="flex gap-3 text-sm">
           <Link to="/content/chat" className="text-primary hover:underline inline-flex items-center gap-1">
@@ -127,9 +127,9 @@ export default function ContentDashboardPage() {
             <div className="text-sm text-muted-foreground">We'll transcribe, embed and pull out the stories.</div>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {videos.map((v) => (
-              <Link to={`/content/videos/${v.id}`} key={v.id}>
+              <Link to={`/content/videos/${v.id}`} key={v.id} className="block">
                 <Card className="overflow-hidden hover:shadow-md transition-shadow">
                   {v.thumbnail_url && (
                     <div className="relative aspect-video bg-muted overflow-hidden">

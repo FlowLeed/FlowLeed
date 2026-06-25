@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2, Upload, ImageIcon, Star } from "lucide-react";
+import { Loader2, RefreshCw, Pencil, Check, X, Trash2, Upload, ImageIcon, Star } from "lucide-react";
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/layout/Header";
@@ -245,9 +245,9 @@ export default function ContentVideoDetailPage() {
           isOrgAdmin ? (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
+                <Button variant="ghost" size="sm" className="px-2 text-destructive hover:text-destructive sm:px-3">
+                  <Trash2 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Delete</span>
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -271,12 +271,12 @@ export default function ContentVideoDetailPage() {
           ) : undefined
         }
       />
-      <div className="flex-1 overflow-y-auto">
-        <div className="container max-w-6xl py-10 px-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="container max-w-6xl space-y-6 px-4 py-6 sm:px-6 md:py-10">
 
       <header className="space-y-2">
         {editingTitle ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Input
               autoFocus
               value={titleDraft}
@@ -285,7 +285,7 @@ export default function ContentVideoDetailPage() {
                 if (e.key === "Enter" && titleDraft.trim()) saveTitle.mutate(titleDraft.trim());
                 if (e.key === "Escape") setEditingTitle(false);
               }}
-              className="text-2xl h-11 font-light"
+              className="h-11 min-w-0 flex-1 text-xl font-light sm:text-2xl"
             />
             <Button size="icon" variant="ghost" disabled={saveTitle.isPending || !titleDraft.trim()} onClick={() => saveTitle.mutate(titleDraft.trim())}>
               <Check className="h-4 w-4" />
@@ -295,13 +295,13 @@ export default function ContentVideoDetailPage() {
             </Button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 group">
-            <h1 className="text-2xl font-light">{video.title}</h1>
+          <div className="group flex items-start gap-2">
+            <h1 className="min-w-0 flex-1 break-words text-2xl font-light">{video.title}</h1>
             {isOrgAdmin && (
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                 onClick={() => { setTitleDraft(video.title ?? ""); setEditingTitle(true); }}
                 aria-label="Edit title"
               >
@@ -345,7 +345,7 @@ export default function ContentVideoDetailPage() {
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                className="h-7 w-7 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                 onClick={() => { setDescriptionDraft(video.short_description ?? ""); setEditingDescription(true); }}
                 aria-label="Edit description"
               >
@@ -368,7 +368,7 @@ export default function ContentVideoDetailPage() {
           )}
           {video.ingest_status === "failed" && (
             <>
-              <Badge variant="destructive" className="text-xs">Failed: {video.error_message}</Badge>
+              <Badge variant="destructive" className="max-w-full whitespace-normal break-words text-xs">Failed: {video.error_message}</Badge>
               {isOrgAdmin && (
                 <Button size="sm" variant="outline" onClick={() => retryIngest.mutate()} disabled={retryIngest.isPending}>
                   <RefreshCw className={`h-3 w-3 mr-1 ${retryIngest.isPending ? "animate-spin" : ""}`} /> Retry
@@ -389,8 +389,8 @@ export default function ContentVideoDetailPage() {
       </div>
 
       {isOrgAdmin && (
-        <Card className="p-4 flex items-center gap-4">
-          <div className="w-28 aspect-video rounded-md overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+        <Card className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+          <div className="aspect-video w-full overflow-hidden rounded-md bg-muted shrink-0 flex items-center justify-center sm:w-28">
             {resolveThumb(video.thumbnail_url, video.youtube_id) ? (
               <img
                 src={resolveThumb(video.thumbnail_url, video.youtube_id)!}
@@ -424,6 +424,7 @@ export default function ContentVideoDetailPage() {
           <Button
             size="sm"
             variant="outline"
+            className="w-full sm:w-auto"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingThumb}
           >
@@ -438,6 +439,7 @@ export default function ContentVideoDetailPage() {
             <Button
               size="sm"
               variant="ghost"
+              className="w-full sm:w-auto"
               onClick={() => clearThumbnail.mutate()}
               disabled={clearThumbnail.isPending}
             >
@@ -450,15 +452,17 @@ export default function ContentVideoDetailPage() {
 
 
       <Tabs defaultValue="overview">
-        <div className="flex items-center justify-between gap-4">
-          <TabsList>
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="w-full max-w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
+          <TabsList className="w-max">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
             <TabsTrigger value="quotes">Quotes</TabsTrigger>
             <TabsTrigger value="chat">Chat</TabsTrigger>
           </TabsList>
+          </div>
           {isOrgAdmin && (
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
                 <Label htmlFor="featured-toggle" className="text-sm inline-flex items-center gap-1">
                   <Star className={`h-3.5 w-3.5 ${video.is_featured ? "fill-current text-amber-500" : ""}`} /> Featured
@@ -491,8 +495,8 @@ export default function ContentVideoDetailPage() {
             </Card>
           ) : (
             <>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
                   {analysis.impact_score != null && (
                     <Badge variant="secondary">Impact {analysis.impact_score}/10</Badge>
                   )}
@@ -501,7 +505,7 @@ export default function ContentVideoDetailPage() {
                   ))}
                 </div>
                 <Button size="sm" variant="ghost" onClick={() => regen.mutate()} disabled={regen.isPending}>
-                  <RefreshCw className={`h-4 w-4 mr-1 ${regen.isPending ? "animate-spin" : ""}`} /> Regenerate
+                    <RefreshCw className={`mr-1 h-4 w-4 ${regen.isPending ? "animate-spin" : ""}`} /> Regenerate
                 </Button>
               </div>
               <Card className="p-6 space-y-2">
@@ -548,15 +552,15 @@ export default function ContentVideoDetailPage() {
           ) : (
             <div className="space-y-3">
               {analysis.key_quotes.map((q, i) => (
-                <Card key={i} className="p-4 flex gap-3">
+              <Card key={i} className="flex flex-col gap-3 p-4 sm:flex-row">
                   <button
                     onClick={() => seekTo(q.start_seconds)}
                     className="text-xs font-mono text-muted-foreground hover:text-primary whitespace-nowrap"
                   >
                     {formatTimestamp(q.start_seconds)}
                   </button>
-                  <p className="flex-1 italic">"{q.text}"</p>
-                  <Badge variant="outline">{q.impact_score}/10</Badge>
+                  <p className="min-w-0 flex-1 italic">"{q.text}"</p>
+                  <Badge variant="outline" className="w-fit">{q.impact_score}/10</Badge>
                 </Card>
               ))}
             </div>

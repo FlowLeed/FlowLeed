@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Loader2, Play, Sparkles, Zap, X, ArrowLeft } from "lucide-react";
+import { Loader2, Play, Sparkles, Zap, X, ArrowLeft } from "lucide-react";
 import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
 import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 
@@ -177,26 +177,29 @@ export default function PublicContentPage() {
     setAnswer(null);
     setActiveQuery("");
     setQuery("");
+    setHeroPlaying(false);
+    setPlayingId(null);
+    setMobileSearchOpen(false);
   };
 
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
-    <div className="h-screen overflow-y-auto overflow-x-hidden bg-[#0a0a0f] text-white">
+    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[#0a0a0f] text-white">
       {/* Top Bar */}
-      <header className="sticky top-0 z-40 bg-[#0a0a0f]/95 backdrop-blur-md border-b border-white/5">
-        <div className="container max-w-7xl flex items-center gap-3 md:gap-6 py-3 md:py-4 px-4 md:px-6">
+      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-md border-b border-white/5" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 md:gap-6 md:px-6 md:py-4">
           {slug && (
             <button
               type="button"
               onClick={clearSearch}
-              className="flex items-center shrink-0 rounded-md hover:opacity-80 transition"
+              className="flex min-w-0 flex-1 items-center rounded-md transition hover:opacity-80 md:flex-none"
               aria-label="Back to library home"
             >
               <img
                 src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
                 alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="object-contain h-8 md:h-10 w-auto max-w-[10rem] md:max-w-[12rem]"
+                className="h-8 w-auto max-w-full object-contain md:h-10 md:max-w-[12rem]"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
             </button>
@@ -230,7 +233,7 @@ export default function PublicContentPage() {
           <button
             type="button"
             onClick={() => setMobileSearchOpen((v) => !v)}
-            className="md:hidden ml-auto h-10 w-10 inline-flex items-center justify-center rounded-full text-white/80 hover:bg-white/10"
+            className="ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/80 hover:bg-white/10 md:hidden"
             aria-label="Search"
           >
             <AiSparkleIcon className="h-5 w-5 text-fuchsia-300 drop-shadow-[0_0_6px_rgba(232,121,249,0.6)]" />
@@ -240,17 +243,17 @@ export default function PublicContentPage() {
         {mobileSearchOpen && (
           <form
             onSubmit={(e) => { e.preventDefault(); runAISearch(query); setMobileSearchOpen(false); }}
-            className="md:hidden px-4 pb-3"
+            className="md:hidden w-full px-4 pb-3"
           >
             <div className="rounded-full p-[1.5px] bg-gradient-to-r from-fuchsia-500/70 via-violet-500/70 to-sky-400/70 shadow-[0_0_24px_-8px_rgba(168,85,247,0.55)]">
-              <div className="flex items-center gap-2 rounded-full bg-[#0b0b12]/90 backdrop-blur-xl pl-4 pr-1 py-1">
+              <div className="flex min-w-0 items-center gap-2 rounded-full bg-[#0b0b12]/90 py-1 pl-4 pr-1 backdrop-blur-xl">
                 <AiSparkleIcon className="h-4 w-4 text-fuchsia-300 shrink-0" />
                 <Input
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask anything…"
-                  className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/40"
+                  className="h-9 min-w-0 border-0 bg-transparent px-1 text-sm text-white placeholder:text-white/40 focus-visible:ring-0"
                 />
                 {query && (
                   <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-3 bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:from-fuchsia-400 hover:to-violet-400 text-white border-0">
@@ -263,12 +266,12 @@ export default function PublicContentPage() {
         )}
       </header>
 
-      <main className="container max-w-7xl px-4 md:px-6 pb-20">
+      <main className="mx-auto w-full max-w-7xl px-4 pb-20 md:px-6">
         {/* AI Answer takes over */}
         {answer !== null ? (
           <section className="space-y-5 pt-6 md:pt-8">
             <div className="flex items-center justify-between gap-3">
-              <div className="text-sm text-white/50 min-w-0 truncate">
+              <div className="min-w-0 flex-1 truncate text-sm text-white/50">
                 Asked: <span className="text-white font-medium">"{activeQuery}"</span>
               </div>
               <Button variant="ghost" size="sm" onClick={clearSearch} className="shrink-0 text-white/70 hover:text-white hover:bg-white/10">
@@ -276,7 +279,7 @@ export default function PublicContentPage() {
               </Button>
             </div>
 
-            <div className="flex items-start gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               <div className="hidden sm:flex h-9 w-9 rounded-full bg-violet-500/20 text-violet-300 items-center justify-center shrink-0">
                 <Sparkles className="h-4 w-4" />
               </div>
@@ -311,9 +314,9 @@ export default function PublicContentPage() {
                               <Link
                                 key={s.chunk_id}
                                 to={`/org/${slug}/content/videos/${s.video_id}?t=${Math.floor(s.start_seconds)}`}
-                                className="group block sm:flex sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-white/10 transition-all"
+                className="group block max-w-full overflow-hidden rounded-xl border border-white/10 bg-white/5 p-3 transition-all hover:border-violet-400/40 hover:bg-white/10 sm:flex sm:gap-3"
                               >
-                                <div className="relative w-full sm:w-32 aspect-video rounded-lg overflow-hidden bg-black shrink-0 mb-3 sm:mb-0">
+                                <div className="relative mx-auto mb-3 aspect-[9/16] max-h-72 w-full max-w-[180px] shrink-0 overflow-hidden rounded-lg bg-black sm:mb-0 sm:aspect-video sm:w-32 sm:max-w-none">
                                   {s.thumbnail_url ? (
                                     <img src={s.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-contain" />
                                   ) : null}
@@ -352,7 +355,7 @@ export default function PublicContentPage() {
             {heroVideo && (
               <>
                 {heroPlaying ? (
-                  <section className="mt-4 md:mt-6 flex flex-col items-center gap-3">
+                  <section className="mt-4 flex flex-col items-center gap-3 md:mt-6">
                     <div className="w-full max-w-[420px] flex justify-start">
                       <button
                         onClick={() => setHeroPlaying(false)}
@@ -362,7 +365,7 @@ export default function PublicContentPage() {
                         Back
                       </button>
                     </div>
-                    <div className="relative w-full max-w-[420px] aspect-[9/16] rounded-3xl overflow-hidden bg-black">
+                    <div className="relative aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black md:rounded-3xl">
                       <YouTubePlayer
                         youtubeId={heroVideo.youtube_id}
                         title={heroVideo.title ?? "Featured video"}
@@ -372,7 +375,7 @@ export default function PublicContentPage() {
                     </div>
                   </section>
                 ) : (
-                <section className="relative mt-4 md:mt-6 rounded-3xl overflow-hidden min-h-[520px] md:min-h-[560px] flex">
+                <section className="relative mt-4 flex min-h-[500px] overflow-hidden rounded-2xl md:mt-6 md:min-h-[560px] md:rounded-3xl">
                   {(() => {
                     const heroThumb = resolveThumb(heroVideo.thumbnail_url, heroVideo.youtube_id);
                     return (
@@ -385,7 +388,7 @@ export default function PublicContentPage() {
                               alt=""
                               onError={handleYoutubeThumbError}
                               aria-hidden
-                              className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-60"
+                              className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-60"
                             />
                           ) : (
                             <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
@@ -421,7 +424,7 @@ export default function PublicContentPage() {
                               )}
                             </div>
                             {/* Mobile poster */}
-                            <div className="md:hidden absolute left-1/2 -translate-x-1/2 top-6 w-[55%] max-w-[220px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-20">
+                            <div className="absolute left-1/2 top-5 z-20 aspect-[9/16] w-[52%] max-w-[205px] -translate-x-1/2 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10 md:hidden">
                               <img
                                 src={heroThumb}
                                 alt={heroVideo.title ?? ""}
@@ -448,12 +451,12 @@ export default function PublicContentPage() {
 
                   {/* Mobile overlay content (bottom) */}
                   {!heroPlaying && (
-                    <div className="relative z-10 flex md:hidden flex-col justify-end w-full p-6 pb-7 gap-3 pointer-events-none">
+                    <div className="pointer-events-none relative z-10 flex w-full flex-col justify-end gap-3 p-5 pb-6 md:hidden">
                       <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/15 backdrop-blur w-fit text-[10px] font-bold tracking-wider uppercase">
                         <Zap className="h-3 w-3 fill-current" />
                         Featured
                       </div>
-                      <h1 className="text-3xl font-bold tracking-tight leading-[1.1]">
+                      <h1 className="break-words text-2xl font-bold leading-[1.1] tracking-tight">
                         {heroVideo.title ?? "Discover Stories That Matter"}
                       </h1>
                       {SHOW_PUBLIC_DESCRIPTIONS && heroVideo.short_description && (
@@ -506,24 +509,25 @@ export default function PublicContentPage() {
 
             {/* Theme Chips */}
             {themeChips.length > 0 && (
-              <div className="flex md:flex-wrap items-center gap-2 mt-6 md:mt-10 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
-                <button
-                  onClick={() => setActiveTheme("__all__")}
-                  className={cn(
-                    "shrink-0 px-5 h-10 rounded-full text-sm font-medium transition-colors border",
-                    activeTheme === "__all__"
-                      ? "bg-white text-black border-white"
-                      : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
-                  )}
-                >
-                  All Stories
-                </button>
-                {themeChips.map((t) => (
+              <div className="mt-6 w-full max-w-full overflow-hidden md:mt-10">
+                <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 scrollbar-none md:flex-wrap md:overflow-visible md:pb-0">
+                  <button
+                    onClick={() => setActiveTheme("__all__")}
+                    className={cn(
+                      "h-10 shrink-0 rounded-full border px-5 text-sm font-medium transition-colors",
+                      activeTheme === "__all__"
+                        ? "bg-white text-black border-white"
+                        : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
+                    )}
+                  >
+                    All Stories
+                  </button>
+                  {themeChips.map((t) => (
                   <button
                     key={t}
                     onClick={() => setActiveTheme(t)}
                     className={cn(
-                      "shrink-0 px-5 h-10 rounded-full text-sm font-medium transition-colors capitalize border",
+                      "h-10 shrink-0 rounded-full border px-5 text-sm font-medium capitalize transition-colors",
                       activeTheme === t
                         ? "bg-white text-black border-white"
                         : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
@@ -531,7 +535,8 @@ export default function PublicContentPage() {
                   >
                     {t}
                   </button>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 
@@ -548,12 +553,12 @@ export default function PublicContentPage() {
                     : "No stories match your filters."}
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                   {gridVideos.map((v) => {
                     const isPlaying = playingId === v.id;
                     return (
                       <div key={v.id} className="space-y-3 group">
-                        <div className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-white/5">
+                        <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-white/5">
                           {isPlaying ? (
                             <YouTubePlayer
                               youtubeId={v.youtube_id}

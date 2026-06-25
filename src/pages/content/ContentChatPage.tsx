@@ -16,10 +16,10 @@ export default function ContentChatPage() {
         showBackButton
         onBackClick={() => navigate(-1)}
       />
-      <div className="flex-1 overflow-y-auto">
-        <div className="container max-w-4xl py-10 px-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="container max-w-4xl space-y-6 px-4 py-6 sm:px-6 md:py-10">
           <header className="space-y-2">
-            <h1 className="text-3xl font-light">Chat with your library</h1>
+            <h1 className="text-2xl font-light md:text-3xl">Chat with your library</h1>
             <p className="text-muted-foreground">Ask anything — answers are grounded in your ingested videos.</p>
           </header>
           <ContentChat organizationId={organization.id} />
