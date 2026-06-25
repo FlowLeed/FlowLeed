@@ -250,7 +250,7 @@ export default function PublicContentPage() {
                   <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-3 bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:from-fuchsia-400 hover:to-violet-400 text-white border-0">
                     {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AiSparkleIcon className="h-3.5 w-3.5" />}
                   </Button>
-                )}
+              </div>
             </div>
           </form>
         )}
