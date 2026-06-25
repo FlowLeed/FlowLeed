@@ -467,14 +467,27 @@ export default function ContentVideoDetailPage() {
             <TabsTrigger value="chat">Chat</TabsTrigger>
           </TabsList>
           {isOrgAdmin && (
-            <div className="flex items-center gap-2">
-              <Label htmlFor="visibility-toggle" className="text-sm">Public</Label>
-              <Switch
-                id="visibility-toggle"
-                checked={video.consent_level === "public_search"}
-                disabled={setConsent.isPending}
-                onCheckedChange={(v) => setConsent.mutate(v ? "public_search" : "internal_use")}
-              />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="featured-toggle" className="text-sm inline-flex items-center gap-1">
+                  <Star className={`h-3.5 w-3.5 ${video.is_featured ? "fill-current text-amber-500" : ""}`} /> Featured
+                </Label>
+                <Switch
+                  id="featured-toggle"
+                  checked={!!video.is_featured}
+                  disabled={setFeatured.isPending}
+                  onCheckedChange={(v) => setFeatured.mutate(v)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="visibility-toggle" className="text-sm">Public</Label>
+                <Switch
+                  id="visibility-toggle"
+                  checked={video.consent_level === "public_search"}
+                  disabled={setConsent.isPending}
+                  onCheckedChange={(v) => setConsent.mutate(v ? "public_search" : "internal_use")}
+                />
+              </div>
             </div>
           )}
         </div>
