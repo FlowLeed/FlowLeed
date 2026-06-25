@@ -301,7 +301,7 @@ export default function ContentVideoDetailPage() {
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-8 w-8 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                 onClick={() => { setTitleDraft(video.title ?? ""); setEditingTitle(true); }}
                 aria-label="Edit title"
               >
@@ -345,7 +345,7 @@ export default function ContentVideoDetailPage() {
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                className="h-7 w-7 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                 onClick={() => { setDescriptionDraft(video.short_description ?? ""); setEditingDescription(true); }}
                 aria-label="Edit description"
               >

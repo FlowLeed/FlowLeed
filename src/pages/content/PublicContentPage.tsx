@@ -190,13 +190,13 @@ export default function PublicContentPage() {
             <button
               type="button"
               onClick={clearSearch}
-              className="flex items-center shrink-0 rounded-md hover:opacity-80 transition"
+              className="flex min-w-0 flex-1 items-center rounded-md transition hover:opacity-80 md:flex-none"
               aria-label="Back to library home"
             >
               <img
                 src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
                 alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="h-8 w-auto max-w-[min(12rem,calc(100vw-5rem))] object-contain md:h-10 md:max-w-[12rem]"
+                className="h-8 w-auto max-w-full object-contain md:h-10 md:max-w-[12rem]"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
             </button>
@@ -230,7 +230,7 @@ export default function PublicContentPage() {
           <button
             type="button"
             onClick={() => setMobileSearchOpen((v) => !v)}
-            className="md:hidden ml-auto h-10 w-10 inline-flex items-center justify-center rounded-full text-white/80 hover:bg-white/10"
+            className="ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/80 hover:bg-white/10 md:hidden"
             aria-label="Search"
           >
             <AiSparkleIcon className="h-5 w-5 text-fuchsia-300 drop-shadow-[0_0_6px_rgba(232,121,249,0.6)]" />

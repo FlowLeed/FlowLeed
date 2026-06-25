@@ -107,11 +107,11 @@ export default function PublicContentVideoPage() {
       <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a0f]/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 md:gap-6 md:px-6 md:py-4">
           {slug && (
-            <Link to={`/org/${slug}/content`} className="flex items-center shrink-0">
+            <Link to={`/org/${slug}/content`} className="flex min-w-0 flex-1 items-center md:flex-none">
               <img
                 src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
                 alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="h-8 w-auto max-w-[min(12rem,calc(100vw-8rem))] object-contain md:h-10 md:max-w-[12rem]"
+                className="h-8 w-auto max-w-full object-contain md:h-10 md:max-w-[12rem]"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
             </Link>
@@ -149,7 +149,7 @@ export default function PublicContentVideoPage() {
 
           {/* Portrait player — desktop right, mobile centered top */}
            <div className="relative z-20 order-1 flex w-full justify-center pt-5 md:absolute md:right-10 md:top-1/2 md:order-2 md:block md:w-auto md:-translate-y-1/2 md:justify-end md:pt-0 lg:right-16">
-             <div className="relative aspect-[9/16] w-full max-w-[360px] overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10 md:w-[280px] md:max-w-[280px] lg:w-[320px] lg:max-w-[320px]">
+             <div className="relative aspect-[9/16] w-full max-w-none overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10 md:w-[280px] md:max-w-[280px] lg:w-[320px] lg:max-w-[320px]">
               {playing ? (
                 <YouTubePlayer
                   youtubeId={video.youtube_id}
