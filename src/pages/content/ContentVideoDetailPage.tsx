@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2, Upload, ImageIcon, Star } from "lucide-react";
+import { Loader2, RefreshCw, Pencil, Check, X, Trash2, Upload, ImageIcon, Star } from "lucide-react";
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/layout/Header";

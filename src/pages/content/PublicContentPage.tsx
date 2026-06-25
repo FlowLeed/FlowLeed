@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Search, Loader2, Play, Sparkles, Zap, X, ArrowLeft } from "lucide-react";
+import { Loader2, Play, Sparkles, Zap, X, ArrowLeft } from "lucide-react";
 import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
 import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 
