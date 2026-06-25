@@ -184,17 +184,22 @@ export default function PublicContentPage() {
   return (
     <div className="h-screen overflow-y-auto overflow-x-hidden bg-[#0a0a0f] text-white">
       {/* Top Bar */}
-      <header className="sticky top-0 z-30 bg-[#0a0a0f]/90 backdrop-blur-md border-b border-white/5">
+      <header className="sticky top-0 z-40 bg-[#0a0a0f]/95 backdrop-blur-md border-b border-white/5">
         <div className="container max-w-7xl flex items-center gap-3 md:gap-6 py-3 md:py-4 px-4 md:px-6">
           {slug && (
-            <div className="flex items-center shrink-0">
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="flex items-center shrink-0 rounded-md hover:opacity-80 transition"
+              aria-label="Back to library home"
+            >
               <img
                 src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
                 alt={orgName ? `${orgName} logo` : "Organization logo"}
                 className="object-contain h-8 md:h-10 w-auto max-w-[10rem] md:max-w-[12rem]"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
               />
-            </div>
+            </button>
           )}
           {/* Desktop search */}
           <form
