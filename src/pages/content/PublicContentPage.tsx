@@ -258,21 +258,21 @@ export default function PublicContentPage() {
         )}
       </header>
 
-      <main className="container max-w-7xl px-6 pb-20">
+      <main className="container max-w-7xl px-4 md:px-6 pb-20">
         {/* AI Answer takes over */}
         {answer !== null ? (
-          <section className="space-y-5 pt-8">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-white/50">
+          <section className="space-y-5 pt-6 md:pt-8">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm text-white/50 min-w-0 truncate">
                 Asked: <span className="text-white font-medium">"{activeQuery}"</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={clearSearch} className="text-white/70 hover:text-white hover:bg-white/10">
+              <Button variant="ghost" size="sm" onClick={clearSearch} className="shrink-0 text-white/70 hover:text-white hover:bg-white/10">
                 <X className="h-4 w-4 mr-1" /> Clear
               </Button>
             </div>
 
             <div className="flex items-start gap-3">
-              <div className="h-9 w-9 rounded-full bg-violet-500/20 text-violet-300 flex items-center justify-center shrink-0">
+              <div className="hidden sm:flex h-9 w-9 rounded-full bg-violet-500/20 text-violet-300 items-center justify-center shrink-0">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1 space-y-5">
