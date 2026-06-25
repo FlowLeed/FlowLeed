@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Search, Loader2, Play, Sparkles, Zap, X, ArrowLeft } from "lucide-react";
+import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
