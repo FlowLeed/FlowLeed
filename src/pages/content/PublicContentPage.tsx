@@ -441,7 +441,7 @@ export default function PublicContentPage() {
                       <h1 className="text-3xl font-bold tracking-tight leading-[1.1]">
                         {heroVideo.title ?? "Discover Stories That Matter"}
                       </h1>
-                      {heroVideo.short_description && (
+                      {SHOW_PUBLIC_DESCRIPTIONS && heroVideo.short_description && (
                         <p className="text-sm text-white/75 leading-relaxed">
                           {heroVideo.short_description}
                         </p>
