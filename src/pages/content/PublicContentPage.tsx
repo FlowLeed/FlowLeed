@@ -306,9 +306,9 @@ export default function PublicContentPage() {
                               <Link
                                 key={s.chunk_id}
                                 to={`/org/${slug}/content/videos/${s.video_id}?t=${Math.floor(s.start_seconds)}`}
-                                className="group flex gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-white/10 transition-all"
+                                className="group block sm:flex sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-white/10 transition-all"
                               >
-                                <div className="relative w-28 aspect-video rounded-lg overflow-hidden bg-black shrink-0">
+                                <div className="relative w-full sm:w-32 aspect-video rounded-lg overflow-hidden bg-black shrink-0 mb-3 sm:mb-0">
                                   {s.thumbnail_url ? (
                                     <img src={s.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
                                   ) : null}
@@ -318,10 +318,12 @@ export default function PublicContentPage() {
                                   </div>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex items-baseline gap-2 mb-1">
-                                    <span className="font-semibold text-sm truncate">{s.title ?? "Untitled"}</span>
+                                  <div className="mb-1.5">
+                                    <div className="font-semibold text-sm text-white leading-snug break-words">
+                                      {s.title ?? "Untitled"}
+                                    </div>
                                     {s.channel_name && (
-                                      <span className="text-[11px] text-white/40 truncate">· {s.channel_name}</span>
+                                      <div className="text-[11px] text-white/40 truncate mt-0.5">{s.channel_name}</div>
                                     )}
                                   </div>
                                   <blockquote className="border-l-2 border-violet-400/60 pl-3 text-[13px] italic text-white/60 line-clamp-3 leading-relaxed">
