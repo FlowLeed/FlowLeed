@@ -3,8 +3,9 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Film, Loader2, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 import { supabase } from "@/integrations/supabase/client";
-import { formatTimestamp, youtubeEmbedUrl } from "@/lib/contentUtils";
+import { formatTimestamp } from "@/lib/contentUtils";
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 
 // Toggle to re-enable the one-sentence story highlight under the title.
@@ -63,8 +64,6 @@ export default function PublicContentVideoPage() {
     };
     load();
   }, [slug, id]);
-
-  const embedSrc = useMemo(() => video ? youtubeEmbedUrl(video.youtube_id, currentSeek) : "", [video, currentSeek]);
 
   const jumpTo = (sec: number) => {
     setCurrentSeek(sec);
@@ -154,14 +153,12 @@ export default function PublicContentVideoPage() {
           <div className="relative z-20 order-1 md:order-2 w-full md:w-auto flex md:block justify-center md:justify-end md:absolute md:right-10 lg:right-16 md:top-1/2 md:-translate-y-1/2 pt-6 md:pt-0">
             <div className="relative w-full max-w-none md:w-[280px] md:max-w-[280px] lg:w-[320px] lg:max-w-[320px] aspect-[9/16] md:rounded-2xl rounded-none overflow-hidden shadow-2xl ring-1 ring-white/10 bg-black">
               {playing ? (
-                <iframe
-                  ref={iframeRef}
-                  key={embedSrc}
-                  src={`${embedSrc}${embedSrc.includes("?") ? "&" : "?"}autoplay=1`}
+                <YouTubePlayer
+                  youtubeId={video.youtube_id}
                   title={video.title ?? "Video"}
-                  className="absolute inset-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
+                  startSeconds={currentSeek}
+                  autoplay
+                  className="absolute inset-0"
                 />
               ) : (
                 <button

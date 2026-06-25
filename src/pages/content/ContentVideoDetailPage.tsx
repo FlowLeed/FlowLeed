@@ -5,6 +5,7 @@ import { Loader2, RefreshCw, Lock, Globe, ArrowLeft, Pencil, Check, X, Trash2, U
 import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { Textarea } from "@/components/ui/textarea";
 import { Header } from "@/components/layout/Header";
+import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useContentVideo, useContentAnalysis, useContentChunks } from "@/hooks/useContent";
-import { formatTimestamp, youtubeEmbedUrl } from "@/lib/contentUtils";
+import { formatTimestamp } from "@/lib/contentUtils";
 import { ContentChat } from "@/components/content/ContentChat";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useAuth } from "@/hooks/useAuth";
@@ -388,12 +389,10 @@ export default function ContentVideoDetailPage() {
       </header>
 
       <div className="aspect-video rounded-lg overflow-hidden bg-black">
-        <iframe
-          ref={iframeRef}
-          src={youtubeEmbedUrl(video.youtube_id, startSeconds || undefined)}
-          className="w-full h-full"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
+        <YouTubePlayer
+          youtubeId={video.youtube_id}
+          title={video.title}
+          startSeconds={startSeconds || undefined}
         />
       </div>
 
