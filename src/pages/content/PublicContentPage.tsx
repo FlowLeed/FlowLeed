@@ -216,7 +216,8 @@ export default function PublicContentPage() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Ask anything — 'stories about transformation'…"
-                  className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-sm text-white placeholder:text-white/40"
+                  style={{ fontSize: "16px" }}
+                  className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-base text-white placeholder:text-white/40"
                 />
                 <Button
                   type="submit"
