@@ -13,6 +13,7 @@ export interface ContentVideo {
   thumbnail_url: string | null;
   duration_seconds: number | null;
   consent_level: "internal_use" | "public_search";
+  is_featured: boolean;
   ingest_status: "pending" | "transcribing" | "embedding" | "analyzing" | "ready" | "failed";
   error_message: string | null;
   created_at: string;
