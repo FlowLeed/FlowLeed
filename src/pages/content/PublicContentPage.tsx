@@ -385,7 +385,7 @@ export default function PublicContentPage() {
                               alt=""
                               onError={handleYoutubeThumbError}
                               aria-hidden
-                              className="absolute inset-0 w-full h-full object-cover scale-125 blur-2xl opacity-60"
+                              className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-60"
                             />
                           ) : (
                             <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
@@ -506,24 +506,25 @@ export default function PublicContentPage() {
 
             {/* Theme Chips */}
             {themeChips.length > 0 && (
-              <div className="flex md:flex-wrap items-center gap-2 mt-6 md:mt-10 overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0 scrollbar-none">
-                <button
-                  onClick={() => setActiveTheme("__all__")}
-                  className={cn(
-                    "shrink-0 px-5 h-10 rounded-full text-sm font-medium transition-colors border",
-                    activeTheme === "__all__"
-                      ? "bg-white text-black border-white"
-                      : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
-                  )}
-                >
-                  All Stories
-                </button>
-                {themeChips.map((t) => (
+              <div className="mt-6 w-full max-w-full overflow-hidden md:mt-10">
+                <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 scrollbar-none md:flex-wrap md:overflow-visible md:pb-0">
+                  <button
+                    onClick={() => setActiveTheme("__all__")}
+                    className={cn(
+                      "h-10 shrink-0 rounded-full border px-5 text-sm font-medium transition-colors",
+                      activeTheme === "__all__"
+                        ? "bg-white text-black border-white"
+                        : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
+                    )}
+                  >
+                    All Stories
+                  </button>
+                  {themeChips.map((t) => (
                   <button
                     key={t}
                     onClick={() => setActiveTheme(t)}
                     className={cn(
-                      "shrink-0 px-5 h-10 rounded-full text-sm font-medium transition-colors capitalize border",
+                      "h-10 shrink-0 rounded-full border px-5 text-sm font-medium capitalize transition-colors",
                       activeTheme === t
                         ? "bg-white text-black border-white"
                         : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
@@ -531,7 +532,8 @@ export default function PublicContentPage() {
                   >
                     {t}
                   </button>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 
