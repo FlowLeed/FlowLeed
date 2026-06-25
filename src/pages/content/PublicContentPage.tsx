@@ -356,7 +356,7 @@ export default function PublicContentPage() {
                     </div>
                     <div className="relative w-full max-w-[420px] aspect-[9/16] rounded-3xl overflow-hidden bg-black">
                       <iframe
-                        src={`https://www.youtube.com/embed/${heroVideo.youtube_id}?autoplay=1&rel=0`}
+                        src={`https://www.youtube-nocookie.com/embed/${heroVideo.youtube_id}?autoplay=1&rel=0&playsinline=1`}
                         title={heroVideo.title ?? "Featured video"}
                         className="absolute inset-0 w-full h-full"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
