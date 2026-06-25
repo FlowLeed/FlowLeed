@@ -194,7 +194,7 @@ export default function PublicContentVideoPage() {
             <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-[1.05]">
               {video.title}
             </h1>
-            {video.short_description && (
+            {SHOW_PUBLIC_DESCRIPTIONS && video.short_description && (
               <p className="text-sm md:text-base text-white/75 leading-relaxed italic">
                 {video.short_description}
               </p>
