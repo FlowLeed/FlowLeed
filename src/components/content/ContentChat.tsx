@@ -43,7 +43,17 @@ export const ContentChat = ({ organizationId, videoId }: Props) => {
     setStreaming(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Force a refresh so we never send a stale access token whose
+      // server-side session was revoked (causes a 401 from the edge fn).
+      let { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+        if (refreshErr) {
+          await supabase.auth.signOut();
+          throw new Error("Your session expired. Please sign in again.");
+        }
+        session = refreshed.session ?? session;
+      }
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
