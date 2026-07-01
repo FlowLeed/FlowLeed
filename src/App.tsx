@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useGoogleAnalyticsPageView } from "./hooks/useGoogleAnalyticsPageView";
 import { MainLayout } from "./components/layout/MainLayout";
 import { FlowProvider } from "./contexts/FlowContext";
 import { AuthProvider } from "./hooks/useAuth";
@@ -62,6 +63,11 @@ const RouteFallback = () => (
   </div>
 );
 
+const GoogleAnalyticsTracker = () => {
+  useGoogleAnalyticsPageView();
+  return null;
+};
+
 const App = () => (
   <TooltipProvider>
     <Toaster />
@@ -71,6 +77,7 @@ const App = () => (
         <ImpersonationEscapeHandler />
         <FlowProvider>
           <Suspense fallback={<RouteFallback />}>
+            <GoogleAnalyticsTracker />
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/verify" element={<AuthVerifyPage />} />
