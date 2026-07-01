@@ -123,9 +123,18 @@ export default function GroupDirectoryPage() {
   return (
     <div className="h-screen overflow-y-auto bg-background">
       {/* Header */}
-      <div className="bg-primary text-primary-foreground py-16 px-4">
+      <div className="bg-primary text-primary-foreground py-12 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl font-bold mb-4">Find Your Community</h1>
+          {slug && org?.logo_url && (
+            <img
+              src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
+              alt={org?.name ? `${org.name} logo` : "Organization logo"}
+              className="mx-auto mb-6 h-20 w-auto object-contain"
+            />
+          )}
+          <h1 className="text-4xl font-bold mb-4">
+            {org?.name ? `${org.name} Groups` : "Find Your Community"}
+          </h1>
           <p className="text-lg text-primary-foreground/80 max-w-2xl mx-auto">
             Join a group and connect with others. Whether you're looking for fellowship,
             study, or service opportunities, there's a place for you.
