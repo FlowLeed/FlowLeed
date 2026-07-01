@@ -84,6 +84,7 @@ const App = () => (
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/invite/:token" element={<InvitePage />} />
               <Route path="/groups/directory" element={<GroupDirectoryPage />} />
+              <Route path="/org/:slug/groups" element={<GroupDirectoryPage />} />
               <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
