@@ -45,13 +45,29 @@ const groupTypeColors: Record<string, string> = {
 
 export default function GroupDirectoryPage() {
   const navigate = useNavigate();
+  const { slug } = useParams<{ slug?: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
-  const { data: groups, isLoading } = useQuery({
-    queryKey: ["public-groups"],
+  const { data: org } = useQuery({
+    queryKey: ["public-org-by-slug", slug],
+    enabled: !!slug,
     queryFn: async () => {
       const { data, error } = await supabase
+        .from("organizations")
+        .select("id, name, logo_url, slug")
+        .eq("slug", slug!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: groups, isLoading } = useQuery({
+    queryKey: ["public-groups", slug, org?.id],
+    enabled: !slug || !!org?.id,
+    queryFn: async () => {
+      let query = supabase
         .from("groups")
         .select(`
           id,
@@ -73,6 +89,9 @@ export default function GroupDirectoryPage() {
         .is("archived_at", null)
         .order("name");
 
+      if (org?.id) query = query.eq("organization_id", org.id);
+
+      const { data, error } = await query;
       if (error) throw error;
 
       return data.map((group) => ({
