@@ -1,30 +1,15 @@
-## Goal
-Whenever a video has no `thumbnail_url`, render YouTube's auto-generated thumbnail straight from `img.youtube.com`. No DB changes, no backfill, no storage.
+Add a `useGoogleAnalyticsPageView` hook inside `BrowserRouter` that listens to React Router location changes and emits a `page_view` event to GA4 on each route change. It will report the full path + search params and the current `document.title`, avoiding duplicates on initial load since the first `page_view` is already sent by the gtag config in `index.html`.
 
-## How YouTube thumbnails work
-For any YouTube video ID, these URLs exist publicly with no API key:
+### Changes
+1. Create `src/hooks/useGoogleAnalyticsPageView.ts`:
+   - Import `useLocation` from `react-router-dom`.
+   - On each location change, call `window.gtag('event', 'page_view', { ... })` with:
+     - `page_path`: `location.pathname + location.search`
+     - `page_location`: `window.location.href`
+     - `page_title`: `document.title`
+   - Guard `window.gtag` so it safely does nothing if the tag is blocked or not loaded yet.
+2. Add the hook to `src/App.tsx` inside `<BrowserRouter>` so it activates for all route changes.
 
-```text
-https://img.youtube.com/vi/<id>/maxresdefault.jpg   1280x720, not always available
-https://img.youtube.com/vi/<id>/hqdefault.jpg       480x360,  always available
-https://img.youtube.com/vi/<id>/mqdefault.jpg       320x180,  always available
-https://img.youtube.com/vi/<id>/0.jpg               default poster
-```
-
-`maxresdefault` is the nicest but missing for some videos (returns a small grey placeholder). The safe pattern is: try `maxresdefault`, fall back to `hqdefault` on error.
-
-## Changes
-
-1. **Add a small helper** `src/lib/youtubeThumbnail.ts`:
-   - `getYoutubeThumb(youtubeId, quality?)` returns the URL string.
-   - `<YoutubeThumb />` component (img wrapper) that auto-falls-back from `maxresdefault` to `hqdefault` via `onError`.
-
-2. **Use it in the public content page** `src/pages/content/PublicContentPage.tsx`:
-   - Hero section: when `heroVideo.thumbnail_url` is missing, use `getYoutubeThumb(heroVideo.youtube_id)`.
-   - Grid cards: same fallback for each tile.
-
-3. **Optional second pass (only if you want it)**: same fallback in `PublicContentVideoPage.tsx` and any internal content pages that show video thumbs.
-
-## Out of scope
-- No DB writes, no migration, no edge function, no storage bucket.
-- No literal "frame 0" extraction — that requires loading the video and CORS blocks it for YouTube. The `img.youtube.com` poster is the practical equivalent.
+### Notes
+- First page view on initial load is already sent by `gtag('config', 'G-KP1CLD5CDD')` in `index.html`, so we will not send an extra event on mount.
+- Works with both public and authenticated routes.
