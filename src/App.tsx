@@ -63,6 +63,11 @@ const RouteFallback = () => (
   </div>
 );
 
+const GoogleAnalyticsTracker = () => {
+  useGoogleAnalyticsPageView();
+  return null;
+};
+
 const App = () => (
   <TooltipProvider>
     <Toaster />
@@ -72,6 +77,7 @@ const App = () => (
         <ImpersonationEscapeHandler />
         <FlowProvider>
           <Suspense fallback={<RouteFallback />}>
+            <GoogleAnalyticsTracker />
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/verify" element={<AuthVerifyPage />} />
