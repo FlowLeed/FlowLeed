@@ -99,72 +99,67 @@ export function ContactLeadersCard({ contactId }: Props) {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ShieldCheck className="h-4 w-4" /> Leaders
-          </CardTitle>
-        </CardHeader>
-        <CardContent><Skeleton className="h-16 w-full" /></CardContent>
-      </Card>
+      <div className="mt-4 pt-4 border-t">
+        <div className="flex items-center gap-2 text-sm font-medium mb-2">
+          <ShieldCheck className="h-4 w-4" /> Leaders
+        </div>
+        <Skeleton className="h-16 w-full" />
+      </div>
     );
   }
 
   if (!data || data.length === 0) return null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <ShieldCheck className="h-4 w-4" /> Leaders
-          <Badge variant="secondary">{data.length}</Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {data.map((l) => (
-            <div
-              key={l.contact_id}
-              className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/40 transition-colors"
-            >
-              <Link to={`/contacts/${l.contact_id}`} className="flex items-center gap-3 min-w-0 flex-1">
-                <Avatar className="h-10 w-10 shrink-0">
-                  {l.avatar ? <AvatarImage src={l.avatar} alt={l.name} /> : null}
-                  <AvatarFallback>{l.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{l.name}</div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                    <Badge variant={roleVariant(l.role)} className="h-4 px-1.5 text-[10px]">
-                      {roleLabel(l.role)}
-                    </Badge>
-                    {l.groups.length > 0 && (
-                      <span className="truncate">Leads: {l.groups.join(", ")}</span>
-                    )}
-                  </div>
+    <div className="mt-4 pt-4 border-t">
+      <div className="flex items-center gap-2 text-sm font-medium mb-2">
+        <ShieldCheck className="h-4 w-4" /> Leaders
+        <Badge variant="secondary">{data.length}</Badge>
+      </div>
+      <div className="space-y-3">
+        {data.map((l) => (
+          <div
+            key={l.contact_id}
+            className="flex items-center justify-between gap-3 rounded-lg border p-3 hover:bg-muted/40 transition-colors"
+          >
+            <Link to={`/contacts/${l.contact_id}`} className="flex items-center gap-3 min-w-0 flex-1">
+              <Avatar className="h-10 w-10 shrink-0">
+                {l.avatar ? <AvatarImage src={l.avatar} alt={l.name} /> : null}
+                <AvatarFallback>{l.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="font-medium truncate">{l.name}</div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                  <Badge variant={roleVariant(l.role)} className="h-4 px-1.5 text-[10px]">
+                    {roleLabel(l.role)}
+                  </Badge>
+                  {l.groups.length > 0 && (
+                    <span className="truncate">Leads: {l.groups.join(", ")}</span>
+                  )}
                 </div>
-              </Link>
-              <div className="flex gap-1 shrink-0">
-                {l.phone && (
-                  <a href={`sms:${l.phone}`} className="p-1.5 hover:bg-muted rounded-full" title="Text">
-                    <MessageSquare className="h-3.5 w-3.5" />
-                  </a>
-                )}
-                {l.email && (
-                  <a href={`mailto:${l.email}`} className="p-1.5 hover:bg-muted rounded-full" title="Email">
-                    <Mail className="h-3.5 w-3.5" />
-                  </a>
-                )}
-                {l.phone && (
-                  <a href={`tel:${l.phone}`} className="p-1.5 hover:bg-muted rounded-full" title="Call">
-                    <Phone className="h-3.5 w-3.5" />
-                  </a>
-                )}
               </div>
+            </Link>
+            <div className="flex gap-1 shrink-0">
+              {l.phone && (
+                <a href={`sms:${l.phone}`} className="p-1.5 hover:bg-muted rounded-full" title="Text">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {l.email && (
+                <a href={`mailto:${l.email}`} className="p-1.5 hover:bg-muted rounded-full" title="Email">
+                  <Mail className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {l.phone && (
+                <a href={`tel:${l.phone}`} className="p-1.5 hover:bg-muted rounded-full" title="Call">
+                  <Phone className="h-3.5 w-3.5" />
+                </a>
+              )}
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
+
