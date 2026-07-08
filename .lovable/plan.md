@@ -1,49 +1,98 @@
-# Show a Person's Leaders on Their Profile
 
-Goal: On a contact's profile, surface "who's in charge of this person" by pulling leaders from every active group they belong to.
+## Goal
 
-## What the user sees
+Flip Custom Field Mappings from field-centric to **moment-centric**. Each Flow Moment has a rule made of one or more PCO field conditions combined with **AND / OR** logic. Example: "Leader Ready" fires when Baptism Date has value **AND** Joined Church has value **AND** Team has any value. A rule can also express "Salvation date has value **OR** Prayer response = Yes".
 
-A new card on the contact profile, right below (or next to) the existing **Groups** card, titled **Leaders**. It lists each unique leader once, with:
+## New UI
 
-- Avatar + name (links to that leader's contact profile)
-- Their role badge: Leader / Co-Leader / Host
-- Small subtitle listing which group(s) they lead that this person is in (e.g. "Leads: Tuesday Men's Group, Young Adults")
-- Quick action icons on the right: text / email / call (same style as ContactCard)
+Replace the tab-grouped field list with a list of **Moment Rule Cards**.
 
-If the person is in no groups, or their groups have no leaders assigned, the card shows a short empty state ("No group leaders assigned yet.") — or we hide it entirely. Default: hide when empty to keep the profile clean.
+```text
++-----------------------------------------------------------------+
+| [icon] Leader Ready                    [Active] [Edit] [Del]    |
+| Fires when [ALL ▼] of the following are true:                   |
+|   • Baptism Date          has any value                         |
+|   • Joined the Church     has any value                         |
+|   • Team                  has any value                         |
+|   [+ Add condition]  [+ Add OR group]                           |
++-----------------------------------------------------------------+
++-----------------------------------------------------------------+
+| [+ Add Moment Rule]                                             |
++-----------------------------------------------------------------+
+```
 
-## Data model (already in place, no migration needed)
+- Top-level combinator dropdown per card: `ALL (AND)` / `ANY (OR)`.
+- One level of nesting supported: within an ALL rule you can add an "OR group" (a sub-block that fires if ANY of its conditions match, and counts as one satisfied item at the top level). Same for ANY rules containing "AND groups". This covers `(A AND B) OR (C AND D)` and `A AND (B OR C)` — enough for real churches without turning it into a full expression builder.
+- Condition row: `[Custom Field ▼]  [Trigger ▼]  [value if needed]  [X]`.
+- Editing a card is a single transaction: Save persists the full rule; Cancel reverts.
 
-- `group_members` has `contact_id`, `group_id`, `role` (`leader` | `co_leader` | `host` | `member`), `status`.
-- To find a contact's leaders:
-  1. Get all `group_members` rows for `contact_id = X` with `status = 'active'` and non-archived groups → collect `group_id`s.
-  2. Query `group_members` where `group_id IN (...)`, `status = 'active'`, `role IN ('leader','co_leader','host')`, `contact_id != X`.
-  3. Fetch the `contacts` rows for those leader contact_ids (name, avatar, email, phone).
-  4. Dedupe by `contact_id`, keeping the highest-priority role (leader > co_leader > host) and aggregating the list of groups they lead within this person's groups.
+Keep existing "Refresh Fields from PCO", "Manage Moment Types", and stats bar.
 
-All reads use existing RLS on `group_members` and `contacts` — no schema or policy changes.
+## Data model
 
-## Files to add / edit
+Extend `pco_moment_mappings` minimally — no new table:
 
-- **New:** `src/components/contact/ContactLeadersCard.tsx`
-  - Takes `contactId`.
-  - Uses `useQuery` with key `["contact-leaders", contactId]`.
-  - Runs the two-step query above, dedupes, sorts by role priority then name.
-  - Renders the card described in "What the user sees".
-- **Edit:** the contact profile page that currently renders `ContactGroupsCard` (locate via search for `ContactGroupsCard` — likely `src/pages/ContactsPage.tsx` or a profile subview). Insert `<ContactLeadersCard contactId={contact.id} />` right after the groups card.
+- Add `rule_combinator text` (`'AND' | 'OR'`, default `'AND'`) — set once per moment on every row of that rule.
+- Add `condition_group int` (default `0`) — rows sharing `(integration_id, flow_moment_type_id, condition_group)` are combined with the **opposite** of `rule_combinator`. Group `0` = top-level; groups `>0` = nested sub-groups.
 
-No other files change. No new tables, RLS, or edge functions.
+Semantics:
+- Top-level combinator = `AND` → all top-level items (group 0 rows + each non-zero group) must be true. Non-zero groups are OR'd internally.
+- Top-level combinator = `OR` → any top-level item true. Non-zero groups are AND'd internally.
 
-## Technical details
+Existing rows migrate cleanly: `rule_combinator='AND'`, `condition_group=0` — behaves exactly like today's single-condition mappings.
 
-- Single React Query hook, no realtime — data changes infrequently.
-- Query pattern mirrors `ContactGroupsCard.tsx` so the code style stays consistent.
-- Role priority map: `{ leader: 0, co_leader: 1, host: 2 }`; role label + badge variant reuse the same helpers already in `ContactGroupsCard`.
-- Deduping key: leader's `contact_id`. Aggregated group names come from a `Map<contactId, { leader, groups: string[], role }>`.
-- Empty state: return `null` from the component when there are zero leaders, so the profile doesn't show a blank card.
+Add partial unique index `(integration_id, flow_moment_type_id, condition_group, pco_source_identifier)` to keep condition rows tidy without blocking the same field in different OR branches.
+
+## Frontend changes
+
+- New `MomentRuleCard.tsx` — collapsed + edit modes, combinator toggle, condition rows, nested group blocks, add/remove.
+- New `MomentRuleConditionRow.tsx` — searchable field picker grouped by tab, trigger dropdown reusing `pcoFieldOperators`, optional value input.
+- Rewrite `FlowMomentsMappingSection.tsx`:
+  - Load all mappings, group by `flow_moment_type_id` into rule objects `{ momentTypeId, combinator, groups: { [groupId]: Condition[] } }`.
+  - Render one card per rule; "Add Moment Rule" opens an empty card (pick unmapped moment type, then add conditions).
+- Extend `usePcoMomentMappings`:
+  - `saveRule(momentTypeId, combinator, groups)` — diff against existing rows and bulk insert / update / delete in one call.
+  - `deleteRule(momentTypeId)` — delete all rows for that moment on this integration.
+- Delete `MappingRow.tsx` once new UI is wired.
+
+## Backend changes (edge functions)
+
+Update both moment-evaluation paths to honor combinator + groups:
+
+- `supabase/functions/pco-backfill-moments/index.ts` (`syncFlowMomentsForContact`)
+- `supabase/functions/pco-sync-processor/index.ts` (equivalent block around L994–L1160)
+
+Logic per contact:
+1. Group active mappings by `flow_moment_type_id`. Read `rule_combinator` from any row (all rows share it).
+2. Evaluate each individual condition against the field_data map (missing field = false).
+3. Reduce group `0` conditions with the top combinator; reduce each non-zero group with the opposite; combine group results with the top combinator.
+4. If the rule passes, upsert one `flow_moments` row.
+   - `source_reference`: `pco_moment_{momentTypeId}_person_{pcPersonId}` — stable per (moment, contact) so re-runs deduplicate.
+   - `occurred_at`: latest updated_at among the conditions that contributed to the passing evaluation.
+   - `metadata.matched_conditions`: array describing the matched fields/values for audit.
+5. Update `last_synced_at` on every row in the group.
+
+Single-condition rules still work (one row, group 0, combinator AND).
+
+## Migration considerations
+
+- Schema migration adds the two columns with defaults; existing data behaves identically.
+- Add the partial unique index.
+- No data backfill needed.
 
 ## Out of scope
 
-- Assigning/managing leaders (already handled in the Groups module).
-- Showing flow owners, campus pastors, or org admins as "leaders" — this card is strictly group-derived. We can extend later if you want a broader "care team" concept.
+- More than one level of nesting (no `(A OR (B AND (C OR D)))`).
+- Cross-source conditions mixing custom fields with groups/workflows (still `custom_tab_field` only, matching current UI).
+- Changes to the Moment Types manager.
+
+## Files touched
+
+- `src/components/integrations/FlowMomentsMappingSection.tsx` (rewrite)
+- `src/components/flow-moments/MomentRuleCard.tsx` (new)
+- `src/components/flow-moments/MomentRuleConditionRow.tsx` (new)
+- `src/components/flow-moments/MappingRow.tsx` (remove)
+- `src/hooks/usePcoMomentMappings.tsx` (add `saveRule`, `deleteRule`, expose combinator/group)
+- `supabase/functions/pco-backfill-moments/index.ts` (AND/OR + groups)
+- `supabase/functions/pco-sync-processor/index.ts` (AND/OR + groups)
+- Migration: add `rule_combinator`, `condition_group`, partial unique index on `pco_moment_mappings`.
