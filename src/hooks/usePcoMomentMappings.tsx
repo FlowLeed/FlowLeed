@@ -13,8 +13,10 @@ export interface PcoMomentMapping {
   flow_moment_type_id: string;
   trigger_condition: {
     operator: string;
-    value: string;
+    value: string | null;
   };
+  rule_combinator: 'AND' | 'OR';
+  condition_group: number;
   is_active: boolean;
   last_synced_at?: string;
   created_at: string;
@@ -24,6 +26,21 @@ export interface PcoMomentMapping {
     icon?: string;
     color?: string;
   };
+}
+
+export interface RuleCondition {
+  fieldId: string;
+  fieldLabel: string;
+  tabName?: string;
+  operator: string;
+  value: string | null;
+  condition_group: number;
+}
+
+export interface MomentRule {
+  momentTypeId: string;
+  combinator: 'AND' | 'OR';
+  conditions: RuleCondition[];
 }
 
 export function usePcoMomentMappings(integrationId?: string) {
@@ -39,7 +56,7 @@ export function usePcoMomentMappings(integrationId?: string) {
         .select('*, flow_moment_types(name, icon, color)')
         .eq('integration_id', integrationId)
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
       return data as PcoMomentMapping[];
     },
@@ -53,23 +70,15 @@ export function usePcoMomentMappings(integrationId?: string) {
         .insert([data as any])
         .select()
         .single();
-      
+
       if (error) throw error;
       return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pco-moment-mappings'] });
-      toast({
-        title: "Success",
-        description: "Mapping created successfully",
-      });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -79,22 +88,13 @@ export function usePcoMomentMappings(integrationId?: string) {
         .from('pco_moment_mappings')
         .update(data)
         .eq('id', id);
-      
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pco-moment-mappings'] });
-      toast({
-        title: "Success",
-        description: "Mapping updated successfully",
-      });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -104,22 +104,79 @@ export function usePcoMomentMappings(integrationId?: string) {
         .from('pco_moment_mappings')
         .delete()
         .eq('id', id);
-      
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pco-moment-mappings'] });
-      toast({
-        title: "Success",
-        description: "Mapping deleted successfully",
-      });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const saveRule = useMutation({
+    mutationFn: async ({
+      organizationId,
+      rule,
+    }: {
+      organizationId: string;
+      rule: MomentRule;
+    }) => {
+      if (!integrationId) throw new Error('No integration');
+      if (rule.conditions.length === 0) throw new Error('Add at least one condition');
+
+      // Delete existing rows for this rule, then insert all new ones.
+      const { error: delError } = await supabase
+        .from('pco_moment_mappings')
+        .delete()
+        .eq('integration_id', integrationId)
+        .eq('flow_moment_type_id', rule.momentTypeId);
+      if (delError) throw delError;
+
+      const rows = rule.conditions.map((c) => ({
+        organization_id: organizationId,
+        integration_id: integrationId,
+        pco_source_type: 'custom_tab_field' as const,
+        pco_source_identifier: c.fieldId,
+        pco_source_label: c.fieldLabel,
+        pco_tab_name: c.tabName ?? null,
+        flow_moment_type_id: rule.momentTypeId,
+        trigger_condition: { operator: c.operator, value: c.value },
+        rule_combinator: rule.combinator,
+        condition_group: c.condition_group,
+        is_active: true,
+      }));
+
+      const { error: insError } = await supabase
+        .from('pco_moment_mappings')
+        .insert(rows as any);
+      if (insError) throw insError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pco-moment-mappings'] });
+      toast({ title: "Saved", description: "Moment rule updated" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteRule = useMutation({
+    mutationFn: async (momentTypeId: string) => {
+      if (!integrationId) throw new Error('No integration');
+      const { error } = await supabase
+        .from('pco_moment_mappings')
+        .delete()
+        .eq('integration_id', integrationId)
+        .eq('flow_moment_type_id', momentTypeId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pco-moment-mappings'] });
+      toast({ title: "Deleted", description: "Moment rule removed" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     },
   });
 
@@ -129,5 +186,7 @@ export function usePcoMomentMappings(integrationId?: string) {
     createMapping,
     updateMapping,
     deleteMapping,
+    saveRule,
+    deleteRule,
   };
 }
