@@ -6,6 +6,7 @@ import { UsersRound, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ContactLeadersCard } from "./ContactLeadersCard";
 
 interface Props { contactId: string }
 
@@ -92,6 +93,7 @@ export function ContactGroupsCard({ contactId }: Props) {
             ))}
           </div>
         )}
+        <ContactLeadersCard contactId={contactId} />
       </CardContent>
     </Card>
   );

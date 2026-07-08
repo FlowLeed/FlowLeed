@@ -28,7 +28,6 @@ import { FlowMomentsCard } from "@/components/contact/FlowMomentsCard";
 import { PcoCustomFieldsCard } from "@/components/contact/PcoCustomFieldsCard";
 import { ContactCheckinsCard } from "@/components/contact/ContactCheckinsCard";
 import { ContactGroupsCard } from "@/components/contact/ContactGroupsCard";
-import { ContactLeadersCard } from "@/components/contact/ContactLeadersCard";
 import { Header } from "@/components/layout/Header";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 import { ActiveMarkersCard } from "@/components/contact/ActiveMarkersCard";
@@ -1071,8 +1070,7 @@ const UserProfilePage = () => {
       {/* Groups */}
       <ContactGroupsCard contactId={contactId!} />
 
-      {/* Leaders (from groups) */}
-      <ContactLeadersCard contactId={contactId!} />
+
 
 
       {/* AI Suggestions Block */}
