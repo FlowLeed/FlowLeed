@@ -80,8 +80,8 @@ export function ContactLeadersCard({ contactId }: Props) {
         } else {
           byLeader.set(row.contact_id, {
             contact_id: row.contact_id,
-            name: [c.first_name, c.last_name].filter(Boolean).join(" ") || "Unknown",
-            avatar: c.avatar_url || null,
+            name: c.name || "Unknown",
+            avatar: c.avatar || null,
             email: c.email || null,
             phone: c.phone || null,
             role: row.role,
