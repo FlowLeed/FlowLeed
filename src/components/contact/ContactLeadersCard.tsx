@@ -60,7 +60,7 @@ export function ContactLeadersCard({ contactId }: Props) {
       const leaderIds = Array.from(new Set(leaderRows.map((r) => r.contact_id).filter(Boolean)));
       const { data: contacts, error: e3 } = await supabase
         .from("contacts")
-        .select("id, first_name, last_name, avatar_url, email, phone")
+        .select("id, name, avatar, email, phone")
         .in("id", leaderIds);
       if (e3) throw e3;
       const contactById = new Map((contacts || []).map((c: any) => [c.id, c]));
