@@ -93,6 +93,7 @@ export function ContactGroupsCard({ contactId }: Props) {
             ))}
           </div>
         )}
+        <ContactLeadersCard contactId={contactId} />
       </CardContent>
     </Card>
   );
