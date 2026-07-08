@@ -1,5 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
+import {
+  groupMappingsByMoment,
+  evaluateRule,
+  parsePcoDateValue,
+  type Mapping,
+  type FieldValueEntry,
+} from '../_shared/moment-rules.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
