@@ -1,6 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
+import {
+  groupMappingsByMoment,
+  evaluateRule,
+  parsePcoDateValue,
+  type Mapping,
+  type FieldValueEntry,
+} from '../_shared/moment-rules.ts';
 
 const BATCH_SIZE = 10; // Process contacts in batches to avoid timeout
 
