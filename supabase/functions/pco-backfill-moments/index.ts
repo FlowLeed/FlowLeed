@@ -1,6 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
+import {
+  groupMappingsByMoment,
+  evaluateRule,
+  parsePcoDateValue,
+  type Mapping,
+  type FieldValueEntry,
+} from '../_shared/moment-rules.ts';
 
 const BATCH_SIZE = 10; // Process contacts in batches to avoid timeout
 
@@ -158,7 +165,7 @@ async function syncFlowMomentsForContact(
   }
 
   // Build a map of field_definition_id -> value
-  const fieldDataMap = new Map();
+  const fieldDataMap = new Map<string, FieldValueEntry>();
   for (const item of fieldDataArray) {
     const fieldDefinitionId = item.relationships?.field_definition?.data?.id;
     const value = item.attributes?.value;
@@ -167,99 +174,60 @@ async function syncFlowMomentsForContact(
         value,
         created_at: item.attributes?.created_at,
         updated_at: item.attributes?.updated_at,
-        attributes: item.attributes
       });
     }
   }
 
-  // Check each mapping
-  for (const mapping of mappings) {
-    const fieldId = mapping.pco_source_identifier;
-    const fieldData = fieldDataMap.get(fieldId);
+  // Group mappings by moment type and evaluate each rule
+  const grouped = groupMappingsByMoment(mappings as Mapping[]);
 
-    if (!fieldData) {
-      continue;
+  for (const [momentTypeId, group] of grouped) {
+    const evalResult = evaluateRule(group, fieldDataMap);
+    if (!evalResult.matched) continue;
+
+    // Determine occurred_at: prefer parsed date from first matched field value, then latest updated_at
+    let occurredAt = new Date().toISOString();
+    const firstMatch = evalResult.matchedConditions[0];
+    if (firstMatch) {
+      const parsed = parsePcoDateValue(firstMatch.value);
+      if (parsed) occurredAt = parsed;
+      else if (evalResult.latestTimestamp) occurredAt = evalResult.latestTimestamp;
+      else if (firstMatch.updated_at) occurredAt = firstMatch.updated_at;
     }
 
-    const condition = mapping.trigger_condition || {};
-    const operator = condition.operator || 'has_any_value';
-    const expectedValue = condition.value;
-    const actualValue = fieldData.value;
-
-    let conditionMet = false;
-
-    switch (operator) {
-      case 'has_any_value':
-        conditionMet = actualValue !== null && actualValue !== undefined && actualValue !== '';
-        break;
-      case 'equals':
-        conditionMet = String(actualValue).toLowerCase() === String(expectedValue).toLowerCase();
-        break;
-      case 'contains':
-        conditionMet = String(actualValue).toLowerCase().includes(String(expectedValue).toLowerCase());
-        break;
-      case 'is_true':
-        conditionMet = actualValue === 'true' || actualValue === true || actualValue === 1;
-        break;
-      case 'is_checked':
-        conditionMet = actualValue === 'true' || actualValue === true || actualValue === 1;
-        break;
-      default:
-        conditionMet = false;
-    }
-
-    if (conditionMet) {
-      // Determine occurred_at date
-      let occurredAt = new Date().toISOString();
-      const rawValue = String(actualValue);
-      
-      // Try to parse date from value
-      if (rawValue.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
-        const [month, day, year] = rawValue.split('/');
-        occurredAt = new Date(`${year}-${month}-${day}`).toISOString();
-      } else if (rawValue.match(/^\d{4}-\d{2}-\d{2}/)) {
-        occurredAt = new Date(rawValue).toISOString();
-      } else if (fieldData.updated_at) {
-        occurredAt = fieldData.updated_at;
-      } else if (fieldData.created_at) {
-        occurredAt = fieldData.created_at;
-      }
-
-      // Create or update the moment
-      const sourceReference = `pco_field_${fieldId}_person_${pcPersonId}`;
-
-      const { error: momentError } = await supabase
-        .from('flow_moments')
-        .upsert(
-          {
-            contact_id: contactId,
-            flow_moment_type_id: mapping.flow_moment_type_id,
-            source_system: 'pco',
-            source_reference: sourceReference,
-            occurred_at: occurredAt,
-            metadata: {
-              field_id: fieldId,
-              field_label: mapping.pco_source_label,
-              field_value: actualValue,
-              pco_person_id: pcPersonId,
-            },
+    const sourceReference = `pco_moment_${momentTypeId}_person_${pcPersonId}`;
+    const { error: momentError } = await supabase
+      .from('flow_moments')
+      .upsert(
+        {
+          contact_id: contactId,
+          flow_moment_type_id: momentTypeId,
+          source_system: 'pco',
+          source_reference: sourceReference,
+          occurred_at: occurredAt,
+          metadata: {
+            pco_person_id: pcPersonId,
+            combinator: group[0].rule_combinator,
+            matched_conditions: evalResult.matchedConditions,
           },
-          { onConflict: 'contact_id,flow_moment_type_id,source_reference' }
-        );
+        },
+        { onConflict: 'contact_id,flow_moment_type_id,source_reference' }
+      );
 
-      if (momentError) {
-        console.error(`Error creating moment for ${mapping.flow_moment_types?.name}:`, momentError);
-      } else {
-        momentsCreated++;
-      }
-
-      // Update mapping last_synced_at
-      await supabase
-        .from('pco_moment_mappings')
-        .update({ last_synced_at: new Date().toISOString() })
-        .eq('id', mapping.id);
+    if (momentError) {
+      console.error(`Error creating moment for ${group[0].flow_moment_types?.name}:`, momentError);
+    } else {
+      momentsCreated++;
     }
+
+    // Update last_synced_at on each condition row for this rule
+    const ids = group.map((g) => g.id);
+    await supabase
+      .from('pco_moment_mappings')
+      .update({ last_synced_at: new Date().toISOString() })
+      .in('id', ids);
   }
+
 
   return momentsCreated;
 }

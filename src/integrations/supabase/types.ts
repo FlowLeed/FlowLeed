@@ -2844,6 +2844,7 @@ export type Database = {
       }
       pco_moment_mappings: {
         Row: {
+          condition_group: number
           created_at: string
           flow_moment_type_id: string
           id: string
@@ -2855,10 +2856,12 @@ export type Database = {
           pco_source_label: string
           pco_source_type: string
           pco_tab_name: string | null
+          rule_combinator: string
           trigger_condition: Json
           updated_at: string
         }
         Insert: {
+          condition_group?: number
           created_at?: string
           flow_moment_type_id: string
           id?: string
@@ -2870,10 +2873,12 @@ export type Database = {
           pco_source_label: string
           pco_source_type?: string
           pco_tab_name?: string | null
+          rule_combinator?: string
           trigger_condition?: Json
           updated_at?: string
         }
         Update: {
+          condition_group?: number
           created_at?: string
           flow_moment_type_id?: string
           id?: string
@@ -2885,6 +2890,7 @@ export type Database = {
           pco_source_label?: string
           pco_source_type?: string
           pco_tab_name?: string | null
+          rule_combinator?: string
           trigger_condition?: Json
           updated_at?: string
         }
