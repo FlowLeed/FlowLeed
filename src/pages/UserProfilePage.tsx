@@ -1071,6 +1071,10 @@ const UserProfilePage = () => {
       {/* Groups */}
       <ContactGroupsCard contactId={contactId!} />
 
+      {/* Leaders (from groups) */}
+      <ContactLeadersCard contactId={contactId!} />
+
+
       {/* AI Suggestions Block */}
       <AISuggestions 
         contactId={contactId!}
