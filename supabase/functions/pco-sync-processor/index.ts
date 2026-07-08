@@ -1075,94 +1075,64 @@ async function syncFlowMomentsFromFieldData(
       }
     }
     
-    // 3. For each mapping, check if condition matches
-    for (const mapping of mappings) {
-      console.log(`Checking mapping ${mapping.id} (${mapping.pco_source_label}) for field ID: ${mapping.pco_source_identifier}`);
-      
-      const fieldData = fieldDataArray.find(
-        (fd: any) => fd.relationships?.field_definition?.data?.id === mapping.pco_source_identifier
-      );
-      
-      if (!fieldData) {
-        console.log(`Field data not found for mapping ${mapping.pco_source_label} (field ID: ${mapping.pco_source_identifier})`);
-        continue;
-      }
-      
-      console.log(`Found field data for ${mapping.pco_source_label}, value:`, fieldData.attributes?.value, 'attributes:', JSON.stringify(fieldData.attributes));
-      
-      // Helper to check truthy values (handles "true", "Yes", "1", etc.)
-      const isTruthyValue = (val: any): boolean => {
-        if (!val) return false;
-        const normalized = String(val).toLowerCase().trim();
-        return ['true', 'yes', '1', 'checked', 'on'].includes(normalized);
-      };
-
-      // Check trigger condition
-      const value = fieldData.attributes?.value;
-      const condition = mapping.trigger_condition || { operator: 'equals', value: 'Yes' };
-      
-      let shouldCreateMoment = false;
-      
-      if (condition.operator === 'is_truthy') {
-        shouldCreateMoment = isTruthyValue(value);
-      } else if (condition.operator === 'is_falsy') {
-        shouldCreateMoment = value && !isTruthyValue(value);
-      } else if (condition.operator === 'is_empty') {
-        shouldCreateMoment = !value || String(value).trim() === '';
-      } else if (condition.operator === 'is_not_empty') {
-        shouldCreateMoment = !!value && String(value).trim() !== '';
-      } else if (condition.operator === 'equals' && value === condition.value) {
-        shouldCreateMoment = true;
-      } else if (condition.operator === 'not_equals' && value !== condition.value) {
-        shouldCreateMoment = true;
-      }
-      
-      if (shouldCreateMoment) {
-        console.log(`Creating moment for mapping ${mapping.id}: ${mapping.pco_source_label} = ${value}`);
-        
-        // Try to parse the value as a date if it looks like a date
-        const parsedDate = parsePcoDateValue(value);
-        // Fallback chain:
-        // 1. Parsed date from field value (for date fields like "Date Baptized")
-        // 2. created_at from PCO field_datum (when the field was first set)
-        // 3. updated_at from PCO field_datum (when the field was last modified)
-        // 4. Current timestamp (last resort)
-        const occurredAt = parsedDate 
-          || fieldData.attributes?.created_at 
-          || fieldData.attributes?.updated_at 
-          || new Date().toISOString();
-        
-        console.log(`Using occurred_at: ${occurredAt} (original value: ${value}, created_at: ${fieldData.attributes?.created_at}, updated_at: ${fieldData.attributes?.updated_at})`);
-        
-        // 4. Create or update flow moment
-        const { error: momentError } = await supabase.from('flow_moments').upsert({
-          contact_id: contactId,
-          flow_moment_type_id: mapping.flow_moment_type_id,
-          source_system: 'pco',
-          source_reference: mapping.pco_source_identifier,
-          occurred_at: occurredAt,
-          metadata: {
-            pco_field_value: value,
-            pco_field_label: mapping.pco_source_label,
-            tab_name: mapping.pco_tab_name,
-          },
-        }, {
-          onConflict: 'contact_id,flow_moment_type_id,source_reference',
+    // 3. Build field data map (fieldDefId -> value/timestamps)
+    const fieldDataMap = new Map<string, FieldValueEntry>();
+    for (const fd of fieldDataArray) {
+      const fid = fd.relationships?.field_definition?.data?.id;
+      const value = fd.attributes?.value;
+      if (fid && value !== null && value !== undefined) {
+        fieldDataMap.set(fid, {
+          value,
+          created_at: fd.attributes?.created_at,
+          updated_at: fd.attributes?.updated_at,
         });
-        
-        if (momentError) {
-          console.error('Error creating flow moment:', momentError);
-        } else {
-          console.log(`Successfully created/updated moment for ${mapping.pco_source_label}`);
-          
-          // Update mapping last_synced_at
-          await supabase
-            .from('pco_moment_mappings')
-            .update({ last_synced_at: new Date().toISOString() })
-            .eq('id', mapping.id);
-        }
       }
     }
+
+    // 4. Group mappings into rules by flow_moment_type_id and evaluate each
+    const grouped = groupMappingsByMoment(mappings as Mapping[]);
+
+    for (const [momentTypeId, group] of grouped) {
+      const evalResult = evaluateRule(group, fieldDataMap);
+      if (!evalResult.matched) continue;
+
+      const firstMatch = evalResult.matchedConditions[0];
+      const parsedDate = firstMatch ? parsePcoDateValue(firstMatch.value) : null;
+      const occurredAt =
+        parsedDate ||
+        evalResult.latestTimestamp ||
+        firstMatch?.updated_at ||
+        new Date().toISOString();
+
+      const sourceReference = `pco_moment_${momentTypeId}_person_${pcPersonId}`;
+      const { error: momentError } = await supabase.from('flow_moments').upsert(
+        {
+          contact_id: contactId,
+          flow_moment_type_id: momentTypeId,
+          source_system: 'pco',
+          source_reference: sourceReference,
+          occurred_at: occurredAt,
+          metadata: {
+            pco_person_id: pcPersonId,
+            combinator: group[0].rule_combinator,
+            matched_conditions: evalResult.matchedConditions,
+          },
+        },
+        { onConflict: 'contact_id,flow_moment_type_id,source_reference' }
+      );
+
+      if (momentError) {
+        console.error(`Error creating moment for ${group[0].flow_moment_types?.name}:`, momentError);
+      } else {
+        console.log(`Created moment ${group[0].flow_moment_types?.name} for contact ${contactId}`);
+        const ids = group.map((g) => g.id);
+        await supabase
+          .from('pco_moment_mappings')
+          .update({ last_synced_at: new Date().toISOString() })
+          .in('id', ids);
+      }
+    }
+
   } catch (error) {
     console.error('Error syncing flow moments:', error);
     // Don't throw - we don't want to fail the whole chunk for flow moments sync issues
