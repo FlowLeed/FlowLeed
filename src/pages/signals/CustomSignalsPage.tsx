@@ -6,8 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Plus, Pencil, Trash2, Wand2 } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Wand2, RefreshCw } from "lucide-react";
 import { useCustomSignals, type CustomSignal } from "@/hooks/useCustomSignals";
+import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { CustomSignalEditorDialog } from "@/components/signals/CustomSignalEditorDialog";
 import {
   AlertDialog,
@@ -29,8 +33,28 @@ const polarityClass: Record<string, string> = {
 
 const CustomSignalsPage = () => {
   const { list, update, remove } = useCustomSignals();
+  const { organization } = useProfile();
+  const qc = useQueryClient();
   const [editing, setEditing] = useState<CustomSignal | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [recomputing, setRecomputing] = useState(false);
+
+  const handleRecompute = async () => {
+    if (!organization?.id) return;
+    setRecomputing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("evaluate-custom-signals", {
+        body: { organization_id: organization.id },
+      });
+      if (error) throw error;
+      toast.success(`Recomputed: ${data?.matched ?? 0} matches across ${data?.signals ?? 0} signals`);
+      qc.invalidateQueries({ queryKey: ["custom-signals", organization.id] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to recompute");
+    } finally {
+      setRecomputing(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -49,6 +73,9 @@ const CustomSignalsPage = () => {
               <Link to="/signals" className="gap-1">
                 <ArrowLeft className="h-4 w-4" /> Back
               </Link>
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleRecompute} disabled={recomputing} className="gap-2">
+              <RefreshCw className={`h-4 w-4 ${recomputing ? "animate-spin" : ""}`} /> Recompute
             </Button>
             <Button size="sm" onClick={() => setIsNew(true)} className="gap-2">
               <Plus className="h-4 w-4" /> New signal
