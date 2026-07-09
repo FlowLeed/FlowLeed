@@ -1,98 +1,74 @@
-
 ## Goal
 
-Flip Custom Field Mappings from field-centric to **moment-centric**. Each Flow Moment has a rule made of one or more PCO field conditions combined with **AND / OR** logic. Example: "Leader Ready" fires when Baptism Date has value **AND** Joined Church has value **AND** Team has any value. A rule can also express "Salvation date has value **OR** Prayer response = Yes".
+Turn Signals from a static catalog into a system pastors can shape, and add an AI agent that watches those signals and proposes actions (notify, add to flow, task, draft message) — always as suggestions a human approves. No auto-actions in v1.
 
-## New UI
+## Part 1 — Custom Signals (rule builder)
 
-Replace the tab-grouped field list with a list of **Moment Rule Cards**.
+Reuse the same pattern we just shipped for Moment rules (bracket-style AND/OR builder), so the UX is already familiar.
 
-```text
-+-----------------------------------------------------------------+
-| [icon] Leader Ready                    [Active] [Edit] [Del]    |
-| Fires when [ALL ▼] of the following are true:                   |
-|   • Baptism Date          has any value                         |
-|   • Joined the Church     has any value                         |
-|   • Team                  has any value                         |
-|   [+ Add condition]  [+ Add OR group]                           |
-+-----------------------------------------------------------------+
-+-----------------------------------------------------------------+
-| [+ Add Moment Rule]                                             |
-+-----------------------------------------------------------------+
-```
+**New tables**
+- `custom_signals` — `id, organization_id, key, label, description, polarity (positive|neutral|negative), category, severity (info|watch|risk), enabled, created_by, created_at`.
+- `custom_signal_rules` — one row per signal: `signal_id, rule_combinator (AND|OR), conditions jsonb` (same shape as `pco_moment_mappings.condition_group`).
+- `custom_signal_contacts` — materialized results: `signal_id, contact_id, matched_at, cleared_at`. Indexed on `(organization_id, signal_id, contact_id)`.
 
-- Top-level combinator dropdown per card: `ALL (AND)` / `ANY (OR)`.
-- One level of nesting supported: within an ALL rule you can add an "OR group" (a sub-block that fires if ANY of its conditions match, and counts as one satisfied item at the top level). Same for ANY rules containing "AND groups". This covers `(A AND B) OR (C AND D)` and `A AND (B OR C)` — enough for real churches without turning it into a full expression builder.
-- Condition row: `[Custom Field ▼]  [Trigger ▼]  [value if needed]  [X]`.
-- Editing a card is a single transaction: Save persists the full rule; Cancel reverts.
+**Condition sources** (same operators the Moment builder already knows):
+- Attendance: `last_service_days_ago`, `services_last_N_weeks`, `is_first_time_guest`
+- Groups: `is_in_group`, `group_attendance_rate_last_N`, `days_since_group_meeting`
+- Serving: `serves_last_N_days`, `days_since_last_serve`
+- Flows: `in_flow(flow_id)`, `days_in_current_stage`, `has_moment(type)`
+- Tags: `has_tag`, `not_has_tag`
+- PCO custom fields: `field = / contains / has_any_value / date_before / date_after` (already wired for Moments)
+- Demographics: `age_between`, `campus_id`, `assigned_user_id`
 
-Keep existing "Refresh Fields from PCO", "Manage Moment Types", and stats bar.
+**UI**
+- New page `/signals/custom` (linked from a "New signal" button on `/signals`).
+- List of the org's custom signals with polarity chip, contact count, enabled toggle, edit/delete.
+- Editor reuses `MomentRuleCard` visually: signal metadata (label, description, polarity, severity, category) on top, bracket builder below.
+- Live "matching contacts" preview (top 10) while editing, computed via a `preview-custom-signal` edge function.
 
-## Data model
+**Evaluation**
+- Edge function `evaluate-custom-signals` runs the rules per org and upserts `custom_signal_contacts` (sets `cleared_at` when a contact no longer matches).
+- Runs on a `pg_cron` schedule (hourly) + on-demand from the UI ("Recompute").
+- Custom signals show up in the existing `/signals` catalog alongside built-ins, and on each contact profile in `ActiveMarkersCard`.
 
-Extend `pco_moment_mappings` minimally — no new table:
+## Part 2 — AI Signal Agent ("Pastor Copilot")
 
-- Add `rule_combinator text` (`'AND' | 'OR'`, default `'AND'`) — set once per moment on every row of that rule.
-- Add `condition_group int` (default `0`) — rows sharing `(integration_id, flow_moment_type_id, condition_group)` are combined with the **opposite** of `rule_combinator`. Group `0` = top-level; groups `>0` = nested sub-groups.
+An agent that reviews signals continuously and posts **suggestions** into a review queue. It never sends messages, never adds to flows, and never creates tasks on its own — a leader approves each suggestion.
 
-Semantics:
-- Top-level combinator = `AND` → all top-level items (group 0 rows + each non-zero group) must be true. Non-zero groups are OR'd internally.
-- Top-level combinator = `OR` → any top-level item true. Non-zero groups are AND'd internally.
+**New tables**
+- `signal_agent_configs` — per-org: `enabled, watch_signals (jsonb: list of built-in marker keys + custom_signal ids), allowed_actions (notify|add_to_flow|create_task|draft_message), default_assignee_strategy (assigned_user | campus_pastor | flow_owner), quiet_hours, max_suggestions_per_day`.
+- `signal_agent_rules` — optional per-signal recipe overrides: `signal_key, suggested_action, action_params jsonb` (e.g. `Drifting` → `add_to_flow: <re-engagement flow id>`; `First-time guest` → `create_task: "Call within 48h"`).
+- `signal_agent_suggestions` — the queue: `id, org_id, contact_id, signal_key, action_type, action_payload jsonb, reasoning text, confidence, status (pending|approved|dismissed|expired), reviewer_id, reviewed_at, executed_at, created_at`.
 
-Existing rows migrate cleanly: `rule_combinator='AND'`, `condition_group=0` — behaves exactly like today's single-condition mappings.
+**Triggers**
+- **Real-time**: DB trigger on `contact_markers` + `custom_signal_contacts` inserts/updates → enqueue into `signal_agent_queue`; worker edge function processes the queue.
+- **Daily sweep**: `pg_cron` at 7am org-local — agent re-scores all watched contacts and emits/refreshes suggestions for the day.
 
-Add partial unique index `(integration_id, flow_moment_type_id, condition_group, pco_source_identifier)` to keep condition rows tidy without blocking the same field in different OR branches.
+**Agent implementation**
+- Edge function `signal-agent-run` using AI SDK + Lovable AI Gateway (`google/gemini-3.5-flash` — cheap, fast, good enough for classification/reasoning at scale).
+- Input per contact: active markers, custom signals, recent interactions, current flows, assigned leader, campus.
+- Output (structured via AI SDK `Output.object`): `{ suggestions: [{ action_type, action_payload, reasoning, confidence }] }`. Schema is small — no `.min/.max`, just enums for action_type.
+- Guardrails: dedupe against pending suggestions for same (contact, signal, action_type) in last 7 days; respect `max_suggestions_per_day`; skip contacts who already have an active flow of the target type.
 
-## Frontend changes
+**Review UI**
+- New page `/signals/agent` with two tabs:
+  1. **Queue** — pending suggestions grouped by signal, each card shows: contact, signal reason, proposed action, AI reasoning, "Approve" / "Dismiss" / "Edit". Approving executes the action (calls existing flow-enrollment, task-creation, or message-draft code paths). Dismissing records feedback the agent can learn from later.
+  2. **Settings** — enable/disable agent, pick watched signals, allowed actions, per-signal recipes, quiet hours.
+- Dashboard widget: "AI suggestions pending review — N".
+- Notification bell surfaces new suggestions for the assigned leader.
 
-- New `MomentRuleCard.tsx` — collapsed + edit modes, combinator toggle, condition rows, nested group blocks, add/remove.
-- New `MomentRuleConditionRow.tsx` — searchable field picker grouped by tab, trigger dropdown reusing `pcoFieldOperators`, optional value input.
-- Rewrite `FlowMomentsMappingSection.tsx`:
-  - Load all mappings, group by `flow_moment_type_id` into rule objects `{ momentTypeId, combinator, groups: { [groupId]: Condition[] } }`.
-  - Render one card per rule; "Add Moment Rule" opens an empty card (pick unmapped moment type, then add conditions).
-- Extend `usePcoMomentMappings`:
-  - `saveRule(momentTypeId, combinator, groups)` — diff against existing rows and bulk insert / update / delete in one call.
-  - `deleteRule(momentTypeId)` — delete all rows for that moment on this integration.
-- Delete `MappingRow.tsx` once new UI is wired.
+**Message drafts** land in the existing `MessageComposerDialog` pre-filled — the leader edits and sends via existing Twilio/email paths. Agent never sends directly.
 
-## Backend changes (edge functions)
+## Rollout
 
-Update both moment-evaluation paths to honor combinator + groups:
+1. Ship custom signal schema + rule builder + evaluator (no agent yet). Users can already create/track custom signals.
+2. Ship agent tables, review queue UI, and one action type (`notify`) end-to-end.
+3. Add `create_task`, `add_to_flow`, `draft_message` actions one at a time.
+4. Add per-signal recipes and daily sweep.
 
-- `supabase/functions/pco-backfill-moments/index.ts` (`syncFlowMomentsForContact`)
-- `supabase/functions/pco-sync-processor/index.ts` (equivalent block around L994–L1160)
+## Technical notes
 
-Logic per contact:
-1. Group active mappings by `flow_moment_type_id`. Read `rule_combinator` from any row (all rows share it).
-2. Evaluate each individual condition against the field_data map (missing field = false).
-3. Reduce group `0` conditions with the top combinator; reduce each non-zero group with the opposite; combine group results with the top combinator.
-4. If the rule passes, upsert one `flow_moments` row.
-   - `source_reference`: `pco_moment_{momentTypeId}_person_{pcPersonId}` — stable per (moment, contact) so re-runs deduplicate.
-   - `occurred_at`: latest updated_at among the conditions that contributed to the passing evaluation.
-   - `metadata.matched_conditions`: array describing the matched fields/values for audit.
-5. Update `last_synced_at` on every row in the group.
-
-Single-condition rules still work (one row, group 0, combinator AND).
-
-## Migration considerations
-
-- Schema migration adds the two columns with defaults; existing data behaves identically.
-- Add the partial unique index.
-- No data backfill needed.
-
-## Out of scope
-
-- More than one level of nesting (no `(A OR (B AND (C OR D)))`).
-- Cross-source conditions mixing custom fields with groups/workflows (still `custom_tab_field` only, matching current UI).
-- Changes to the Moment Types manager.
-
-## Files touched
-
-- `src/components/integrations/FlowMomentsMappingSection.tsx` (rewrite)
-- `src/components/flow-moments/MomentRuleCard.tsx` (new)
-- `src/components/flow-moments/MomentRuleConditionRow.tsx` (new)
-- `src/components/flow-moments/MappingRow.tsx` (remove)
-- `src/hooks/usePcoMomentMappings.tsx` (add `saveRule`, `deleteRule`, expose combinator/group)
-- `supabase/functions/pco-backfill-moments/index.ts` (AND/OR + groups)
-- `supabase/functions/pco-sync-processor/index.ts` (AND/OR + groups)
-- Migration: add `rule_combinator`, `condition_group`, partial unique index on `pco_moment_mappings`.
+- Reuse `pco_moment_mappings` condition evaluator (`supabase/functions/_shared/moment-rules.ts`) — refactor it into a generic `evaluateConditionGroup(contact, group)` so both Moments and Custom Signals share it.
+- Feature-flag both areas behind new keys `custom_signals` and `signal_agent` in `organization_features` so we can pilot with one org first.
+- AI cost control: batch contacts per agent invocation (up to 25), cap total per-day calls per org, log token usage to `integration_logs`.
+- All agent DB writes go through `service_role` in edge functions; RLS on `signal_agent_suggestions` limits reads to org members and updates (approve/dismiss) to assigned leader or admins.
