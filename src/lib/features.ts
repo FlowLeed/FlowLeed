@@ -1,6 +1,6 @@
-import { MessageSquare, Phone, Sparkles, Activity, Film, type LucideIcon } from "lucide-react";
+import { MessageSquare, Phone, Sparkles, Activity, Film, Wand2, Bot, type LucideIcon } from "lucide-react";
 
-export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content";
+export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "custom_signals" | "signal_agent";
 
 export interface FeatureModule {
   key: FeatureKey;
@@ -39,6 +39,18 @@ export const FEATURE_MODULES: FeatureModule[] = [
     label: "Content",
     description: "Semantic video-story discovery: ingest YouTube videos, extract stories with AI, and search by meaning.",
     icon: Film,
+  },
+  {
+    key: "custom_signals",
+    label: "Custom Signals",
+    description: "Let pastors build their own engagement signals with AND/OR rules.",
+    icon: Wand2,
+  },
+  {
+    key: "signal_agent",
+    label: "AI Signal Agent",
+    description: "AI Staff Pastor that watches signals and proposes actions (notify, add to flow, task, draft message) for human approval.",
+    icon: Bot,
   },
 ];
 

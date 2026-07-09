@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles, Building2, User, X, Info } from "lucide-react";
+import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles, Building2, User, X, Info, Wand2, Bot } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const markerFormulas: Record<string, string> = {
@@ -93,16 +93,28 @@ const SignalsPage = () => {
         showFlowIcon={false}
         showAddButton={false}
         rightContent={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => recompute.mutate()}
-            disabled={recompute.isPending}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${recompute.isPending ? "animate-spin" : ""}`} />
-            Recompute
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link to="/signals/custom">
+                <Wand2 className="h-4 w-4" /> Custom
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link to="/signals/agent">
+                <Bot className="h-4 w-4" /> AI Agent
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => recompute.mutate()}
+              disabled={recompute.isPending}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${recompute.isPending ? "animate-spin" : ""}`} />
+              Recompute
+            </Button>
+          </div>
         }
       />
 
