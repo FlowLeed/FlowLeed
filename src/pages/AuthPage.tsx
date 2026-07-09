@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +23,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isResetMode, setIsResetMode] = useState(false);
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
@@ -337,187 +337,206 @@ const AuthPage = () => {
               </form>
             </div>
           ) : (
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Create Account</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="signin">
-              {!isResetMode ? (
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="remember-me"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMeState(checked === true)}
-                    />
-                    <Label
-                      htmlFor="remember-me"
-                      className="text-sm font-normal cursor-pointer select-none"
-                    >
-                      Remember me
-                    </Label>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-
-                  <div className="text-center">
-                    <button
-                      type="button"
-                      onClick={() => setIsResetMode(true)}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Forgot your password?
-                    </button>
-                  </div>
-                </form>
-              ) : (
+            <div className="w-full space-y-4">
+              {mode === 'signin' ? (
                 <div className="space-y-4">
-                  {resetSuccess ? (
-                    <div className="text-center space-y-4">
-                      <Alert>
-                        <AlertDescription>
-                          Password reset email sent! Check your inbox and follow the instructions to reset your password.
-                        </AlertDescription>
-                      </Alert>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={handleBackToSignIn}
-                        className="w-full"
-                      >
-                        Back to Sign In
-                      </Button>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleResetPassword} className="space-y-4">
+                  {!isResetMode ? (
+                    <form onSubmit={handleSignIn} className="space-y-4">
                       {error && (
                         <Alert variant="destructive">
                           <AlertDescription>{error}</AlertDescription>
                         </Alert>
                       )}
-                      
+
                       <div className="space-y-2">
-                        <Label htmlFor="reset-email">Email Address</Label>
+                        <Label htmlFor="signin-email">Email</Label>
                         <Input
-                          id="reset-email"
+                          id="signin-email"
                           type="email"
-                          value={resetEmail}
-                          onChange={(e) => setResetEmail(e.target.value)}
-                          placeholder="Enter your email address"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
                           required
                         />
                       </div>
-                      
-                      <Button type="submit" className="w-full" disabled={resetLoading}>
-                        {resetLoading ? 'Sending...' : 'Send Reset Email'}
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-password">Password</Label>
+                        <Input
+                          id="signin-password"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="remember-me"
+                          checked={rememberMe}
+                          onCheckedChange={(checked) => setRememberMeState(checked === true)}
+                        />
+                        <Label
+                          htmlFor="remember-me"
+                          className="text-sm font-normal cursor-pointer select-none"
+                        >
+                          Remember me
+                        </Label>
+                      </div>
+
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? 'Signing in...' : 'Sign In'}
                       </Button>
-                      
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={handleBackToSignIn}
-                        className="w-full"
-                      >
-                        Back to Sign In
-                      </Button>
+
+                      <div className="text-center">
+                        <button
+                          type="button"
+                          onClick={() => setIsResetMode(true)}
+                          className="text-sm text-primary hover:underline"
+                        >
+                          Forgot your password?
+                        </button>
+                      </div>
                     </form>
+                  ) : (
+                    <div className="space-y-4">
+                      {resetSuccess ? (
+                        <div className="text-center space-y-4">
+                          <Alert>
+                            <AlertDescription>
+                              Password reset email sent! Check your inbox and follow the instructions to reset your password.
+                            </AlertDescription>
+                          </Alert>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleBackToSignIn}
+                            className="w-full"
+                          >
+                            Back to Sign In
+                          </Button>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleResetPassword} className="space-y-4">
+                          {error && (
+                            <Alert variant="destructive">
+                              <AlertDescription>{error}</AlertDescription>
+                            </Alert>
+                          )}
+
+                          <div className="space-y-2">
+                            <Label htmlFor="reset-email">Email Address</Label>
+                            <Input
+                              id="reset-email"
+                              type="email"
+                              value={resetEmail}
+                              onChange={(e) => setResetEmail(e.target.value)}
+                              placeholder="Enter your email address"
+                              required
+                            />
+                          </div>
+
+                          <Button type="submit" className="w-full" disabled={resetLoading}>
+                            {resetLoading ? 'Sending...' : 'Send Reset Email'}
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleBackToSignIn}
+                            className="w-full"
+                          >
+                            Back to Sign In
+                          </Button>
+                        </form>
+                      )}
+                    </div>
                   )}
+
+                  <div className="text-center text-sm">
+                    <span className="text-muted-foreground">Don't have an account? </span>
+                    <button
+                      type="button"
+                      onClick={() => { setMode('signup'); setError(''); }}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Create Account
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    {error && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-name">Full Name</Label>
+                      <Input
+                        id="signup-name"
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-org">Organization Name</Label>
+                      <Input
+                        id="signup-org"
+                        type="text"
+                        value={organizationName}
+                        onChange={(e) => setOrganizationName(e.target.value)}
+                        required
+                      />
+                      {renderSlugStatus()}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email">Email</Label>
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-password">Password</Label>
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={isSignUpDisabled}>
+                      {loading ? 'Creating account...' : 'Create Account'}
+                    </Button>
+                  </form>
+
+                  <div className="text-center text-sm">
+                    <span className="text-muted-foreground">Already have an account? </span>
+                    <button
+                      type="button"
+                      onClick={() => { setMode('signin'); setError(''); }}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Sign In
+                    </button>
+                  </div>
                 </div>
               )}
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-org">Organization Name</Label>
-                  <Input
-                    id="signup-org"
-                    type="text"
-                    value={organizationName}
-                    onChange={(e) => setOrganizationName(e.target.value)}
-                    required
-                  />
-                  {renderSlugStatus()}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                  />
-                </div>
-                
-                <Button type="submit" className="w-full" disabled={isSignUpDisabled}>
-                  {loading ? 'Creating account...' : 'Create Account'}
-                </Button>
-              </form>
-              </TabsContent>
-            </Tabs>
+            </div>
           )}
         </CardContent>
       </Card>
