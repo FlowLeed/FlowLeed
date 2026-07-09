@@ -40,6 +40,18 @@ export const FEATURE_MODULES: FeatureModule[] = [
     description: "Semantic video-story discovery: ingest YouTube videos, extract stories with AI, and search by meaning.",
     icon: Film,
   },
+  {
+    key: "custom_signals",
+    label: "Custom Signals",
+    description: "Let pastors build their own engagement signals with AND/OR rules.",
+    icon: Wand2,
+  },
+  {
+    key: "signal_agent",
+    label: "AI Signal Agent",
+    description: "AI Staff Pastor that watches signals and proposes actions (notify, add to flow, task, draft message) for human approval.",
+    icon: Bot,
+  },
 ];
 
 export const FEATURE_KEYS = FEATURE_MODULES.map((f) => f.key);
