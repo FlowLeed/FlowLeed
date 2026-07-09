@@ -97,11 +97,10 @@ const App = () => (
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
               <Route path="/org/:slug/content" element={<PublicContentPage />} />
               <Route path="/org/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
-              
-              {/* Regular app routes */}
-              <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+
+              {/* Audit / lead-magnet funnel */}
               <Route path="/audit" element={<AuditSignupPage />} />
-              <Route element={<ProtectedRoute><></></ProtectedRoute>}>
+              <Route element={<ProtectedRoute><AuditOutlet /></ProtectedRoute>}>
                 <Route path="/audit/connect" element={<AuditConnectPage />} />
                 <Route path="/audit/generating" element={<AuditGeneratingPage />} />
                 <Route path="/audit/report/:id" element={<AuditReportPage />} />
