@@ -323,6 +323,125 @@ export type Database = {
           },
         ]
       }
+      church_health_findings: {
+        Row: {
+          contact_ids: string[]
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          metric_label: string | null
+          metric_value: number | null
+          report_id: string
+          section: string
+          severity: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          contact_ids?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          metric_label?: string | null
+          metric_value?: number | null
+          report_id: string
+          section: string
+          severity?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          contact_ids?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          metric_label?: string | null
+          metric_value?: number | null
+          report_id?: string
+          section?: string
+          severity?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_health_findings_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "church_health_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      church_health_reports: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          error: string | null
+          generated_at: string | null
+          id: string
+          metrics: Json
+          organization_id: string
+          overall_score: number | null
+          pdf_storage_path: string | null
+          section_scores: Json
+          share_enabled: boolean
+          share_token: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          error?: string | null
+          generated_at?: string | null
+          id?: string
+          metrics?: Json
+          organization_id: string
+          overall_score?: number | null
+          pdf_storage_path?: string | null
+          section_scores?: Json
+          share_enabled?: boolean
+          share_token?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          error?: string | null
+          generated_at?: string | null
+          id?: string
+          metrics?: Json
+          organization_id?: string
+          overall_score?: number | null
+          pdf_storage_path?: string | null
+          section_scores?: Json
+          share_enabled?: boolean
+          share_token?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "church_health_reports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "church_health_reports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       church_online_events: {
         Row: {
           contact_id: string | null
@@ -3581,6 +3700,9 @@ export type Database = {
           onboarding_dismissed: boolean | null
           onboarding_progress: Json | null
           phone: string | null
+          signup_intent: string | null
+          signup_referrer: string | null
+          signup_utm: Json | null
           updated_at: string
           use_twilio_integration: boolean | null
           user_id: string
@@ -3600,6 +3722,9 @@ export type Database = {
           onboarding_dismissed?: boolean | null
           onboarding_progress?: Json | null
           phone?: string | null
+          signup_intent?: string | null
+          signup_referrer?: string | null
+          signup_utm?: Json | null
           updated_at?: string
           use_twilio_integration?: boolean | null
           user_id: string
@@ -3619,6 +3744,9 @@ export type Database = {
           onboarding_dismissed?: boolean | null
           onboarding_progress?: Json | null
           phone?: string | null
+          signup_intent?: string | null
+          signup_referrer?: string | null
+          signup_utm?: Json | null
           updated_at?: string
           use_twilio_integration?: boolean | null
           user_id?: string
