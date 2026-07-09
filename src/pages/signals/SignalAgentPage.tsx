@@ -9,8 +9,13 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Bot, Check, X, Bell, GitBranch, ListChecks, MessageSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, Bot, Check, X, Bell, GitBranch, ListChecks, MessageSquare, Sparkles, Play, Loader2 } from "lucide-react";
 import { useAgentSuggestions, useAgentConfig, type AgentActionType } from "@/hooks/useSignalAgent";
+import { useMarkerCatalog } from "@/hooks/useMarkerCatalog";
+import { useCustomSignals } from "@/hooks/useCustomSignals";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 const ACTION_ICON: Record<AgentActionType, any> = {
