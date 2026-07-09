@@ -6,8 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Plus, Pencil, Trash2, Wand2 } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Wand2, RefreshCw } from "lucide-react";
 import { useCustomSignals, type CustomSignal } from "@/hooks/useCustomSignals";
+import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { CustomSignalEditorDialog } from "@/components/signals/CustomSignalEditorDialog";
 import {
   AlertDialog,
