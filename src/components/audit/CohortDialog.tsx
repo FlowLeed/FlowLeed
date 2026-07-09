@@ -84,8 +84,6 @@ export const CohortDialog = ({ finding, organizationId, onClose }: CohortDialogP
           .insert({
             name: newFlowName.trim(),
             organization_id: organizationId,
-            created_by_user_id: user?.id,
-            type: 'custom',
           } as any)
           .select('id')
           .single();
@@ -99,7 +97,7 @@ export const CohortDialog = ({ finding, organizationId, onClose }: CohortDialogP
             pipeline_id: pipelineId,
             name: 'To Reach',
             stage_order: 0,
-            organization_id: organizationId,
+            is_start_step: true,
           } as any)
           .select('id')
           .single();
