@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { useGoogleAnalyticsPageView } from "./hooks/useGoogleAnalyticsPageView";
 import { MainLayout } from "./components/layout/MainLayout";
 import { FlowProvider } from "./contexts/FlowContext";
@@ -58,6 +58,10 @@ const ContentLibraryPage = lazy(() => import("./pages/content/ContentLibraryPage
 const ContentChatPage = lazy(() => import("./pages/content/ContentChatPage"));
 const PublicContentPage = lazy(() => import("./pages/content/PublicContentPage"));
 const PublicContentVideoPage = lazy(() => import("./pages/content/PublicContentVideoPage"));
+const AuditSignupPage = lazy(() => import("./pages/audit/AuditSignupPage"));
+const AuditConnectPage = lazy(() => import("./pages/audit/AuditConnectPage"));
+const AuditGeneratingPage = lazy(() => import("./pages/audit/AuditGeneratingPage"));
+const AuditReportPage = lazy(() => import("./pages/audit/AuditReportPage"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -69,6 +73,8 @@ const GoogleAnalyticsTracker = () => {
   useGoogleAnalyticsPageView();
   return null;
 };
+
+const AuditOutlet = () => <Outlet />;
 
 const App = () => (
   <TooltipProvider>
@@ -93,7 +99,15 @@ const App = () => (
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
               <Route path="/org/:slug/content" element={<PublicContentPage />} />
               <Route path="/org/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
-              
+
+              {/* Audit / lead-magnet funnel */}
+              <Route path="/audit" element={<AuditSignupPage />} />
+              <Route element={<ProtectedRoute><AuditOutlet /></ProtectedRoute>}>
+                <Route path="/audit/connect" element={<AuditConnectPage />} />
+                <Route path="/audit/generating" element={<AuditGeneratingPage />} />
+                <Route path="/audit/report/:id" element={<AuditReportPage />} />
+              </Route>
+
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />

@@ -49,7 +49,10 @@ export default function PcoCallbackPage() {
         toast.error(msg);
         return;
       }
-      const where = data?.purpose === 'user' ? '/profile' : '/integrations';
+      const auditIntent = sessionStorage.getItem('audit_intent') === '1';
+      const where = auditIntent
+        ? '/audit/connect'
+        : (data?.purpose === 'user' ? '/profile' : '/integrations');
       toast.success(
         data?.providerAccountName
           ? `Connected to ${data.providerAccountName}`
