@@ -1,74 +1,131 @@
-## Goal
 
-Turn Signals from a static catalog into a system pastors can shape, and add an AI agent that watches those signals and proposes actions (notify, add to flow, task, draft message) — always as suggestions a human approves. No auto-actions in v1.
+# Lead Magnet: Free Church Health Audit
 
-## Part 1 — Custom Signals (rule builder)
+Marketing lives on flowleed.com. This app ships:
+1. A minimal signup route at `/audit`
+2. A one-step PCO connect
+3. A background analyzer that generates a **Church Health Report**
+4. An in-app report dashboard where each finding shows **20 people preview → View all → Add to Flow** (existing or new)
+5. One-click branded PDF export
 
-Reuse the same pattern we just shipped for Moment rules (bracket-style AND/OR builder), so the UX is already familiar.
+## Funnel
 
-**New tables**
-- `custom_signals` — `id, organization_id, key, label, description, polarity (positive|neutral|negative), category, severity (info|watch|risk), enabled, created_by, created_at`.
-- `custom_signal_rules` — one row per signal: `signal_id, rule_combinator (AND|OR), conditions jsonb` (same shape as `pco_moment_mappings.condition_group`).
-- `custom_signal_contacts` — materialized results: `signal_id, contact_id, matched_at, cleared_at`. Indexed on `(organization_id, signal_id, contact_id)`.
+```text
+flowleed.com/audit  →  /audit (short WHY + signup)
+                    →  /audit/connect  (Connect Planning Center)
+                    →  /audit/generating  (progress polling)
+                    →  /audit/report/:id  (dashboard + drill-downs + Add to Flow + PDF)
+```
 
-**Condition sources** (same operators the Moment builder already knows):
-- Attendance: `last_service_days_ago`, `services_last_N_weeks`, `is_first_time_guest`
-- Groups: `is_in_group`, `group_attendance_rate_last_N`, `days_since_group_meeting`
-- Serving: `serves_last_N_days`, `days_since_last_serve`
-- Flows: `in_flow(flow_id)`, `days_in_current_stage`, `has_moment(type)`
-- Tags: `has_tag`, `not_has_tag`
-- PCO custom fields: `field = / contains / has_any_value / date_before / date_after` (already wired for Moments)
-- Demographics: `age_between`, `campus_id`, `assigned_user_id`
+## `/audit` route (in this app)
 
-**UI**
-- New page `/signals/custom` (linked from a "New signal" button on `/signals`).
-- List of the org's custom signals with polarity chip, contact count, enabled toggle, edit/delete.
-- Editor reuses `MomentRuleCard` visually: signal metadata (label, description, polarity, severity, category) on top, bracket builder below.
-- Live "matching contacts" preview (top 10) while editing, computed via a `preview-custom-signal` edge function.
+Public, no header/sidebar chrome. Sole purpose: convert an ad click into an account.
 
-**Evaluation**
-- Edge function `evaluate-custom-signals` runs the rules per org and upserts `custom_signal_contacts` (sets `cleared_at` when a contact no longer matches).
-- Runs on a `pg_cron` schedule (hourly) + on-demand from the UI ("Recompute").
-- Custom signals show up in the existing `/signals` catalog alongside built-ins, and on each contact profile in `ActiveMarkersCard`.
+- Short WHY block (~3 lines): "See who's drifting, where your leaders are stretched, and which groups need attention — free, in 10 minutes."
+- 3 tiny bullets naming the report sections.
+- Trust line: "Read-only Planning Center access. Your data stays in your account."
+- **Signup form** (email + password + org name) — reuses `AuthPage` signup logic inline.
+- After email verify → `/audit/connect`.
 
-## Part 2 — AI Signal Agent ("Pastor Copilot")
+Attribution: capture `utm_*` and referrer on signup, store on `profiles`.
 
-An agent that reviews signals continuously and posts **suggestions** into a review queue. It never sends messages, never adds to flows, and never creates tasks on its own — a leader approves each suggestion.
+## `/audit/connect`
 
-**New tables**
-- `signal_agent_configs` — per-org: `enabled, watch_signals (jsonb: list of built-in marker keys + custom_signal ids), allowed_actions (notify|add_to_flow|create_task|draft_message), default_assignee_strategy (assigned_user | campus_pastor | flow_owner), quiet_hours, max_suggestions_per_day`.
-- `signal_agent_rules` — optional per-signal recipe overrides: `signal_key, suggested_action, action_params jsonb` (e.g. `Drifting` → `add_to_flow: <re-engagement flow id>`; `First-time guest` → `create_task: "Call within 48h"`).
-- `signal_agent_suggestions` — the queue: `id, org_id, contact_id, signal_key, action_type, action_payload jsonb, reasoning text, confidence, status (pending|approved|dismissed|expired), reviewer_id, reviewed_at, executed_at, created_at`.
+Single-screen: "Connect Planning Center to generate your report." One button → existing PCO OAuth. On return with a valid connection, immediately calls `run-church-audit` and routes to `/audit/generating`.
 
-**Triggers**
-- **Real-time**: DB trigger on `contact_markers` + `custom_signal_contacts` inserts/updates → enqueue into `signal_agent_queue`; worker edge function processes the queue.
-- **Daily sweep**: `pg_cron` at 7am org-local — agent re-scores all watched contacts and emits/refreshes suggestions for the day.
+## `/audit/generating`
 
-**Agent implementation**
-- Edge function `signal-agent-run` using AI SDK + Lovable AI Gateway (`google/gemini-3.5-flash` — cheap, fast, good enough for classification/reasoning at scale).
-- Input per contact: active markers, custom signals, recent interactions, current flows, assigned leader, campus.
-- Output (structured via AI SDK `Output.object`): `{ suggestions: [{ action_type, action_payload, reasoning, confidence }] }`. Schema is small — no `.min/.max`, just enums for action_type.
-- Guardrails: dedupe against pending suggestions for same (contact, signal, action_type) in last 7 days; respect `max_suggestions_per_day`; skip contacts who already have an active flow of the target type.
+Progress screen. Polls `church_health_reports.status`. Shows the three sections lighting up as their analyzers finish (`queued → running → ready`). Redirects to `/audit/report/:id` when `status = 'ready'`.
 
-**Review UI**
-- New page `/signals/agent` with two tabs:
-  1. **Queue** — pending suggestions grouped by signal, each card shows: contact, signal reason, proposed action, AI reasoning, "Approve" / "Dismiss" / "Edit". Approving executes the action (calls existing flow-enrollment, task-creation, or message-draft code paths). Dismissing records feedback the agent can learn from later.
-  2. **Settings** — enable/disable agent, pick watched signals, allowed actions, per-signal recipes, quiet hours.
-- Dashboard widget: "AI suggestions pending review — N".
-- Notification bell surfaces new suggestions for the assigned leader.
+## `/audit/report/:id` — the report
 
-**Message drafts** land in the existing `MessageComposerDialog` pre-filled — the leader edits and sends via existing Twilio/email paths. Agent never sends directly.
+Header
+- Org name + logo, generation timestamp, "Download PDF" button, optional "Share" toggle (public read-only aggregate link).
+- Large **Overall Church Health Score** gauge (weighted average of section grades).
 
-## Rollout
+Three section cards. Each card renders identically:
 
-1. Ship custom signal schema + rule builder + evaluator (no agent yet). Users can already create/track custom signals.
-2. Ship agent tables, review queue UI, and one action type (`notify`) end-to-end.
-3. Add `create_task`, `add_to_flow`, `draft_message` actions one at a time.
-4. Add per-signal recipes and daily sweep.
+```
+[Section title]                       [Grade A–F]
+[Headline number]                     [Trend indicator]
+[Short interpretation sentence]
 
-## Technical notes
+Findings (top 3):
+  • Finding title — metric — severity
+  • Finding title — metric — severity
+  • Finding title — metric — severity
 
-- Reuse `pco_moment_mappings` condition evaluator (`supabase/functions/_shared/moment-rules.ts`) — refactor it into a generic `evaluateConditionGroup(contact, group)` so both Moments and Custom Signals share it.
-- Feature-flag both areas behind new keys `custom_signals` and `signal_agent` in `organization_features` so we can pilot with one org first.
-- AI cost control: batch contacts per agent invocation (up to 25), cap total per-day calls per org, log token usage to `integration_logs`.
-- All agent DB writes go through `service_role` in edge functions; RLS on `signal_agent_suggestions` limits reads to org members and updates (approve/dismiss) to assigned leader or admins.
+People preview (first 20 avatars/names)  [View all N]  [Add to Flow]
+```
+
+Sections in v1 (per prior decision):
+
+1. **At-Risk / Drifting People**
+   - Uses `contact_engagement_scores`, `pco_checkins`, `contact_interactions`.
+   - Metrics: count with engagement drop ≥ 25% vs 90d baseline; count with no check-in in 60d who were previously regular; median days since last interaction; breakdown by campus.
+2. **Volunteer & Leader Health**
+   - Uses `group_members` roles, `groups`, `contact_interactions`.
+   - Metrics: active volunteers, leader workload distribution, leaders with no recent care (no staff interaction 60d), teams missing co-leader/host.
+3. **Groups Health**
+   - Uses `groups`, `group_meetings`, `group_attendance`.
+   - Metrics: % groups meeting monthly vs dormant (no meeting 45d), attendance trend 90d vs prior 90d, at/over capacity, no co-leader, orphaned members.
+
+## Drill-down + Add to Flow (the key interaction)
+
+Every finding is a **cohort**. Clicking "View all" opens a full-screen drawer:
+
+- Sortable list of the people in that cohort with the metric that landed them there (e.g., "42 days since last check-in").
+- Bulk selection (default: all selected).
+- **Add to Flow** button opens the existing `BulkAddToFlowDialog` component (already in the codebase — same one used on Contacts). Two options in the flow-selection step:
+  - **Existing flow** — the standard picker.
+  - **Create a new flow from this cohort** — new "+ New flow" tile at the top of the picker; opens a small dialog (name + optional icon + default first stage "New") and, on save, creates the flow, adds the current user as flow lead, seeds one stage, then continues the bulk-add. Implemented by reusing existing `CreateFlowDialog` chained into `BulkAddToFlowDialog`.
+- After add: toast confirms count added / skipped (already-in-flow), and a link to open the flow.
+
+The report card's inline "Add to Flow" button behaves the same, defaulting the cohort to the top finding's people.
+
+## PDF export
+
+Edge function `generate-audit-pdf` renders the report to a branded PDF (org logo, score gauge, three section pages, top findings, name lists capped at 25 per section with a "+ N more" line). Uses the PDF skill pattern already in the project. Uploads to `audit-reports` bucket, returns a signed URL. Button downloads directly.
+
+## Optional share link
+
+Toggle on the report header. When on, `/audit/shared/:token` renders a **read-only aggregate summary** — scores, counts, top findings — **no names or contact IDs**. Safe to send to elders/board.
+
+## Data model
+
+New tables (with GRANTs, RLS scoped to `organization_id`, `updated_at` trigger):
+
+- `church_health_reports`
+  - `organization_id`, `created_by_user_id`, `status` (`queued|running|ready|failed`), `overall_score numeric`, `section_scores jsonb`, `metrics jsonb`, `pdf_storage_path text`, `share_token text`, `share_enabled boolean default false`, `generated_at timestamptz`, `error text`.
+- `church_health_findings`
+  - `report_id`, `section` (`at_risk|volunteers|groups`), `key` (stable slug e.g. `no_checkin_60d`), `title`, `description`, `severity` (`low|medium|high`), `metric_value numeric`, `metric_label text`, `contact_ids uuid[]`, `sort_order int`.
+
+Private storage bucket: `audit-reports`.
+
+## Edge functions
+
+- `run-church-audit` — orchestrator. Creates the report row, updates status per section, computes findings, sets `status=ready`. Uses data already synced by PCO (no extra PCO API calls; if the org has zero synced people yet, it enqueues a one-time sync first and shows an extended progress step).
+- `generate-audit-pdf` — renders PDF from report + findings, uploads to `audit-reports`, returns signed URL.
+- `audit-share-token` — mints/rotates share token server-side.
+
+## Frontend files
+
+- `src/pages/audit/AuditSignupPage.tsx` — `/audit` (short WHY + signup form).
+- `src/pages/audit/AuditConnectPage.tsx` — `/audit/connect`.
+- `src/pages/audit/AuditGeneratingPage.tsx` — `/audit/generating`.
+- `src/pages/audit/AuditReportPage.tsx` — `/audit/report/:id`.
+- `src/pages/audit/PublicAuditSharePage.tsx` — `/audit/shared/:token`.
+- `src/components/audit/ScoreGauge.tsx`, `SectionCard.tsx`, `FindingRow.tsx`, `CohortDrawer.tsx`, `ReportHeader.tsx`, `AuditPdfButton.tsx`.
+- Hook `useChurchAudit(reportId)` — react-query polling + finding queries + cohort fetch.
+- `BulkAddToFlowDialog` gets a small addition: a "+ New flow" tile that opens `CreateFlowDialog` then re-enters the picker with the new flow preselected.
+- `AuthPage` already handles `?mode=signup`; we set `?intent=audit` so post-verify redirects to `/audit/connect`.
+
+## Tracking
+
+GA4 events: `audit_signup_view`, `audit_signup_submit`, `audit_pco_connected`, `audit_report_ready`, `audit_pdf_downloaded`, `audit_cohort_add_to_flow` (with section + finding key).
+
+## Out of scope for v1
+
+- Guest follow-up section (sparse data early).
+- Emailed PDF (download only for now).
+- Landing/marketing copy on flowleed.com (handled outside this repo).
