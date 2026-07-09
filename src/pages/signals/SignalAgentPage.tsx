@@ -9,8 +9,13 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Bot, Check, X, Bell, GitBranch, ListChecks, MessageSquare, Sparkles } from "lucide-react";
+import { ArrowLeft, Bot, Check, X, Bell, GitBranch, ListChecks, MessageSquare, Sparkles, Play, Loader2 } from "lucide-react";
 import { useAgentSuggestions, useAgentConfig, type AgentActionType } from "@/hooks/useSignalAgent";
+import { useMarkerCatalog } from "@/hooks/useMarkerCatalog";
+import { useCustomSignals } from "@/hooks/useCustomSignals";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 const ACTION_ICON: Record<AgentActionType, any> = {
@@ -29,8 +34,32 @@ const ACTION_LABEL: Record<AgentActionType, string> = {
 
 const SignalAgentPage = () => {
   const [tab, setTab] = useState<"queue" | "settings">("queue");
+  const [running, setRunning] = useState(false);
   const { list: pending, review } = useAgentSuggestions("pending");
   const { query: config, save } = useAgentConfig();
+  const { data: markers } = useMarkerCatalog();
+  const { list: customSignals } = useCustomSignals();
+  const qc = useQueryClient();
+
+  const watched = config.data?.watch_signals || [];
+  const toggleWatch = (key: string) => {
+    const next = watched.includes(key) ? watched.filter((k) => k !== key) : [...watched, key];
+    save.mutate({ watch_signals: next });
+  };
+
+  const handleRunNow = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("signal-agent-run", { body: {} });
+      if (error) throw error;
+      toast.success(`Agent run complete — ${data?.suggestions_created ?? 0} new suggestion(s)`);
+      qc.invalidateQueries({ queryKey: ["signal-agent-suggestions"] });
+    } catch (e: any) {
+      toast.error(e.message || "Agent run failed");
+    } finally {
+      setRunning(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -44,11 +73,17 @@ const SignalAgentPage = () => {
         showFlowIcon={false}
         showAddButton={false}
         rightContent={
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/signals" className="gap-1">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={handleRunNow} disabled={running || !config.data?.enabled} className="gap-1">
+              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              Run agent now
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/signals" className="gap-1">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </Link>
+            </Button>
+          </div>
         }
       />
 
@@ -178,6 +213,69 @@ const SignalAgentPage = () => {
                       );
                     })}
                   </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t">
+                  <div>
+                    <Label>Watched signals</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Pick the signals the agent should monitor. Only contacts matching these will generate suggestions.
+                    </p>
+                  </div>
+
+                  {(markers?.length ?? 0) > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Built-in markers</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {markers!.map((m) => {
+                          const on = watched.includes(m.key);
+                          return (
+                            <Button
+                              key={m.key}
+                              size="sm"
+                              variant={on ? "default" : "outline"}
+                              className="h-7 text-xs"
+                              onClick={() => toggleWatch(m.key)}
+                            >
+                              {on && <Check className="h-3 w-3 mr-1" />}
+                              {m.label}
+                              <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">{m.contact_count}</Badge>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {(customSignals.data?.length ?? 0) > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Custom signals</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {customSignals.data!.map((s) => {
+                          const key = `custom:${s.id}`;
+                          const on = watched.includes(key);
+                          return (
+                            <Button
+                              key={s.id}
+                              size="sm"
+                              variant={on ? "default" : "outline"}
+                              className="h-7 text-xs"
+                              onClick={() => toggleWatch(key)}
+                              disabled={!s.enabled}
+                            >
+                              {on && <Check className="h-3 w-3 mr-1" />}
+                              {s.label}
+                              <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">{s.contact_count ?? 0}</Badge>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {!markers?.length && !customSignals.data?.length && (
+                    <p className="text-xs text-muted-foreground">No signals available yet.</p>
+                  )}
                 </div>
 
                 <div className="space-y-2 pt-4 border-t">
