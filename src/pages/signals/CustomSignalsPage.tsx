@@ -33,8 +33,28 @@ const polarityClass: Record<string, string> = {
 
 const CustomSignalsPage = () => {
   const { list, update, remove } = useCustomSignals();
+  const { organization } = useProfile();
+  const qc = useQueryClient();
   const [editing, setEditing] = useState<CustomSignal | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [recomputing, setRecomputing] = useState(false);
+
+  const handleRecompute = async () => {
+    if (!organization?.id) return;
+    setRecomputing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("evaluate-custom-signals", {
+        body: { organization_id: organization.id },
+      });
+      if (error) throw error;
+      toast.success(`Recomputed: ${data?.matched ?? 0} matches across ${data?.signals ?? 0} signals`);
+      qc.invalidateQueries({ queryKey: ["custom-signals", organization.id] });
+    } catch (e: any) {
+      toast.error(e.message || "Failed to recompute");
+    } finally {
+      setRecomputing(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
