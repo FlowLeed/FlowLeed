@@ -100,6 +100,15 @@ const App = () => (
               
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+              <Route path="/audit" element={<AuditSignupPage />} />
+              <Route element={<ProtectedRoute><></></ProtectedRoute>}>
+                <Route path="/audit/connect" element={<AuditConnectPage />} />
+                <Route path="/audit/generating" element={<AuditGeneratingPage />} />
+                <Route path="/audit/report/:id" element={<AuditReportPage />} />
+              </Route>
+
+              {/* Regular app routes */}
+              <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/flows/:flowId" element={<FlowPage />} />
               <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
