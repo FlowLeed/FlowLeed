@@ -115,25 +115,25 @@ interface BracketProps {
 function Bracket({ combinator, children }: BracketProps) {
   const pillClass =
     combinator === 'AND'
-      ? 'bg-primary/10 text-primary border border-primary/20'
-      : 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30';
+      ? 'bg-primary text-primary-foreground'
+      : 'bg-amber-500 text-white dark:bg-amber-500 dark:text-amber-950';
   const bracketColor =
-    combinator === 'AND' ? 'border-primary/40' : 'border-amber-400/60';
+    combinator === 'AND' ? 'border-primary/30' : 'border-amber-400/60';
 
   return (
-    <div className="relative pl-6">
-      {/* Bracket: top corner, left line, bottom corner */}
+    <div className="relative pl-10">
+      {/* Vertical bracket line */}
       <div
         className={cn(
-          "absolute left-0 top-1 bottom-1 w-3 border-l-2 border-t-2 border-b-2 rounded-l-md pointer-events-none",
+          "absolute left-6 top-2 bottom-2 w-2 border-l-2 border-t-2 border-b-2 rounded-l-md pointer-events-none",
           bracketColor
         )}
       />
       {/* Combinator pill vertically centered on the bracket */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2">
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
         <span
           className={cn(
-            "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shadow-sm",
+            "inline-flex items-center justify-center rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wider shadow-sm",
             pillClass
           )}
         >
