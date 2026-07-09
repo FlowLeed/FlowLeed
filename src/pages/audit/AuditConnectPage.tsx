@@ -24,7 +24,7 @@ const AuditConnectPage = () => {
   useEffect(() => {
     if (!organization?.id) return;
     (async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('integrations')
         .select('id, status')
         .eq('organization_id', organization.id)
