@@ -74,6 +74,8 @@ const GoogleAnalyticsTracker = () => {
   return null;
 };
 
+const AuditOutlet = () => <Outlet />;
+
 const App = () => (
   <TooltipProvider>
     <Toaster />
