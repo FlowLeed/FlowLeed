@@ -34,8 +34,32 @@ const ACTION_LABEL: Record<AgentActionType, string> = {
 
 const SignalAgentPage = () => {
   const [tab, setTab] = useState<"queue" | "settings">("queue");
+  const [running, setRunning] = useState(false);
   const { list: pending, review } = useAgentSuggestions("pending");
   const { query: config, save } = useAgentConfig();
+  const { data: markers } = useMarkerCatalog();
+  const { list: customSignals } = useCustomSignals();
+  const qc = useQueryClient();
+
+  const watched = config.data?.watch_signals || [];
+  const toggleWatch = (key: string) => {
+    const next = watched.includes(key) ? watched.filter((k) => k !== key) : [...watched, key];
+    save.mutate({ watch_signals: next });
+  };
+
+  const handleRunNow = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("signal-agent-run", { body: {} });
+      if (error) throw error;
+      toast.success(`Agent run complete — ${data?.suggestions_created ?? 0} new suggestion(s)`);
+      qc.invalidateQueries({ queryKey: ["signal-agent-suggestions"] });
+    } catch (e: any) {
+      toast.error(e.message || "Agent run failed");
+    } finally {
+      setRunning(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -49,11 +73,17 @@ const SignalAgentPage = () => {
         showFlowIcon={false}
         showAddButton={false}
         rightContent={
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/signals" className="gap-1">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={handleRunNow} disabled={running || !config.data?.enabled} className="gap-1">
+              {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              Run agent now
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/signals" className="gap-1">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </Link>
+            </Button>
+          </div>
         }
       />
 
