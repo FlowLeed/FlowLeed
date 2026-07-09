@@ -93,16 +93,28 @@ const SignalsPage = () => {
         showFlowIcon={false}
         showAddButton={false}
         rightContent={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => recompute.mutate()}
-            disabled={recompute.isPending}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${recompute.isPending ? "animate-spin" : ""}`} />
-            Recompute
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link to="/signals/custom">
+                <Wand2 className="h-4 w-4" /> Custom
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="gap-2">
+              <Link to="/signals/agent">
+                <Bot className="h-4 w-4" /> AI Agent
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => recompute.mutate()}
+              disabled={recompute.isPending}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${recompute.isPending ? "animate-spin" : ""}`} />
+              Recompute
+            </Button>
+          </div>
         }
       />
 
