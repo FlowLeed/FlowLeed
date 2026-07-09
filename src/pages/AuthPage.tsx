@@ -23,6 +23,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isResetMode, setIsResetMode] = useState(false);
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
