@@ -8,6 +8,7 @@ import type { LucideIcon } from 'lucide-react';
 export interface Finding {
   id: string;
   key: string;
+  section: string;
   title: string;
   description: string | null;
   severity: 'low' | 'medium' | 'high';
