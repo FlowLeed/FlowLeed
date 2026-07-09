@@ -58,6 +58,10 @@ const ContentLibraryPage = lazy(() => import("./pages/content/ContentLibraryPage
 const ContentChatPage = lazy(() => import("./pages/content/ContentChatPage"));
 const PublicContentPage = lazy(() => import("./pages/content/PublicContentPage"));
 const PublicContentVideoPage = lazy(() => import("./pages/content/PublicContentVideoPage"));
+const AuditSignupPage = lazy(() => import("./pages/audit/AuditSignupPage"));
+const AuditConnectPage = lazy(() => import("./pages/audit/AuditConnectPage"));
+const AuditGeneratingPage = lazy(() => import("./pages/audit/AuditGeneratingPage"));
+const AuditReportPage = lazy(() => import("./pages/audit/AuditReportPage"));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
