@@ -121,26 +121,28 @@ function Bracket({ combinator, children }: BracketProps) {
     combinator === 'AND' ? 'border-primary/40' : 'border-amber-400/60';
 
   return (
-    <div className="relative pl-6">
-      {/* Bracket: top corner, left line, bottom corner */}
-      <div
-        className={cn(
-          "absolute left-0 top-1 bottom-1 w-3 border-l-2 border-t-2 border-b-2 rounded-l-md pointer-events-none",
-          bracketColor
-        )}
-      />
-      {/* Combinator pill vertically centered on the bracket */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2">
+    <div className="flex items-stretch gap-3">
+      {/* Combinator pill on the left, vertically centered on the content block */}
+      <div className="flex items-center shrink-0">
         <span
           className={cn(
-            "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shadow-sm",
+            "rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shadow-sm",
             pillClass
           )}
         >
           {combinator}
         </span>
       </div>
-      <div className="space-y-2 py-1">{children}</div>
+      {/* Bracket line + content */}
+      <div className="relative flex-1 pl-5">
+        <div
+          className={cn(
+            "absolute left-0 top-1 bottom-1 w-3 border-l-2 border-t-2 border-b-2 rounded-l-md pointer-events-none",
+            bracketColor
+          )}
+        />
+        <div className="space-y-2 py-1">{children}</div>
+      </div>
     </div>
   );
 }
