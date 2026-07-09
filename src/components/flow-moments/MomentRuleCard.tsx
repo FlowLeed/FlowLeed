@@ -34,6 +34,7 @@ import {
   X,
   Calendar as CalendarIcon,
   Loader2,
+  GripVertical,
 } from "lucide-react";
 import type { FlowMomentType } from "@/hooks/useFlowMomentTypes";
 import type { PcoTab, PcoField } from "@/hooks/usePcoCustomFields";
@@ -99,6 +100,84 @@ const conditionsFromRule = (
     };
   });
 };
+
+// ---------- Visual primitives ----------
+
+interface BracketProps {
+  combinator: 'AND' | 'OR';
+  children: React.ReactNode;
+}
+
+/**
+ * A left-side square bracket with a floating combinator pill.
+ * Mirrors the reference screenshot style.
+ */
+function Bracket({ combinator, children }: BracketProps) {
+  const pillClass =
+    combinator === 'AND'
+      ? 'bg-primary/10 text-primary border border-primary/20'
+      : 'bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30';
+  const bracketColor =
+    combinator === 'AND' ? 'border-primary/40' : 'border-amber-400/60';
+
+  return (
+    <div className="relative pl-6">
+      {/* Bracket: top corner, left line, bottom corner */}
+      <div
+        className={cn(
+          "absolute left-0 top-1 bottom-1 w-3 border-l-2 border-t-2 border-b-2 rounded-l-md pointer-events-none",
+          bracketColor
+        )}
+      />
+      {/* Combinator pill vertically centered on the bracket */}
+      <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2">
+        <span
+          className={cn(
+            "inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shadow-sm",
+            pillClass
+          )}
+        >
+          {combinator}
+        </span>
+      </div>
+      <div className="space-y-2 py-1">{children}</div>
+    </div>
+  );
+}
+
+function ConditionPill({
+  children,
+  onRemove,
+  interactive = true,
+}: {
+  children: React.ReactNode;
+  onRemove?: () => void;
+  interactive?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "group flex items-center gap-2 rounded-full border bg-background px-2 py-1.5 shadow-sm",
+        interactive && "hover:border-primary/40 transition-colors"
+      )}
+    >
+      <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+      <div className="flex-1 flex flex-wrap items-center gap-2 min-w-0">{children}</div>
+      {onRemove && (
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-6 w-6 shrink-0 rounded-full text-muted-foreground hover:text-destructive opacity-60 group-hover:opacity-100"
+          onClick={onRemove}
+        >
+          <X className="h-3 w-3" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ---------- Card ----------
 
 export function MomentRuleCard({
   momentType,
@@ -212,14 +291,15 @@ export function MomentRuleCard({
   const topLevel = groups.get(0) ?? [];
   const subGroupIds = Array.from(groups.keys()).filter((g) => g !== 0).sort((a, b) => a - b);
 
-  const renderConditionRow = (c: DraftCondition, index: number) => {
+  // ------- Edit row (pill with inline selects) -------
+  const renderEditPill = (c: DraftCondition, index: number) => {
     const triggerOptions = getCombinedOptionsForField({ dataType: c.dataType, options: c.options });
     const showExtra = needsAdditionalInput(c.selectedTrigger, c.dataType);
 
     return (
-      <div key={index} className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+      <ConditionPill key={index} onRemove={() => removeCondition(index)}>
         <Select value={c.fieldId} onValueChange={(v) => handleFieldChange(index, v)}>
-          <SelectTrigger className="h-9 text-xs sm:flex-1 min-w-0">
+          <SelectTrigger className="h-7 text-xs border-0 shadow-none bg-transparent px-1 hover:bg-muted/50 w-auto min-w-[140px] gap-1">
             <SelectValue placeholder="Select field..." />
           </SelectTrigger>
           <SelectContent className="max-h-[320px]">
@@ -239,8 +319,8 @@ export function MomentRuleCard({
           onValueChange={(v) => updateCondition(index, { selectedTrigger: v, additionalValue: "" })}
           disabled={!c.fieldId}
         >
-          <SelectTrigger className="h-9 text-xs sm:w-56">
-            <SelectValue placeholder="Trigger..." />
+          <SelectTrigger className="h-7 text-xs border-0 shadow-none bg-transparent px-1 hover:bg-muted/50 w-auto min-w-[120px] gap-1 font-medium">
+            <SelectValue placeholder="trigger..." />
           </SelectTrigger>
           <SelectContent className="max-h-[280px]">
             {triggerOptions.map((o) => (
@@ -254,13 +334,14 @@ export function MomentRuleCard({
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
+                  size="sm"
                   className={cn(
-                    "h-9 text-xs justify-start text-left font-normal sm:w-44",
+                    "h-7 text-xs px-2 font-normal",
                     !c.additionalValue && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-3 w-3" />
+                  <CalendarIcon className="mr-1 h-3 w-3" />
                   {c.additionalValue ? format(new Date(c.additionalValue), 'PP') : 'Pick date'}
                 </Button>
               </PopoverTrigger>
@@ -279,31 +360,37 @@ export function MomentRuleCard({
               value={c.additionalValue}
               onChange={(e) => updateCondition(index, { additionalValue: e.target.value })}
               placeholder="Value"
-              className="h-9 text-xs sm:w-44"
+              className="h-7 text-xs w-32 border-0 shadow-none bg-transparent px-1 focus-visible:ring-1"
               type={c.dataType === 'number' ? 'number' : 'text'}
             />
           )
         )}
-
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-          onClick={() => removeCondition(index)}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
+      </ConditionPill>
     );
   };
 
-  const summaryLine = (c: RuleCondition) => {
+  // ------- Read-only pill -------
+  const renderReadPill = (c: RuleCondition, key: string) => {
     const meta = findFieldMeta(tabs, c.fieldId);
     const dataType = meta?.field.dataType ?? "text";
     const options = meta?.field.options ?? [];
     const decoded = decodeTriggerCondition(c.operator, c.value, { dataType, options });
-    return `${c.fieldLabel || meta?.field.name || 'Unknown'} — ${getTriggerLabel(decoded.selectedValue, decoded.additionalValue)}`;
+    return (
+      <ConditionPill key={key} interactive={false}>
+        <span className="text-xs text-muted-foreground">{c.fieldLabel || meta?.field.name || 'Unknown'}</span>
+        <span className="text-xs font-medium text-foreground">
+          {getTriggerLabel(decoded.selectedValue, decoded.additionalValue)}
+        </span>
+      </ConditionPill>
+    );
   };
+
+  const editSubGroupIds = subGroupIds;
+  const readSubGroupIds = existingRule
+    ? Array.from(new Set(existingRule.conditions.map((c) => c.condition_group)))
+        .filter((g) => g !== 0)
+        .sort((a, b) => a - b)
+    : [];
 
   return (
     <Card>
@@ -354,62 +441,61 @@ export function MomentRuleCard({
       <CardContent className="pt-0">
         {isEditing ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm">
-              <span>Fires when</span>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>Trigger when</span>
               <Select value={combinator} onValueChange={(v) => setCombinator(v as 'AND' | 'OR')}>
-                <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectTrigger className="h-7 w-24 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="AND">ALL</SelectItem>
-                  <SelectItem value="OR">ANY</SelectItem>
+                  <SelectItem value="AND">ALL (AND)</SelectItem>
+                  <SelectItem value="OR">ANY (OR)</SelectItem>
                 </SelectContent>
               </Select>
-              <span>of the following are true:</span>
+              <span>of the following match</span>
             </div>
 
-            <div className="space-y-2">
+            <Bracket combinator={combinator}>
               {topLevel.map((c) => {
                 const idx = conditions.indexOf(c);
-                return renderConditionRow(c, idx);
+                return renderEditPill(c, idx);
               })}
-            </div>
 
-            {subGroupIds.map((gid) => (
-              <div key={gid} className="rounded-md border border-dashed p-3 space-y-2 bg-muted/20">
-                <div className="text-xs font-medium text-muted-foreground">
-                  {innerCombinator === 'OR' ? 'ANY of these (OR group)' : 'ALL of these (AND group)'}
+              {editSubGroupIds.map((gid) => (
+                <div key={gid} className="relative">
+                  <Bracket combinator={innerCombinator}>
+                    {(groups.get(gid) ?? []).map((c) => {
+                      const idx = conditions.indexOf(c);
+                      return renderEditPill(c, idx);
+                    })}
+                    <div className="flex gap-1 pl-1">
+                      <Button size="sm" variant="ghost" className="h-6 text-[11px] px-2" onClick={() => addCondition(gid)}>
+                        <Plus className="h-3 w-3 mr-1" /> Add condition
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 text-[11px] px-2 text-muted-foreground hover:text-destructive"
+                        onClick={() =>
+                          setConditions((prev) => prev.filter((c) => c.condition_group !== gid))
+                        }
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" /> Remove group
+                      </Button>
+                    </div>
+                  </Bracket>
                 </div>
-                {(groups.get(gid) ?? []).map((c) => {
-                  const idx = conditions.indexOf(c);
-                  return renderConditionRow(c, idx);
-                })}
-                <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => addCondition(gid)}>
-                    <Plus className="h-3 w-3 mr-1" /> Add condition
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs text-muted-foreground"
-                    onClick={() =>
-                      setConditions((prev) => prev.filter((c) => c.condition_group !== gid))
-                    }
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" /> Remove group
-                  </Button>
-                </div>
+              ))}
+
+              <div className="flex flex-wrap gap-2 pl-1 pt-1">
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => addCondition(0)}>
+                  <Plus className="h-3 w-3 mr-1" /> Add condition
+                </Button>
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => addCondition(nextGroupId())}>
+                  <Plus className="h-3 w-3 mr-1" /> Add {innerCombinator} group
+                </Button>
               </div>
-            ))}
-
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => addCondition(0)}>
-                <Plus className="h-3 w-3 mr-1" /> Add condition
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addCondition(nextGroupId())}>
-                <Plus className="h-3 w-3 mr-1" /> Add {combinator === 'AND' ? 'OR' : 'AND'} group
-              </Button>
-            </div>
+            </Bracket>
 
             <div className="flex justify-end gap-2 pt-2 border-t">
               <Button size="sm" variant="ghost" onClick={handleCancel}>
@@ -422,41 +508,22 @@ export function MomentRuleCard({
             </div>
           </div>
         ) : existingRule ? (
-          <div className="space-y-2 text-sm">
-            <div className="text-xs text-muted-foreground">
-              Fires when <span className="font-medium text-foreground">
-                {existingRule.combinator === 'AND' ? 'ALL' : 'ANY'}
-              </span> of the following are true:
-            </div>
-            <ul className="space-y-1">
-              {existingRule.conditions
-                .filter((c) => c.condition_group === 0)
-                .map((c, i) => (
-                  <li key={`t-${i}`} className="text-xs pl-3 border-l-2 border-primary/40">
-                    {summaryLine(c)}
-                  </li>
-                ))}
-            </ul>
-            {Array.from(new Set(existingRule.conditions.map((c) => c.condition_group)))
-              .filter((g) => g !== 0)
-              .sort((a, b) => a - b)
-              .map((gid) => (
-                <div key={gid} className="rounded-md border border-dashed p-2 bg-muted/20">
-                  <div className="text-[10px] font-medium text-muted-foreground mb-1">
-                    {existingRule.combinator === 'AND' ? 'ANY of these' : 'ALL of these'}
-                  </div>
-                  <ul className="space-y-1">
-                    {existingRule.conditions
-                      .filter((c) => c.condition_group === gid)
-                      .map((c, i) => (
-                        <li key={`g-${gid}-${i}`} className="text-xs pl-3 border-l-2 border-primary/30">
-                          {summaryLine(c)}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              ))}
-          </div>
+          <Bracket combinator={existingRule.combinator}>
+            {existingRule.conditions
+              .filter((c) => c.condition_group === 0)
+              .map((c, i) => renderReadPill(c, `t-${i}`))}
+
+            {readSubGroupIds.map((gid) => {
+              const inner: 'AND' | 'OR' = existingRule.combinator === 'AND' ? 'OR' : 'AND';
+              return (
+                <Bracket key={gid} combinator={inner}>
+                  {existingRule.conditions
+                    .filter((c) => c.condition_group === gid)
+                    .map((c, i) => renderReadPill(c, `g-${gid}-${i}`))}
+                </Bracket>
+              );
+            })}
+          </Bracket>
         ) : null}
       </CardContent>
     </Card>
