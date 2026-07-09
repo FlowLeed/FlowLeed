@@ -74,6 +74,9 @@ const CustomSignalsPage = () => {
                 <ArrowLeft className="h-4 w-4" /> Back
               </Link>
             </Button>
+            <Button size="sm" variant="outline" onClick={handleRecompute} disabled={recomputing} className="gap-2">
+              <RefreshCw className={`h-4 w-4 ${recomputing ? "animate-spin" : ""}`} /> Recompute
+            </Button>
             <Button size="sm" onClick={() => setIsNew(true)} className="gap-2">
               <Plus className="h-4 w-4" /> New signal
             </Button>
