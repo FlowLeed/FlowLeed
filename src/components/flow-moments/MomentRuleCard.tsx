@@ -491,9 +491,6 @@ export function MomentRuleCard({
                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => addCondition(0)}>
                   <Plus className="h-3 w-3 mr-1" /> Add condition
                 </Button>
-                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => addCondition(nextGroupId())}>
-                  <Plus className="h-3 w-3 mr-1" /> Add {innerCombinator} group
-                </Button>
               </div>
             </Bracket>
 
