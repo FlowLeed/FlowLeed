@@ -40,6 +40,15 @@ const AuthPage = () => {
   const { signIn, signUp, resetPassword, updatePassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Set initial mode from URL ?mode=signup or ?mode=signin
+  useEffect(() => {
+    const modeParam = searchParams.get('mode');
+    if (modeParam === 'signup' || modeParam === 'signin') {
+      setMode(modeParam);
+    }
+  }, [searchParams]);
 
   // Listen for PASSWORD_RECOVERY event from Supabase auth
   useEffect(() => {
