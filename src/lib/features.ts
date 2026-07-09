@@ -1,6 +1,6 @@
-import { MessageSquare, Phone, Sparkles, Activity, Film, type LucideIcon } from "lucide-react";
+import { MessageSquare, Phone, Sparkles, Activity, Film, Wand2, Bot, type LucideIcon } from "lucide-react";
 
-export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content";
+export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "custom_signals" | "signal_agent";
 
 export interface FeatureModule {
   key: FeatureKey;
