@@ -215,6 +215,69 @@ const SignalAgentPage = () => {
                   </div>
                 </div>
 
+                <div className="space-y-3 pt-4 border-t">
+                  <div>
+                    <Label>Watched signals</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Pick the signals the agent should monitor. Only contacts matching these will generate suggestions.
+                    </p>
+                  </div>
+
+                  {(markers?.length ?? 0) > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Built-in markers</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {markers!.map((m) => {
+                          const on = watched.includes(m.key);
+                          return (
+                            <Button
+                              key={m.key}
+                              size="sm"
+                              variant={on ? "default" : "outline"}
+                              className="h-7 text-xs"
+                              onClick={() => toggleWatch(m.key)}
+                            >
+                              {on && <Check className="h-3 w-3 mr-1" />}
+                              {m.label}
+                              <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">{m.contact_count}</Badge>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {(customSignals.data?.length ?? 0) > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Custom signals</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {customSignals.data!.map((s) => {
+                          const key = `custom:${s.id}`;
+                          const on = watched.includes(key);
+                          return (
+                            <Button
+                              key={s.id}
+                              size="sm"
+                              variant={on ? "default" : "outline"}
+                              className="h-7 text-xs"
+                              onClick={() => toggleWatch(key)}
+                              disabled={!s.enabled}
+                            >
+                              {on && <Check className="h-3 w-3 mr-1" />}
+                              {s.label}
+                              <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">{s.contact_count ?? 0}</Badge>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {!markers?.length && !customSignals.data?.length && (
+                    <p className="text-xs text-muted-foreground">No signals available yet.</p>
+                  )}
+                </div>
+
                 <div className="space-y-2 pt-4 border-t">
                   <Label>Max suggestions per day</Label>
                   <Input
