@@ -1264,6 +1264,157 @@ export type Database = {
           },
         ]
       }
+      custom_signal_contacts: {
+        Row: {
+          cleared_at: string | null
+          contact_id: string
+          id: string
+          matched_at: string
+          organization_id: string
+          signal_id: string
+        }
+        Insert: {
+          cleared_at?: string | null
+          contact_id: string
+          id?: string
+          matched_at?: string
+          organization_id: string
+          signal_id: string
+        }
+        Update: {
+          cleared_at?: string | null
+          contact_id?: string
+          id?: string
+          matched_at?: string
+          organization_id?: string
+          signal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_signal_contacts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_signal_contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_signal_contacts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_signal_contacts_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "custom_signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_signal_rules: {
+        Row: {
+          conditions: Json
+          created_at: string
+          id: string
+          rule_combinator: string
+          signal_id: string
+          updated_at: string
+        }
+        Insert: {
+          conditions?: Json
+          created_at?: string
+          id?: string
+          rule_combinator?: string
+          signal_id: string
+          updated_at?: string
+        }
+        Update: {
+          conditions?: Json
+          created_at?: string
+          id?: string
+          rule_combinator?: string
+          signal_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_signal_rules_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: true
+            referencedRelation: "custom_signals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_signals: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          enabled: boolean
+          id: string
+          key: string
+          label: string
+          organization_id: string
+          polarity: string
+          severity: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key: string
+          label: string
+          organization_id: string
+          polarity?: string
+          severity?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          key?: string
+          label?: string
+          organization_id?: string
+          polarity?: string
+          severity?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_signals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_signals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_verification_tokens: {
         Row: {
           created_at: string | null
@@ -3506,6 +3657,190 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      signal_agent_configs: {
+        Row: {
+          allowed_actions: Json
+          created_at: string
+          default_assignee_strategy: string
+          enabled: boolean
+          id: string
+          max_suggestions_per_day: number
+          organization_id: string
+          quiet_hours: Json
+          updated_at: string
+          watch_signals: Json
+        }
+        Insert: {
+          allowed_actions?: Json
+          created_at?: string
+          default_assignee_strategy?: string
+          enabled?: boolean
+          id?: string
+          max_suggestions_per_day?: number
+          organization_id: string
+          quiet_hours?: Json
+          updated_at?: string
+          watch_signals?: Json
+        }
+        Update: {
+          allowed_actions?: Json
+          created_at?: string
+          default_assignee_strategy?: string
+          enabled?: boolean
+          id?: string
+          max_suggestions_per_day?: number
+          organization_id?: string
+          quiet_hours?: Json
+          updated_at?: string
+          watch_signals?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signal_agent_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signal_agent_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signal_agent_rules: {
+        Row: {
+          action_params: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          organization_id: string
+          signal_key: string
+          suggested_action: string
+          updated_at: string
+        }
+        Insert: {
+          action_params?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organization_id: string
+          signal_key: string
+          suggested_action: string
+          updated_at?: string
+        }
+        Update: {
+          action_params?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organization_id?: string
+          signal_key?: string
+          suggested_action?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signal_agent_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signal_agent_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signal_agent_suggestions: {
+        Row: {
+          action_payload: Json
+          action_type: string
+          assignee_user_id: string | null
+          confidence: number | null
+          contact_id: string
+          created_at: string
+          executed_at: string | null
+          expires_at: string
+          id: string
+          organization_id: string
+          reasoning: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          signal_key: string
+          signal_source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_payload?: Json
+          action_type: string
+          assignee_user_id?: string | null
+          confidence?: number | null
+          contact_id: string
+          created_at?: string
+          executed_at?: string | null
+          expires_at?: string
+          id?: string
+          organization_id: string
+          reasoning?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          signal_key: string
+          signal_source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_payload?: Json
+          action_type?: string
+          assignee_user_id?: string | null
+          confidence?: number | null
+          contact_id?: string
+          created_at?: string
+          executed_at?: string | null
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          reasoning?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          signal_key?: string
+          signal_source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signal_agent_suggestions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signal_agent_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signal_agent_suggestions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sms_messages: {
         Row: {
