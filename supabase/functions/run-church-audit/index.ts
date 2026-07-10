@@ -50,11 +50,16 @@ Deno.serve(async (req) => {
 
     const reportId = report.id;
 
-    // Kick background analysis (don't await)
+    // Kick background analysis (don't await). Use EdgeRuntime.waitUntil when
+    // available, otherwise fall back to fire-and-forget — never both, or the
+    // analysis runs twice and duplicates findings.
     // deno-lint-ignore no-explicit-any
-    (globalThis as any).EdgeRuntime?.waitUntil?.(runAnalysis(admin, reportId, organizationId));
-    // Fallback: fire and forget
-    runAnalysis(admin, reportId, organizationId).catch((e) => console.error('audit background error', e));
+    const waitUntil = (globalThis as any).EdgeRuntime?.waitUntil;
+    if (typeof waitUntil === 'function') {
+      waitUntil(runAnalysis(admin, reportId, organizationId));
+    } else {
+      runAnalysis(admin, reportId, organizationId).catch((e) => console.error('audit background error', e));
+    }
 
     return json({ reportId }, 200);
   } catch (e) {
