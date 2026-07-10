@@ -58,9 +58,15 @@ export default function ContentLibraryPage() {
                           </Badge>
                         )}
                         {v.ingest_status === "failed" && (
-                          <Badge variant="destructive" className="text-xs gap-1">
-                            <AlertCircle className="h-3 w-3" /> Failed
-                          </Badge>
+                          /No transcript/i.test(v.error_message ?? "") ? (
+                            <Badge variant="secondary" className="text-xs gap-1">
+                              <AlertCircle className="h-3 w-3" /> No transcript available
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs gap-1">
+                              <AlertCircle className="h-3 w-3" /> Failed
+                            </Badge>
+                          )
                         )}
                         {v.duration_seconds != null && (
                           <span className="text-xs text-muted-foreground">{formatTimestamp(v.duration_seconds)}</span>
