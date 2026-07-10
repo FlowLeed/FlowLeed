@@ -83,22 +83,31 @@ async function runAnalysis(admin: any, reportId: string, orgId: string) {
     const d45 = new Date(Date.now() - 45 * 86400_000).toISOString();
     const d90 = new Date(Date.now() - 90 * 86400_000).toISOString();
 
-    // Fetch data (bounded)
-    const [contactsRes, engagementRes, groupsRes, meetingsRes, membersRes, interactionsRes] = await Promise.all([
-      admin.from('contacts').select('id, name, avatar, status, campus_id').eq('organization_id', orgId).eq('status', 'active').limit(5000),
-      admin.from('contact_engagement_scores').select('contact_id, engagement_level, score, last_checkin_at, weeks_attended_last_12, total_checkins_30d, total_checkins_90d').eq('organization_id', orgId).limit(5000),
-      admin.from('groups').select('id, name, status, capacity, member_count, leader_user_id, co_leader_user_id, image_url').eq('organization_id', orgId).eq('status', 'active').limit(2000),
-      admin.from('group_meetings').select('id, group_id, meeting_date').gte('meeting_date', d90).limit(5000),
-      admin.from('group_members').select('id, group_id, contact_id, role, status').eq('status', 'active').limit(10000),
-      admin.from('contact_interactions').select('contact_id, created_at, created_by_user_id').gte('created_at', d60).limit(10000),
+    // Paginated fetch to avoid the default 1000-row Supabase cap and truncation
+    // of large orgs (Church Heartbeat counts the full roster, so the audit must too).
+    // deno-lint-ignore no-explicit-any
+    async function fetchAll(build: () => any, pageSize = 1000): Promise<any[]> {
+      const out: any[] = [];
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await build().range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        out.push(...data);
+        if (data.length < pageSize) break;
+        if (out.length >= 100_000) break; // hard safety cap
+      }
+      return out;
+    }
+
+    const [contacts, engagement, groups, meetings, members, interactions] = await Promise.all([
+      fetchAll(() => admin.from('contacts').select('id, name, avatar, status, campus_id').eq('organization_id', orgId).eq('status', 'active')),
+      fetchAll(() => admin.from('contact_engagement_scores').select('contact_id, engagement_level, score, last_checkin_at, weeks_attended_last_12, total_checkins_30d, total_checkins_90d').eq('organization_id', orgId)),
+      fetchAll(() => admin.from('groups').select('id, name, status, capacity, member_count, leader_user_id, co_leader_user_id, image_url').eq('organization_id', orgId).eq('status', 'active')),
+      fetchAll(() => admin.from('group_meetings').select('id, group_id, meeting_date').gte('meeting_date', d90)),
+      fetchAll(() => admin.from('group_members').select('id, group_id, contact_id, role, status').eq('status', 'active')),
+      fetchAll(() => admin.from('contact_interactions').select('contact_id, created_at, created_by_user_id').gte('created_at', d60)),
     ]);
 
-    const contacts = contactsRes.data || [];
-    const engagement = engagementRes.data || [];
-    const groups = groupsRes.data || [];
-    const meetings = meetingsRes.data || [];
-    const members = membersRes.data || [];
-    const interactions = interactionsRes.data || [];
 
     const contactIds = new Set(contacts.map((c: any) => c.id));
     const contactById = new Map(contacts.map((c: any) => [c.id, c]));
