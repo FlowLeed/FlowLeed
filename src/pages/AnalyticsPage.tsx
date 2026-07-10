@@ -39,7 +39,10 @@ const AnalyticsPage = () => {
             onCampusChange={setSelectedCampusId}
           />
         </div>
-        <HeartbeatCard campusId={selectedCampusId} />
+        <HeartbeatCard
+          campusId={selectedCampusId}
+          trendDays={Math.max(2, Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / 86400000))}
+        />
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
