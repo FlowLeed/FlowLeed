@@ -1,0 +1,2 @@
+ALTER TABLE public.church_health_findings DROP CONSTRAINT chf_section_check;
+ALTER TABLE public.church_health_findings ADD CONSTRAINT chf_section_check CHECK (section = ANY (ARRAY['guests','at_risk','volunteers','groups']));
