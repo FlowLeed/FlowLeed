@@ -1315,8 +1315,10 @@ export type Database = {
           ingest_status: Database["public"]["Enums"]["content_ingest_status"]
           ingested_by: string | null
           is_featured: boolean
+          last_retry_at: string | null
           organization_id: string
           published_at: string | null
+          retry_count: number
           short_description: string | null
           thumbnail_url: string | null
           title: string | null
@@ -1336,8 +1338,10 @@ export type Database = {
           ingest_status?: Database["public"]["Enums"]["content_ingest_status"]
           ingested_by?: string | null
           is_featured?: boolean
+          last_retry_at?: string | null
           organization_id: string
           published_at?: string | null
+          retry_count?: number
           short_description?: string | null
           thumbnail_url?: string | null
           title?: string | null
@@ -1357,8 +1361,10 @@ export type Database = {
           ingest_status?: Database["public"]["Enums"]["content_ingest_status"]
           ingested_by?: string | null
           is_featured?: boolean
+          last_retry_at?: string | null
           organization_id?: string
           published_at?: string | null
+          retry_count?: number
           short_description?: string | null
           thumbnail_url?: string | null
           title?: string | null
