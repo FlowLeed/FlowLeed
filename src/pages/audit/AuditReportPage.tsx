@@ -122,12 +122,16 @@ const AuditReportPage = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
               <LayoutDashboard className="h-4 w-4 mr-1.5" /> Dashboard
             </Button>
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
-              <Printer className="h-4 w-4 mr-1.5" /> Export PDF
+            <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exporting}>
+              {exporting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Printer className="h-4 w-4 mr-1.5" />}
+              {exporting ? 'Exporting…' : 'Export PDF'}
             </Button>
           </div>
         </div>
       </header>
+
+      <div ref={pdfRootRef} className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        <div data-pdf-section className="text-center space-y-2">
 
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <div className="text-center space-y-2">
