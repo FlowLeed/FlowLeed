@@ -164,12 +164,27 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                 const hasBaseline = trends?.baselineDate != null && baseline !== undefined;
                 const delta = hasBaseline ? count - (baseline || 0) : 0;
                 const sparkValues = (trends?.series || []).map((p) => p.counts[l.key] || 0);
+                // Compute least-squares slope so the sparkline color reflects the
+                // overall trend direction, not just endpoints (which can flip on a
+                // late uptick even when the 30-day delta is strongly improving).
+                let slope = 0;
+                if (sparkValues.length >= 2) {
+                  const n = sparkValues.length;
+                  const meanX = (n - 1) / 2;
+                  const meanY = sparkValues.reduce((a, b) => a + b, 0) / n;
+                  let num = 0, den = 0;
+                  for (let idx = 0; idx < n; idx++) {
+                    num += (idx - meanX) * (sparkValues[idx] - meanY);
+                    den += (idx - meanX) ** 2;
+                  }
+                  slope = den === 0 ? 0 : num / den;
+                }
                 const sparkPositive =
-                  sparkValues.length >= 2
-                    ? l.goodDirection === "up"
-                      ? sparkValues[sparkValues.length - 1] >= sparkValues[0]
-                      : sparkValues[sparkValues.length - 1] <= sparkValues[0]
-                    : true;
+                  sparkValues.length < 2
+                    ? true
+                    : l.goodDirection === "up"
+                      ? slope >= 0
+                      : slope <= 0;
 
                 const buildHref = (level: string) => {
                   const params = new URLSearchParams({ engagementLevel: level });
