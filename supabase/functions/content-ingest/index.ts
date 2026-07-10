@@ -192,10 +192,107 @@ async function embedTexts(texts: string[]): Promise<number[][]> {
   return data.data.map((d: any) => d.embedding);
 }
 
+async function runIngestWorker(
+  admin: ReturnType<typeof createClient>,
+  videoId: string,
+  youtubeId: string,
+  organizationId: string,
+) {
+  try {
+    let segs = await fetchTranscriptViaSupadata(youtubeId);
+    if (!segs || segs.length === 0) segs = await fetchTranscriptViaInnertube(youtubeId);
+    if (!segs || segs.length === 0) throw new Error("No transcript available");
+
+    const chunks = chunkSegments(segs);
+    const totalDuration = Math.floor(
+      (segs[segs.length - 1].offset_ms + (segs[segs.length - 1].duration_ms ?? 0)) / 1000,
+    );
+
+    await admin.from("content_videos").update({
+      ingest_status: "embedding",
+      duration_seconds: totalDuration,
+    }).eq("id", videoId);
+
+    await admin.from("content_transcript_chunks").delete().eq("video_id", videoId);
+
+    const BATCH = 8;
+    for (let i = 0; i < chunks.length; i += BATCH) {
+      const slice = chunks.slice(i, i + BATCH);
+      const vectors = await embedTexts(slice.map((c) => c.text));
+      const rows = slice.map((c, idx) => ({
+        video_id: videoId,
+        organization_id: organizationId,
+        chunk_index: i + idx,
+        text: c.text,
+        start_seconds: c.start_seconds,
+        end_seconds: c.end_seconds,
+        embedding: vectors[idx] as unknown as string,
+      }));
+      const ins = await admin.from("content_transcript_chunks").insert(rows);
+      if (ins.error) throw ins.error;
+    }
+
+    await admin.from("content_videos").update({ ingest_status: "analyzing" }).eq("id", videoId);
+
+    await fetch(`${SUPABASE_URL}/functions/v1/content-analyze`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${SERVICE_KEY}`,
+      },
+      body: JSON.stringify({ videoId, organizationId, internal: true }),
+    });
+  } catch (e: any) {
+    console.error("[content-ingest] worker error", e);
+    await admin.from("content_videos").update({
+      ingest_status: "failed",
+      error_message: String(e?.message ?? e),
+    }).eq("id", videoId);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const body = await req.json().catch(() => ({}));
+
+    // Internal retry mode: called by content-retry-failed cron with service key.
+    if (body?.internal === true && body?.action === "retry" && body?.videoId) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (!authHeader.includes(SERVICE_KEY)) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: v } = await admin
+        .from("content_videos")
+        .select("id, youtube_id, organization_id, retry_count")
+        .eq("id", body.videoId)
+        .maybeSingle();
+      if (!v) {
+        return new Response(JSON.stringify({ error: "Video not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      await admin.from("content_videos").update({
+        ingest_status: "transcribing",
+        error_message: null,
+        retry_count: (v.retry_count ?? 0) + 1,
+        last_retry_at: new Date().toISOString(),
+      }).eq("id", v.id);
+
+      const work = runIngestWorker(admin, v.id as string, v.youtube_id as string, v.organization_id as string);
+      // @ts-ignore EdgeRuntime available in Supabase
+      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(work);
+      else await work;
+
+      return new Response(JSON.stringify({ videoId: v.id, retried: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -215,7 +312,6 @@ Deno.serve(async (req) => {
     }
     const userId = claimsData.claims.sub as string;
 
-    const body = await req.json();
     const youtubeUrl: string = body.youtubeUrl;
     const organizationId: string = body.organizationId;
     if (!youtubeUrl || !organizationId) {
@@ -231,9 +327,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-
-    // Membership check
     const { data: membership } = await admin
       .from("organization_members")
       .select("role")
@@ -246,7 +339,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Upsert video row
     const oembed = await fetchYouTubeOEmbed(youtubeId);
     const upsert = await admin
       .from("content_videos")
@@ -266,64 +358,7 @@ Deno.serve(async (req) => {
     if (upsert.error) throw upsert.error;
     const videoId = upsert.data.id as string;
 
-    // Kick off background work
-    const work = (async () => {
-      try {
-        let segs = await fetchTranscriptViaSupadata(youtubeId);
-        if (!segs || segs.length === 0) segs = await fetchTranscriptViaInnertube(youtubeId);
-        if (!segs || segs.length === 0) throw new Error("No transcript available");
-
-        const chunks = chunkSegments(segs);
-        const totalDuration = Math.floor(
-          (segs[segs.length - 1].offset_ms + (segs[segs.length - 1].duration_ms ?? 0)) / 1000,
-        );
-
-        await admin.from("content_videos").update({
-          ingest_status: "embedding",
-          duration_seconds: totalDuration,
-        }).eq("id", videoId);
-
-        // Replace existing chunks
-        await admin.from("content_transcript_chunks").delete().eq("video_id", videoId);
-
-        // Embed in small batches to respect CPU
-        const BATCH = 8;
-        for (let i = 0; i < chunks.length; i += BATCH) {
-          const slice = chunks.slice(i, i + BATCH);
-          const vectors = await embedTexts(slice.map((c) => c.text));
-          const rows = slice.map((c, idx) => ({
-            video_id: videoId,
-            organization_id: organizationId,
-            chunk_index: i + idx,
-            text: c.text,
-            start_seconds: c.start_seconds,
-            end_seconds: c.end_seconds,
-            embedding: vectors[idx] as unknown as string,
-          }));
-          const ins = await admin.from("content_transcript_chunks").insert(rows);
-          if (ins.error) throw ins.error;
-        }
-
-        await admin.from("content_videos").update({ ingest_status: "analyzing" }).eq("id", videoId);
-
-        // Trigger analysis
-        await fetch(`${SUPABASE_URL}/functions/v1/content-analyze`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${SERVICE_KEY}`,
-          },
-          body: JSON.stringify({ videoId, organizationId, internal: true }),
-        });
-      } catch (e: any) {
-        console.error("[content-ingest] worker error", e);
-        await admin.from("content_videos").update({
-          ingest_status: "failed",
-          error_message: String(e?.message ?? e),
-        }).eq("id", videoId);
-      }
-    })();
-
+    const work = runIngestWorker(admin, videoId, youtubeId, organizationId);
     // @ts-ignore EdgeRuntime is available
     if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(work);
     else await work;
