@@ -330,7 +330,7 @@ export function HeartbeatCard({ campusId, compact = false, trendDays = 30 }: Hea
               )}
               {!compact && (
                 <div className="pt-2 border-t text-xs text-muted-foreground flex items-center justify-between">
-                  <span>Trends compared to 30 days ago · based on check-in history</span>
+                  <span>Totals are a live snapshot · trends vs {trendDays} days ago</span>
                   <span className="tabular-nums flex items-center gap-1">
                     {scoredTotal} scored of {totalContacts}
                     <Tooltip>
