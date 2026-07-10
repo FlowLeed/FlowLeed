@@ -213,13 +213,6 @@ async function runAnalysis(admin: any, reportId: string, orgId: string) {
         severity: 'medium', metric_value: overloaded, metric_label: 'leaders',
         contact_ids: [], sort_order: 2,
       });
-      findings.push({
-        section: 'volunteers', key: 'groups_missing_backup',
-        title: 'Groups without a co-leader',
-        description: 'Groups running with a single leader and no back-up.',
-        severity: 'medium', metric_value: groupsMissingBackup.length, metric_label: 'groups',
-        contact_ids: [], sort_order: 3,
-      });
 
       metrics.volunteers = {
         active_leaders: leaderContactIds.size,
