@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +8,9 @@ import { ScoreGauge } from '@/components/audit/ScoreGauge';
 import { SectionCard, type Finding } from '@/components/audit/SectionCard';
 import { CohortDialog } from '@/components/audit/CohortDialog';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
 
 interface Report {
