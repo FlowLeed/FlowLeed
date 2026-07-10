@@ -126,8 +126,8 @@ async function runAnalysis(admin: any, reportId: string, orgId: string) {
         })
         .map((c: any) => c.id);
 
-      const drifting = engagement.filter((e: any) => e.engagement_level === 'drifting' && contactIds.has(e.contact_id)).map((e: any) => e.contact_id);
-      const slowing = engagement.filter((e: any) => e.engagement_level === 'slowing' && contactIds.has(e.contact_id)).map((e: any) => e.contact_id);
+      const drifting = engagement.filter((e: any) => (e.engagement_level === 'at_risk' || e.engagement_level === 'drifting') && contactIds.has(e.contact_id)).map((e: any) => e.contact_id);
+      const slowing = engagement.filter((e: any) => (e.engagement_level === 'inactive' || e.engagement_level === 'slowing') && contactIds.has(e.contact_id) && (e.total_checkins_90d || 0) > 0).map((e: any) => e.contact_id);
 
       const noCareIds = contacts
         .filter((c: any) => !interactionsByContact.has(c.id))
@@ -143,8 +143,8 @@ async function runAnalysis(admin: any, reportId: string, orgId: string) {
       });
       findings.push({
         section: 'at_risk', key: 'drifting',
-        title: 'Currently marked as drifting',
-        description: 'Contacts flagged by the engagement model as drifting away.',
+        title: 'At-risk / drifting',
+        description: 'Contacts flagged by the engagement model as at-risk of drifting away.',
         severity: 'high', metric_value: drifting.length, metric_label: 'people',
         contact_ids: drifting.slice(0, 500), sort_order: 2,
       });
