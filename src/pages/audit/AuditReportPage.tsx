@@ -132,9 +132,6 @@ const AuditReportPage = () => {
 
       <div ref={pdfRootRef} className="max-w-6xl mx-auto px-4 py-8 space-y-8">
         <div data-pdf-section className="text-center space-y-2">
-
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-        <div className="text-center space-y-2">
           <div className="text-sm text-muted-foreground">Church Health Report</div>
           <h1 className="text-3xl md:text-4xl font-bold">{organization?.name || 'Your Church'}</h1>
           {report.generated_at && (
