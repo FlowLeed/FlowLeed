@@ -108,12 +108,6 @@ async function runAnalysis(admin: any, reportId: string, orgId: string) {
       fetchAll(() => admin.from('contact_interactions').select('contact_id, created_at, created_by_user_id').gte('created_at', d60)),
     ]);
 
-    const contacts = contactsRes.data || [];
-    const engagement = engagementRes.data || [];
-    const groups = groupsRes.data || [];
-    const meetings = meetingsRes.data || [];
-    const members = membersRes.data || [];
-    const interactions = interactionsRes.data || [];
 
     const contactIds = new Set(contacts.map((c: any) => c.id));
     const contactById = new Map(contacts.map((c: any) => [c.id, c]));
