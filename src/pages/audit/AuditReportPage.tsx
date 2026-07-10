@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Printer, LayoutDashboard, HeartPulse, Users2, Layers, ArrowLeft } from 'lucide-react';
+import { Loader2, Printer, LayoutDashboard, HeartPulse, Users2, Layers, ArrowLeft, UserPlus } from 'lucide-react';
 import { ScoreGauge } from '@/components/audit/ScoreGauge';
 import { SectionCard, type Finding } from '@/components/audit/SectionCard';
 import { CohortDialog } from '@/components/audit/CohortDialog';
@@ -103,7 +103,7 @@ const AuditReportPage = () => {
   }, [id]);
 
   const bySection = useMemo(() => {
-    const m: Record<string, Finding[]> = { at_risk: [], volunteers: [], groups: [] };
+    const m: Record<string, Finding[]> = { guests: [], at_risk: [], volunteers: [], groups: [] };
     for (const f of findings) (m[f.section] ||= []).push(f);
     return m;
   }, [findings]);
@@ -160,11 +160,12 @@ const AuditReportPage = () => {
 
         <Card data-pdf-section>
           <CardContent className="py-8">
-            <div className="grid md:grid-cols-4 gap-6 items-center">
+            <div className="grid md:grid-cols-5 gap-6 items-center">
               <div className="flex justify-center md:col-span-1">
                 <ScoreGauge score={overall} label="Overall" />
               </div>
-              <div className="md:col-span-3 grid grid-cols-3 gap-4 text-center">
+              <div className="md:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <ScoreGauge score={scores.guests ?? 0} size={120} label="Guests & New Families" />
                 <ScoreGauge score={scores.at_risk ?? 0} size={120} label="At-Risk People" />
                 <ScoreGauge score={scores.volunteers ?? 0} size={120} label="Volunteers & Leaders" />
                 <ScoreGauge score={scores.groups ?? 0} size={120} label="Groups" />
@@ -173,6 +174,15 @@ const AuditReportPage = () => {
           </CardContent>
         </Card>
 
+        <div data-pdf-section>
+          <SectionCard
+            icon={UserPlus}
+            title="Guest & New Family Follow-up"
+            score={scores.guests ?? 0}
+            findings={bySection.guests || []}
+            onOpenCohort={setOpenFinding}
+          />
+        </div>
         <div data-pdf-section>
           <SectionCard
             icon={HeartPulse}

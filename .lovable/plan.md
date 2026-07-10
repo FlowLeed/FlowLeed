@@ -1,131 +1,53 @@
+Add more signal to the audit by tapping data we already sync but don't yet surface. Below is what I'd add, grouped by section, plus a new "Guest & New Family Follow-up" section since that's the #1 request.
 
-# Lead Magnet: Free Church Health Audit
+## New section: Guest & New Family Follow-up
 
-Marketing lives on flowleed.com. This app ships:
-1. A minimal signup route at `/audit`
-2. A one-step PCO connect
-3. A background analyzer that generates a **Church Health Report**
-4. An in-app report dashboard where each finding shows **20 people preview → View all → Add to Flow** (existing or new)
-5. One-click branded PDF export
+Uses `flow_moments` (first-time guest / new family moments), `pco_checkins`, and `contact_interactions`.
 
-## Funnel
+- **First-time guests (last 30 days)** — count of contacts with a first-visit moment or first check-in in last 30 days.
+- **New families (last 60 days)** — households where any member had a first check-in in the last 60 days (grouped by `pc_household_id`).
+- **Guests with no follow-up** — first-time guests from the last 30 days who have zero `contact_interactions` since their visit. High severity.
+- **Second-time attenders not yet in a flow** — people with 2+ check-ins in last 60 days but no active `pipeline_contacts` row.
 
-```text
-flowleed.com/audit  →  /audit (short WHY + signup)
-                    →  /audit/connect  (Connect Planning Center)
-                    →  /audit/generating  (progress polling)
-                    →  /audit/report/:id  (dashboard + drill-downs + Add to Flow + PDF)
-```
+Section score = % of recent guests who received at least one follow-up interaction.
 
-## `/audit` route (in this app)
+## Additions to "At-Risk People"
 
-Public, no header/sidebar chrome. Sole purpose: convert an ad click into an account.
+- **No check-in in the last 30 days** — previously regular attenders (≥4 weeks in last 12) with no check-in for 30+ days. Earlier warning than the existing 60-day finding.
+- **Missed 2+ Sundays in a row** — contacts whose last check-in was 14–29 days ago after a regular pattern.
+- **Regulars whose small-group attendance stopped** — active in Sunday check-ins but no group attendance in 45+ days.
+- **Prayer requests with no follow-up** — open `contact_prayer_requests` older than 14 days with no interaction since.
 
-- Short WHY block (~3 lines): "See who's drifting, where your leaders are stretched, and which groups need attention — free, in 10 minutes."
-- 3 tiny bullets naming the report sections.
-- Trust line: "Read-only Planning Center access. Your data stays in your account."
-- **Signup form** (email + password + org name) — reuses `AuthPage` signup logic inline.
-- After email verify → `/audit/connect`.
+## Additions to "Volunteer & Leader Health"
 
-Attribution: capture `utm_*` and referrer on signup, store on `profiles`.
+- **Leaders whose own engagement is dropping** — leaders/co-leaders whose engagement level is `at_risk` or `inactive`.
+- **Groups whose leader hasn't checked in recently** — leader with no check-in in 30 days.
+- **New leaders in last 90 days** — informational count (helps celebrate + focus onboarding care).
 
-## `/audit/connect`
+## Additions to "Groups Health"
 
-Single-screen: "Connect Planning Center to generate your report." One button → existing PCO OAuth. On return with a valid connection, immediately calls `run-church-audit` and routes to `/audit/generating`.
+- **Groups with declining attendance** — average attendees per meeting dropped >30% comparing last 30 days vs prior 30 days.
+- **Groups with no new members in 90 days** — signals stagnation.
+- **Pending group signup requests** — open `group_signup_requests` older than 7 days (leadership responsiveness).
+- **Groups with attendance but no meetings logged** — data hygiene issue that skews reports.
 
-## `/audit/generating`
+## What we already surface (for reference)
 
-Progress screen. Polls `church_health_reports.status`. Shows the three sections lighting up as their analyzers finish (`queued → running → ready`). Redirects to `/audit/report/:id` when `status = 'ready'`.
+At-Risk: no check-in 60d, drifting, slowing.
+Volunteers: leaders without care, overloaded leaders.
+Groups: dormant, over-capacity, no co-leader.
 
-## `/audit/report/:id` — the report
+## Technical notes
 
-Header
-- Org name + logo, generation timestamp, "Download PDF" button, optional "Share" toggle (public read-only aggregate link).
-- Large **Overall Church Health Score** gauge (weighted average of section grades).
+- All new metrics come from tables already queried or trivially joinable: `flow_moments`, `flow_moment_types`, `pco_checkins`, `group_attendance`, `contact_prayer_requests`, `pipeline_contacts`, `group_signup_requests`, `contacts.pc_household_id`.
+- Extend the paginated `fetchAll` block in `supabase/functions/run-church-audit/index.ts` with the new tables (guarded date windows: 30/60/90 day slices).
+- Add a fourth section key `guests` to `church_health_reports.section_scores` and update `AuditReportPage.tsx` to render a `SectionCard` with a `Users2`/`UserPlus` icon between the header and At-Risk.
+- Overall score becomes average of 4 section scores instead of 3.
+- Each new finding follows the existing `{ section, key, title, description, severity, metric_value, metric_label, contact_ids, sort_order }` shape so `CohortDialog` + "Add to flow" keep working with no UI changes.
+- No schema migration needed; `section_scores`/`metrics` are already `jsonb`.
 
-Three section cards. Each card renders identically:
+## Open questions
 
-```
-[Section title]                       [Grade A–F]
-[Headline number]                     [Trend indicator]
-[Short interpretation sentence]
-
-Findings (top 3):
-  • Finding title — metric — severity
-  • Finding title — metric — severity
-  • Finding title — metric — severity
-
-People preview (first 20 avatars/names)  [View all N]  [Add to Flow]
-```
-
-Sections in v1 (per prior decision):
-
-1. **At-Risk / Drifting People**
-   - Uses `contact_engagement_scores`, `pco_checkins`, `contact_interactions`.
-   - Metrics: count with engagement drop ≥ 25% vs 90d baseline; count with no check-in in 60d who were previously regular; median days since last interaction; breakdown by campus.
-2. **Volunteer & Leader Health**
-   - Uses `group_members` roles, `groups`, `contact_interactions`.
-   - Metrics: active volunteers, leader workload distribution, leaders with no recent care (no staff interaction 60d), teams missing co-leader/host.
-3. **Groups Health**
-   - Uses `groups`, `group_meetings`, `group_attendance`.
-   - Metrics: % groups meeting monthly vs dormant (no meeting 45d), attendance trend 90d vs prior 90d, at/over capacity, no co-leader, orphaned members.
-
-## Drill-down + Add to Flow (the key interaction)
-
-Every finding is a **cohort**. Clicking "View all" opens a full-screen drawer:
-
-- Sortable list of the people in that cohort with the metric that landed them there (e.g., "42 days since last check-in").
-- Bulk selection (default: all selected).
-- **Add to Flow** button opens the existing `BulkAddToFlowDialog` component (already in the codebase — same one used on Contacts). Two options in the flow-selection step:
-  - **Existing flow** — the standard picker.
-  - **Create a new flow from this cohort** — new "+ New flow" tile at the top of the picker; opens a small dialog (name + optional icon + default first stage "New") and, on save, creates the flow, adds the current user as flow lead, seeds one stage, then continues the bulk-add. Implemented by reusing existing `CreateFlowDialog` chained into `BulkAddToFlowDialog`.
-- After add: toast confirms count added / skipped (already-in-flow), and a link to open the flow.
-
-The report card's inline "Add to Flow" button behaves the same, defaulting the cohort to the top finding's people.
-
-## PDF export
-
-Edge function `generate-audit-pdf` renders the report to a branded PDF (org logo, score gauge, three section pages, top findings, name lists capped at 25 per section with a "+ N more" line). Uses the PDF skill pattern already in the project. Uploads to `audit-reports` bucket, returns a signed URL. Button downloads directly.
-
-## Optional share link
-
-Toggle on the report header. When on, `/audit/shared/:token` renders a **read-only aggregate summary** — scores, counts, top findings — **no names or contact IDs**. Safe to send to elders/board.
-
-## Data model
-
-New tables (with GRANTs, RLS scoped to `organization_id`, `updated_at` trigger):
-
-- `church_health_reports`
-  - `organization_id`, `created_by_user_id`, `status` (`queued|running|ready|failed`), `overall_score numeric`, `section_scores jsonb`, `metrics jsonb`, `pdf_storage_path text`, `share_token text`, `share_enabled boolean default false`, `generated_at timestamptz`, `error text`.
-- `church_health_findings`
-  - `report_id`, `section` (`at_risk|volunteers|groups`), `key` (stable slug e.g. `no_checkin_60d`), `title`, `description`, `severity` (`low|medium|high`), `metric_value numeric`, `metric_label text`, `contact_ids uuid[]`, `sort_order int`.
-
-Private storage bucket: `audit-reports`.
-
-## Edge functions
-
-- `run-church-audit` — orchestrator. Creates the report row, updates status per section, computes findings, sets `status=ready`. Uses data already synced by PCO (no extra PCO API calls; if the org has zero synced people yet, it enqueues a one-time sync first and shows an extended progress step).
-- `generate-audit-pdf` — renders PDF from report + findings, uploads to `audit-reports`, returns signed URL.
-- `audit-share-token` — mints/rotates share token server-side.
-
-## Frontend files
-
-- `src/pages/audit/AuditSignupPage.tsx` — `/audit` (short WHY + signup form).
-- `src/pages/audit/AuditConnectPage.tsx` — `/audit/connect`.
-- `src/pages/audit/AuditGeneratingPage.tsx` — `/audit/generating`.
-- `src/pages/audit/AuditReportPage.tsx` — `/audit/report/:id`.
-- `src/pages/audit/PublicAuditSharePage.tsx` — `/audit/shared/:token`.
-- `src/components/audit/ScoreGauge.tsx`, `SectionCard.tsx`, `FindingRow.tsx`, `CohortDrawer.tsx`, `ReportHeader.tsx`, `AuditPdfButton.tsx`.
-- Hook `useChurchAudit(reportId)` — react-query polling + finding queries + cohort fetch.
-- `BulkAddToFlowDialog` gets a small addition: a "+ New flow" tile that opens `CreateFlowDialog` then re-enters the picker with the new flow preselected.
-- `AuthPage` already handles `?mode=signup`; we set `?intent=audit` so post-verify redirects to `/audit/connect`.
-
-## Tracking
-
-GA4 events: `audit_signup_view`, `audit_signup_submit`, `audit_pco_connected`, `audit_report_ready`, `audit_pdf_downloaded`, `audit_cohort_add_to_flow` (with section + finding key).
-
-## Out of scope for v1
-
-- Guest follow-up section (sparse data early).
-- Emailed PDF (download only for now).
-- Landing/marketing copy on flowleed.com (handled outside this repo).
+1. Do you want the new "Guest & New Family Follow-up" as its own section, or folded into At-Risk?
+2. Should "No check-in 30d" replace the 60d finding or sit alongside it as an earlier warning?
+3. Any additions above you'd rather skip for v1?
