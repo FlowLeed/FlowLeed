@@ -23,6 +23,7 @@ const LEVELS: { key: Level; label: string; descriptor: string; goodDirection: "u
 interface HeartbeatCardProps {
   campusId?: string | null;
   compact?: boolean;
+  trendDays?: number;
 }
 
 function Sparkline({ values, positive }: { values: number[]; positive: boolean }) {
@@ -87,11 +88,11 @@ function DeltaBadge({
   );
 }
 
-export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps) {
+export function HeartbeatCard({ campusId, compact = false, trendDays = 30 }: HeartbeatCardProps) {
   const { organization } = useProfile();
   const orgId = organization?.id;
   const { data: stats, isLoading } = useOrgCheckinStats(orgId, campusId);
-  const { data: trends } = useEngagementTrends(orgId, 30);
+  const { data: trends } = useEngagementTrends(orgId, trendDays);
   const navigate = useNavigate();
 
   const [showAsPercent, setShowAsPercent] = useState(false);
@@ -266,8 +267,8 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
                         {hasBaseline && (
                           <div className="text-muted-foreground">
                             {delta === 0
-                              ? "No change vs 30 days ago"
-                              : `${delta > 0 ? "+" : ""}${delta} vs 30 days ago`}
+                              ? `No change vs ${trendDays} days ago`
+                              : `${delta > 0 ? "+" : ""}${delta} vs ${trendDays} days ago`}
                           </div>
                         )}
                         <div className="text-muted-foreground mt-0.5">Click to view</div>
@@ -329,7 +330,7 @@ export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps)
               )}
               {!compact && (
                 <div className="pt-2 border-t text-xs text-muted-foreground flex items-center justify-between">
-                  <span>Trends compared to 30 days ago · based on check-in history</span>
+                  <span>Totals are a live snapshot · trends vs {trendDays} days ago</span>
                   <span className="tabular-nums flex items-center gap-1">
                     {scoredTotal} scored of {totalContacts}
                     <Tooltip>
