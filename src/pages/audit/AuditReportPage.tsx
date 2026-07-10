@@ -141,8 +141,7 @@ const AuditReportPage = () => {
           )}
         </div>
 
-        {/* Overall gauge */}
-        <Card>
+        <Card data-pdf-section>
           <CardContent className="py-8">
             <div className="grid md:grid-cols-4 gap-6 items-center">
               <div className="flex justify-center md:col-span-1">
@@ -157,27 +156,33 @@ const AuditReportPage = () => {
           </CardContent>
         </Card>
 
-        <SectionCard
-          icon={HeartPulse}
-          title="At-Risk People"
-          score={scores.at_risk ?? 0}
-          findings={bySection.at_risk || []}
-          onOpenCohort={setOpenFinding}
-        />
-        <SectionCard
-          icon={Users2}
-          title="Volunteer & Leader Health"
-          score={scores.volunteers ?? 0}
-          findings={bySection.volunteers || []}
-          onOpenCohort={setOpenFinding}
-        />
-        <SectionCard
-          icon={Layers}
-          title="Groups Health"
-          score={scores.groups ?? 0}
-          findings={bySection.groups || []}
-          onOpenCohort={setOpenFinding}
-        />
+        <div data-pdf-section>
+          <SectionCard
+            icon={HeartPulse}
+            title="At-Risk People"
+            score={scores.at_risk ?? 0}
+            findings={bySection.at_risk || []}
+            onOpenCohort={setOpenFinding}
+          />
+        </div>
+        <div data-pdf-section>
+          <SectionCard
+            icon={Users2}
+            title="Volunteer & Leader Health"
+            score={scores.volunteers ?? 0}
+            findings={bySection.volunteers || []}
+            onOpenCohort={setOpenFinding}
+          />
+        </div>
+        <div data-pdf-section>
+          <SectionCard
+            icon={Layers}
+            title="Groups Health"
+            score={scores.groups ?? 0}
+            findings={bySection.groups || []}
+            onOpenCohort={setOpenFinding}
+          />
+        </div>
 
         <div className="text-center pt-4 print:hidden">
           <Button variant="ghost" onClick={() => navigate('/')}>
