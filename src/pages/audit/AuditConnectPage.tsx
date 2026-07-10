@@ -28,7 +28,7 @@ const AuditConnectPage = () => {
         .from('integrations')
         .select('id, status')
         .eq('organization_id', organization.id)
-        .eq('provider', 'planning_center')
+        .eq('service_name', 'planning_center')
         .maybeSingle();
       setHasIntegration(!!data && data.status !== 'reauth_required');
     })();
