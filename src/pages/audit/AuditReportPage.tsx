@@ -72,7 +72,7 @@ const AuditReportPage = () => {
   const scores = report.section_scores || {};
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto pb-16 print:pb-0">
+    <div className="h-screen bg-background overflow-y-auto pb-16 print:pb-0">
       <header className="border-b bg-card sticky top-0 z-10 print:hidden">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <img src={flowleedLogo} alt="Flowleed" className="h-6" />
