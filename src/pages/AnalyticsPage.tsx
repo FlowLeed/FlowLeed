@@ -27,6 +27,14 @@ const AnalyticsPage = () => {
         description="Track performance, analyze trends, and optimize your flows"
         showFlowIcon={false}
         showAddButton={false}
+        rightContent={
+          <Button asChild variant="outline" size="sm">
+            <Link to="/audit">
+              <FileBarChart className="h-4 w-4 mr-2" />
+              Church Health Report
+            </Link>
+          </Button>
+        }
       />
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6">
