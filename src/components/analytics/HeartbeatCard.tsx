@@ -23,6 +23,7 @@ const LEVELS: { key: Level; label: string; descriptor: string; goodDirection: "u
 interface HeartbeatCardProps {
   campusId?: string | null;
   compact?: boolean;
+  trendDays?: number;
 }
 
 function Sparkline({ values, positive }: { values: number[]; positive: boolean }) {
