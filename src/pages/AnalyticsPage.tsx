@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { DateRangeFilter } from "@/components/analytics/DateRangeFilter";
 import { CampusFilter } from "@/components/analytics/CampusFilter";
@@ -10,6 +12,7 @@ import { PeopleSection } from "@/components/analytics/PeopleSection";
 import { AttendanceSection } from "@/components/analytics/AttendanceSection";
 import { HeartbeatCard } from "@/components/analytics/HeartbeatCard";
 import { DateRange, DateRangePreset, getDateRangeFromPreset } from "@/hooks/useAnalytics";
+import { FileBarChart } from "lucide-react";
 
 const AnalyticsPage = () => {
   const [preset, setPreset] = useState<DateRangePreset>("month");
