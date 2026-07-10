@@ -8,7 +8,7 @@ import { ScoreGauge } from '@/components/audit/ScoreGauge';
 import { SectionCard, type Finding } from '@/components/audit/SectionCard';
 import { CohortDialog } from '@/components/audit/CohortDialog';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
@@ -39,6 +39,11 @@ const AuditReportPage = () => {
     if (!root) return;
     setExporting(true);
     try {
+      // Ensure webfonts are ready so text metrics are accurate
+      if ((document as any).fonts?.ready) {
+        try { await (document as any).fonts.ready; } catch {}
+      }
+
       const sections = Array.from(root.querySelectorAll<HTMLElement>('[data-pdf-section]'));
       if (sections.length === 0) return;
 
@@ -48,17 +53,29 @@ const AuditReportPage = () => {
       let y = M;
 
       for (let i = 0; i < sections.length; i++) {
-        const canvas = await html2canvas(sections[i], {
-          scale: 2,
-          useCORS: true,
+        const el = sections[i];
+        const rect = el.getBoundingClientRect();
+        const dataUrl = await toPng(el, {
+          pixelRatio: 2,
+          cacheBust: true,
           backgroundColor: '#ffffff',
+          width: rect.width,
+          height: rect.height,
+          style: { transform: 'none' },
         });
-        const hMM = (canvas.height / canvas.width) * CW;
+        // Load image to read intrinsic dimensions
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const i = new Image();
+          i.onload = () => resolve(i);
+          i.onerror = reject;
+          i.src = dataUrl;
+        });
+        const hMM = (img.height / img.width) * CW;
         if (y > M && y + hMM > A4_H - M) {
           pdf.addPage();
           y = M;
         }
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', M, y, CW, hMM);
+        pdf.addImage(dataUrl, 'PNG', M, y, CW, hMM);
         y += hMM + 4;
       }
 
