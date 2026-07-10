@@ -267,8 +267,8 @@ export function HeartbeatCard({ campusId, compact = false, trendDays = 30 }: Hea
                         {hasBaseline && (
                           <div className="text-muted-foreground">
                             {delta === 0
-                              ? "No change vs 30 days ago"
-                              : `${delta > 0 ? "+" : ""}${delta} vs 30 days ago`}
+                              ? `No change vs ${trendDays} days ago`
+                              : `${delta > 0 ? "+" : ""}${delta} vs ${trendDays} days ago`}
                           </div>
                         )}
                         <div className="text-muted-foreground mt-0.5">Click to view</div>
