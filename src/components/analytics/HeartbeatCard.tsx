@@ -88,11 +88,11 @@ function DeltaBadge({
   );
 }
 
-export function HeartbeatCard({ campusId, compact = false }: HeartbeatCardProps) {
+export function HeartbeatCard({ campusId, compact = false, trendDays = 30 }: HeartbeatCardProps) {
   const { organization } = useProfile();
   const orgId = organization?.id;
   const { data: stats, isLoading } = useOrgCheckinStats(orgId, campusId);
-  const { data: trends } = useEngagementTrends(orgId, 30);
+  const { data: trends } = useEngagementTrends(orgId, trendDays);
   const navigate = useNavigate();
 
   const [showAsPercent, setShowAsPercent] = useState(false);
