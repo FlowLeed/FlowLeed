@@ -31,6 +31,45 @@ const AuditReportPage = () => {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [loading, setLoading] = useState(true);
   const [openFinding, setOpenFinding] = useState<Finding | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const pdfRootRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPDF = async () => {
+    const root = pdfRootRef.current;
+    if (!root) return;
+    setExporting(true);
+    try {
+      const sections = Array.from(root.querySelectorAll<HTMLElement>('[data-pdf-section]'));
+      if (sections.length === 0) return;
+
+      const A4_W = 210, A4_H = 297, M = 12;
+      const CW = A4_W - M * 2;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      let y = M;
+
+      for (let i = 0; i < sections.length; i++) {
+        const canvas = await html2canvas(sections[i], {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+        });
+        const hMM = (canvas.height / canvas.width) * CW;
+        if (y > M && y + hMM > A4_H - M) {
+          pdf.addPage();
+          y = M;
+        }
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', M, y, CW, hMM);
+        y += hMM + 4;
+      }
+
+      pdf.save(`church-health-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to export PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
