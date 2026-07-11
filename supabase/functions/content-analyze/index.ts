@@ -1,6 +1,7 @@
 // Content module: analyze a video using its transcript chunks.
 // Writes a content_analyses row and sets the video to ready.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +14,8 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
-const MODEL = "google/gemini-3-flash-preview";
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const MODEL = "gloo-google-gemini-3-flash";
+const AI_GATEWAY = "https://platform.ai.gloo.com/ai/v2/chat/completions";
 
 const SYSTEM = `You analyze transcripts of videos (often sermons, talks, or stories) and extract narrative structure.
 Always respond as JSON matching this shape:
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${await getGlooAccessToken()}`,
       },
       body: JSON.stringify({
         model: MODEL,
