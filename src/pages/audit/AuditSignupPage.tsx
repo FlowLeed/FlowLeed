@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle2, ShieldCheck, Sparkles, HeartPulse, Users2, Layers, Loader2, AlertTriangle, Check } from 'lucide-react';
+import { CheckCircle2, Sparkles, HeartPulse, Users2, Layers, Loader2, AlertTriangle, Check, Lock, Eye, Database, Unplug } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
 
@@ -93,7 +93,7 @@ const AuditSignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-y-auto">
+    <div className="h-screen bg-background overflow-y-auto">
       <div className="max-w-5xl mx-auto px-4 py-10 md:py-16">
         <div className="flex items-center justify-center mb-8">
           <img src={flowleedLogo} alt="Flowleed" className="h-8" />
@@ -137,9 +137,43 @@ const AuditSignupPage = () => {
               </li>
             </ul>
 
-            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2">
-              <ShieldCheck className="h-4 w-4" />
-              Read-only Planning Center access. Your data stays in your account.
+            <div className="rounded-lg border p-4 bg-muted/30 space-y-3 text-sm">
+              <div className="flex gap-3">
+                <Lock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-medium">Secure Planning Center Connection</div>
+                  <div className="text-muted-foreground">
+                    Connect through Planning Center's official authentication process. Your Planning Center password is never shared with or stored by FlowLeed.
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Eye className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-medium">Read-Only Access</div>
+                  <div className="text-muted-foreground">
+                    FlowLeed reads the information needed to give your team helpful insights. It does not change or delete your data in Planning Center.
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Database className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-medium">Your Data Stays Yours</div>
+                  <div className="text-muted-foreground">
+                    We don't sell your data or use it for advertising.
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Unplug className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <div>
+                  <div className="font-medium">Disconnect Anytime</div>
+                  <div className="text-muted-foreground">
+                    You stay in control. Disconnect FlowLeed from Planning Center whenever you choose.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
