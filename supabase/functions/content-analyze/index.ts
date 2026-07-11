@@ -1,6 +1,7 @@
 // Content module: analyze a video using its transcript chunks.
 // Writes a content_analyses row and sets the video to ready.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${await getGlooAccessToken()}`,
       },
       body: JSON.stringify({
         model: MODEL,

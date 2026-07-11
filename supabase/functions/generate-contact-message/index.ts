@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,8 +26,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    // (Gloo auth handled in getGlooAccessToken)
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -99,7 +99,7 @@ Context: ${suggestionContext.description}`;
     const response = await fetch('https://platform.ai.gloo.com/ai/v2/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
+        'Authorization': `Bearer ${await getGlooAccessToken()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

@@ -2,6 +2,7 @@
 // Returns a short narrative answer with quoted snippets and a list of source
 // videos with timestamps, similar to a RAG-style answer card.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,7 +78,7 @@ Rules:
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      Authorization: `Bearer ${await getGlooAccessToken()}`,
     },
     body: JSON.stringify({
       model: "gloo-google-gemini-3-flash",

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -843,7 +844,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       const toolCheckResponse = await fetch(AI_GATEWAY, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          Authorization: `Bearer ${await getGlooAccessToken()}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -946,7 +947,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     const streamResponse = await fetch(AI_GATEWAY, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${await getGlooAccessToken()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
