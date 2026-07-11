@@ -7,8 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash";
+const GATEWAY = "https://platform.ai.gloo.com/ai/v2/chat/completions";
+const MODEL = "gloo-google-gemini-3-flash";
 
 interface Candidate {
   contact_id: string;

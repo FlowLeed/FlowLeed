@@ -81,14 +81,14 @@ Provide options with different tones:
 2. Friendly (warm, welcoming, conversational)
 3. Concise (brief, action-oriented, to-the-point)`}`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://platform.ai.gloo.com/ai/v2/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'gloo-google-gemini-3-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

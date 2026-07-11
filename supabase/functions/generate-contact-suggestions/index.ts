@@ -356,14 +356,14 @@ ${pipelineContexts || 'Not in any pipeline'}`;
     console.log('Calling Lovable AI with prompt:', { systemPrompt, userPrompt });
 
     // Call Lovable AI with tool calling
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://platform.ai.gloo.com/ai/v2/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gloo-google-gemini-3-flash',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

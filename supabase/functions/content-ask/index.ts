@@ -73,14 +73,14 @@ Rules:
 
   const user = `Question: ${query}\n\nExcerpts:\n\n${context}`;
 
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const r = await fetch("https://platform.ai.gloo.com/ai/v2/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: "gloo-google-gemini-3-flash",
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
