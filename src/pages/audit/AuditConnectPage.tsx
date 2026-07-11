@@ -95,14 +95,51 @@ const AuditConnectPage = () => {
               </div>
             ) : (
               <>
-                <div className="rounded-lg border p-4 bg-muted/30 space-y-2 text-sm">
-                  <div className="flex items-center gap-2 font-medium">
-                    <ShieldCheck className="h-4 w-4 text-green-600" />
-                    Read-only, scoped access
+                <div className="rounded-lg border p-4 bg-muted/30 space-y-4 text-sm">
+                  <div className="flex gap-3">
+                    <div className="mt-0.5 shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Lock className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Secure Planning Center Connection</p>
+                      <p className="text-muted-foreground">
+                        Connect through Planning Center's official authentication process. Your Planning Center password is never shared with or stored by FlowLeed.
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-muted-foreground">
-                    We only read people, groups, and check-ins. We never modify data in Planning Center. You can disconnect at any time.
-                  </p>
+                  <div className="flex gap-3">
+                    <div className="mt-0.5 shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Eye className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Read-Only Access</p>
+                      <p className="text-muted-foreground">
+                        FlowLeed reads the information needed to give your team helpful insights. It does not change or delete your data in Planning Center.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="mt-0.5 shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Database className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Your Data Stays Yours</p>
+                      <p className="text-muted-foreground">
+                        Your church's data belongs to your church. We don't sell your data or use it for advertising.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="mt-0.5 shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Power className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Disconnect Anytime</p>
+                      <p className="text-muted-foreground">
+                        You stay in control. Disconnect FlowLeed from Planning Center whenever you choose.
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {hasIntegration ? (
