@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, ShieldCheck, Zap } from 'lucide-react';
+import { Loader2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
 
@@ -95,16 +95,6 @@ const AuditConnectPage = () => {
               </div>
             ) : (
               <>
-                <div className="rounded-lg border p-4 bg-muted/30 space-y-2 text-sm">
-                  <div className="flex items-center gap-2 font-medium">
-                    <ShieldCheck className="h-4 w-4 text-green-600" />
-                    Read-only, scoped access
-                  </div>
-                  <p className="text-muted-foreground">
-                    We only read people, groups, and check-ins. We never modify data in Planning Center. You can disconnect at any time.
-                  </p>
-                </div>
-
                 {hasIntegration ? (
                   <Button className="w-full" size="lg" onClick={startAudit} disabled={starting}>
                     {starting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Starting…</> : 'Generate my report →'}
