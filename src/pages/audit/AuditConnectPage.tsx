@@ -81,7 +81,7 @@ const AuditConnectPage = () => {
         <Card className="shadow-lg">
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Zap className="h-6 w-6 text-primary" />
+              <Sparkles className="h-6 w-6 text-primary" />
             </div>
             <h1 className="text-2xl font-bold">One step to your Church Health Report</h1>
             <p className="text-muted-foreground">
