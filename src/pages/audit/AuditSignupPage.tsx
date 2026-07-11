@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle2, ShieldCheck, Sparkles, HeartPulse, Users2, Layers, Loader2, AlertTriangle, Check } from 'lucide-react';
+import { CheckCircle2, Sparkles, HeartPulse, Users2, Layers, Loader2, AlertTriangle, Check, Lock, Eye, Database, Power } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
 
