@@ -1,45 +1,65 @@
-# Public Forms + Form Builder
 
-Build a form builder that lets org admins create public sign-up forms. Each form is tied to a Flow + starting stage. Submissions create/merge a contact, enroll them in the flow, and notify the assignee.
+# Org-slug-first public URLs
 
-## Database (new tables)
+Move public org pages to top-level org-slug URLs, dropping the `/org/` prefix:
 
-- `forms` — `id, organization_id, name, slug (unique), description, pipeline_id, stage_id, is_published, brand_color, logo_url, redirect_url, success_message, submission_count, created_by, created_at, updated_at`
-- `form_fields` — `id, form_id, field_key, label, field_type (text|textarea|email|phone|number|date|select|radio|checkbox), options (jsonb), required, placeholder, help_text, sort_order`. Seeded with name/email/phone on create.
-- `form_submissions` — `id, form_id, organization_id, contact_id, data (jsonb), ip, user_agent, created_at`
+- `/:orgSlug/content` — public stories library (was `/org/:slug/content`)
+- `/:orgSlug/content/videos/:id` — public video (was `/org/:slug/content/videos/:id`)
+- `/:orgSlug/groups` — public groups directory (was `/org/:slug/groups`)
+- `/:orgSlug/f/:formSlug` — public form (was `/f/:slug`)
 
-RLS: org admins manage forms; anon can `SELECT` a published form + its fields by slug; anon can `INSERT` submissions only via edge function (no direct table write). Grants tuned accordingly.
+Form slugs become unique per org (so `connect-card` works for every church, no random suffix needed).
 
-## Edge functions
+## Reserved slugs (critical)
 
-- `public-form-get` (no JWT) — returns published form + fields by slug, plus org branding (name, logo).
-- `public-form-submit` (no JWT) — validates payload (zod), honeypot + basic rate limit by IP, upserts contact by email/phone match within org (merge), inserts `form_submissions`, inserts `pipeline_contacts` at the form's stage, resolves assignee via stage default, writes a `notifications` row + `contact_interactions` entry for the assignee.
+The following top-level paths are owned by the app and must be blocked as org slugs. If an org already has one of these slugs, they keep working via the old `/org/:slug/...` routes but the new top-level route won't resolve for them.
 
-## Frontend — admin
+Reserved list: `auth`, `verify-email`, `invite`, `pco`, `dev`, `fl-admin`, `audit`, `f`, `org`, `groups`, `content`, `flows`, `contacts`, `signals`, `messages`, `calls`, `tasks`, `team`, `integrations`, `analytics`, `profile`, `calendar`, `forms`, `api`, `admin`, `settings`, `dashboard`, `home`, `about`, `login`, `logout`, `signup`, `signin`.
 
-- `src/pages/forms/FormsListPage.tsx` (`/forms`) — list, create, publish toggle, copy public link, copy embed snippet, view submissions count.
-- `src/pages/forms/FormBuilderPage.tsx` (`/forms/:id`) — three panels:
-  - Left: field palette (text, textarea, email, phone, number, date, select, radio, checkbox).
-  - Middle: drag-to-reorder field list with inline edit (label, required, options for choice fields).
-  - Right: settings — Flow picker (uses existing `pipelines` + `pipeline_stages`), starting stage, brand color, logo, success message / redirect URL, published toggle.
-  - Live preview tab.
-- `src/pages/forms/FormSubmissionsPage.tsx` (`/forms/:id/submissions`) — table of submissions with link to contact.
-- Sidebar entry "Forms" gated behind a new `forms` org feature (OFF by default, consistent with recent feature-flag pattern).
+Enforcement:
+- DB CHECK constraint / trigger on `organizations.slug` rejecting the reserved list (case-insensitive).
+- Frontend validation in the org rename dialog (`EditOrganizationDialog`) with a clear error message.
+- Existing orgs are audited via a `read_query` — if any collide, we rename them (append `-org`) before enabling the new routes. (Migration includes the audit query but not automatic renames — we'll surface findings and rename manually.)
 
-## Frontend — public
+## Routing (`src/App.tsx`)
 
-- `src/pages/public/PublicFormPage.tsx` at `/f/:slug` — fetches via `public-form-get`, renders branded form (org logo + brand color), submits via `public-form-submit`, shows success state or redirects.
-- Embed snippet: `<iframe src="https://app.flowleed.com/f/:slug?embed=1" ...>`; `?embed=1` strips outer chrome/padding.
-- Honeypot hidden field + client zod validation mirroring server.
+- Add public routes OUTSIDE the `ProtectedRoute`/`MainLayout` wrapper, placed AFTER all specific top-level routes so they don't shadow anything:
+  - `/:orgSlug/content` → `PublicContentPage`
+  - `/:orgSlug/content/videos/:id` → `PublicContentVideoPage`
+  - `/:orgSlug/groups` → `GroupDirectoryPage`
+  - `/:orgSlug/f/:formSlug` → `PublicFormPage`
+- Keep old routes as permanent redirects:
+  - `/org/:slug/content*` → `/:slug/content*`
+  - `/org/:slug/groups` → `/:slug/groups`
+  - `/f/:slug` → look up form's org slug via `public-form-get`, then redirect to `/:orgSlug/f/:formSlug`
+- React Router matches most-specific first, so `/forms` still resolves to the internal `FormsListPage` even with `/:orgSlug/f/...` present. All app routes are protected and specific, so they take precedence. The reserved-slug rule guarantees `/:orgSlug` never means a real app route.
+- NotFound (`*`) stays last — if `:orgSlug` doesn't resolve to a real org, the public page components show their existing "not found" state.
 
-## Routing to Flow
+## Database
 
-Single flow + stage per form (v1). Conditional routing by field answer deferred to v2 — schema already supports it via optional `routing_rules jsonb` column on `forms` (nullable, unused in v1).
+Migration:
+- Drop the global-unique index on `forms.slug`.
+- Add unique `forms(organization_id, slug)`.
+- Add plain index on `forms.slug` for the legacy `/f/:slug` redirect lookup.
+- Add validation trigger on `organizations` that rejects inserts/updates where `slug` is in the reserved list (case-insensitive).
 
-## Merge + notify
+No data backfill of existing form slugs — they still work; new forms just don't need the random suffix.
 
-On submit, match existing contact by (email OR phone) within the org. If found: update blank fields only, add to flow if not already in it, create a notification for the stage's default assignee (or flow lead if none). If not found: create contact, enroll, notify.
+## Backend (edge functions)
 
-## Out of scope for v1
+- `public-form-get`: accept `org_slug` + `slug`, resolve org, then form by `(organization_id, slug)`. Keep legacy slug-only lookup path for redirects.
+- `public-form-submit`: same shape — takes `org_slug` + `slug`. Legacy slug-only fallback for old links.
+- Both still gate on `is_published = true`.
 
-Conditional routing, file uploads, payments, multi-page forms, CAPTCHA (honeypot + rate limit only).
+## Frontend components
+
+- **`PublicFormPage.tsx`**: read `orgSlug` + `formSlug` from `useParams`, pass to both edge functions.
+- **`FormsListPage.tsx`**: drop the `-${random}` suffix from `slugify` — use plain slug, on unique violation append `-2`, `-3`, … Copy-link uses `${origin}/${orgSlug}/f/${slug}`.
+- **`FormBuilderPage.tsx`**: settings preview shows the canonical `${origin}/${orgSlug}/f/${slug}` URL.
+- **`GroupDirectoryPage.tsx`** and **`PublicContentPage.tsx` / `PublicContentVideoPage.tsx`**: no logic changes (they already read `:slug` from params) — the route param name matches.
+- **`EditOrganizationDialog.tsx`**: validate slug against the reserved list before submitting.
+
+## Out of scope
+
+- Custom subdomains (`groups.thepromisecenter.flowleed.com`) — separate effort.
+- Auto-renaming existing colliding org slugs — surface via read_query first, then decide per org.
