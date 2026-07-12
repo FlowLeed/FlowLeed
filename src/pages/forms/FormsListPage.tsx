@@ -77,13 +77,13 @@ export default function FormsListPage() {
     <div className="flex-1 flex flex-col min-h-0">
       <Header
         title="Forms"
-        subtitle="Public forms that capture leads and route them into Flows"
         rightContent={
           <Button onClick={() => setOpen(true)}>
             <Plus className="h-4 w-4 mr-2" /> New form
           </Button>
         }
       />
+
 
       <div className="flex-1 overflow-y-auto p-6">
         {isLoading ? (
