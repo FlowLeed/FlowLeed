@@ -43,8 +43,22 @@ export default function FormsListPage() {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!orgId) throw new Error("No org");
-      const base = slugify(name);
-      const slug = `${base}-${Math.random().toString(36).slice(2, 7)}`;
+      const base = slugify(name) || "form";
+      // Find a unique slug within this org — try plain, then plain-2, plain-3, …
+      let slug = base;
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const candidate = attempt === 0 ? base : `${base}-${attempt + 1}`;
+        const { data: existing } = await supabase
+          .from("forms")
+          .select("id")
+          .eq("organization_id", orgId)
+          .eq("slug", candidate)
+          .maybeSingle();
+        if (!existing) {
+          slug = candidate;
+          break;
+        }
+      }
       const { data, error } = await supabase
         .from("forms")
         .insert({ organization_id: orgId, name: name.trim(), slug })
