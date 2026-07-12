@@ -38,19 +38,11 @@ export default function PublicFormPage() {
     if (!slug) return;
     (async () => {
       try {
-        const { data, error } = await supabase.functions.invoke("public-form-get", {
-          body: undefined,
-          method: "GET" as any,
-        }).catch(() => ({ data: null, error: null } as any));
-
-        // Fallback: use fetch with query param since invoke doesn't support query strings
-        const projectId = (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID;
+        const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
+        const anon = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const url = `https://${projectId}.supabase.co/functions/v1/public-form-get?slug=${encodeURIComponent(slug)}`;
         const res = await fetch(url, {
-          headers: {
-            apikey: (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${(import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
+          headers: { apikey: anon, Authorization: `Bearer ${anon}` },
         });
         if (!res.ok) {
           setNotFound(true);
@@ -67,6 +59,7 @@ export default function PublicFormPage() {
       }
     })();
   }, [slug]);
+
 
   const setValue = (k: string, v: any) => setValues((prev) => ({ ...prev, [k]: v }));
 
