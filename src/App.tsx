@@ -144,6 +144,10 @@ const App = () => (
               <Route path="/content/videos/:id" element={<FeatureGate feature="content"><ContentVideoDetailPage /></FeatureGate>} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/forms" element={<FeatureGate feature="forms"><FormsListPage /></FeatureGate>} />
+              <Route path="/forms/:id" element={<FeatureGate feature="forms"><FormBuilderPage /></FeatureGate>} />
+              <Route path="/forms/:id/submissions" element={<FeatureGate feature="forms"><FormSubmissionsPage /></FeatureGate>} />
+
               </Route>
 
               {/* FL-Admin super admin routes */}
