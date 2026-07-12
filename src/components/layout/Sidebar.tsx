@@ -555,8 +555,15 @@ export const Sidebar = () => {
     path: "/content",
     beta: true,
     featureKey: "content" as const,
-  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" | "content" })[])
+  }, {
+    title: "Forms",
+    icon: CheckSquare,
+    path: "/forms",
+    beta: true,
+    featureKey: "forms" as const,
+  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "forms" })[])
     .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
+
 
 
   // Create flow items dynamically from all flows (database data), sorted by flow_order
