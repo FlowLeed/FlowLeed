@@ -138,7 +138,7 @@ export default function FormsListPage() {
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" asChild>
-                      <a href={`/f/${f.slug}`} target="_blank" rel="noreferrer">
+                      <a href={publicUrl(f.slug)} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>
