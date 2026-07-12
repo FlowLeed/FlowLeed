@@ -82,8 +82,11 @@ export default function FormsListPage() {
     onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
 
+  const publicUrl = (slug: string) =>
+    orgSlug ? `${window.location.origin}/${orgSlug}/f/${slug}` : `${window.location.origin}/f/${slug}`;
+
   const copyLink = (slug: string) => {
-    const url = `${window.location.origin}/f/${slug}`;
+    const url = publicUrl(slug);
     navigator.clipboard.writeText(url);
     toast({ title: "Link copied", description: url });
   };
