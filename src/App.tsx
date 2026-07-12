@@ -101,7 +101,9 @@ const App = () => (
               <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
+              <Route path="/f/:slug" element={<PublicFormPage />} />
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
+
               <Route path="/org/:slug/content" element={<PublicContentPage />} />
               <Route path="/org/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
 
