@@ -166,6 +166,12 @@ const App = () => (
               </Route>
               </Route>
 
+              {/* Public org-scoped routes (must be after all specific top-level routes) */}
+              <Route path="/:slug/groups" element={<GroupDirectoryPage />} />
+              <Route path="/:slug/content" element={<PublicContentPage />} />
+              <Route path="/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
+              <Route path="/:orgSlug/f/:formSlug" element={<PublicFormPage />} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
