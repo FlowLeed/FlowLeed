@@ -131,7 +131,7 @@ export default function FormsListPage() {
                         <Badge variant="secondary">Draft</Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 truncate">/f/{f.slug}</p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">{orgSlug ? `/${orgSlug}/f/${f.slug}` : `/f/${f.slug}`}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="sm" onClick={() => copyLink(f.slug)}>
