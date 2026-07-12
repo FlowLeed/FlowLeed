@@ -1,53 +1,45 @@
-Add more signal to the audit by tapping data we already sync but don't yet surface. Below is what I'd add, grouped by section, plus a new "Guest & New Family Follow-up" section since that's the #1 request.
+# Public Forms + Form Builder
 
-## New section: Guest & New Family Follow-up
+Build a form builder that lets org admins create public sign-up forms. Each form is tied to a Flow + starting stage. Submissions create/merge a contact, enroll them in the flow, and notify the assignee.
 
-Uses `flow_moments` (first-time guest / new family moments), `pco_checkins`, and `contact_interactions`.
+## Database (new tables)
 
-- **First-time guests (last 30 days)** — count of contacts with a first-visit moment or first check-in in last 30 days.
-- **New families (last 60 days)** — households where any member had a first check-in in the last 60 days (grouped by `pc_household_id`).
-- **Guests with no follow-up** — first-time guests from the last 30 days who have zero `contact_interactions` since their visit. High severity.
-- **Second-time attenders not yet in a flow** — people with 2+ check-ins in last 60 days but no active `pipeline_contacts` row.
+- `forms` — `id, organization_id, name, slug (unique), description, pipeline_id, stage_id, is_published, brand_color, logo_url, redirect_url, success_message, submission_count, created_by, created_at, updated_at`
+- `form_fields` — `id, form_id, field_key, label, field_type (text|textarea|email|phone|number|date|select|radio|checkbox), options (jsonb), required, placeholder, help_text, sort_order`. Seeded with name/email/phone on create.
+- `form_submissions` — `id, form_id, organization_id, contact_id, data (jsonb), ip, user_agent, created_at`
 
-Section score = % of recent guests who received at least one follow-up interaction.
+RLS: org admins manage forms; anon can `SELECT` a published form + its fields by slug; anon can `INSERT` submissions only via edge function (no direct table write). Grants tuned accordingly.
 
-## Additions to "At-Risk People"
+## Edge functions
 
-- **No check-in in the last 30 days** — previously regular attenders (≥4 weeks in last 12) with no check-in for 30+ days. Earlier warning than the existing 60-day finding.
-- **Missed 2+ Sundays in a row** — contacts whose last check-in was 14–29 days ago after a regular pattern.
-- **Regulars whose small-group attendance stopped** — active in Sunday check-ins but no group attendance in 45+ days.
-- **Prayer requests with no follow-up** — open `contact_prayer_requests` older than 14 days with no interaction since.
+- `public-form-get` (no JWT) — returns published form + fields by slug, plus org branding (name, logo).
+- `public-form-submit` (no JWT) — validates payload (zod), honeypot + basic rate limit by IP, upserts contact by email/phone match within org (merge), inserts `form_submissions`, inserts `pipeline_contacts` at the form's stage, resolves assignee via stage default, writes a `notifications` row + `contact_interactions` entry for the assignee.
 
-## Additions to "Volunteer & Leader Health"
+## Frontend — admin
 
-- **Leaders whose own engagement is dropping** — leaders/co-leaders whose engagement level is `at_risk` or `inactive`.
-- **Groups whose leader hasn't checked in recently** — leader with no check-in in 30 days.
-- **New leaders in last 90 days** — informational count (helps celebrate + focus onboarding care).
+- `src/pages/forms/FormsListPage.tsx` (`/forms`) — list, create, publish toggle, copy public link, copy embed snippet, view submissions count.
+- `src/pages/forms/FormBuilderPage.tsx` (`/forms/:id`) — three panels:
+  - Left: field palette (text, textarea, email, phone, number, date, select, radio, checkbox).
+  - Middle: drag-to-reorder field list with inline edit (label, required, options for choice fields).
+  - Right: settings — Flow picker (uses existing `pipelines` + `pipeline_stages`), starting stage, brand color, logo, success message / redirect URL, published toggle.
+  - Live preview tab.
+- `src/pages/forms/FormSubmissionsPage.tsx` (`/forms/:id/submissions`) — table of submissions with link to contact.
+- Sidebar entry "Forms" gated behind a new `forms` org feature (OFF by default, consistent with recent feature-flag pattern).
 
-## Additions to "Groups Health"
+## Frontend — public
 
-- **Groups with declining attendance** — average attendees per meeting dropped >30% comparing last 30 days vs prior 30 days.
-- **Groups with no new members in 90 days** — signals stagnation.
-- **Pending group signup requests** — open `group_signup_requests` older than 7 days (leadership responsiveness).
-- **Groups with attendance but no meetings logged** — data hygiene issue that skews reports.
+- `src/pages/public/PublicFormPage.tsx` at `/f/:slug` — fetches via `public-form-get`, renders branded form (org logo + brand color), submits via `public-form-submit`, shows success state or redirects.
+- Embed snippet: `<iframe src="https://app.flowleed.com/f/:slug?embed=1" ...>`; `?embed=1` strips outer chrome/padding.
+- Honeypot hidden field + client zod validation mirroring server.
 
-## What we already surface (for reference)
+## Routing to Flow
 
-At-Risk: no check-in 60d, drifting, slowing.
-Volunteers: leaders without care, overloaded leaders.
-Groups: dormant, over-capacity, no co-leader.
+Single flow + stage per form (v1). Conditional routing by field answer deferred to v2 — schema already supports it via optional `routing_rules jsonb` column on `forms` (nullable, unused in v1).
 
-## Technical notes
+## Merge + notify
 
-- All new metrics come from tables already queried or trivially joinable: `flow_moments`, `flow_moment_types`, `pco_checkins`, `group_attendance`, `contact_prayer_requests`, `pipeline_contacts`, `group_signup_requests`, `contacts.pc_household_id`.
-- Extend the paginated `fetchAll` block in `supabase/functions/run-church-audit/index.ts` with the new tables (guarded date windows: 30/60/90 day slices).
-- Add a fourth section key `guests` to `church_health_reports.section_scores` and update `AuditReportPage.tsx` to render a `SectionCard` with a `Users2`/`UserPlus` icon between the header and At-Risk.
-- Overall score becomes average of 4 section scores instead of 3.
-- Each new finding follows the existing `{ section, key, title, description, severity, metric_value, metric_label, contact_ids, sort_order }` shape so `CohortDialog` + "Add to flow" keep working with no UI changes.
-- No schema migration needed; `section_scores`/`metrics` are already `jsonb`.
+On submit, match existing contact by (email OR phone) within the org. If found: update blank fields only, add to flow if not already in it, create a notification for the stage's default assignee (or flow lead if none). If not found: create contact, enroll, notify.
 
-## Open questions
+## Out of scope for v1
 
-1. Do you want the new "Guest & New Family Follow-up" as its own section, or folded into At-Risk?
-2. Should "No check-in 30d" replace the 60d finding or sit alongside it as an earlier warning?
-3. Any additions above you'd rather skip for v1?
+Conditional routing, file uploads, payments, multi-page forms, CAPTCHA (honeypot + rate limit only).
