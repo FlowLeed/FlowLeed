@@ -53,7 +53,6 @@ export const FEATURE_MODULES: FeatureModule[] = [
     description: "AI Staff Pastor that watches signals and proposes actions (notify, add to flow, task, draft message) for human approval.",
     icon: Bot,
   },
-  },
   {
     key: "forms",
     label: "Forms",
@@ -61,6 +60,7 @@ export const FEATURE_MODULES: FeatureModule[] = [
     icon: ClipboardList,
   },
 ];
+
 
 
 export const FEATURE_KEYS = FEATURE_MODULES.map((f) => f.key);
