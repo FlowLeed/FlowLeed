@@ -19,6 +19,7 @@ function slugify(v: string) {
 export default function FormsListPage() {
   const { organization } = useProfile();
   const orgId = organization?.id;
+  const orgSlug = organization?.slug;
   const nav = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
