@@ -62,7 +62,7 @@ export default function PublicFormPage() {
         setLoading(false);
       }
     })();
-  }, [slug]);
+  }, [slug, orgSlug]);
 
 
   const setValue = (k: string, v: any) => setValues((prev) => ({ ...prev, [k]: v }));
@@ -73,7 +73,7 @@ export default function PublicFormPage() {
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("public-form-submit", {
-        body: { slug, data: values, honeypot },
+        body: { slug, org_slug: orgSlug, data: values, honeypot },
       });
       if (error) throw new Error(error.message);
       if ((data as any)?.error) throw new Error((data as any).error);
