@@ -22,7 +22,9 @@ interface FieldDef {
 }
 
 export default function PublicFormPage() {
-  const { slug } = useParams();
+  const params = useParams();
+  const orgSlug = (params as any).orgSlug as string | undefined;
+  const slug = ((params as any).formSlug || (params as any).slug) as string | undefined;
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<any>(null);
   const [org, setOrg] = useState<any>(null);
@@ -40,7 +42,9 @@ export default function PublicFormPage() {
       try {
         const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
         const anon = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const url = `https://${projectId}.supabase.co/functions/v1/public-form-get?slug=${encodeURIComponent(slug)}`;
+        const qs = new URLSearchParams({ slug });
+        if (orgSlug) qs.set("org_slug", orgSlug);
+        const url = `https://${projectId}.supabase.co/functions/v1/public-form-get?${qs.toString()}`;
         const res = await fetch(url, {
           headers: { apikey: anon, Authorization: `Bearer ${anon}` },
         });
