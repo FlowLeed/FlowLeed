@@ -100,15 +100,15 @@ const App = () => (
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/invite/:token" element={<InvitePage />} />
               <Route path="/groups/directory" element={<GroupDirectoryPage />} />
-              <Route path="/org/:slug/groups" element={<GroupDirectoryPage />} />
               <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
-              <Route path="/pco/callback" element={<PcoCallbackPage />} />
-              <Route path="/f/:slug" element={<PublicFormPage />} />
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
 
-              <Route path="/org/:slug/content" element={<PublicContentPage />} />
-              <Route path="/org/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
+              {/* Legacy public routes → redirect to new /:orgSlug/... URLs */}
+              <Route path="/org/:slug/groups" element={<OrgGroupsRedirect />} />
+              <Route path="/org/:slug/content" element={<OrgContentRedirect />} />
+              <Route path="/org/:slug/content/videos/:id" element={<OrgContentVideoRedirect />} />
+              <Route path="/f/:slug" element={<PublicFormRedirect />} />
 
               {/* Audit / lead-magnet funnel */}
               <Route path="/audit" element={<AuditSignupPage />} />
