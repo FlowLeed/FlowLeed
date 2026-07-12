@@ -13,6 +13,7 @@ import { SuperAdminProtectedRoute } from "./components/admin/SuperAdminProtected
 import { SuperAdminLayout } from "./components/admin/SuperAdminLayout";
 import { ImpersonationEscapeHandler } from "./components/ImpersonationEscapeHandler";
 import { FeatureGate } from "./components/FeatureGate";
+import { OrgContentRedirect, OrgContentVideoRedirect, OrgGroupsRedirect } from "./pages/public/OrgRedirect";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -66,6 +67,8 @@ const FormsListPage = lazy(() => import("./pages/forms/FormsListPage"));
 const FormBuilderPage = lazy(() => import("./pages/forms/FormBuilderPage"));
 const FormSubmissionsPage = lazy(() => import("./pages/forms/FormSubmissionsPage"));
 const PublicFormPage = lazy(() => import("./pages/public/PublicFormPage"));
+const PublicFormRedirect = lazy(() => import("./pages/public/PublicFormRedirect"));
+const OrgRedirects = () => null;
 
 
 const RouteFallback = () => (
