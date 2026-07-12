@@ -68,7 +68,7 @@ const FormBuilderPage = lazy(() => import("./pages/forms/FormBuilderPage"));
 const FormSubmissionsPage = lazy(() => import("./pages/forms/FormSubmissionsPage"));
 const PublicFormPage = lazy(() => import("./pages/public/PublicFormPage"));
 const PublicFormRedirect = lazy(() => import("./pages/public/PublicFormRedirect"));
-const OrgRedirects = () => null;
+
 
 
 const RouteFallback = () => (
