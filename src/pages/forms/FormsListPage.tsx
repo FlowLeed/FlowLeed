@@ -19,6 +19,7 @@ function slugify(v: string) {
 export default function FormsListPage() {
   const { organization } = useProfile();
   const orgId = organization?.id;
+  const orgSlug = organization?.slug;
   const nav = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -42,8 +43,22 @@ export default function FormsListPage() {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!orgId) throw new Error("No org");
-      const base = slugify(name);
-      const slug = `${base}-${Math.random().toString(36).slice(2, 7)}`;
+      const base = slugify(name) || "form";
+      // Find a unique slug within this org — try plain, then plain-2, plain-3, …
+      let slug = base;
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const candidate = attempt === 0 ? base : `${base}-${attempt + 1}`;
+        const { data: existing } = await supabase
+          .from("forms")
+          .select("id")
+          .eq("organization_id", orgId)
+          .eq("slug", candidate)
+          .maybeSingle();
+        if (!existing) {
+          slug = candidate;
+          break;
+        }
+      }
       const { data, error } = await supabase
         .from("forms")
         .insert({ organization_id: orgId, name: name.trim(), slug })
@@ -67,8 +82,11 @@ export default function FormsListPage() {
     onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
   });
 
+  const publicUrl = (slug: string) =>
+    orgSlug ? `${window.location.origin}/${orgSlug}/f/${slug}` : `${window.location.origin}/f/${slug}`;
+
   const copyLink = (slug: string) => {
-    const url = `${window.location.origin}/f/${slug}`;
+    const url = publicUrl(slug);
     navigator.clipboard.writeText(url);
     toast({ title: "Link copied", description: url });
   };
@@ -113,14 +131,14 @@ export default function FormsListPage() {
                         <Badge variant="secondary">Draft</Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 truncate">/f/{f.slug}</p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">{orgSlug ? `/${orgSlug}/f/${f.slug}` : `/f/${f.slug}`}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="sm" onClick={() => copyLink(f.slug)}>
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm" asChild>
-                      <a href={`/f/${f.slug}`} target="_blank" rel="noreferrer">
+                      <a href={publicUrl(f.slug)} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>

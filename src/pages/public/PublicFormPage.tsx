@@ -22,7 +22,9 @@ interface FieldDef {
 }
 
 export default function PublicFormPage() {
-  const { slug } = useParams();
+  const params = useParams();
+  const orgSlug = (params as any).orgSlug as string | undefined;
+  const slug = ((params as any).formSlug || (params as any).slug) as string | undefined;
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<any>(null);
   const [org, setOrg] = useState<any>(null);
@@ -40,7 +42,9 @@ export default function PublicFormPage() {
       try {
         const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
         const anon = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const url = `https://${projectId}.supabase.co/functions/v1/public-form-get?slug=${encodeURIComponent(slug)}`;
+        const qs = new URLSearchParams({ slug });
+        if (orgSlug) qs.set("org_slug", orgSlug);
+        const url = `https://${projectId}.supabase.co/functions/v1/public-form-get?${qs.toString()}`;
         const res = await fetch(url, {
           headers: { apikey: anon, Authorization: `Bearer ${anon}` },
         });
@@ -58,7 +62,7 @@ export default function PublicFormPage() {
         setLoading(false);
       }
     })();
-  }, [slug]);
+  }, [slug, orgSlug]);
 
 
   const setValue = (k: string, v: any) => setValues((prev) => ({ ...prev, [k]: v }));
@@ -69,7 +73,7 @@ export default function PublicFormPage() {
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("public-form-submit", {
-        body: { slug, data: values, honeypot },
+        body: { slug, org_slug: orgSlug, data: values, honeypot },
       });
       if (error) throw new Error(error.message);
       if ((data as any)?.error) throw new Error((data as any).error);

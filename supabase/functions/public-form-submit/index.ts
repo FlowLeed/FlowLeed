@@ -16,7 +16,12 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { slug, data, honeypot } = body as { slug?: string; data?: Record<string, any>; honeypot?: string };
+    const { slug, org_slug, data, honeypot } = body as {
+      slug?: string;
+      org_slug?: string;
+      data?: Record<string, any>;
+      honeypot?: string;
+    };
 
     if (honeypot) {
       // silently accept but do nothing
@@ -38,13 +43,32 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // Resolve org (if provided) to disambiguate — form slugs are unique per org.
+    let orgId: string | null = null;
+    if (org_slug) {
+      const { data: orgRow } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', org_slug)
+        .maybeSingle();
+      if (!orgRow) {
+        return new Response(JSON.stringify({ error: 'Organization not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      orgId = orgRow.id;
+    }
+
     // Load form + fields
-    const { data: form, error: formErr } = await supabase
+    let formQuery = supabase
       .from('forms')
       .select('id, organization_id, pipeline_id, stage_id, is_published, success_message, redirect_url')
       .eq('slug', slug)
-      .eq('is_published', true)
-      .maybeSingle();
+      .eq('is_published', true);
+    if (orgId) formQuery = formQuery.eq('organization_id', orgId);
+
+    const { data: form, error: formErr } = await formQuery.maybeSingle();
 
     if (formErr || !form) {
       return new Response(JSON.stringify({ error: 'Form not found' }), {

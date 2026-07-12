@@ -11,6 +11,7 @@ Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
     const slug = url.searchParams.get('slug');
+    const orgSlug = url.searchParams.get('org_slug');
     if (!slug) {
       return new Response(JSON.stringify({ error: 'slug required' }), {
         status: 400,
@@ -23,12 +24,33 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const { data: form, error } = await supabase
+    // Resolve org (if org_slug provided) — required for the new canonical URL,
+    // optional for the legacy /f/:slug redirect lookup.
+    let orgId: string | null = null;
+    if (orgSlug) {
+      const { data: orgRow } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('slug', orgSlug)
+        .maybeSingle();
+      if (!orgRow) {
+        return new Response(JSON.stringify({ error: 'Organization not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      orgId = orgRow.id;
+    }
+
+    let formQuery = supabase
       .from('forms')
       .select('id, name, description, slug, brand_color, logo_url, success_message, redirect_url, organization_id, is_published')
       .eq('slug', slug)
-      .eq('is_published', true)
-      .maybeSingle();
+      .eq('is_published', true);
+
+    if (orgId) formQuery = formQuery.eq('organization_id', orgId);
+
+    const { data: form, error } = await formQuery.maybeSingle();
 
     if (error || !form) {
       return new Response(JSON.stringify({ error: 'Form not found' }), {

@@ -13,6 +13,7 @@ import { SuperAdminProtectedRoute } from "./components/admin/SuperAdminProtected
 import { SuperAdminLayout } from "./components/admin/SuperAdminLayout";
 import { ImpersonationEscapeHandler } from "./components/ImpersonationEscapeHandler";
 import { FeatureGate } from "./components/FeatureGate";
+import { OrgContentRedirect, OrgContentVideoRedirect, OrgGroupsRedirect } from "./pages/public/OrgRedirect";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -66,6 +67,8 @@ const FormsListPage = lazy(() => import("./pages/forms/FormsListPage"));
 const FormBuilderPage = lazy(() => import("./pages/forms/FormBuilderPage"));
 const FormSubmissionsPage = lazy(() => import("./pages/forms/FormSubmissionsPage"));
 const PublicFormPage = lazy(() => import("./pages/public/PublicFormPage"));
+const PublicFormRedirect = lazy(() => import("./pages/public/PublicFormRedirect"));
+
 
 
 const RouteFallback = () => (
@@ -97,15 +100,15 @@ const App = () => (
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/invite/:token" element={<InvitePage />} />
               <Route path="/groups/directory" element={<GroupDirectoryPage />} />
-              <Route path="/org/:slug/groups" element={<GroupDirectoryPage />} />
               <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
-              <Route path="/pco/callback" element={<PcoCallbackPage />} />
-              <Route path="/f/:slug" element={<PublicFormPage />} />
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
 
-              <Route path="/org/:slug/content" element={<PublicContentPage />} />
-              <Route path="/org/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
+              {/* Legacy public routes → redirect to new /:orgSlug/... URLs */}
+              <Route path="/org/:slug/groups" element={<OrgGroupsRedirect />} />
+              <Route path="/org/:slug/content" element={<OrgContentRedirect />} />
+              <Route path="/org/:slug/content/videos/:id" element={<OrgContentVideoRedirect />} />
+              <Route path="/f/:slug" element={<PublicFormRedirect />} />
 
               {/* Audit / lead-magnet funnel */}
               <Route path="/audit" element={<AuditSignupPage />} />
@@ -162,6 +165,12 @@ const App = () => (
                 <Route path="profile" element={<SuperAdminProfilePage />} />
               </Route>
               </Route>
+
+              {/* Public org-scoped routes (must be after all specific top-level routes) */}
+              <Route path="/:slug/groups" element={<GroupDirectoryPage />} />
+              <Route path="/:slug/content" element={<PublicContentPage />} />
+              <Route path="/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
+              <Route path="/:orgSlug/f/:formSlug" element={<PublicFormPage />} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

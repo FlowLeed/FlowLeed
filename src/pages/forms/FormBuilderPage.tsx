@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/layout/Header";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
 import { ArrowLeft, Plus, Trash2, ExternalLink, Copy, GripVertical } from "lucide-react";
 
 type Field = {
@@ -44,6 +45,8 @@ export default function FormBuilderPage() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { organization } = useProfile();
+  const orgSlug = organization?.slug;
 
   const { data: form } = useQuery({
     queryKey: ["form", id],
@@ -218,11 +221,16 @@ export default function FormBuilderPage() {
 
   const visibleFields = fields.filter((f) => !f._deleted);
 
+  const publicUrl = form
+    ? orgSlug
+      ? `${window.location.origin}/${orgSlug}/f/${form.slug}`
+      : `${window.location.origin}/f/${form.slug}`
+    : "";
+
   const copyLink = () => {
-    if (!form) return;
-    const url = `${window.location.origin}/f/${form.slug}`;
-    navigator.clipboard.writeText(url);
-    toast({ title: "Link copied" });
+    if (!publicUrl) return;
+    navigator.clipboard.writeText(publicUrl);
+    toast({ title: "Link copied", description: publicUrl });
   };
 
   return (
@@ -236,7 +244,7 @@ export default function FormBuilderPage() {
             </Button>
             {form && (
               <Button variant="outline" size="sm" asChild>
-                <a href={`/f/${form.slug}`} target="_blank" rel="noreferrer">
+                <a href={publicUrl} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-4 w-4 mr-1" /> Preview
                 </a>
               </Button>
