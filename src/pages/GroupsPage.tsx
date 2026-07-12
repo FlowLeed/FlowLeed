@@ -144,12 +144,14 @@ const GroupsPage = () => {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <a href="/groups/directory" target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Public Directory
-              </a>
-            </Button>
+            {organization?.slug && (
+              <Button variant="outline" size="sm" asChild>
+                <a href={`/${organization.slug}/groups`} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Public Directory
+                </a>
+              </Button>
+            )}
             <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Group
