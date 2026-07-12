@@ -62,6 +62,11 @@ const AuditSignupPage = lazy(() => import("./pages/audit/AuditSignupPage"));
 const AuditConnectPage = lazy(() => import("./pages/audit/AuditConnectPage"));
 const AuditGeneratingPage = lazy(() => import("./pages/audit/AuditGeneratingPage"));
 const AuditReportPage = lazy(() => import("./pages/audit/AuditReportPage"));
+const FormsListPage = lazy(() => import("./pages/forms/FormsListPage"));
+const FormBuilderPage = lazy(() => import("./pages/forms/FormBuilderPage"));
+const FormSubmissionsPage = lazy(() => import("./pages/forms/FormSubmissionsPage"));
+const PublicFormPage = lazy(() => import("./pages/public/PublicFormPage"));
+
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background">
@@ -96,7 +101,9 @@ const App = () => (
               <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
+              <Route path="/f/:slug" element={<PublicFormPage />} />
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
+
               <Route path="/org/:slug/content" element={<PublicContentPage />} />
               <Route path="/org/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
 
@@ -137,6 +144,10 @@ const App = () => (
               <Route path="/content/videos/:id" element={<FeatureGate feature="content"><ContentVideoDetailPage /></FeatureGate>} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/forms" element={<FeatureGate feature="forms"><FormsListPage /></FeatureGate>} />
+              <Route path="/forms/:id" element={<FeatureGate feature="forms"><FormBuilderPage /></FeatureGate>} />
+              <Route path="/forms/:id/submissions" element={<FeatureGate feature="forms"><FormSubmissionsPage /></FeatureGate>} />
+
               </Route>
 
               {/* FL-Admin super admin routes */}

@@ -1,6 +1,7 @@
-import { MessageSquare, Phone, Sparkles, Activity, Film, Wand2, Bot, type LucideIcon } from "lucide-react";
+import { MessageSquare, Phone, Sparkles, Activity, Film, Wand2, Bot, ClipboardList, type LucideIcon } from "lucide-react";
 
-export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "custom_signals" | "signal_agent";
+export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "custom_signals" | "signal_agent" | "forms";
+
 
 export interface FeatureModule {
   key: FeatureKey;
@@ -52,6 +53,14 @@ export const FEATURE_MODULES: FeatureModule[] = [
     description: "AI Staff Pastor that watches signals and proposes actions (notify, add to flow, task, draft message) for human approval.",
     icon: Bot,
   },
+  {
+    key: "forms",
+    label: "Forms",
+    description: "Public forms and lead capture with routing into Flows.",
+    icon: ClipboardList,
+  },
 ];
+
+
 
 export const FEATURE_KEYS = FEATURE_MODULES.map((f) => f.key);
