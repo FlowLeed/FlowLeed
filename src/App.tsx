@@ -2,7 +2,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import { lazyWithRetry as lazy } from "./lib/lazyWithRetry";
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { useGoogleAnalyticsPageView } from "./hooks/useGoogleAnalyticsPageView";
 import { MainLayout } from "./components/layout/MainLayout";
