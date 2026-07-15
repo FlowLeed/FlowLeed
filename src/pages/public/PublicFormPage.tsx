@@ -23,6 +23,8 @@ interface FieldDef {
 
 export default function PublicFormPage() {
   const params = useParams();
+  const [searchParams] = useSearchParams();
+  const previewRequested = searchParams.get("preview") === "1" || searchParams.get("preview") === "true";
   const orgSlug = (params as any).orgSlug as string | undefined;
   const slug = ((params as any).formSlug || (params as any).slug) as string | undefined;
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,7 @@ export default function PublicFormPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -44,9 +47,17 @@ export default function PublicFormPage() {
         const anon = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const qs = new URLSearchParams({ slug });
         if (orgSlug) qs.set("org_slug", orgSlug);
+        if (previewRequested) qs.set("preview", "1");
         const url = `https://${projectId}.supabase.co/functions/v1/public-form-get?${qs.toString()}`;
+        // For preview, send the logged-in user's session token so the edge function
+        // can verify org membership. Fall back to anon key for public requests.
+        let authToken = anon;
+        if (previewRequested) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session?.access_token) authToken = sessionData.session.access_token;
+        }
         const res = await fetch(url, {
-          headers: { apikey: anon, Authorization: `Bearer ${anon}` },
+          headers: { apikey: anon, Authorization: `Bearer ${authToken}` },
         });
         if (!res.ok) {
           setNotFound(true);
@@ -56,13 +67,14 @@ export default function PublicFormPage() {
         setForm(payload.form);
         setOrg(payload.organization);
         setFields(payload.fields || []);
+        setIsPreview(!!payload.preview);
       } catch (e) {
         setNotFound(true);
       } finally {
         setLoading(false);
       }
     })();
-  }, [slug, orgSlug]);
+  }, [slug, orgSlug, previewRequested]);
 
 
   const setValue = (k: string, v: any) => setValues((prev) => ({ ...prev, [k]: v }));
@@ -73,11 +85,11 @@ export default function PublicFormPage() {
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("public-form-submit", {
-        body: { slug, org_slug: orgSlug, data: values, honeypot },
+        body: { slug, org_slug: orgSlug, data: values, honeypot, preview: isPreview },
       });
       if (error) throw new Error(error.message);
       if ((data as any)?.error) throw new Error((data as any).error);
-      if ((data as any)?.redirect_url) {
+      if ((data as any)?.redirect_url && !isPreview) {
         window.location.href = (data as any).redirect_url;
         return;
       }
