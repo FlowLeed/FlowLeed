@@ -72,6 +72,13 @@ Deno.serve(async (req) => {
         .maybeSingle(),
     ]);
 
+    const toPublicLogoUrl = (v: string | null | undefined) => {
+      if (!v) return null;
+      if (/^https?:\/\//i.test(v)) return v;
+      const { data } = supabase.storage.from('org-logos').getPublicUrl(v);
+      return data.publicUrl;
+    };
+
     return new Response(
       JSON.stringify({
         form: {
@@ -80,13 +87,13 @@ Deno.serve(async (req) => {
           description: form.description,
           slug: form.slug,
           brand_color: form.brand_color,
-          logo_url: form.logo_url,
+          logo_url: toPublicLogoUrl(form.logo_url),
           success_message: form.success_message,
           redirect_url: form.redirect_url,
         },
         fields: fields || [],
         organization: org
-          ? { name: org.name, logo_url: org.logo_url, slug: org.slug }
+          ? { name: org.name, logo_url: toPublicLogoUrl(org.logo_url), slug: org.slug }
           : null,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
