@@ -1,65 +1,46 @@
+## Goal
 
-# Org-slug-first public URLs
+Let form editors preview a draft form (before it's published) while keeping the public link "Form not found" for everyone else.
 
-Move public org pages to top-level org-slug URLs, dropping the `/org/` prefix:
+## How it works
 
-- `/:orgSlug/content` — public stories library (was `/org/:slug/content`)
-- `/:orgSlug/content/videos/:id` — public video (was `/org/:slug/content/videos/:id`)
-- `/:orgSlug/groups` — public groups directory (was `/org/:slug/groups`)
-- `/:orgSlug/f/:formSlug` — public form (was `/f/:slug`)
+1. In the builder, add a **Preview** button next to the existing "Copy link" / "Open" actions.
+2. The button opens the same public URL `/:orgSlug/f/:formSlug` but appends a short-lived signed token, e.g. `?preview=<token>`.
+3. The public form page passes that token through to `public-form-get` / `public-form-submit`.
+4. The `public-form-get` edge function:
+   - If `preview` token is present → verify it (signed with `SUPABASE_JWT_SECRET`, contains `form_id` + `user_id`, checks that the user is a member of the form's organization) and return the form **regardless** of `is_published`.
+   - Otherwise → keep today's behavior (only return forms where `is_published = true`).
+5. `public-form-submit` gets the same treatment so the editor can end-to-end test the flow. Submissions made in preview mode are flagged `is_preview = true` (new column on `form_submissions`) and are excluded from the regular submissions list by default, with a "Show preview submissions" toggle.
+6. A visible **"Preview mode – not published"** banner is shown at the top of the form when the token is used, so testers know it's not the live version.
 
-Form slugs become unique per org (so `connect-card` works for every church, no random suffix needed).
+## UI changes
 
-## Reserved slugs (critical)
+- `FormBuilderPage.tsx`
+  - Add "Preview" button (opens preview URL in a new tab).
+  - When the form is unpublished, show the banner "Not published yet — only you can preview this link."
+- `PublicFormPage.tsx`
+  - Read `preview` query param, pass it to both edge functions.
+  - Render the preview banner when the response indicates preview mode.
+- `FormSubmissionsPage.tsx`
+  - Filter out `is_preview = true` by default with a toggle to include them.
 
-The following top-level paths are owned by the app and must be blocked as org slugs. If an org already has one of these slugs, they keep working via the old `/org/:slug/...` routes but the new top-level route won't resolve for them.
+## Backend changes
 
-Reserved list: `auth`, `verify-email`, `invite`, `pco`, `dev`, `fl-admin`, `audit`, `f`, `org`, `groups`, `content`, `flows`, `contacts`, `signals`, `messages`, `calls`, `tasks`, `team`, `integrations`, `analytics`, `profile`, `calendar`, `forms`, `api`, `admin`, `settings`, `dashboard`, `home`, `about`, `login`, `logout`, `signup`, `signin`.
+- Migration: add `is_preview boolean not null default false` to `form_submissions`.
+- Edge function `public-form-get`:
+  - Accept `preview` token, verify JWT, look up caller's org membership vs `form.organization_id`, bypass `is_published` when valid.
+- Edge function `public-form-submit`:
+  - Same token check; when valid, insert submission with `is_preview = true` and skip flow enrollment / notifications so drafts don't pollute live data.
+- Token minting: a tiny new edge function `form-preview-token` (auth required) that returns a short-lived (e.g. 30 min) HMAC-signed token `{form_id, user_id, exp}` — avoids handing out raw JWTs and keeps the URL scoped to one form.
 
-Enforcement:
-- DB CHECK constraint / trigger on `organizations.slug` rejecting the reserved list (case-insensitive).
-- Frontend validation in the org rename dialog (`EditOrganizationDialog`) with a clear error message.
-- Existing orgs are audited via a `read_query` — if any collide, we rename them (append `-org`) before enabling the new routes. (Migration includes the audit query but not automatic renames — we'll surface findings and rename manually.)
+## Technical notes
 
-## Routing (`src/App.tsx`)
-
-- Add public routes OUTSIDE the `ProtectedRoute`/`MainLayout` wrapper, placed AFTER all specific top-level routes so they don't shadow anything:
-  - `/:orgSlug/content` → `PublicContentPage`
-  - `/:orgSlug/content/videos/:id` → `PublicContentVideoPage`
-  - `/:orgSlug/groups` → `GroupDirectoryPage`
-  - `/:orgSlug/f/:formSlug` → `PublicFormPage`
-- Keep old routes as permanent redirects:
-  - `/org/:slug/content*` → `/:slug/content*`
-  - `/org/:slug/groups` → `/:slug/groups`
-  - `/f/:slug` → look up form's org slug via `public-form-get`, then redirect to `/:orgSlug/f/:formSlug`
-- React Router matches most-specific first, so `/forms` still resolves to the internal `FormsListPage` even with `/:orgSlug/f/...` present. All app routes are protected and specific, so they take precedence. The reserved-slug rule guarantees `/:orgSlug` never means a real app route.
-- NotFound (`*`) stays last — if `:orgSlug` doesn't resolve to a real org, the public page components show their existing "not found" state.
-
-## Database
-
-Migration:
-- Drop the global-unique index on `forms.slug`.
-- Add unique `forms(organization_id, slug)`.
-- Add plain index on `forms.slug` for the legacy `/f/:slug` redirect lookup.
-- Add validation trigger on `organizations` that rejects inserts/updates where `slug` is in the reserved list (case-insensitive).
-
-No data backfill of existing form slugs — they still work; new forms just don't need the random suffix.
-
-## Backend (edge functions)
-
-- `public-form-get`: accept `org_slug` + `slug`, resolve org, then form by `(organization_id, slug)`. Keep legacy slug-only lookup path for redirects.
-- `public-form-submit`: same shape — takes `org_slug` + `slug`. Legacy slug-only fallback for old links.
-- Both still gate on `is_published = true`.
-
-## Frontend components
-
-- **`PublicFormPage.tsx`**: read `orgSlug` + `formSlug` from `useParams`, pass to both edge functions.
-- **`FormsListPage.tsx`**: drop the `-${random}` suffix from `slugify` — use plain slug, on unique violation append `-2`, `-3`, … Copy-link uses `${origin}/${orgSlug}/f/${slug}`.
-- **`FormBuilderPage.tsx`**: settings preview shows the canonical `${origin}/${orgSlug}/f/${slug}` URL.
-- **`GroupDirectoryPage.tsx`** and **`PublicContentPage.tsx` / `PublicContentVideoPage.tsx`**: no logic changes (they already read `:slug` from params) — the route param name matches.
-- **`EditOrganizationDialog.tsx`**: validate slug against the reserved list before submitting.
+- Token is signed with `SUPABASE_JWT_SECRET` (already available to edge functions) using HMAC-SHA256; format `base64url(payload).base64url(signature)`.
+- Preview URL is copy-to-clipboard friendly but expires, so it can't be used as a stealth "public" link.
+- No changes to RLS — everything stays behind edge functions using the service role.
+- The existing publish toggle behavior is unchanged; the public link is still 404 for anonymous visitors until published.
 
 ## Out of scope
 
-- Custom subdomains (`groups.thepromisecenter.flowleed.com`) — separate effort.
-- Auto-renaming existing colliding org slugs — surface via read_query first, then decide per org.
+- Sharing preview links with non-members (would need per-recipient tokens).
+- Persisting draft submissions long-term (they can be cleared with a "Delete preview submissions" action later if needed).
