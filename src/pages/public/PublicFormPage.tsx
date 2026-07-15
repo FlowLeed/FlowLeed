@@ -119,9 +119,14 @@ export default function PublicFormPage() {
               src={form.logo_url || org?.logo_url}
               alt={org?.name || "Logo"}
               className="h-16 mx-auto mb-3 object-contain"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
             />
           )}
-          {org?.name && <p className="text-sm text-muted-foreground">{org.name}</p>}
+          {org?.name && org.name !== form.name && (
+            <p className="text-sm text-muted-foreground">{org.name}</p>
+          )}
         </div>
 
         <div className="bg-card border rounded-xl shadow-sm p-6 md:p-8">
