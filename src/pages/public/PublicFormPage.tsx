@@ -124,6 +124,11 @@ export default function PublicFormPage() {
 
   return (
     <div className="h-screen overflow-y-auto bg-muted/30">
+      {isPreview && (
+        <div className="sticky top-0 z-10 bg-amber-500 text-white text-center text-sm font-medium py-2 px-3 shadow">
+          Preview mode — this form is not published. Submissions won't enroll contacts or trigger notifications.
+        </div>
+      )}
       <div className="max-w-xl mx-auto p-6 py-10">
         <div className="text-center mb-6">
           {(form.logo_url || org?.logo_url) && (
