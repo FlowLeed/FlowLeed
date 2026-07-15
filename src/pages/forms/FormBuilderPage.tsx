@@ -610,7 +610,7 @@ export default function FormBuilderPage() {
             </Button>
             {form && (
               <Button variant="outline" size="sm" asChild>
-                <a href={publicUrl} target="_blank" rel="noreferrer">
+                <a href={`${publicUrl}?preview=1`} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-4 w-4 mr-1" /> Preview
                 </a>
               </Button>

@@ -16,11 +16,12 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { slug, org_slug, data, honeypot } = body as {
+    const { slug, org_slug, data, honeypot, preview } = body as {
       slug?: string;
       org_slug?: string;
       data?: Record<string, any>;
       honeypot?: string;
+      preview?: boolean;
     };
 
     if (honeypot) {
@@ -60,12 +61,11 @@ Deno.serve(async (req) => {
       orgId = orgRow.id;
     }
 
-    // Load form + fields
+    // Load form + fields (no is_published filter yet — preview may bypass).
     let formQuery = supabase
       .from('forms')
       .select('id, organization_id, pipeline_id, stage_id, is_published, success_message, redirect_url')
-      .eq('slug', slug)
-      .eq('is_published', true);
+      .eq('slug', slug);
     if (orgId) formQuery = formQuery.eq('organization_id', orgId);
 
     const { data: form, error: formErr } = await formQuery.maybeSingle();
@@ -75,6 +75,45 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Preview-mode auth for unpublished forms
+    let previewMode = false;
+    if (!form.is_published) {
+      if (!preview) {
+        return new Response(JSON.stringify({ error: 'Form not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const authHeader = req.headers.get('Authorization');
+      let authorized = false;
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.slice('Bearer '.length);
+        try {
+          const anon = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_ANON_KEY')!,
+          );
+          const { data: u } = await anon.auth.getUser(token);
+          if (u?.user) {
+            const { data: member } = await supabase
+              .from('organization_members')
+              .select('user_id')
+              .eq('organization_id', form.organization_id)
+              .eq('user_id', u.user.id)
+              .maybeSingle();
+            authorized = !!member;
+          }
+        } catch { /* ignore */ }
+      }
+      if (!authorized) {
+        return new Response(JSON.stringify({ error: 'Form not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      previewMode = true;
     }
 
     const { data: fields } = await supabase
@@ -166,7 +205,21 @@ Deno.serve(async (req) => {
       data,
       ip,
       user_agent: ua,
+      is_preview: previewMode,
     });
+
+    // Skip counters, flow enrollment and notifications in preview mode
+    if (previewMode) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          preview: true,
+          message: form.success_message,
+          redirect_url: form.redirect_url,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     await supabase.rpc('increment_form_submission_count' as any, { p_form_id: form.id }).then(
       () => {},
@@ -188,7 +241,6 @@ Deno.serve(async (req) => {
 
       assigneeUserId = stage?.default_assignee_user_id ?? null;
 
-      // If no default assignee, use pipeline lead
       if (!assigneeUserId) {
         const { data: lead } = await supabase
           .from('pipeline_team_members')
@@ -200,7 +252,6 @@ Deno.serve(async (req) => {
         assigneeUserId = lead?.user_id ?? null;
       }
 
-      // Only insert if not already enrolled
       const { data: existingEnroll } = await supabase
         .from('pipeline_contacts')
         .select('id')
@@ -220,7 +271,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Notify assignee
       if (assigneeUserId) {
         await supabase.from('notifications').insert({
           user_id: assigneeUserId,
@@ -234,6 +284,7 @@ Deno.serve(async (req) => {
         });
       }
     }
+
 
     return new Response(
       JSON.stringify({
