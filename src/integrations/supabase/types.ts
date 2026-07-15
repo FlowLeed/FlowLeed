@@ -1748,6 +1748,7 @@ export type Database = {
           form_id: string
           id: string
           ip: string | null
+          is_preview: boolean
           organization_id: string
           user_agent: string | null
         }
@@ -1758,6 +1759,7 @@ export type Database = {
           form_id: string
           id?: string
           ip?: string | null
+          is_preview?: boolean
           organization_id: string
           user_agent?: string | null
         }
@@ -1768,6 +1770,7 @@ export type Database = {
           form_id?: string
           id?: string
           ip?: string | null
+          is_preview?: boolean
           organization_id?: string
           user_agent?: string | null
         }
