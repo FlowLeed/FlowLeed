@@ -67,9 +67,10 @@ export default function FormsListPage() {
       if (error) throw error;
       // Seed default fields
       await supabase.from("form_fields").insert([
-        { form_id: data.id, field_key: "name", label: "Full Name", field_type: "text", required: true, sort_order: 0 },
-        { form_id: data.id, field_key: "email", label: "Email", field_type: "email", required: true, sort_order: 1 },
-        { form_id: data.id, field_key: "phone", label: "Phone", field_type: "phone", required: false, sort_order: 2 },
+        { form_id: data.id, field_key: "first_name", label: "First Name", field_type: "text", required: true, sort_order: 0 },
+        { form_id: data.id, field_key: "last_name", label: "Last Name", field_type: "text", required: true, sort_order: 1 },
+        { form_id: data.id, field_key: "email", label: "Email", field_type: "email", required: true, sort_order: 2 },
+        { form_id: data.id, field_key: "phone", label: "Phone", field_type: "phone", required: false, sort_order: 3 },
       ]);
       return data.id as string;
     },

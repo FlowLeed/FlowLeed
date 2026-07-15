@@ -95,7 +95,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    const name = String(data.name ?? '').trim().slice(0, 200);
+    const firstName = String(data.first_name ?? '').trim().slice(0, 100);
+    const lastName = String(data.last_name ?? '').trim().slice(0, 100);
+    const legacyName = String(data.name ?? '').trim().slice(0, 200);
+    const name = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : legacyName;
+
     const email = String(data.email ?? '').trim().toLowerCase().slice(0, 255) || null;
     const phone = String(data.phone ?? '').trim().slice(0, 50) || null;
 
