@@ -205,7 +205,21 @@ Deno.serve(async (req) => {
       data,
       ip,
       user_agent: ua,
+      is_preview: previewMode,
     });
+
+    // Skip counters, flow enrollment and notifications in preview mode
+    if (previewMode) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          preview: true,
+          message: form.success_message,
+          redirect_url: form.redirect_url,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
 
     await supabase.rpc('increment_form_submission_count' as any, { p_form_id: form.id }).then(
       () => {},
@@ -227,7 +241,6 @@ Deno.serve(async (req) => {
 
       assigneeUserId = stage?.default_assignee_user_id ?? null;
 
-      // If no default assignee, use pipeline lead
       if (!assigneeUserId) {
         const { data: lead } = await supabase
           .from('pipeline_team_members')
@@ -239,7 +252,6 @@ Deno.serve(async (req) => {
         assigneeUserId = lead?.user_id ?? null;
       }
 
-      // Only insert if not already enrolled
       const { data: existingEnroll } = await supabase
         .from('pipeline_contacts')
         .select('id')
@@ -259,7 +271,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Notify assignee
       if (assigneeUserId) {
         await supabase.from('notifications').insert({
           user_id: assigneeUserId,
@@ -273,6 +284,7 @@ Deno.serve(async (req) => {
         });
       }
     }
+
 
     return new Response(
       JSON.stringify({
