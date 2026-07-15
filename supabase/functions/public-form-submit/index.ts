@@ -16,11 +16,12 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { slug, org_slug, data, honeypot } = body as {
+    const { slug, org_slug, data, honeypot, preview } = body as {
       slug?: string;
       org_slug?: string;
       data?: Record<string, any>;
       honeypot?: string;
+      preview?: boolean;
     };
 
     if (honeypot) {
@@ -60,12 +61,11 @@ Deno.serve(async (req) => {
       orgId = orgRow.id;
     }
 
-    // Load form + fields
+    // Load form + fields (no is_published filter yet — preview may bypass).
     let formQuery = supabase
       .from('forms')
       .select('id, organization_id, pipeline_id, stage_id, is_published, success_message, redirect_url')
-      .eq('slug', slug)
-      .eq('is_published', true);
+      .eq('slug', slug);
     if (orgId) formQuery = formQuery.eq('organization_id', orgId);
 
     const { data: form, error: formErr } = await formQuery.maybeSingle();
@@ -75,6 +75,45 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Preview-mode auth for unpublished forms
+    let previewMode = false;
+    if (!form.is_published) {
+      if (!preview) {
+        return new Response(JSON.stringify({ error: 'Form not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const authHeader = req.headers.get('Authorization');
+      let authorized = false;
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.slice('Bearer '.length);
+        try {
+          const anon = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_ANON_KEY')!,
+          );
+          const { data: u } = await anon.auth.getUser(token);
+          if (u?.user) {
+            const { data: member } = await supabase
+              .from('organization_members')
+              .select('user_id')
+              .eq('organization_id', form.organization_id)
+              .eq('user_id', u.user.id)
+              .maybeSingle();
+            authorized = !!member;
+          }
+        } catch { /* ignore */ }
+      }
+      if (!authorized) {
+        return new Response(JSON.stringify({ error: 'Form not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      previewMode = true;
     }
 
     const { data: fields } = await supabase
