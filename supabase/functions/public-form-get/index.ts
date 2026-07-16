@@ -10,25 +10,32 @@ async function isPreviewAuthorized(
   authHeader: string | null,
   organizationId: string,
 ): Promise<boolean> {
-  if (!authHeader?.startsWith('Bearer ')) return false;
+  if (!authHeader?.startsWith('Bearer ')) {
+    console.log('[preview] missing bearer');
+    return false;
+  }
   const token = authHeader.slice('Bearer '.length);
   try {
     const anon = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: `Bearer ${token}` } } },
     );
     const { data, error } = await anon.auth.getUser(token);
-    if (error || !data?.user) return false;
+    if (error || !data?.user) {
+      console.log('[preview] getUser failed', error?.message);
+      return false;
+    }
     const userId = data.user.id;
-    const { data: member } = await admin
+    const { data: member, error: memErr } = await admin
       .from('organization_members')
       .select('user_id')
       .eq('organization_id', organizationId)
       .eq('user_id', userId)
       .maybeSingle();
+    console.log('[preview] user', userId, 'member?', !!member, memErr?.message);
     return !!member;
-  } catch {
+  } catch (e) {
+    console.log('[preview] exception', (e as Error).message);
     return false;
   }
 }
