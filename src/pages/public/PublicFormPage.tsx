@@ -55,11 +55,15 @@ export default function PublicFormPage() {
         if (previewRequested) {
           const { data: sessionData } = await supabase.auth.getSession();
           if (sessionData.session?.access_token) authToken = sessionData.session.access_token;
+          console.log("[form-preview] has user session?", !!sessionData.session, "url:", url);
         }
         const res = await fetch(url, {
           headers: { apikey: anon, Authorization: `Bearer ${authToken}` },
         });
+        console.log("[form-preview] response status", res.status);
         if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          console.log("[form-preview] error body", body);
           setNotFound(true);
           return;
         }
