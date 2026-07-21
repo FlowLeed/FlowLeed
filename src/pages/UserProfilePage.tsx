@@ -117,7 +117,6 @@ const UserProfilePage = () => {
         .order("is_primary", { ascending: false });
 
       // Fetch family members
-    // Fetch family members
     const { data: rawFamilyMembers } = await supabase
       .from("contact_family_members")
       .select("*")
@@ -125,7 +124,7 @@ const UserProfilePage = () => {
       .order("created_at");
 
     // Check if each family member exists as a contact
-    const familyMembers = await Promise.all(
+    let familyMembers: any[] = await Promise.all(
       (rawFamilyMembers || []).map(async (member) => {
         if (member.pc_person_id) {
           const { data: linkedContact } = await supabase
@@ -133,12 +132,49 @@ const UserProfilePage = () => {
             .select("id")
             .eq("pc_person_id", member.pc_person_id)
             .maybeSingle();
-          
+
           return { ...member, linked_contact_id: linkedContact?.id || null };
         }
         return { ...member, linked_contact_id: null };
       })
     );
+
+    // Fallback: derive family from shared PCO household when the family table hasn't been populated yet
+    if (familyMembers.length === 0 && contact.pc_household_id) {
+      const { data: householdContacts } = await supabase
+        .from("contacts")
+        .select("id, name, avatar_url, pc_person_id, contact_demographics(birthday, marital_status)")
+        .eq("pc_household_id", contact.pc_household_id)
+        .neq("id", contactId);
+
+      const computeAge = (birthday?: string | null) => {
+        if (!birthday) return null;
+        const b = new Date(birthday);
+        const today = new Date();
+        let age = today.getFullYear() - b.getFullYear();
+        const m = today.getMonth() - b.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < b.getDate())) age--;
+        return age;
+      };
+
+      familyMembers = (householdContacts || []).map((hc: any) => {
+        const demo = Array.isArray(hc.contact_demographics) ? hc.contact_demographics[0] : hc.contact_demographics;
+        const birthday = demo?.birthday || null;
+        const age = computeAge(birthday);
+        const isChild = age !== null ? age < 18 : false;
+        return {
+          id: hc.id,
+          contact_id: contactId,
+          name: hc.name,
+          relationship: isChild ? "Child" : "Household Member",
+          birthday,
+          avatar: hc.avatar_url,
+          is_child: isChild,
+          pc_person_id: hc.pc_person_id,
+          linked_contact_id: hc.id,
+        };
+      });
+    }
 
       // Fetch pipeline involvement with stage counts
       const { data: pipelineContacts } = await supabase
