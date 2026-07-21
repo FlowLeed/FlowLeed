@@ -141,11 +141,23 @@ const UserProfilePage = () => {
 
     // Fallback: derive family from shared PCO household when the family table hasn't been populated yet
     if (familyMembers.length === 0 && contact.pc_household_id) {
-      const { data: householdContacts } = await supabase
+      const { data: householdContacts, error: householdErr } = await supabase
         .from("contacts")
-        .select("id, name, avatar_url, pc_person_id, contact_demographics(birthday, marital_status)")
+        .select("id, name, avatar_url, pc_person_id")
         .eq("pc_household_id", contact.pc_household_id)
         .neq("id", contactId);
+
+      if (householdErr) console.error("[UserProfile] household fallback error:", householdErr);
+
+      const ids = (householdContacts || []).map((h: any) => h.id);
+      let demoMap: Record<string, any> = {};
+      if (ids.length > 0) {
+        const { data: demos } = await supabase
+          .from("contact_demographics")
+          .select("contact_id, birthday, marital_status")
+          .in("contact_id", ids);
+        demoMap = Object.fromEntries((demos || []).map((d: any) => [d.contact_id, d]));
+      }
 
       const computeAge = (birthday?: string | null) => {
         if (!birthday) return null;
@@ -158,7 +170,7 @@ const UserProfilePage = () => {
       };
 
       familyMembers = (householdContacts || []).map((hc: any) => {
-        const demo = Array.isArray(hc.contact_demographics) ? hc.contact_demographics[0] : hc.contact_demographics;
+        const demo = demoMap[hc.id];
         const birthday = demo?.birthday || null;
         const age = computeAge(birthday);
         const isChild = age !== null ? age < 18 : false;
