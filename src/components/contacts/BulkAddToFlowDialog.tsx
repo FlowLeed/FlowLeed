@@ -104,6 +104,8 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
     onSuccess: ({ added, skipped }) => {
       queryClient.invalidateQueries({ queryKey: ['flows'] });
       queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
+      // FlowContext refreshes on window events, not query invalidations
+      window.dispatchEvent(new CustomEvent('flow-assignment-updated'));
       if (added > 0) {
         toast.success(
           `Added ${added} ${added === 1 ? 'person' : 'people'} to ${selectedPipeline?.name}${
