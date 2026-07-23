@@ -1,6 +1,28 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, MoveRight, UserPlus, Tag as TagIcon, Trash2, ArrowRightLeft, Download } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  X,
+  MoveRight,
+  UserPlus,
+  Tag as TagIcon,
+  Trash2,
+  ArrowRightLeft,
+  Download,
+  Plus,
+  Minus,
+} from "lucide-react";
 import { BulkStageChangeDialog } from "./BulkStageChangeDialog";
 import { BulkReassignDialog } from "./BulkReassignDialog";
 import { BulkTagDialog } from "./BulkTagDialog";
@@ -95,99 +117,151 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
     onClearSelection();
   };
 
+  const iconBtn =
+    "flex items-center justify-center w-9 h-9 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed";
+
   return (
-    <>
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border shadow-lg rounded-lg p-4 w-[min(600px,calc(100vw-2rem))]">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm">
-              {selectedCount} {selectedCount === 1 ? 'person' : 'people'} selected
+    <TooltipProvider delayDuration={200}>
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-[640px] px-4 pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-1 p-1.5 h-14 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 ring-1 ring-white/10 shadow-2xl">
+          {/* Selection status */}
+          <div className="flex items-center gap-2 px-3 border-r border-slate-700/50 mr-1 h-full">
+            <span className="flex items-center justify-center min-w-6 h-6 px-1.5 bg-blue-500 text-white text-xs font-bold rounded-full">
+              {selectedCount}
+            </span>
+            <span className="text-slate-200 text-sm font-medium whitespace-nowrap hidden sm:inline">
+              selected
             </span>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setStageDialogOpen(true)}
-              disabled={isLoading}
-            >
-              <MoveRight className="h-4 w-4 mr-2" />
-              Change Step
-            </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setMoveToFlowDialogOpen(true)}
-              disabled={isLoading}
-            >
-              <ArrowRightLeft className="h-4 w-4 mr-2" />
-              Move to Flow
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setReassignDialogOpen(true)}
-              disabled={isLoading}
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Reassign
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAddTagDialogOpen(true)}
-              disabled={isLoading}
-            >
-              <TagIcon className="h-4 w-4 mr-2" />
-              Add Tags
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setRemoveTagDialogOpen(true)}
-              disabled={isLoading}
-            >
-              <TagIcon className="h-4 w-4 mr-2" />
-              Remove Tags
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExport}
-              disabled={isLoading}
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export CSV
-            </Button>
+          {/* Actions */}
+          <div className="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar">
+            {/* Movement group */}
+            <div className="flex items-center gap-1 bg-slate-800/50 p-1 rounded-xl">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setStageDialogOpen(true)}
+                    disabled={isLoading}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-slate-700 text-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <MoveRight className="w-4 h-4 text-blue-400" />
+                    <span className="text-xs font-semibold whitespace-nowrap">Step</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Change Step</TooltipContent>
+              </Tooltip>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={isLoading}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setMoveToFlowDialogOpen(true)}
+                    disabled={isLoading}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 hover:bg-slate-700 text-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ArrowRightLeft className="w-4 h-4 text-blue-400" />
+                    <span className="text-xs font-semibold whitespace-nowrap">Flow</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Move to Flow</TooltipContent>
+              </Tooltip>
+            </div>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearSelection}
-              disabled={isLoading}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {/* Reassign */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setReassignDialogOpen(true)}
+                  disabled={isLoading}
+                  className={iconBtn}
+                  aria-label="Reassign"
+                >
+                  <UserPlus className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Reassign</TooltipContent>
+            </Tooltip>
+
+            {/* Tags (consolidated) */}
+            <DropdownMenu>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      disabled={isLoading}
+                      className={iconBtn}
+                      aria-label="Tags"
+                    >
+                      <TagIcon className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Tags</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="center" sideOffset={8}>
+                <DropdownMenuItem onClick={() => setAddTagDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add tags…
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setRemoveTagDialogOpen(true)}>
+                  <Minus className="w-4 h-4 mr-2" />
+                  Remove tags…
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Utility & destructive */}
+          <div className="flex items-center gap-1 pl-2 ml-1 border-l border-slate-700/50">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onExport}
+                  disabled={isLoading}
+                  className={iconBtn}
+                  aria-label="Export CSV"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Export CSV</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={isLoading}
+                  className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Delete"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Remove from flow</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onClearSelection}
+                  disabled={isLoading}
+                  className={iconBtn}
+                  aria-label="Clear selection"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Clear selection</TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </div>
+
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
 
       <BulkStageChangeDialog
         open={stageDialogOpen}
@@ -223,7 +297,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Remove from Flow</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove {selectedCount} {selectedCount === 1 ? 'person' : 'people'} from this flow? 
+              Are you sure you want to remove {selectedCount} {selectedCount === 1 ? 'person' : 'people'} from this flow?
               This will not delete the people from your database.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -244,6 +318,6 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
         selectedCount={selectedCount}
         onConfirm={handleMoveToFlow}
       />
-    </>
+    </TooltipProvider>
   );
 };
