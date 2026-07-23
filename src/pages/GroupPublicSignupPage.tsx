@@ -185,9 +185,9 @@ export default function GroupPublicSignupPage() {
               A group leader will review it shortly.
             </p>
             <Button variant="outline" asChild>
-              <Link to="/groups/directory">
+              <Link to={backHref}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Browse More Groups
+                {fromSlug ? "Back to Groups" : "Browse More Groups"}
               </Link>
             </Button>
           </CardContent>
