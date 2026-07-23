@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,10 @@ const formatDescription = (description: string | null) => {
 
 export default function GroupPublicSignupPage() {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  const fromSlug = searchParams.get("from");
+  const backHref = fromSlug ? `/${fromSlug}/groups` : "/groups/directory";
+  const backLabel = fromSlug ? "Back to Groups" : "Browse All Groups";
   const [group, setGroup] = useState<GroupDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,9 +185,9 @@ export default function GroupPublicSignupPage() {
               A group leader will review it shortly.
             </p>
             <Button variant="outline" asChild>
-              <Link to="/groups/directory">
+              <Link to={backHref}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Browse More Groups
+                {fromSlug ? "Back to Groups" : "Browse More Groups"}
               </Link>
             </Button>
           </CardContent>
@@ -198,9 +202,9 @@ export default function GroupPublicSignupPage() {
     <div className="h-screen overflow-y-auto bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg space-y-4">
         <Button variant="ghost" asChild className="mb-2">
-          <Link to="/groups/directory">
+          <Link to={backHref}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Browse All Groups
+            {backLabel}
           </Link>
         </Button>
         <Card className="overflow-hidden">

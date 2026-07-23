@@ -116,7 +116,7 @@ export default function GroupDirectoryPage() {
 
   const handleJoinGroup = (token: string | null) => {
     if (token) {
-      navigate(`/groups/join/${token}`);
+      navigate(`/groups/join/${token}${slug ? `?from=${encodeURIComponent(slug)}` : ""}`);
     }
   };
 
