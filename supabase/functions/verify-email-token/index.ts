@@ -93,6 +93,18 @@ serve(async (req) => {
         console.error('Error confirming email:', confirmError);
         throw confirmError;
       }
+
+      // Also mark our own verification flag so login gating works
+      // independently of Supabase's built-in "Confirm email" setting.
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ email_verified_at: new Date().toISOString() })
+        .eq('user_id', tokenData.user_id);
+
+      if (profileError) {
+        console.error('Error updating profile.email_verified_at:', profileError);
+        // Non-fatal — Supabase confirmation succeeded; log and continue.
+      }
     }
 
     // If this is an email change verification, update the user's email
