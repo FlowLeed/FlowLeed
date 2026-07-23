@@ -159,6 +159,16 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
             <Button
               variant="outline"
               size="sm"
+              onClick={onExport}
+              disabled={isLoading}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setDeleteDialogOpen(true)}
               disabled={isLoading}
               className="text-destructive hover:text-destructive"
