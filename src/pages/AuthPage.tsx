@@ -389,7 +389,26 @@ const AuthPage = () => {
                     <form onSubmit={handleSignIn} className="space-y-4">
                       {error && (
                         <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
+                          <AlertDescription>
+                            <div>{error}</div>
+                            {needsVerification && (
+                              <div className="mt-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={handleResendVerification}
+                                  disabled={resendLoading || resendCooldown > 0 || !email}
+                                >
+                                  {resendLoading
+                                    ? 'Sending…'
+                                    : resendCooldown > 0
+                                      ? `Resend in ${resendCooldown}s`
+                                      : 'Resend verification email'}
+                                </Button>
+                              </div>
+                            )}
+                          </AlertDescription>
                         </Alert>
                       )}
 
