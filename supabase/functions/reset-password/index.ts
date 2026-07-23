@@ -79,16 +79,21 @@ serve(async (req) => {
 
     console.log('Token verified, updating password for email:', tokenData.email);
 
-    // Get user by email
-    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error('Error listing users:', listError);
-      throw listError;
-    }
-
+    // Get user by email — paginate since listUsers defaults to 50 per page
     const normalizedEmail = (tokenData.email || '').toLowerCase().trim();
-    const user = users?.find(u => (u.email || '').toLowerCase() === normalizedEmail);
+    let user: any = null;
+    const perPage = 1000;
+    for (let page = 1; page <= 50; page++) {
+      const { data, error: listError } = await supabase.auth.admin.listUsers({ page, perPage });
+      if (listError) {
+        console.error('Error listing users:', listError);
+        throw listError;
+      }
+      const users = data?.users ?? [];
+      user = users.find((u: any) => (u.email || '').toLowerCase() === normalizedEmail);
+      if (user) break;
+      if (users.length < perPage) break;
+    }
 
     if (!user) {
       console.error('User not found for email:', tokenData.email);
