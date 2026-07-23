@@ -86,7 +86,7 @@ serve(async (req) => {
     // Render email template
     const html = await renderAsync(
       React.createElement(SignupConfirmationEmail, {
-        fullName: fullName || email.split('@')[0],
+        fullName: resolvedFullName || email.split('@')[0],
         organizationName: organizationName || 'your organization',
         verificationUrl,
         email,
@@ -94,7 +94,7 @@ serve(async (req) => {
     );
 
     // Send email
-    const { error: emailError } = await resend.emails.send({
+    const { error: emailError } = await resendClient.emails.send({
       from: 'Flowleed <noreply@flowleed.com>',
       to: [email],
       subject: 'Verify your email - Flowleed',
