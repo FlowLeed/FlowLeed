@@ -692,6 +692,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
           onRemoveTags={handleBulkRemoveTags}
           onDelete={handleBulkDelete}
           onMoveToFlow={handleBulkMoveToFlow}
+          onExport={handleExportCsv}
           stages={flow.stages}
           teamMembers={teamMembers}
           teamMembersLoading={teamMembersLoading}
