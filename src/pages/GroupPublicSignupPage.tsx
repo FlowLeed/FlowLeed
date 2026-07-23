@@ -50,6 +50,10 @@ const formatDescription = (description: string | null) => {
 
 export default function GroupPublicSignupPage() {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  const fromSlug = searchParams.get("from");
+  const backHref = fromSlug ? `/${fromSlug}/groups` : "/groups/directory";
+  const backLabel = fromSlug ? "Back to Groups" : "Browse All Groups";
   const [group, setGroup] = useState<GroupDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
