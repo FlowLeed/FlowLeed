@@ -44,6 +44,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
   onRemoveTags,
   onDelete,
   onMoveToFlow,
+  onExport,
   stages,
   teamMembers,
   teamMembersLoading = false,
