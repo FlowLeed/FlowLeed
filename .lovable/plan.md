@@ -1,35 +1,38 @@
-## What that link is
+# Fix John's signup + harden email flow
 
-`https://email.auth.lovable.cloud/c/...` is the **default Lovable/Supabase auth email** — the built-in confirmation email that ships out of the box. It has no branding and doesn't use flowleed.com because it isn't going through our custom flow at all.
+## What we now know
 
-Right now the project sends **two emails** on signup:
-1. Supabase's default confirmation (the `email.auth.lovable.cloud` link you pasted) — unbranded.
-2. Our custom `send-signup-confirmation` Resend email — branded, points at flowleed.com.
+- Supabase "Confirm email" is off (verified: recent `auth.users` rows have `confirmation_sent_at = null` and are auto-confirmed at signup).
+- John Duarte has **no row in `auth.users`** — his account doesn't exist right now. Whatever `auth.lovable.cloud` link he got is dead regardless.
+- All app code paths (`send-signup-confirmation`, `send-password-reset`, invitations) route through Resend from `noreply@flowleed.com`. No code calls `supabase.auth.resetPasswordForEmail` or admin `generateLink` for regular signup.
+- So the leaked `auth.lovable.cloud` email came from a prior state when Confirm email was ON, not from current code.
 
-## Goal
+## Step 1 — Unblock John (no code)
 
-One branded auth email per event, sent from a flowleed.com sender, for signup confirmation, password reset, magic link, invite, email change, and reauthentication.
+Ask John to sign up again at `https://app.flowleed.com/auth`. He'll get the branded Flowleed email from Resend this time. His old link is expired and points to a user that no longer exists — nothing to salvage.
 
-## Approach: use Lovable's managed auth email templates
+## Step 2 — Add a safeguard so this can't regress
 
-Lovable has a managed auth-email pipeline (`auth-email-hook` + React Email templates) that intercepts Supabase's built-in auth emails and replaces them with branded ones sent from our own domain. This is the correct long-term fix — no double emails, all six auth events covered, links point at our domain.
+Even with the toggle off today, someone could flip Supabase's "Confirm email" back on later and we'd start double-emailing again. Add a small resilience layer:
 
-### Steps
+1. **Track our own verification state.** Add `profiles.email_verified_at timestamptz` (nullable). `verify-email-token` sets it. `send-signup-confirmation` is the only thing that sends the link.
+2. **Gate login on our verification, not Supabase's.** In `useAuth.signIn`, after a successful `signInWithPassword`, check `profiles.email_verified_at`. If null, sign the user out and show "Please verify your email — resend?". This decouples us from Supabase's confirm setting entirely.
+3. **Resend button** on the auth page that calls `send-signup-confirmation` again for the entered email (rate-limited to once per 60s client-side).
 
-1. **Check domain status** — call `email_domain--list_email_domains` to confirm a flowleed.com sender is configured. If not, surface the email setup dialog so the user can add/verify it.
-2. **Scaffold auth templates** — run `scaffold_auth_email_templates`. This creates:
-   - `supabase/functions/auth-email-hook/` (the hook Supabase calls instead of sending default emails)
-   - `supabase/functions/_shared/email-templates/*.tsx` — signup, recovery, magic-link, invite, email-change, reauthentication
-3. **Apply Flowleed branding** to each template — primary color, foreground/muted colors, radius, font stack pulled from `src/index.css`; logo from `public/` if present. Match the app's tone/copy.
-4. **Deploy** `auth-email-hook`.
-5. **Retire the custom Resend auth emails** to stop the double-send:
-   - Remove the `supabase.functions.invoke('send-signup-confirmation', ...)` call from `useAuth.signUp`.
-   - Remove the `supabase.functions.invoke('send-password-reset', ...)` call from `useAuth.resetPassword` and switch it to `supabase.auth.resetPasswordForEmail(email, { redirectTo: ... })`.
-   - Update `useAuth.changeEmail` to rely on Supabase's built-in email-change (drop the custom `change-email` invocation) OR keep it if we still need the 24h token flow — flag for confirmation.
-   - `AuthVerifyPage` / `VerifyEmailPage` / `reset-password` edge function become dead code once we're on the managed flow; leave them in place for now and clean up in a follow-up so any in-flight tokens still work.
-6. **Verify** — trigger a signup and a password reset, confirm only one email arrives, links are on flowleed.com, and clicking them completes the flow.
+## Step 3 — Small cleanup
 
-### Notes / open questions
+- Remove the now-unused `emailRedirectTo` / confirmation expectations from `useAuth.signUp` comments so the intent is clear: Supabase auto-confirms, we gate on our own flag.
+- Add a one-line note at the top of `send-signup-confirmation/index.ts` documenting that this is the **only** signup email path.
 
-- The managed flow uses Supabase's built-in recovery links (`type=recovery` hash), not our `auth_verification_tokens` table. That means the previous scalability fix (storing `user_id` on the token) becomes moot — Supabase handles the mapping. We can leave that migration as-is or drop it; not blocking.
-- The user should tell me if they want to keep the custom-branded change-email flow (24h token + confirmation on the new address) or move that to Supabase's built-in flow too.
+## Technical details
+
+- Migration: `ALTER TABLE public.profiles ADD COLUMN email_verified_at timestamptz;` + backfill existing profiles to `now()` (all current users are already using the app, so treating them as verified is safe).
+- `verify-email-token` edge function: on success, `UPDATE profiles SET email_verified_at = now() WHERE user_id = $1`.
+- `useAuth.signIn`: after `signInWithPassword` succeeds, `SELECT email_verified_at FROM profiles WHERE user_id = auth.uid()`. If null → `supabase.auth.signOut()` + return `{ error: { message: 'Please verify your email. Check your inbox or click resend.' } }`.
+- Auth page: on that specific error, show a "Resend verification email" button that invokes `send-signup-confirmation`.
+
+## Out of scope
+
+- No changes to password reset flow (already Resend-only, working).
+- No changes to invitations (already Resend-only).
+- Not touching Supabase auth provider settings from code (can't, and don't need to).
