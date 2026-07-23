@@ -202,9 +202,9 @@ export default function GroupPublicSignupPage() {
     <div className="h-screen overflow-y-auto bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg space-y-4">
         <Button variant="ghost" asChild className="mb-2">
-          <Link to="/groups/directory">
+          <Link to={backHref}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Browse All Groups
+            {backLabel}
           </Link>
         </Button>
         <Card className="overflow-hidden">
