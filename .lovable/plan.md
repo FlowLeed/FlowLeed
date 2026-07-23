@@ -1,46 +1,39 @@
-# Export selected people from a Flow to CSV
+## Redesign: Bulk Actions Toolbar
 
-Add an **Export CSV** button to the Flow board's bulk actions toolbar. When people are selected, it exports just those; when nothing is selected, it exports everyone currently visible on the board (respecting active filters).
+Rework `BulkActionsToolbar` from a wide, overflowing outline-button bar into a compact dark "segmented dock" with clear visual grouping, better hierarchy, and consolidated tag actions.
 
-## Scope
+### UX improvements
+- **Compact footprint**: Icon+short-label for primary actions, icon-only for secondary — fits without horizontal overflow at typical widths.
+- **Selection badge**: Count shown in a filled circle chip ("3 selected") instead of a full sentence.
+- **Grouping via segments** (left → right):
+  1. Selection status (count + "selected")
+  2. Movement group (Change Step, Move to Flow) — pill-grouped, primary emphasis with accent icon color
+  3. Tags group — consolidated into a single "Tags" button opening a small popover with Add / Remove options (removes the duplicated buttons)
+  4. Assignment (Reassign) — icon button
+  5. Utility & destructive segment (Export CSV icon, Delete in danger-tinted button) — separated by a divider
+  6. Clear-selection close button on the far right
+- **Destructive affordance**: Delete uses a red-tinted background that intensifies on hover; separated from neutral actions by a divider.
+- **Tooltips** on all icon-only buttons (Reassign, Tags, Export, Delete, Close) so labels remain discoverable.
+- **Responsive**: Toolbar keeps `max-w-[640px]`, uses `mx-4`, and inner action row uses horizontal scroll with hidden scrollbar as a safety net for very narrow viewports.
 
-- Only the Flow board (`/flows/:id`). Contacts page is unchanged.
-- Client-side CSV generation — no backend/edge function needed.
+### Visual direction
+Dark segmented dock matching the selected prototype:
+- Container: `bg-slate-900/95 backdrop-blur-xl`, `ring-1 ring-white/10`, `border border-slate-700/50`, `rounded-2xl`, `shadow-2xl`, height ~56px.
+- Movement group nested in a subtle `bg-slate-800/50 rounded-xl` sub-pill.
+- Accent icons in `text-blue-400` for primary actions.
+- Delete: `bg-red-500/10 text-red-500` → `hover:bg-red-500 hover:text-white`.
+- Fixed at `bottom-8 left-1/2 -translate-x-1/2`.
 
-## Fields exported
+### Files to change
 
-Columns, in order:
-1. Name
-2. Email
-3. Phone
-4. Campus
-5. Assigned To
-6. Flow Stage (current stage name in this flow)
-7. Tags (semicolon-separated)
+**`src/components/crm/BulkActionsToolbar.tsx`** (rewrite the render only; keep all props & handlers)
+- Replace the current white outline-button bar with the segmented dark dock layout.
+- Merge Add Tags + Remove Tags into one "Tags" button using an existing shadcn `Popover` (or `DropdownMenu`) with two items: "Add tags…" and "Remove tags…" — each opens the same existing `BulkTagDialog` in the correct mode.
+- Convert Reassign, Export CSV, Delete, and Clear into icon-only buttons wrapped in shadcn `Tooltip`.
+- Keep Change Step & Move to Flow as icon+label (short labels: "Step", "Flow" with tooltips showing the full name — or keep full labels; will use full labels for clarity).
+- No changes to dialogs, handlers, or business logic.
 
-## Behavior
-
-- New **Export CSV** button in `BulkActionsToolbar` (between "Remove Tags" and "Delete").
-- If `selectedCount > 0` → export selected rows.
-- If nothing is selected → the button is still available via a small "Export all filtered" affordance on the Flow header (or we allow the bulk toolbar's export to fall back to filtered-all when no selection). Simplest: add an **Export CSV** button next to the flow header filters that always exports the currently filtered/visible people; the bulk toolbar's Export button exports only the selection. This gives users both paths cleanly.
-- Filename: `{flow-name}-{YYYY-MM-DD}.csv`.
-- Values are CSV-escaped (quotes, commas, newlines handled). UTF-8 with BOM so Excel opens accents correctly.
-- Tags fetched from `contact_tags` for the selected contact IDs in a single query (they aren't always preloaded on the flow board).
-
-## Technical details
-
-Files to add/change:
-
-- `src/lib/csvExport.ts` (new) — pure helpers:
-  - `toCsv(rows: string[][]): string` with proper escaping + BOM
-  - `downloadCsv(filename, csv)` via Blob + `URL.createObjectURL`
-- `src/hooks/useFlowContactsExport.ts` (new) — takes flow context + a set of contact IDs (or "all filtered"), fetches tags in bulk from `contact_tags`, joins with the already-loaded pipeline contacts, returns the row matrix ready for `toCsv`.
-- `src/components/crm/BulkActionsToolbar.tsx` — add an **Export CSV** button + `onExport: () => Promise<void>` prop.
-- `src/components/crm/FlowView.tsx` (or wherever bulk actions are wired up on the flow board — `useBulkActions` / `FlowContext`) — wire `onExport` for selected IDs, and add a secondary **Export CSV** button in the flow header area for "all filtered".
-- No DB migrations, no edge functions, no new dependencies.
-
-## Out of scope
-
-- Contacts page export
-- XLSX/PDF formats
-- Server-side export for very large datasets (current flow boards are already fully client-loaded, so this is fine)
+### Out of scope
+- No changes to `useBulkActions`, dialogs, or FlowView data flow.
+- No changes to mobile-specific behavior beyond current responsive constraints.
+- No new features — only visual/UX refinement of the existing toolbar.
