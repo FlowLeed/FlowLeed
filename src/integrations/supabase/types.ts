@@ -3904,6 +3904,7 @@ export type Database = {
           created_at: string
           department: string | null
           email: string
+          email_verified_at: string | null
           full_name: string | null
           id: string
           job_title: string | null
@@ -3926,6 +3927,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           email: string
+          email_verified_at?: string | null
           full_name?: string | null
           id?: string
           job_title?: string | null
@@ -3948,6 +3950,7 @@ export type Database = {
           created_at?: string
           department?: string | null
           email?: string
+          email_verified_at?: string | null
           full_name?: string | null
           id?: string
           job_title?: string | null
