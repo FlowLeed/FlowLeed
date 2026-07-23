@@ -26,6 +26,7 @@ interface BulkActionsToolbarProps {
   onRemoveTags: (tags: string[]) => Promise<void>;
   onDelete: () => Promise<void>;
   onMoveToFlow: (targetPipelineId: string, targetStageId: string) => Promise<void>;
+  onExport: () => void;
   stages: FlowStage[];
   teamMembers: Array<{ id: string; name: string; avatar?: string }>;
   teamMembersLoading?: boolean;
