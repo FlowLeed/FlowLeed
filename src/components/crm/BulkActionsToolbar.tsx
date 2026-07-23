@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, MoveRight, UserPlus, Tag as TagIcon, Trash2, ArrowRightLeft } from "lucide-react";
+import { X, MoveRight, UserPlus, Tag as TagIcon, Trash2, ArrowRightLeft, Download } from "lucide-react";
 import { BulkStageChangeDialog } from "./BulkStageChangeDialog";
 import { BulkReassignDialog } from "./BulkReassignDialog";
 import { BulkTagDialog } from "./BulkTagDialog";
