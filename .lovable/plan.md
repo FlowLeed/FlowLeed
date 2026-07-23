@@ -1,46 +1,46 @@
-## Goal
+# Export selected people from a Flow to CSV
 
-Let form editors preview a draft form (before it's published) while keeping the public link "Form not found" for everyone else.
+Add an **Export CSV** button to the Flow board's bulk actions toolbar. When people are selected, it exports just those; when nothing is selected, it exports everyone currently visible on the board (respecting active filters).
 
-## How it works
+## Scope
 
-1. In the builder, add a **Preview** button next to the existing "Copy link" / "Open" actions.
-2. The button opens the same public URL `/:orgSlug/f/:formSlug` but appends a short-lived signed token, e.g. `?preview=<token>`.
-3. The public form page passes that token through to `public-form-get` / `public-form-submit`.
-4. The `public-form-get` edge function:
-   - If `preview` token is present → verify it (signed with `SUPABASE_JWT_SECRET`, contains `form_id` + `user_id`, checks that the user is a member of the form's organization) and return the form **regardless** of `is_published`.
-   - Otherwise → keep today's behavior (only return forms where `is_published = true`).
-5. `public-form-submit` gets the same treatment so the editor can end-to-end test the flow. Submissions made in preview mode are flagged `is_preview = true` (new column on `form_submissions`) and are excluded from the regular submissions list by default, with a "Show preview submissions" toggle.
-6. A visible **"Preview mode – not published"** banner is shown at the top of the form when the token is used, so testers know it's not the live version.
+- Only the Flow board (`/flows/:id`). Contacts page is unchanged.
+- Client-side CSV generation — no backend/edge function needed.
 
-## UI changes
+## Fields exported
 
-- `FormBuilderPage.tsx`
-  - Add "Preview" button (opens preview URL in a new tab).
-  - When the form is unpublished, show the banner "Not published yet — only you can preview this link."
-- `PublicFormPage.tsx`
-  - Read `preview` query param, pass it to both edge functions.
-  - Render the preview banner when the response indicates preview mode.
-- `FormSubmissionsPage.tsx`
-  - Filter out `is_preview = true` by default with a toggle to include them.
+Columns, in order:
+1. Name
+2. Email
+3. Phone
+4. Campus
+5. Assigned To
+6. Flow Stage (current stage name in this flow)
+7. Tags (semicolon-separated)
 
-## Backend changes
+## Behavior
 
-- Migration: add `is_preview boolean not null default false` to `form_submissions`.
-- Edge function `public-form-get`:
-  - Accept `preview` token, verify JWT, look up caller's org membership vs `form.organization_id`, bypass `is_published` when valid.
-- Edge function `public-form-submit`:
-  - Same token check; when valid, insert submission with `is_preview = true` and skip flow enrollment / notifications so drafts don't pollute live data.
-- Token minting: a tiny new edge function `form-preview-token` (auth required) that returns a short-lived (e.g. 30 min) HMAC-signed token `{form_id, user_id, exp}` — avoids handing out raw JWTs and keeps the URL scoped to one form.
+- New **Export CSV** button in `BulkActionsToolbar` (between "Remove Tags" and "Delete").
+- If `selectedCount > 0` → export selected rows.
+- If nothing is selected → the button is still available via a small "Export all filtered" affordance on the Flow header (or we allow the bulk toolbar's export to fall back to filtered-all when no selection). Simplest: add an **Export CSV** button next to the flow header filters that always exports the currently filtered/visible people; the bulk toolbar's Export button exports only the selection. This gives users both paths cleanly.
+- Filename: `{flow-name}-{YYYY-MM-DD}.csv`.
+- Values are CSV-escaped (quotes, commas, newlines handled). UTF-8 with BOM so Excel opens accents correctly.
+- Tags fetched from `contact_tags` for the selected contact IDs in a single query (they aren't always preloaded on the flow board).
 
-## Technical notes
+## Technical details
 
-- Token is signed with `SUPABASE_JWT_SECRET` (already available to edge functions) using HMAC-SHA256; format `base64url(payload).base64url(signature)`.
-- Preview URL is copy-to-clipboard friendly but expires, so it can't be used as a stealth "public" link.
-- No changes to RLS — everything stays behind edge functions using the service role.
-- The existing publish toggle behavior is unchanged; the public link is still 404 for anonymous visitors until published.
+Files to add/change:
+
+- `src/lib/csvExport.ts` (new) — pure helpers:
+  - `toCsv(rows: string[][]): string` with proper escaping + BOM
+  - `downloadCsv(filename, csv)` via Blob + `URL.createObjectURL`
+- `src/hooks/useFlowContactsExport.ts` (new) — takes flow context + a set of contact IDs (or "all filtered"), fetches tags in bulk from `contact_tags`, joins with the already-loaded pipeline contacts, returns the row matrix ready for `toCsv`.
+- `src/components/crm/BulkActionsToolbar.tsx` — add an **Export CSV** button + `onExport: () => Promise<void>` prop.
+- `src/components/crm/FlowView.tsx` (or wherever bulk actions are wired up on the flow board — `useBulkActions` / `FlowContext`) — wire `onExport` for selected IDs, and add a secondary **Export CSV** button in the flow header area for "all filtered".
+- No DB migrations, no edge functions, no new dependencies.
 
 ## Out of scope
 
-- Sharing preview links with non-members (would need per-recipient tokens).
-- Persisting draft submissions long-term (they can be cleared with a "Delete preview submissions" action later if needed).
+- Contacts page export
+- XLSX/PDF formats
+- Server-side export for very large datasets (current flow boards are already fully client-loaded, so this is fine)

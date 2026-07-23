@@ -18,6 +18,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
 import { useBulkActions } from "@/hooks/useBulkActions";
+import { toCsv, downloadCsv, sanitizeFilename } from "@/lib/csvExport";
 
 interface TeamMember {
   id: string;
@@ -583,6 +584,38 @@ export const FlowView: React.FC<FlowViewProps> = ({
     }
   };
 
+  const handleExportCsv = () => {
+    // If any rows are selected, export just those; otherwise export the currently filtered view.
+    const useSelection = selectedContacts.size > 0;
+    const rows: (string | number)[][] = [
+      ["Name", "Email", "Phone", "Campus", "Assigned To", "Flow Stage", "Tags"],
+    ];
+    let count = 0;
+    for (const stage of filteredFlow.stages) {
+      for (const contact of stage.contacts) {
+        if (useSelection && !selectedContacts.has(contact.id)) continue;
+        rows.push([
+          contact.name || "",
+          contact.email || "",
+          contact.phone || "",
+          contact.campusName || "",
+          contact.assignedTo?.name || "",
+          stage.name || "",
+          (contact.tags || []).join("; "),
+        ]);
+        count += 1;
+      }
+    }
+    if (count === 0) {
+      toast.error("No people to export");
+      return;
+    }
+    const date = new Date().toISOString().slice(0, 10);
+    const filename = `${sanitizeFilename(flow.name)}-${date}.csv`;
+    downloadCsv(filename, toCsv(rows));
+    toast.success(`Exported ${count} ${count === 1 ? "person" : "people"} to CSV`);
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <Header 
@@ -659,6 +692,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
           onRemoveTags={handleBulkRemoveTags}
           onDelete={handleBulkDelete}
           onMoveToFlow={handleBulkMoveToFlow}
+          onExport={handleExportCsv}
           stages={flow.stages}
           teamMembers={teamMembers}
           teamMembersLoading={teamMembersLoading}

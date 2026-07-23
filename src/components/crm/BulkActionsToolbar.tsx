@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, MoveRight, UserPlus, Tag as TagIcon, Trash2, ArrowRightLeft } from "lucide-react";
+import { X, MoveRight, UserPlus, Tag as TagIcon, Trash2, ArrowRightLeft, Download } from "lucide-react";
 import { BulkStageChangeDialog } from "./BulkStageChangeDialog";
 import { BulkReassignDialog } from "./BulkReassignDialog";
 import { BulkTagDialog } from "./BulkTagDialog";
@@ -26,6 +26,7 @@ interface BulkActionsToolbarProps {
   onRemoveTags: (tags: string[]) => Promise<void>;
   onDelete: () => Promise<void>;
   onMoveToFlow: (targetPipelineId: string, targetStageId: string) => Promise<void>;
+  onExport: () => void;
   stages: FlowStage[];
   teamMembers: Array<{ id: string; name: string; avatar?: string }>;
   teamMembersLoading?: boolean;
@@ -43,6 +44,7 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
   onRemoveTags,
   onDelete,
   onMoveToFlow,
+  onExport,
   stages,
   teamMembers,
   teamMembersLoading = false,
@@ -154,6 +156,16 @@ export const BulkActionsToolbar: React.FC<BulkActionsToolbarProps> = ({
               Remove Tags
             </Button>
             
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExport}
+              disabled={isLoading}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
