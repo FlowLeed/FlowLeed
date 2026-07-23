@@ -102,11 +102,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+    if (error) return { error };
+
+    // Gate login on our own verification flag so we don't rely on Supabase's
+    // built-in "Confirm email" setting. If a user was created before their
+    // branded Resend email was verified, block sign-in and prompt to resend.
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email_verified_at')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+
+      if (profile && !profile.email_verified_at) {
+        await supabase.auth.signOut();
+        return {
+          error: {
+            message: 'Please verify your email before signing in.',
+            code: 'email_not_verified',
+            email,
+          },
+        };
+      }
+    }
+
+    return { error: null };
   };
 
   const signUp = async (email: string, password: string, fullName: string, organizationName: string) => {

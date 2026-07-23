@@ -133,7 +133,9 @@ const AuthPage = () => {
 
     if (error) {
       setError(error.message);
+      setNeedsVerification(error.code === 'email_not_verified');
     } else {
+      setNeedsVerification(false);
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
@@ -142,6 +144,40 @@ const AuthPage = () => {
     }
     
     setLoading(false);
+  };
+
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendLoading, setResendLoading] = useState(false);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
+
+  const handleResendVerification = async () => {
+    if (!email || resendCooldown > 0 || resendLoading) return;
+    setResendLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-signup-confirmation', {
+        body: { email, resend: true },
+      });
+      if (error) throw error;
+      toast({
+        title: 'Verification email sent',
+        description: `We sent a fresh verification link to ${email}.`,
+      });
+      setResendCooldown(60);
+    } catch (err: any) {
+      toast({
+        title: 'Could not send email',
+        description: err?.message ?? 'Please try again in a moment.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -353,7 +389,26 @@ const AuthPage = () => {
                     <form onSubmit={handleSignIn} className="space-y-4">
                       {error && (
                         <Alert variant="destructive">
-                          <AlertDescription>{error}</AlertDescription>
+                          <AlertDescription>
+                            <div>{error}</div>
+                            {needsVerification && (
+                              <div className="mt-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={handleResendVerification}
+                                  disabled={resendLoading || resendCooldown > 0 || !email}
+                                >
+                                  {resendLoading
+                                    ? 'Sending…'
+                                    : resendCooldown > 0
+                                      ? `Resend in ${resendCooldown}s`
+                                      : 'Resend verification email'}
+                                </Button>
+                              </div>
+                            )}
+                          </AlertDescription>
                         </Alert>
                       )}
 

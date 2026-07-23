@@ -16,9 +16,9 @@ serve(async (req) => {
   }
 
   try {
-    const { email, userId, fullName, organizationName } = await req.json();
+    const { email, userId: userIdIn, fullName, organizationName, resend: isResend } = await req.json();
 
-    console.log('Sending signup confirmation to:', email);
+    console.log('Sending signup confirmation to:', email, 'resend:', !!isResend);
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -27,7 +27,33 @@ serve(async (req) => {
     const resendApiKey = Deno.env.get('RESEND_API_KEY')!;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const resend = new Resend(resendApiKey);
+    const resendClient = new Resend(resendApiKey);
+
+    // On resend flow, look up the user by email so we can attach a user_id.
+    let userId: string | null = userIdIn ?? null;
+    let resolvedFullName = fullName as string | undefined;
+    if (!userId && email) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email_verified_at')
+        .eq('email', email)
+        .maybeSingle();
+      if (profile) {
+        // Silently succeed if already verified — don't leak account existence.
+        if (profile.email_verified_at) {
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        userId = profile.user_id;
+        resolvedFullName = resolvedFullName || profile.full_name || undefined;
+      } else {
+        // Don't reveal that the account doesn't exist.
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     // Generate token (raw token for user, hashed for storage)
     const rawToken = crypto.randomUUID();
@@ -60,7 +86,7 @@ serve(async (req) => {
     // Render email template
     const html = await renderAsync(
       React.createElement(SignupConfirmationEmail, {
-        fullName: fullName || email.split('@')[0],
+        fullName: resolvedFullName || email.split('@')[0],
         organizationName: organizationName || 'your organization',
         verificationUrl,
         email,
@@ -68,7 +94,7 @@ serve(async (req) => {
     );
 
     // Send email
-    const { error: emailError } = await resend.emails.send({
+    const { error: emailError } = await resendClient.emails.send({
       from: 'Flowleed <noreply@flowleed.com>',
       to: [email],
       subject: 'Verify your email - Flowleed',
