@@ -652,6 +652,10 @@ export const Sidebar = () => {
     title: "Integrations",
     icon: Puzzle,
     path: "/integrations"
+  }, {
+    title: "Group Settings",
+    icon: UsersRound,
+    path: "/settings/groups"
   }];
   const isMobile = useIsMobile();
   const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
