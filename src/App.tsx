@@ -26,6 +26,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const TeamPage = lazy(() => import("./pages/TeamPage"));
 const GroupsPage = lazy(() => import("./pages/GroupsPage"));
 const GroupDetailPage = lazy(() => import("./pages/GroupDetailPage"));
+const GroupSettingsPage = lazy(() => import("./pages/settings/GroupSettingsPage"));
 const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
 const IntegrationAdvancedSettingsPage = lazy(() => import("./pages/IntegrationAdvancedSettingsPage"));
 const ChurchOnlineAdvancedPage = lazy(() => import("./pages/ChurchOnlineAdvancedPage"));
@@ -133,6 +134,7 @@ const App = () => (
               <Route path="/contacts/:contactId" element={<UserProfilePage />} />
               <Route path="/groups" element={<GroupsPage />} />
               <Route path="/groups/:groupId" element={<GroupDetailPage />} />
+              <Route path="/settings/groups" element={<GroupSettingsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />

@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, MapPin, Calendar, Clock, Search, ArrowRight } from "lucide-react";
 import { GroupAvatar } from "@/components/groups/GroupAvatar";
+import { useGroupTypes } from "@/hooks/useGroupTypes";
+import { useGroupSettingsPublic } from "@/hooks/useGroupSettings";
 interface PublicGroup {
   id: string;
   name: string;
@@ -25,22 +27,11 @@ interface PublicGroup {
   image_url: string | null;
 }
 
-const groupTypeLabels: Record<string, string> = {
+const fallbackLabels: Record<string, string> = {
   small_group: "Small Group",
-  bible_study: "Bible Study",
-  ministry_team: "Ministry Team",
+  serving_team: "Serving Team",
   class: "Class",
-  support_group: "Support Group",
-  other: "Other",
-};
-
-const groupTypeColors: Record<string, string> = {
-  small_group: "bg-primary/10 text-primary",
-  bible_study: "bg-blue-500/10 text-blue-600",
-  ministry_team: "bg-green-500/10 text-green-600",
-  class: "bg-purple-500/10 text-purple-600",
-  support_group: "bg-orange-500/10 text-orange-600",
-  other: "bg-muted text-muted-foreground",
+  ministry: "Ministry",
 };
 
 export default function GroupDirectoryPage() {
@@ -62,6 +53,11 @@ export default function GroupDirectoryPage() {
       return data;
     },
   });
+
+  const { types: typeDefs } = useGroupTypes(org?.id);
+  const { data: settings } = useGroupSettingsPublic(org?.id);
+  const typeLabel = (key: string) => typeDefs.find((t) => t.key === key)?.label || fallbackLabels[key] || key;
+  const typeColor = (key: string) => typeDefs.find((t) => t.key === key)?.color;
 
   const { data: groups, isLoading } = useQuery({
     queryKey: ["public-groups", slug, org?.id],
@@ -133,11 +129,10 @@ export default function GroupDirectoryPage() {
             />
           )}
           <h1 className="text-4xl font-bold mb-4">
-            {org?.name ? `${org.name} Groups` : "Find Your Community"}
+            {settings?.directory_hero_title || (org?.name ? `${org.name} Groups` : "Find Your Community")}
           </h1>
           <p className="text-lg text-primary-foreground/80 max-w-2xl mx-auto">
-            Join a group and connect with others. Whether you're looking for fellowship,
-            study, or service opportunities, there's a place for you.
+            {settings?.directory_hero_subtitle || "Join a group and connect with others. Whether you're looking for fellowship, study, or service opportunities, there's a place for you."}
           </p>
         </div>
       </div>
@@ -171,7 +166,7 @@ export default function GroupDirectoryPage() {
                     size="sm"
                     onClick={() => setSelectedType(type)}
                   >
-                    {groupTypeLabels[type] || type}
+                    {typeLabel(type)}
                   </Button>
                 ))}
               </div>
@@ -220,8 +215,11 @@ export default function GroupDirectoryPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="text-lg line-clamp-1">{group.name}</CardTitle>
-                    <Badge className={groupTypeColors[group.group_type] || groupTypeColors.other}>
-                      {groupTypeLabels[group.group_type] || group.group_type}
+                    <Badge
+                      className="bg-primary/10 text-primary"
+                      style={typeColor(group.group_type) ? { backgroundColor: `${typeColor(group.group_type)}22`, color: typeColor(group.group_type)! } : undefined}
+                    >
+                      {typeLabel(group.group_type)}
                     </Badge>
                   </div>
                   {group.description && (
@@ -232,7 +230,7 @@ export default function GroupDirectoryPage() {
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col justify-between gap-4">
                     <div className="space-y-2 text-sm text-muted-foreground">
-                    {group.meeting_day && (
+                    {(settings?.directory_show_meeting_time ?? true) && group.meeting_day && (
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span>
@@ -241,16 +239,22 @@ export default function GroupDirectoryPage() {
                         </span>
                       </div>
                     )}
-                    {group.meeting_time && (
+                    {(settings?.directory_show_meeting_time ?? true) && group.meeting_time && (
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
                         <span>{group.meeting_time}</span>
                       </div>
                     )}
-                    {group.location && (
+                    {(settings?.directory_show_location ?? true) && group.location && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span className="line-clamp-1">{group.location}</span>
+                      </div>
+                    )}
+                    {(settings?.directory_show_capacity ?? true) && group.capacity && (
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        <span>{group.member_count} / {group.capacity}</span>
                       </div>
                     )}
                   </div>
