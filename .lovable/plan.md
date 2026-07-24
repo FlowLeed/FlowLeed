@@ -1,38 +1,49 @@
-# Fix John's signup + harden email flow
+# Settings → Groups
 
-## What we now know
+New admin-only page at `/settings/groups` with four sections.
 
-- Supabase "Confirm email" is off (verified: recent `auth.users` rows have `confirmation_sent_at = null` and are auto-confirmed at signup).
-- John Duarte has **no row in `auth.users`** — his account doesn't exist right now. Whatever `auth.lovable.cloud` link he got is dead regardless.
-- All app code paths (`send-signup-confirmation`, `send-password-reset`, invitations) route through Resend from `noreply@flowleed.com`. No code calls `supabase.auth.resetPasswordForEmail` or admin `generateLink` for regular signup.
-- So the leaked `auth.lovable.cloud` email came from a prior state when Confirm email was ON, not from current code.
+## 1. Custom Group Types
+Per-org, editable list replacing the hardcoded 4 options.
 
-## Step 1 — Unblock John (no code)
+**DB:** `group_type_definitions` (org_id, key, label, icon, color, sort_order, is_active, is_system). Seed each org with the current 4 (small_group, serving_team, class, ministry) marked `is_system=true` (can disable/rename but not delete). RLS: org members read; admins write.
 
-Ask John to sign up again at `https://app.flowleed.com/auth`. He'll get the branded Flowleed email from Resend this time. His old link is expired and points to a user that no longer exists — nothing to salvage.
+**UI:** sortable list with inline edit; add/edit dialog with label, icon picker (lucide), color, active toggle. Delete disabled for system rows; disable instead.
 
-## Step 2 — Add a safeguard so this can't regress
+**Wire-in:** `CreateGroupDialog`, `EditGroupDialog`, `GroupCard`, `GroupDirectoryPage` filter chips — replace the hardcoded 4-option `<Select>` with types fetched via a new `useGroupTypes(orgId)` hook. Existing `groups.group_type` values keep working (matched by `key`).
 
-Even with the toggle off today, someone could flip Supabase's "Confirm email" back on later and we'd start double-emailing again. Add a small resilience layer:
+## 2. Group Defaults
+Per-org defaults applied when creating a new group. Stored in a new `group_settings` row (org_id PK) — one row per org, upserted.
 
-1. **Track our own verification state.** Add `profiles.email_verified_at timestamptz` (nullable). `verify-email-token` sets it. `send-signup-confirmation` is the only thing that sends the link.
-2. **Gate login on our verification, not Supabase's.** In `useAuth.signIn`, after a successful `signInWithPassword`, check `profiles.email_verified_at`. If null, sign the user out and show "Please verify your email — resend?". This decouples us from Supabase's confirm setting entirely.
-3. **Resend button** on the auth page that calls `send-signup-confirmation` again for the entered email (rate-limited to once per 60s client-side).
+Fields: default meeting frequency (weekly/biweekly/monthly), default visibility (public/private), default `allow_public_signup` toggle, default capacity.
 
-## Step 3 — Small cleanup
+`CreateGroupDialog` reads these to prefill.
 
-- Remove the now-unused `emailRedirectTo` / confirmation expectations from `useAuth.signUp` comments so the intent is clear: Supabase auto-confirms, we gate on our own flag.
-- Add a one-line note at the top of `send-signup-confirmation/index.ts` documenting that this is the **only** signup email path.
+## 3. Public Directory Settings
+Same `group_settings` row.
 
-## Technical details
+Fields:
+- `directory_enabled` (bool) — when off, `/:slug/groups` returns 404-style empty state.
+- `directory_hero_title` (text, default "Find Your Community")
+- `directory_hero_subtitle` (text)
+- `directory_show_meeting_time` / `directory_show_location` / `directory_show_capacity` (bools)
 
-- Migration: `ALTER TABLE public.profiles ADD COLUMN email_verified_at timestamptz;` + backfill existing profiles to `now()` (all current users are already using the app, so treating them as verified is safe).
-- `verify-email-token` edge function: on success, `UPDATE profiles SET email_verified_at = now() WHERE user_id = $1`.
-- `useAuth.signIn`: after `signInWithPassword` succeeds, `SELECT email_verified_at FROM profiles WHERE user_id = auth.uid()`. If null → `supabase.auth.signOut()` + return `{ error: { message: 'Please verify your email. Check your inbox or click resend.' } }`.
-- Auth page: on that specific error, show a "Resend verification email" button that invokes `send-signup-confirmation`.
+`GroupDirectoryPage` reads these; if disabled → friendly message. Hero copy driven by fields.
+
+## 4. Lifecycle Automation
+Same `group_settings` row.
+
+Fields:
+- `auto_inactive_weeks` (int, nullable) — nightly cron marks groups `status='inactive'` when no attendance recorded in N weeks. Null disables.
+- `attendance_reminder_enabled` (bool) + `attendance_reminder_day` (0-6) — weekly reminder notification/email to group leaders on that day if attendance not logged for the most recent meeting.
+
+**Cron:** two pg_cron jobs calling new edge functions `groups-lifecycle-check` (daily 3 AM UTC) and `groups-attendance-reminders` (daily 2 PM UTC, filters by day-of-week per org). Both scoped by `group_settings`.
+
+## Technical notes
+- New route in `App.tsx`: `/settings/groups` gated by `useIsOrgAdmin`.
+- Add "Groups" tab/link in existing settings navigation.
+- Migration order: create `group_type_definitions` + `group_settings` with GRANTs + RLS, seed both for existing orgs, then wire UI.
+- No breaking changes to `groups` table itself.
 
 ## Out of scope
-
-- No changes to password reset flow (already Resend-only, working).
-- No changes to invitations (already Resend-only).
-- Not touching Supabase auth provider settings from code (can't, and don't need to).
+- Renaming existing `groups.group_type` values in bulk (kept as-is; new types add to the list).
+- Per-campus group settings.
