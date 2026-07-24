@@ -2136,6 +2136,78 @@ export type Database = {
           },
         ]
       }
+      group_settings: {
+        Row: {
+          attendance_reminder_day: number | null
+          attendance_reminder_enabled: boolean
+          auto_inactive_weeks: number | null
+          created_at: string
+          default_allow_public_signup: boolean | null
+          default_capacity: number | null
+          default_meeting_frequency: string | null
+          default_visibility: string | null
+          directory_enabled: boolean
+          directory_hero_subtitle: string | null
+          directory_hero_title: string | null
+          directory_show_capacity: boolean
+          directory_show_location: boolean
+          directory_show_meeting_time: boolean
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_reminder_day?: number | null
+          attendance_reminder_enabled?: boolean
+          auto_inactive_weeks?: number | null
+          created_at?: string
+          default_allow_public_signup?: boolean | null
+          default_capacity?: number | null
+          default_meeting_frequency?: string | null
+          default_visibility?: string | null
+          directory_enabled?: boolean
+          directory_hero_subtitle?: string | null
+          directory_hero_title?: string | null
+          directory_show_capacity?: boolean
+          directory_show_location?: boolean
+          directory_show_meeting_time?: boolean
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_reminder_day?: number | null
+          attendance_reminder_enabled?: boolean
+          auto_inactive_weeks?: number | null
+          created_at?: string
+          default_allow_public_signup?: boolean | null
+          default_capacity?: number | null
+          default_meeting_frequency?: string | null
+          default_visibility?: string | null
+          directory_enabled?: boolean
+          directory_hero_subtitle?: string | null
+          directory_hero_title?: string | null
+          directory_show_capacity?: boolean
+          directory_show_location?: boolean
+          directory_show_meeting_time?: boolean
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_signup_requests: {
         Row: {
           contact_id: string | null
@@ -2200,6 +2272,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      group_type_definitions: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          key: string
+          label: string
+          organization_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key: string
+          label: string
+          organization_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          key?: string
+          label?: string
+          organization_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_type_definitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_type_definitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
         ]
       }
