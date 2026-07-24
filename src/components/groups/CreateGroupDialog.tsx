@@ -29,11 +29,14 @@ import { Button } from "@/components/ui/button";
 import { useGroups } from "@/hooks/useGroups";
 import { GroupImageUpload } from "./GroupImageUpload";
 import { LeaderSelector } from "./LeaderSelector";
+import { useGroupTypes } from "@/hooks/useGroupTypes";
+import { useGroupSettings } from "@/hooks/useGroupSettings";
+import { useEffect } from "react";
 
 const groupSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
-  group_type: z.enum(["small_group", "serving_team", "class", "ministry"]),
+  group_type: z.string().min(1),
   meeting_day: z.string().optional(),
   meeting_time: z.string().optional(),
   meeting_frequency: z.string().optional(),
@@ -55,6 +58,8 @@ export const CreateGroupDialog = ({
   organizationId,
 }: CreateGroupDialogProps) => {
   const { createGroup } = useGroups(organizationId);
+  const { types: groupTypes } = useGroupTypes(organizationId);
+  const { settings } = useGroupSettings(organizationId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [leaderUserId, setLeaderUserId] = useState<string | null>(null);
@@ -68,6 +73,19 @@ export const CreateGroupDialog = ({
       meeting_frequency: "weekly",
     },
   });
+
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: "",
+        description: "",
+        group_type: groupTypes[0]?.key || "small_group",
+        meeting_frequency: settings?.default_meeting_frequency || "weekly",
+        capacity: settings?.default_capacity ?? undefined,
+      } as any);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, groupTypes.length, settings?.default_meeting_frequency, settings?.default_capacity]);
 
   const onSubmit = async (values: GroupFormValues) => {
     if (!organizationId) return;
@@ -141,10 +159,9 @@ export const CreateGroupDialog = ({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="small_group">Small Group</SelectItem>
-                      <SelectItem value="serving_team">Serving Team</SelectItem>
-                      <SelectItem value="class">Class</SelectItem>
-                      <SelectItem value="ministry">Ministry</SelectItem>
+                      {groupTypes.map((t) => (
+                        <SelectItem key={t.id} value={t.key}>{t.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

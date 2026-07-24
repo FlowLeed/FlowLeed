@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GroupImageUpload } from "./GroupImageUpload";
 import { LeaderSelector } from "./LeaderSelector";
 import { AIGroupDescriptionSuggestions } from "./AIGroupDescriptionSuggestions";
+import { useGroupTypes } from "@/hooks/useGroupTypes";
 
 interface EditGroupDialogProps {
   group: Group;
@@ -21,6 +22,7 @@ interface EditGroupDialogProps {
 
 export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogProps) => {
   const { updateGroup } = useGroups(group.organization_id);
+  const { types: groupTypes } = useGroupTypes(group.organization_id);
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(group.image_url || null);
@@ -166,10 +168,10 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="small_group">Small Group</SelectItem>
-                  <SelectItem value="serving_team">Serving Team</SelectItem>
-                  <SelectItem value="class">Class</SelectItem>
-                  <SelectItem value="ministry">Ministry</SelectItem>
+                  {groupTypes.length === 0 && <SelectItem value={formData.group_type}>{formData.group_type}</SelectItem>}
+                  {groupTypes.map((t) => (
+                    <SelectItem key={t.id} value={t.key}>{t.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
