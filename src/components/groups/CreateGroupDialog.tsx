@@ -85,7 +85,9 @@ export const CreateGroupDialog = ({
         meeting_frequency: settings?.default_meeting_frequency || "weekly",
         capacity: settings?.default_capacity ?? undefined,
       } as any);
+      setCustomFrequency(false);
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, groupTypes.length, settings?.default_meeting_frequency, settings?.default_capacity]);
 
