@@ -221,21 +221,46 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
 
             <div className="space-y-2">
               <Label htmlFor="meeting_frequency">Meeting Frequency</Label>
-              <Select
-                value={formData.meeting_frequency}
-                onValueChange={(value) => setFormData({ ...formData, meeting_frequency: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="Weekly">Weekly</SelectItem>
-                  <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
-                  <SelectItem value="Monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
+              {(() => {
+                const presets = ["none", "Weekly", "Bi-weekly", "Monthly"];
+                const isCustom = customFrequency || !presets.includes(formData.meeting_frequency);
+                return (
+                  <>
+                    <Select
+                      value={isCustom ? "__custom__" : formData.meeting_frequency}
+                      onValueChange={(value) => {
+                        if (value === "__custom__") {
+                          setCustomFrequency(true);
+                          setFormData({ ...formData, meeting_frequency: "" });
+                        } else {
+                          setCustomFrequency(false);
+                          setFormData({ ...formData, meeting_frequency: value });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="Weekly">Weekly</SelectItem>
+                        <SelectItem value="Bi-weekly">Bi-weekly</SelectItem>
+                        <SelectItem value="Monthly">Monthly</SelectItem>
+                        <SelectItem value="__custom__">Custom…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {isCustom && (
+                      <Input
+                        value={formData.meeting_frequency}
+                        onChange={(e) => setFormData({ ...formData, meeting_frequency: e.target.value })}
+                        placeholder="e.g. 1st & 3rd Tuesday"
+                      />
+                    )}
+                  </>
+                );
+              })()}
             </div>
+
 
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
