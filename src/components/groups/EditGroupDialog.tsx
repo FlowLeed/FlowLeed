@@ -26,6 +26,8 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(group.image_url || null);
+  const [customFrequency, setCustomFrequency] = useState(false);
+
   
   const [formData, setFormData] = useState({
     name: group.name,
