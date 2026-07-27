@@ -63,6 +63,8 @@ export const CreateGroupDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [leaderUserId, setLeaderUserId] = useState<string | null>(null);
+  const [customFrequency, setCustomFrequency] = useState(false);
+
 
   const form = useForm<GroupFormValues>({
     resolver: zodResolver(groupSchema),
