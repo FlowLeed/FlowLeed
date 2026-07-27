@@ -233,25 +233,49 @@ export const CreateGroupDialog = ({
               <FormField
                 control={form.control}
                 name="meeting_frequency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Frequency</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const presets = ["weekly", "biweekly", "monthly"];
+                  const isCustom = customFrequency || !!(field.value && !presets.includes(field.value));
+                  return (
+                    <FormItem>
+                      <FormLabel>Frequency</FormLabel>
+                      <Select
+                        value={isCustom ? "__custom__" : field.value}
+                        onValueChange={(v) => {
+                          if (v === "__custom__") {
+                            setCustomFrequency(true);
+                            field.onChange("");
+                          } else {
+                            setCustomFrequency(false);
+                            field.onChange(v);
+                          }
+                        }}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="__custom__">Custom…</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {isCustom && (
+                        <Input
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                          placeholder="e.g. 1st & 3rd Tuesday"
+                        />
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
+
 
               <FormField
                 control={form.control}
