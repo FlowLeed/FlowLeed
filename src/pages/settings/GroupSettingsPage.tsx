@@ -30,6 +30,8 @@ const GroupSettingsPage = () => {
 
   const [editingType, setEditingType] = useState<GroupTypeDefinition | null>(null);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const [customFreq, setCustomFreq] = useState(false);
+
 
   const openNewType = () => {
     setEditingType({
@@ -148,15 +150,43 @@ const GroupSettingsPage = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Meeting Frequency</Label>
-                    <Select value={s.default_meeting_frequency || "weekly"} onValueChange={(v) => patch({ default_meeting_frequency: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {(() => {
+                      const presets = ["weekly", "biweekly", "monthly"];
+                      const value = s.default_meeting_frequency || "weekly";
+                      const isCustom = customFreq || !presets.includes(value);
+                      return (
+                        <>
+                          <Select
+                            value={isCustom ? "__custom__" : value}
+                            onValueChange={(v) => {
+                              if (v === "__custom__") {
+                                setCustomFreq(true);
+                              } else {
+                                setCustomFreq(false);
+                                patch({ default_meeting_frequency: v });
+                              }
+                            }}
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                              <SelectItem value="__custom__">Custom…</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {isCustom && (
+                            <Input
+                              defaultValue={presets.includes(value) ? "" : value}
+                              onBlur={(e) => patch({ default_meeting_frequency: e.target.value })}
+                              placeholder="e.g. 1st & 3rd Tuesday"
+                            />
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
+
                   <div className="space-y-2">
                     <Label>Visibility</Label>
                     <Select value={s.default_visibility || "private"} onValueChange={(v) => patch({ default_visibility: v })}>
