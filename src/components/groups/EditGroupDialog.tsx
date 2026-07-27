@@ -59,7 +59,9 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
         leader_user_id: group.leader_user_id || null,
       });
       setImageUrl(group.image_url || null);
+      setCustomFrequency(false);
       setCopied(false);
+
     }
   }, [open, group]);
 
