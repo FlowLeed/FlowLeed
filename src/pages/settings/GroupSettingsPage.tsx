@@ -30,6 +30,8 @@ const GroupSettingsPage = () => {
 
   const [editingType, setEditingType] = useState<GroupTypeDefinition | null>(null);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
+  const [customFreq, setCustomFreq] = useState(false);
+
 
   const openNewType = () => {
     setEditingType({
