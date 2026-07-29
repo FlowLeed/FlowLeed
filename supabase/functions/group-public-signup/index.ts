@@ -103,9 +103,14 @@ Deno.serve(async (req) => {
         .from('groups')
         .select(`
           id,
+          name,
           organization_id,
           capacity,
           allow_public_signup,
+          meeting_day,
+          meeting_time,
+          meeting_frequency,
+          location,
           member_count:group_members(count)
         `)
         .eq('public_signup_token', signupToken)
