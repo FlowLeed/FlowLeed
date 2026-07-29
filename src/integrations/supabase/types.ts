@@ -2141,6 +2141,7 @@ export type Database = {
           attendance_reminder_day: number | null
           attendance_reminder_enabled: boolean
           auto_inactive_weeks: number | null
+          communication_reply_to: string | null
           created_at: string
           default_allow_public_signup: boolean | null
           default_capacity: number | null
@@ -2152,13 +2153,20 @@ export type Database = {
           directory_show_capacity: boolean
           directory_show_location: boolean
           directory_show_meeting_time: boolean
+          leader_notification_body: string | null
+          leader_notification_enabled: boolean
+          leader_notification_subject: string | null
           organization_id: string
+          signup_confirmation_body: string | null
+          signup_confirmation_enabled: boolean
+          signup_confirmation_subject: string | null
           updated_at: string
         }
         Insert: {
           attendance_reminder_day?: number | null
           attendance_reminder_enabled?: boolean
           auto_inactive_weeks?: number | null
+          communication_reply_to?: string | null
           created_at?: string
           default_allow_public_signup?: boolean | null
           default_capacity?: number | null
@@ -2170,13 +2178,20 @@ export type Database = {
           directory_show_capacity?: boolean
           directory_show_location?: boolean
           directory_show_meeting_time?: boolean
+          leader_notification_body?: string | null
+          leader_notification_enabled?: boolean
+          leader_notification_subject?: string | null
           organization_id: string
+          signup_confirmation_body?: string | null
+          signup_confirmation_enabled?: boolean
+          signup_confirmation_subject?: string | null
           updated_at?: string
         }
         Update: {
           attendance_reminder_day?: number | null
           attendance_reminder_enabled?: boolean
           auto_inactive_weeks?: number | null
+          communication_reply_to?: string | null
           created_at?: string
           default_allow_public_signup?: boolean | null
           default_capacity?: number | null
@@ -2188,7 +2203,13 @@ export type Database = {
           directory_show_capacity?: boolean
           directory_show_location?: boolean
           directory_show_meeting_time?: boolean
+          leader_notification_body?: string | null
+          leader_notification_enabled?: boolean
+          leader_notification_subject?: string | null
           organization_id?: string
+          signup_confirmation_body?: string | null
+          signup_confirmation_enabled?: boolean
+          signup_confirmation_subject?: string | null
           updated_at?: string
         }
         Relationships: [
