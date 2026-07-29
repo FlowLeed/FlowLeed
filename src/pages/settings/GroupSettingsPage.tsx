@@ -117,6 +117,7 @@ const GroupSettingsPage = () => {
                       <div className="font-medium flex items-center gap-2">
                         {t.label}
                         {t.is_system && <Badge variant="outline" className="text-[10px]">Built-in</Badge>}
+                        {t.source === "pco" && <Badge variant="outline" className="text-[10px] border-sky-500 text-sky-600">PCO</Badge>}
                         {!t.is_active && <Badge variant="secondary" className="text-[10px]">Disabled</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground">{t.key}</div>

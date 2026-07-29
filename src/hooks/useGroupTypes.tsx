@@ -12,6 +12,8 @@ export interface GroupTypeDefinition {
   sort_order: number;
   is_active: boolean;
   is_system: boolean;
+  source?: string;
+  pco_group_type_id?: string | null;
 }
 
 export const useGroupTypes = (organizationId: string | undefined, opts?: { includeInactive?: boolean }) => {
