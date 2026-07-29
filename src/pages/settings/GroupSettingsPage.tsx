@@ -283,7 +283,6 @@ const GroupSettingsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          </TabsContent>
 
           <TabsContent value="communication" className="space-y-4">
             <Card>
