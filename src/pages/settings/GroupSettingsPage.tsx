@@ -25,6 +25,15 @@ import { Plus, Pencil, Trash2, Lock } from "lucide-react";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+const VariableHelp = ({ tokens }: { tokens: string[] }) => (
+  <div className="flex flex-wrap items-center gap-1.5">
+    <span className="text-xs text-muted-foreground">Available variables:</span>
+    {tokens.map((t) => (
+      <Badge key={t} variant="secondary" className="font-mono text-[11px]">{`{{${t}}}`}</Badge>
+    ))}
+  </div>
+);
+
 const GroupSettingsPage = () => {
   const { organization } = useProfile();
   const { user } = useAuth();
@@ -37,6 +46,25 @@ const GroupSettingsPage = () => {
   const [editingType, setEditingType] = useState<GroupTypeDefinition | null>(null);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [customFreq, setCustomFreq] = useState(false);
+
+  const [confirmSubject, setConfirmSubject] = useState("");
+  const [confirmBody, setConfirmBody] = useState("");
+  const [leaderSubject, setLeaderSubject] = useState("");
+  const [leaderBody, setLeaderBody] = useState("");
+  const [replyTo, setReplyTo] = useState("");
+  const [commLoaded, setCommLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!settings || commLoaded) return;
+    const st = settings as any;
+    setConfirmSubject(st.signup_confirmation_subject ?? DEFAULT_SIGNUP_CONFIRMATION_SUBJECT);
+    setConfirmBody(st.signup_confirmation_body ?? DEFAULT_SIGNUP_CONFIRMATION_BODY);
+    setLeaderSubject(st.leader_notification_subject ?? DEFAULT_LEADER_NOTIFICATION_SUBJECT);
+    setLeaderBody(st.leader_notification_body ?? DEFAULT_LEADER_NOTIFICATION_BODY);
+    setReplyTo(st.communication_reply_to ?? "");
+    setCommLoaded(true);
+  }, [settings, commLoaded]);
+
 
 
   const openNewType = () => {
