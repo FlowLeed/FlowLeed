@@ -88,6 +88,49 @@ Deno.serve(async (req) => {
       .eq('organization_id', orgId);
     const campusIdMap = new Map((campusRows || []).map((c: any) => [c.pco_campus_id, c.id]));
 
+    // Collect PCO group types → group_type_definitions (tagged as source='pco')
+    const pcoTypes = new Map<string, string>(); // pcoTypeId -> name
+    for (const page of groupPages) {
+      for (const i of page.included) {
+        if (i.type === 'GroupType') pcoTypes.set(i.id, i.attributes?.name || 'Untitled Type');
+      }
+    }
+    const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'type';
+    const typeKeyByPcoId = new Map<string, string>();
+    if (pcoTypes.size) {
+      const { data: existingTypes } = await supabase
+        .from('group_type_definitions')
+        .select('id, key, pco_group_type_id')
+        .eq('organization_id', orgId);
+      const existingByPco = new Map((existingTypes || []).filter((t: any) => t.pco_group_type_id).map((t: any) => [t.pco_group_type_id, t]));
+      const existingKeys = new Set((existingTypes || []).map((t: any) => t.key));
+      let order = 100;
+      for (const [pcoId, name] of pcoTypes) {
+        const existing = existingByPco.get(pcoId);
+        if (existing) {
+          typeKeyByPcoId.set(pcoId, existing.key);
+          await supabase.from('group_type_definitions').update({ label: name }).eq('id', existing.id);
+          continue;
+        }
+        let key = `pco_${slug(name)}`;
+        let n = 2;
+        while (existingKeys.has(key)) key = `pco_${slug(name)}_${n++}`;
+        existingKeys.add(key);
+        const { error } = await supabase.from('group_type_definitions').insert({
+          organization_id: orgId,
+          key,
+          label: name,
+          icon: 'Users',
+          color: '#0ea5e9',
+          sort_order: order++,
+          source: 'pco',
+          pco_group_type_id: pcoId,
+        });
+        if (error) console.error('group type insert error', error.message);
+        typeKeyByPcoId.set(pcoId, key);
+      }
+    }
+
     const pcoGroupIds = new Set<string>();
     const groupRows: any[] = [];
     for (const page of groupPages) {
@@ -109,6 +152,7 @@ Deno.serve(async (req) => {
         const visibility = pcoUrl ? 'public' : 'private';
         // PCO enrollment_strategy: 'open_signup' lets anyone join directly
         const allowPublicSignup = attrs.enrollment_strategy === 'open_signup';
+        const mappedTypeKey = gtId ? typeKeyByPcoId.get(gtId) : null;
         groupRows.push({
           organization_id: orgId,
           pco_group_id: g.id,
@@ -117,6 +161,7 @@ Deno.serve(async (req) => {
           image_url: attrs.header_image?.original || attrs.header_image?.medium || attrs.header_image?.thumbnail || null,
           status: attrs.archived_at ? 'archived' : 'active',
           archived_at: attrs.archived_at || null,
+          ...(mappedTypeKey ? { group_type: mappedTypeKey } : {}),
           pco_group_type_id: gtId || null,
           pco_group_type_name: gt?.attributes?.name || null,
           pco_location_id: locId || null,
@@ -130,6 +175,7 @@ Deno.serve(async (req) => {
         });
       }
     }
+
 
     // Upsert groups
     let groupsUpserted = 0;
