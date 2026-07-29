@@ -156,6 +156,19 @@ const GroupsPage = () => {
               <Plus className="h-4 w-4 mr-2" />
               Create Group
             </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9" asChild>
+                    <Link to="/settings/groups" aria-label="Group settings">
+                      <Settings className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Group settings</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
           </div>
         </div>
 
