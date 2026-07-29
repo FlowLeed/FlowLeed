@@ -3,7 +3,13 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useGroupTypes, GroupTypeDefinition } from "@/hooks/useGroupTypes";
-import { useGroupSettings } from "@/hooks/useGroupSettings";
+import {
+  useGroupSettings,
+  DEFAULT_SIGNUP_CONFIRMATION_SUBJECT,
+  DEFAULT_SIGNUP_CONFIRMATION_BODY,
+  DEFAULT_LEADER_NOTIFICATION_SUBJECT,
+  DEFAULT_LEADER_NOTIFICATION_BODY,
+} from "@/hooks/useGroupSettings";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
