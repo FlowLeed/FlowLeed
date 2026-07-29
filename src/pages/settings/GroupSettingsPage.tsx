@@ -98,7 +98,9 @@ const GroupSettingsPage = () => {
             <TabsTrigger value="defaults">Defaults</TabsTrigger>
             <TabsTrigger value="directory">Public Directory</TabsTrigger>
             <TabsTrigger value="lifecycle">Lifecycle</TabsTrigger>
+            <TabsTrigger value="communication">Communication</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="types" className="space-y-4">
             <Card>
