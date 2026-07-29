@@ -2286,7 +2286,9 @@ export type Database = {
           key: string
           label: string
           organization_id: string
+          pco_group_type_id: string | null
           sort_order: number
+          source: string
           updated_at: string
         }
         Insert: {
@@ -2299,7 +2301,9 @@ export type Database = {
           key: string
           label: string
           organization_id: string
+          pco_group_type_id?: string | null
           sort_order?: number
+          source?: string
           updated_at?: string
         }
         Update: {
@@ -2312,7 +2316,9 @@ export type Database = {
           key?: string
           label?: string
           organization_id?: string
+          pco_group_type_id?: string | null
           sort_order?: number
+          source?: string
           updated_at?: string
         }
         Relationships: [
