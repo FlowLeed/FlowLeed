@@ -17,7 +17,32 @@ export interface GroupSettings {
   auto_inactive_weeks: number | null;
   attendance_reminder_enabled: boolean;
   attendance_reminder_day: number | null;
+  signup_confirmation_enabled: boolean;
+  signup_confirmation_subject: string | null;
+  signup_confirmation_body: string | null;
+  leader_notification_enabled: boolean;
+  leader_notification_subject: string | null;
+  leader_notification_body: string | null;
+  communication_reply_to: string | null;
 }
+
+export const DEFAULT_SIGNUP_CONFIRMATION_SUBJECT = "We got your signup for {{group_name}}";
+export const DEFAULT_SIGNUP_CONFIRMATION_BODY = `Hi {{name}},
+
+Thanks for signing up for {{group_name}}! A group leader will review your request and reach out with next steps.
+
+{{meeting_details}}
+
+See you soon,
+{{org_name}}`;
+
+export const DEFAULT_LEADER_NOTIFICATION_SUBJECT = "New signup request for {{group_name}}";
+export const DEFAULT_LEADER_NOTIFICATION_BODY = `{{name}} just requested to join {{group_name}}.
+
+Email: {{email}}
+Phone: {{phone}}
+
+Log in to {{org_name}} to approve or decline this request.`;
 
 export const useGroupSettings = (organizationId: string | undefined) => {
   const { toast } = useToast();

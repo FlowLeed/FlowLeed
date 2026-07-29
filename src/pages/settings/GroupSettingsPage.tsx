@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useGroupTypes, GroupTypeDefinition } from "@/hooks/useGroupTypes";
-import { useGroupSettings } from "@/hooks/useGroupSettings";
+import {
+  useGroupSettings,
+  DEFAULT_SIGNUP_CONFIRMATION_SUBJECT,
+  DEFAULT_SIGNUP_CONFIRMATION_BODY,
+  DEFAULT_LEADER_NOTIFICATION_SUBJECT,
+  DEFAULT_LEADER_NOTIFICATION_BODY,
+} from "@/hooks/useGroupSettings";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +25,15 @@ import { Plus, Pencil, Trash2, Lock } from "lucide-react";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+const VariableHelp = ({ tokens }: { tokens: string[] }) => (
+  <div className="flex flex-wrap items-center gap-1.5">
+    <span className="text-xs text-muted-foreground">Available variables:</span>
+    {tokens.map((t) => (
+      <Badge key={t} variant="secondary" className="font-mono text-[11px]">{`{{${t}}}`}</Badge>
+    ))}
+  </div>
+);
+
 const GroupSettingsPage = () => {
   const { organization } = useProfile();
   const { user } = useAuth();
@@ -31,6 +46,25 @@ const GroupSettingsPage = () => {
   const [editingType, setEditingType] = useState<GroupTypeDefinition | null>(null);
   const [typeDialogOpen, setTypeDialogOpen] = useState(false);
   const [customFreq, setCustomFreq] = useState(false);
+
+  const [confirmSubject, setConfirmSubject] = useState("");
+  const [confirmBody, setConfirmBody] = useState("");
+  const [leaderSubject, setLeaderSubject] = useState("");
+  const [leaderBody, setLeaderBody] = useState("");
+  const [replyTo, setReplyTo] = useState("");
+  const [commLoaded, setCommLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!settings || commLoaded) return;
+    const st = settings as any;
+    setConfirmSubject(st.signup_confirmation_subject ?? DEFAULT_SIGNUP_CONFIRMATION_SUBJECT);
+    setConfirmBody(st.signup_confirmation_body ?? DEFAULT_SIGNUP_CONFIRMATION_BODY);
+    setLeaderSubject(st.leader_notification_subject ?? DEFAULT_LEADER_NOTIFICATION_SUBJECT);
+    setLeaderBody(st.leader_notification_body ?? DEFAULT_LEADER_NOTIFICATION_BODY);
+    setReplyTo(st.communication_reply_to ?? "");
+    setCommLoaded(true);
+  }, [settings, commLoaded]);
+
 
 
   const openNewType = () => {
@@ -98,7 +132,9 @@ const GroupSettingsPage = () => {
             <TabsTrigger value="defaults">Defaults</TabsTrigger>
             <TabsTrigger value="directory">Public Directory</TabsTrigger>
             <TabsTrigger value="lifecycle">Lifecycle</TabsTrigger>
+            <TabsTrigger value="communication">Communication</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="types" className="space-y-4">
             <Card>
@@ -281,8 +317,131 @@ const GroupSettingsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="communication" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Signup Confirmation Email</CardTitle>
+                <CardDescription>Sent to the person right after they submit a group signup request.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Send confirmation email</Label>
+                  <Switch
+                    checked={s.signup_confirmation_enabled ?? true}
+                    onCheckedChange={(v) => patch({ signup_confirmation_enabled: v })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Input
+                    value={confirmSubject}
+                    onChange={(e) => setConfirmSubject(e.target.value)}
+                    placeholder={DEFAULT_SIGNUP_CONFIRMATION_SUBJECT}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Message</Label>
+                  <Textarea
+                    rows={9}
+                    value={confirmBody}
+                    onChange={(e) => setConfirmBody(e.target.value)}
+                    placeholder={DEFAULT_SIGNUP_CONFIRMATION_BODY}
+                  />
+                </div>
+                <VariableHelp tokens={["name", "group_name", "org_name", "email", "phone", "meeting_details"]} />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() =>
+                      patch({ signup_confirmation_subject: confirmSubject || null, signup_confirmation_body: confirmBody || null })
+                    }
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setConfirmSubject(DEFAULT_SIGNUP_CONFIRMATION_SUBJECT);
+                      setConfirmBody(DEFAULT_SIGNUP_CONFIRMATION_BODY);
+                    }}
+                  >
+                    Reset to default
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Leader Notification Email</CardTitle>
+                <CardDescription>Sent to the group's leaders and co-leaders when someone signs up.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Notify group leaders</Label>
+                  <Switch
+                    checked={s.leader_notification_enabled ?? true}
+                    onCheckedChange={(v) => patch({ leader_notification_enabled: v })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Subject</Label>
+                  <Input
+                    value={leaderSubject}
+                    onChange={(e) => setLeaderSubject(e.target.value)}
+                    placeholder={DEFAULT_LEADER_NOTIFICATION_SUBJECT}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Message</Label>
+                  <Textarea
+                    rows={9}
+                    value={leaderBody}
+                    onChange={(e) => setLeaderBody(e.target.value)}
+                    placeholder={DEFAULT_LEADER_NOTIFICATION_BODY}
+                  />
+                </div>
+                <VariableHelp tokens={["name", "group_name", "org_name", "email", "phone", "meeting_details"]} />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() =>
+                      patch({ leader_notification_subject: leaderSubject || null, leader_notification_body: leaderBody || null })
+                    }
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setLeaderSubject(DEFAULT_LEADER_NOTIFICATION_SUBJECT);
+                      setLeaderBody(DEFAULT_LEADER_NOTIFICATION_BODY);
+                    }}
+                  >
+                    Reset to default
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Reply-To Address</CardTitle>
+                <CardDescription>Replies to these emails go here. Leave blank to use the default.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Input
+                  type="email"
+                  placeholder="groups@yourchurch.org"
+                  value={replyTo}
+                  onChange={(e) => setReplyTo(e.target.value)}
+                />
+                <Button onClick={() => patch({ communication_reply_to: replyTo || null })}>Save</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
+
 
       <Dialog open={typeDialogOpen} onOpenChange={setTypeDialogOpen}>
         <DialogContent>

@@ -103,9 +103,14 @@ Deno.serve(async (req) => {
         .from('groups')
         .select(`
           id,
+          name,
           organization_id,
           capacity,
           allow_public_signup,
+          meeting_day,
+          meeting_time,
+          meeting_frequency,
+          location,
           member_count:group_members(count)
         `)
         .eq('public_signup_token', signupToken)
@@ -196,6 +201,109 @@ Deno.serve(async (req) => {
       }
 
       console.log('Signup request created:', signupRequest.id);
+
+      // --- Communication: confirmation + leader notification emails ---
+      try {
+        const resendApiKey = Deno.env.get('RESEND_API_KEY');
+        if (resendApiKey) {
+          const [{ data: settings }, { data: org }] = await Promise.all([
+            supabase.from('group_settings').select('*').eq('organization_id', group.organization_id).maybeSingle(),
+            supabase.from('organizations').select('name').eq('id', group.organization_id).maybeSingle(),
+          ]);
+
+          const meetingBits = [
+            group.meeting_day,
+            group.meeting_time,
+            group.meeting_frequency,
+            group.location,
+          ].filter(Boolean);
+
+          const vars: Record<string, string> = {
+            name,
+            email: email.toLowerCase(),
+            phone: phone || '—',
+            group_name: group.name || 'the group',
+            org_name: org?.name || 'Our church',
+            meeting_details: meetingBits.length ? `When: ${meetingBits.join(' · ')}` : '',
+          };
+
+          const render = (tpl: string) =>
+            tpl.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, k) => vars[k] ?? '');
+
+          const toHtml = (text: string) =>
+            `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1f2937;white-space:pre-wrap">${
+              text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            }</div>`;
+
+          const replyTo = settings?.communication_reply_to || undefined;
+
+          const send = async (to: string[], subject: string, body: string) => {
+            const res = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: `${vars.org_name} Groups <noreply@flowleed.com>`,
+                to,
+                subject: render(subject),
+                html: toHtml(render(body)),
+                ...(replyTo ? { reply_to: replyTo } : {}),
+              }),
+            });
+            if (!res.ok) console.error('Resend error:', res.status, await res.text());
+          };
+
+          const DEFAULT_CONFIRM_SUBJECT = 'We got your signup for {{group_name}}';
+          const DEFAULT_CONFIRM_BODY =
+            'Hi {{name}},\n\nThanks for signing up for {{group_name}}! A group leader will review your request and reach out with next steps.\n\n{{meeting_details}}\n\nSee you soon,\n{{org_name}}';
+          const DEFAULT_LEADER_SUBJECT = 'New signup request for {{group_name}}';
+          const DEFAULT_LEADER_BODY =
+            '{{name}} just requested to join {{group_name}}.\n\nEmail: {{email}}\nPhone: {{phone}}\n\nLog in to {{org_name}} to approve or decline this request.';
+
+          if (settings?.signup_confirmation_enabled !== false) {
+            await send(
+              [email.toLowerCase()],
+              settings?.signup_confirmation_subject || DEFAULT_CONFIRM_SUBJECT,
+              settings?.signup_confirmation_body || DEFAULT_CONFIRM_BODY,
+            );
+          }
+
+          if (settings?.leader_notification_enabled !== false) {
+            const { data: leaders } = await supabase
+              .from('group_members')
+              .select('role, contact:contacts(email)')
+              .eq('group_id', group.id)
+              .in('role', ['leader', 'co_leader']);
+
+            const leaderEmails = Array.from(
+              new Set(
+                (leaders || [])
+                  .map((l: any) => l.contact?.email)
+                  .filter((e: string | null) => !!e)
+                  .map((e: string) => e.toLowerCase()),
+              ),
+            );
+
+            if (leaderEmails.length) {
+              await send(
+                leaderEmails,
+                settings?.leader_notification_subject || DEFAULT_LEADER_SUBJECT,
+                settings?.leader_notification_body || DEFAULT_LEADER_BODY,
+              );
+            } else {
+              console.log('No leader emails found for group', group.id);
+            }
+          }
+        } else {
+          console.log('RESEND_API_KEY not set — skipping signup emails');
+        }
+      } catch (emailErr) {
+        console.error('Signup email error (non-fatal):', emailErr);
+      }
+
+
 
       return new Response(
         JSON.stringify({ 
