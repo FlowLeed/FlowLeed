@@ -3,7 +3,9 @@ import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
 import { useCampuses } from "@/hooks/useCampuses";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Plus, Users, HelpCircle, Search, X, Filter } from "lucide-react";
+import { ExternalLink, Plus, Users, HelpCircle, Search, X, Filter, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -156,6 +158,19 @@ const GroupsPage = () => {
               <Plus className="h-4 w-4 mr-2" />
               Create Group
             </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9" asChild>
+                    <Link to="/settings/groups" aria-label="Group settings">
+                      <Settings className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Group settings</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
           </div>
         </div>
 
