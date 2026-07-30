@@ -319,126 +319,160 @@ const GroupSettingsPage = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="communication" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Signup Confirmation Email</CardTitle>
-                <CardDescription>Sent to the person right after they submit a group signup request.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Send confirmation email</Label>
-                  <Switch
-                    checked={s.signup_confirmation_enabled ?? true}
-                    onCheckedChange={(v) => patch({ signup_confirmation_enabled: v })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <Input
-                    value={confirmSubject}
-                    onChange={(e) => setConfirmSubject(e.target.value)}
-                    placeholder={DEFAULT_SIGNUP_CONFIRMATION_SUBJECT}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Message</Label>
-                  <Textarea
-                    rows={9}
-                    value={confirmBody}
-                    onChange={(e) => setConfirmBody(e.target.value)}
-                    placeholder={DEFAULT_SIGNUP_CONFIRMATION_BODY}
-                  />
-                </div>
-                <VariableHelp tokens={["name", "group_name", "org_name", "email", "phone", "meeting_details"]} />
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() =>
-                      patch({ signup_confirmation_subject: confirmSubject || null, signup_confirmation_body: confirmBody || null })
-                    }
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setConfirmSubject(DEFAULT_SIGNUP_CONFIRMATION_SUBJECT);
-                      setConfirmBody(DEFAULT_SIGNUP_CONFIRMATION_BODY);
-                    }}
-                  >
-                    Reset to default
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="communication">
+            <Accordion type="multiple" className="w-full">
+              {/* Signup Confirmation Email */}
+              <AccordionItem value="signup-confirmation" className="border rounded-lg mb-3 px-4 last:border-b">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Signup Confirmation Email</div>
+                      <div className="text-xs text-muted-foreground font-normal">Sent to the person after they sign up</div>
+                    </div>
+                    <Badge variant={s.signup_confirmation_enabled === false ? "secondary" : "default"} className="ml-2 text-[10px]">
+                      {s.signup_confirmation_enabled === false ? "Off" : "On"}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Send confirmation email</Label>
+                    <Switch
+                      checked={s.signup_confirmation_enabled ?? true}
+                      onCheckedChange={(v) => patch({ signup_confirmation_enabled: v })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Subject</Label>
+                    <Input
+                      value={confirmSubject}
+                      onChange={(e) => setConfirmSubject(e.target.value)}
+                      placeholder={DEFAULT_SIGNUP_CONFIRMATION_SUBJECT}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Message</Label>
+                    <Textarea
+                      rows={9}
+                      value={confirmBody}
+                      onChange={(e) => setConfirmBody(e.target.value)}
+                      placeholder={DEFAULT_SIGNUP_CONFIRMATION_BODY}
+                    />
+                  </div>
+                  <VariableHelp tokens={["name", "group_name", "org_name", "email", "phone", "meeting_details"]} />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() =>
+                        patch({ signup_confirmation_subject: confirmSubject || null, signup_confirmation_body: confirmBody || null })
+                      }
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setConfirmSubject(DEFAULT_SIGNUP_CONFIRMATION_SUBJECT);
+                        setConfirmBody(DEFAULT_SIGNUP_CONFIRMATION_BODY);
+                      }}
+                    >
+                      Reset to default
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Leader Notification Email</CardTitle>
-                <CardDescription>Sent to the group's leaders and co-leaders when someone signs up.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Notify group leaders</Label>
-                  <Switch
-                    checked={s.leader_notification_enabled ?? true}
-                    onCheckedChange={(v) => patch({ leader_notification_enabled: v })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <Input
-                    value={leaderSubject}
-                    onChange={(e) => setLeaderSubject(e.target.value)}
-                    placeholder={DEFAULT_LEADER_NOTIFICATION_SUBJECT}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Message</Label>
-                  <Textarea
-                    rows={9}
-                    value={leaderBody}
-                    onChange={(e) => setLeaderBody(e.target.value)}
-                    placeholder={DEFAULT_LEADER_NOTIFICATION_BODY}
-                  />
-                </div>
-                <VariableHelp tokens={["name", "group_name", "org_name", "email", "phone", "meeting_details"]} />
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() =>
-                      patch({ leader_notification_subject: leaderSubject || null, leader_notification_body: leaderBody || null })
-                    }
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setLeaderSubject(DEFAULT_LEADER_NOTIFICATION_SUBJECT);
-                      setLeaderBody(DEFAULT_LEADER_NOTIFICATION_BODY);
-                    }}
-                  >
-                    Reset to default
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Leader Notification Email */}
+              <AccordionItem value="leader-notification" className="border rounded-lg mb-3 px-4 last:border-b">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                      <BellRing className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Leader Notification Email</div>
+                      <div className="text-xs text-muted-foreground font-normal">Sent to leaders & co-leaders when someone signs up</div>
+                    </div>
+                    <Badge variant={s.leader_notification_enabled === false ? "secondary" : "default"} className="ml-2 text-[10px]">
+                      {s.leader_notification_enabled === false ? "Off" : "On"}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Notify group leaders</Label>
+                    <Switch
+                      checked={s.leader_notification_enabled ?? true}
+                      onCheckedChange={(v) => patch({ leader_notification_enabled: v })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Subject</Label>
+                    <Input
+                      value={leaderSubject}
+                      onChange={(e) => setLeaderSubject(e.target.value)}
+                      placeholder={DEFAULT_LEADER_NOTIFICATION_SUBJECT}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Message</Label>
+                    <Textarea
+                      rows={9}
+                      value={leaderBody}
+                      onChange={(e) => setLeaderBody(e.target.value)}
+                      placeholder={DEFAULT_LEADER_NOTIFICATION_BODY}
+                    />
+                  </div>
+                  <VariableHelp tokens={["name", "group_name", "org_name", "email", "phone", "meeting_details"]} />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() =>
+                        patch({ leader_notification_subject: leaderSubject || null, leader_notification_body: leaderBody || null })
+                      }
+                    >
+                      Save
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setLeaderSubject(DEFAULT_LEADER_NOTIFICATION_SUBJECT);
+                        setLeaderBody(DEFAULT_LEADER_NOTIFICATION_BODY);
+                      }}
+                    >
+                      Reset to default
+                    </Button>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Reply-To Address</CardTitle>
-                <CardDescription>Replies to these emails go here. Leave blank to use the default.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Input
-                  type="email"
-                  placeholder="groups@yourchurch.org"
-                  value={replyTo}
-                  onChange={(e) => setReplyTo(e.target.value)}
-                />
-                <Button onClick={() => patch({ communication_reply_to: replyTo || null })}>Save</Button>
-              </CardContent>
-            </Card>
+              {/* Reply-To Address */}
+              <AccordionItem value="reply-to" className="border rounded-lg px-4 last:border-b">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                      <Reply className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Reply-To Address</div>
+                      <div className="text-xs text-muted-foreground font-normal">
+                        {replyTo || "Default (no reply-to)"}
+                      </div>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 pt-2">
+                  <Input
+                    type="email"
+                    placeholder="groups@yourchurch.org"
+                    value={replyTo}
+                    onChange={(e) => setReplyTo(e.target.value)}
+                  />
+                  <Button onClick={() => patch({ communication_reply_to: replyTo || null })}>Save</Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </TabsContent>
         </Tabs>
       </div>
