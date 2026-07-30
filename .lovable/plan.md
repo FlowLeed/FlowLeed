@@ -1,26 +1,30 @@
-## Plan: Compact Communication Blocks with Accordion
+# Hide internal group types
 
-Convert the three always-open cards in the Communication tab of Group Settings into collapsible accordion blocks. Each block shows a title + summary in its collapsed header, and expands on click to reveal the full edit form.
+Add a per-type "Hidden" setting in Group Settings so internal types (e.g. Unique Groups, PCO-only types) never appear in public or member-facing places, while staff can still manage them on the Groups page.
 
-### Changes (single file: `src/pages/settings/GroupSettingsPage.tsx`)
+## Behavior
 
-1. **Import** `Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent` from `@/components/ui/accordion` and `ChevronDown` from lucide-react.
+A group type can be marked **Hidden**. Groups of that type are then removed from:
+- Public group directory and its type filter chips
+- Public group signup pages
+- The Groups card on a person's/contact profile
 
-2. **Replace the three `<Card>` blocks** in the Communication tab with a single `<Accordion type="multiple">` containing three `AccordionItem`s:
+They remain visible on the internal Groups page, with a "Show hidden types" toggle so staff can focus the list when they want.
 
-   | Item | Collapsed header | Expanded content |
-   |---|---|---|
-   | **Signup Confirmation Email** | Title + short description + enabled/disabled status badge | Subject input, message textarea, variable help, save/reset buttons |
-   | **Leader Notification Email** | Title + short description + enabled/disabled status badge | Subject input, message textarea, variable help, save/reset buttons |
-   | **Reply-To Address** | Title + short description + current reply-to value (or "default") | Email input + save button |
+This is separate from the existing Active/Disabled switch, which only controls whether the type can be picked when creating or editing a group.
 
-3. **Keep all existing form logic unchanged** — state variables, `patch()` calls, save/reset handlers stay exactly as they are; only the wrapping container changes from `Card` to `AccordionItem`.
+New PCO-synced types arrive visible by default; you hide the internal ones manually.
 
-4. **Default state**: all items collapsed (no `defaultValue`), so the tab is compact and scannable on first load.
+## Where the setting lives
 
-### What stays the same
-- All data fetching / mutation logic
-- The other tabs (Types, Defaults, Directory, Lifecycle)
-- Edge function / email sending logic
+Group Settings > Types tab: each type row gets an eye icon toggle plus a "Hidden" badge, and the edit dialog gets a matching switch with a short explanation.
 
-This is a presentation-only refactor with no logic changes.
+## Technical notes
+
+- Migration: add `is_hidden boolean not null default false` to `group_type_definitions`.
+- `useGroupTypes` — expose `is_hidden`; add a helper that returns the set of hidden type keys for filtering.
+- `GroupSettingsPage.tsx` — eye toggle in the type list, switch in the edit dialog.
+- `GroupDirectoryPage.tsx` — filter out groups whose `group_type` is hidden, before building the type filter chips.
+- `GroupPublicSignupPage.tsx` / `group-public-signup` edge function — treat a hidden-type group as not publicly available.
+- `ContactGroupsCard.tsx` — filter memberships whose group type is hidden.
+- `GroupsPage.tsx` — keep hidden types listed, add a "Show hidden types" toggle (default on) so staff can collapse them.
