@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
           id,
           name,
           organization_id,
+          group_type,
           capacity,
           allow_public_signup,
           meeting_day,
@@ -136,6 +137,21 @@ Deno.serve(async (req) => {
 
       if (groupError || !group) {
         console.error('Group not found:', groupError);
+        return new Response(
+          JSON.stringify({ error: 'Group not found or signup is not enabled' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Hidden (internal-only) group types cannot accept public signups.
+      const { data: signupTypeDef } = await supabase
+        .from('group_type_definitions')
+        .select('is_hidden')
+        .eq('organization_id', group.organization_id)
+        .eq('key', group.group_type)
+        .maybeSingle();
+
+      if (signupTypeDef?.is_hidden) {
         return new Response(
           JSON.stringify({ error: 'Group not found or signup is not enabled' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
