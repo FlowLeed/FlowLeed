@@ -54,7 +54,7 @@ export default function GroupDirectoryPage() {
     },
   });
 
-  const { types: typeDefs } = useGroupTypes(org?.id);
+  const { types: typeDefs, isHiddenType } = useGroupTypes(org?.id, { includeInactive: true });
   const { data: settings } = useGroupSettingsPublic(org?.id);
   const typeLabel = (key: string) => typeDefs.find((t) => t.key === key)?.label || fallbackLabels[key] || key;
   const typeColor = (key: string) => typeDefs.find((t) => t.key === key)?.color;
@@ -97,7 +97,9 @@ export default function GroupDirectoryPage() {
     },
   });
 
-  const filteredGroups = groups?.filter((group) => {
+  const visibleGroups = groups?.filter((g) => !isHiddenType(g.group_type));
+
+  const filteredGroups = visibleGroups?.filter((group) => {
     const matchesSearch =
       !searchQuery ||
       group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -106,8 +108,8 @@ export default function GroupDirectoryPage() {
     return matchesSearch && matchesType;
   });
 
-  const groupTypes = groups
-    ? [...new Set(groups.map((g) => g.group_type))]
+  const groupTypes = visibleGroups
+    ? [...new Set(visibleGroups.map((g) => g.group_type))]
     : [];
 
   const handleJoinGroup = (token: string | null) => {
