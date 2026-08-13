@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { useGroups } from "@/hooks/useGroups";
+import { useGroupTypes } from "@/hooks/useGroupTypes";
 import { useCampuses } from "@/hooks/useCampuses";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Plus, Users, HelpCircle, Search, X, Filter, Settings } from "lucide-react";
@@ -25,6 +26,7 @@ const GroupsPage = () => {
   
   const { groups, isLoading } = useGroups(organization?.id);
   const { data: campuses = [] } = useCampuses();
+  const { isHiddenType, hiddenTypeKeys } = useGroupTypes(organization?.id, { includeInactive: true });
   console.log("[GroupsPage] Groups:", groups, "Loading:", isLoading);
   
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -33,6 +35,7 @@ const GroupsPage = () => {
   const [selectedDay, setSelectedDay] = useState<string>("all");
   const [selectedSource, setSelectedSource] = useState<"all" | "pco" | "flowleed">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showHiddenTypes, setShowHiddenTypes] = useState(true);
   const queryClient = useQueryClient();
 
 
@@ -61,6 +64,7 @@ const GroupsPage = () => {
   };
 
   const filteredGroups = groups.filter((g: any) => {
+    if (!showHiddenTypes && isHiddenType(g.group_type)) return false;
     if (selectedType !== "all" && categoryOf(g) !== selectedType) return false;
     if (selectedCampusIds.length > 0) {
       const ids: string[] = g.campus_ids?.length
