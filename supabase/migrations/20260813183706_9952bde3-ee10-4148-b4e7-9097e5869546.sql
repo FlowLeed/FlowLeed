@@ -1,0 +1,1 @@
+ALTER TABLE public.group_type_definitions ADD COLUMN IF NOT EXISTS is_hidden boolean NOT NULL DEFAULT false;

@@ -2303,6 +2303,7 @@ export type Database = {
           icon: string | null
           id: string
           is_active: boolean
+          is_hidden: boolean
           is_system: boolean
           key: string
           label: string
@@ -2318,6 +2319,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean
+          is_hidden?: boolean
           is_system?: boolean
           key: string
           label: string
@@ -2333,6 +2335,7 @@ export type Database = {
           icon?: string | null
           id?: string
           is_active?: boolean
+          is_hidden?: boolean
           is_system?: boolean
           key?: string
           label?: string

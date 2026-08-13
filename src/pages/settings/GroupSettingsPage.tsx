@@ -22,7 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { Plus, Pencil, Trash2, Lock, Mail, BellRing, Reply } from "lucide-react";
+import { Plus, Pencil, Trash2, Lock, Mail, BellRing, Reply, Eye, EyeOff } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -79,6 +80,7 @@ const GroupSettingsPage = () => {
       sort_order: types.length,
       is_active: true,
       is_system: false,
+      is_hidden: false,
     });
     setTypeDialogOpen(true);
   };
@@ -94,6 +96,7 @@ const GroupSettingsPage = () => {
           icon: editingType.icon,
           color: editingType.color,
           is_active: editingType.is_active,
+          is_hidden: editingType.is_hidden ?? false,
         },
       });
     } else {
@@ -156,9 +159,30 @@ const GroupSettingsPage = () => {
                         {t.is_system && <Badge variant="outline" className="text-[10px]">Built-in</Badge>}
                         {t.source === "pco" && <Badge variant="outline" className="text-[10px] border-sky-500 text-sky-600">PCO</Badge>}
                         {!t.is_active && <Badge variant="secondary" className="text-[10px]">Disabled</Badge>}
+                        {t.is_hidden && <Badge variant="secondary" className="text-[10px]">Hidden</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground">{t.key}</div>
                     </div>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => updateType.mutate({ id: t.id, updates: { is_hidden: !t.is_hidden } })}
+                          >
+                            {t.is_hidden
+                              ? <EyeOff className="h-4 w-4 text-muted-foreground" />
+                              : <Eye className="h-4 w-4" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {t.is_hidden
+                            ? "Hidden from the public directory, signup pages and people's profiles"
+                            : "Visible everywhere — click to hide from public and member-facing lists"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Switch
                       checked={t.is_active}
                       onCheckedChange={(v) => updateType.mutate({ id: t.id, updates: { is_active: v } })}
@@ -498,8 +522,20 @@ const GroupSettingsPage = () => {
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <Label>Active</Label>
+                <div>
+                  <Label>Active</Label>
+                  <p className="text-xs text-muted-foreground">Can be selected when creating or editing a group.</p>
+                </div>
                 <Switch checked={editingType.is_active} onCheckedChange={(v) => setEditingType({ ...editingType, is_active: v })} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Hidden (internal only)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Groups of this type won't appear in the public directory, on signup pages, or on people's profiles. Staff still see them on the Groups page.
+                  </p>
+                </div>
+                <Switch checked={!!editingType.is_hidden} onCheckedChange={(v) => setEditingType({ ...editingType, is_hidden: v })} />
               </div>
             </div>
           )}

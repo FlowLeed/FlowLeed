@@ -7,6 +7,8 @@ import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContactLeadersCard } from "./ContactLeadersCard";
+import { useProfile } from "@/hooks/useProfile";
+import { useGroupTypes } from "@/hooks/useGroupTypes";
 
 interface Props { contactId: string }
 
@@ -17,7 +19,10 @@ const roleVariant = (r: string): "default" | "secondary" | "outline" =>
   r === "leader" || r === "co_leader" ? "default" : r === "host" ? "secondary" : "outline";
 
 export function ContactGroupsCard({ contactId }: Props) {
-  const { data, isLoading } = useQuery({
+  const { organization } = useProfile();
+  const { isHiddenType } = useGroupTypes(organization?.id, { includeInactive: true });
+
+  const { data: memberships, isLoading } = useQuery({
     queryKey: ["contact-groups", contactId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -33,6 +38,9 @@ export function ContactGroupsCard({ contactId }: Props) {
       return (data || []).filter((m: any) => m.group && !m.group.archived_at);
     },
   });
+
+  // Groups whose type is marked hidden are internal-only and never shown here.
+  const data = memberships?.filter((m: any) => !isHiddenType(m.group?.group_type));
 
   if (isLoading) {
     return (

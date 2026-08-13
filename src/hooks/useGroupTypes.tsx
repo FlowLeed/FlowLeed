@@ -12,6 +12,7 @@ export interface GroupTypeDefinition {
   sort_order: number;
   is_active: boolean;
   is_system: boolean;
+  is_hidden?: boolean;
   source?: string;
   pco_group_type_id?: string | null;
 }
@@ -85,5 +86,10 @@ export const useGroupTypes = (organizationId: string | undefined, opts?: { inclu
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  return { types, isLoading, createType, updateType, deleteType };
+  // Keys of types marked hidden — used to keep internal-only groups out of
+  // public and member-facing lists (directory, signup, contact profile).
+  const hiddenTypeKeys = new Set(types.filter((t) => t.is_hidden).map((t) => t.key));
+  const isHiddenType = (key?: string | null) => !!key && hiddenTypeKeys.has(key);
+
+  return { types, isLoading, createType, updateType, deleteType, hiddenTypeKeys, isHiddenType };
 };

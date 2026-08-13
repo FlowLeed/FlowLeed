@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
           id,
           name,
           description,
+          organization_id,
           group_type,
           meeting_day,
           meeting_time,
@@ -53,6 +54,22 @@ Deno.serve(async (req) => {
 
       if (groupError || !group || group.visibility !== 'public') {
         console.error('Group not found or not listed:', groupError);
+        return new Response(
+          JSON.stringify({ error: 'Group not found or not listed' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Group types marked hidden are internal-only: never expose them publicly.
+      const { data: typeDef } = await supabase
+        .from('group_type_definitions')
+        .select('is_hidden')
+        .eq('organization_id', group.organization_id)
+        .eq('key', group.group_type)
+        .maybeSingle();
+
+      if (typeDef?.is_hidden) {
+        console.log('Group type is hidden, refusing public access:', group.group_type);
         return new Response(
           JSON.stringify({ error: 'Group not found or not listed' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -105,6 +122,7 @@ Deno.serve(async (req) => {
           id,
           name,
           organization_id,
+          group_type,
           capacity,
           allow_public_signup,
           meeting_day,
@@ -119,6 +137,21 @@ Deno.serve(async (req) => {
 
       if (groupError || !group) {
         console.error('Group not found:', groupError);
+        return new Response(
+          JSON.stringify({ error: 'Group not found or signup is not enabled' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Hidden (internal-only) group types cannot accept public signups.
+      const { data: signupTypeDef } = await supabase
+        .from('group_type_definitions')
+        .select('is_hidden')
+        .eq('organization_id', group.organization_id)
+        .eq('key', group.group_type)
+        .maybeSingle();
+
+      if (signupTypeDef?.is_hidden) {
         return new Response(
           JSON.stringify({ error: 'Group not found or signup is not enabled' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
