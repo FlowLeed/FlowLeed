@@ -212,6 +212,22 @@ const GroupsPage = () => {
             </PopoverTrigger>
             <PopoverContent className="w-80" align="end">
               <div className="space-y-4">
+                {hiddenTypeKeys.size > 0 && (
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={showHiddenTypes}
+                      onCheckedChange={(v) => setShowHiddenTypes(!!v)}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      <span className="text-sm font-medium">Show hidden types</span>
+                      <span className="block text-xs text-muted-foreground">
+                        Internal-only types that never appear publicly
+                      </span>
+                    </span>
+                  </label>
+                )}
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Group type</label>
                   <Select value={selectedType} onValueChange={setSelectedType}>
