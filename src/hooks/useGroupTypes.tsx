@@ -12,6 +12,7 @@ export interface GroupTypeDefinition {
   sort_order: number;
   is_active: boolean;
   is_system: boolean;
+  is_hidden?: boolean;
   source?: string;
   pco_group_type_id?: string | null;
 }
