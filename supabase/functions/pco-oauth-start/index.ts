@@ -35,8 +35,8 @@ Deno.serve(async (req) => {
     if (userErr || !user) return json({ error: 'Unauthorized' }, 401);
 
     const body = await req.json().catch(() => ({}));
-    const { organizationId, purpose, redirectOrigin } = body as {
-      organizationId?: string; purpose?: string; redirectOrigin?: string;
+    const { organizationId, purpose, redirectOrigin, forceAccountSelect } = body as {
+      organizationId?: string; purpose?: string; redirectOrigin?: string; forceAccountSelect?: boolean;
     };
     if (!organizationId || !purpose || !redirectOrigin) {
       return json({ error: 'organizationId, purpose, redirectOrigin required' }, 400);
@@ -81,6 +81,10 @@ Deno.serve(async (req) => {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', PCO_OAUTH_SCOPES);
     url.searchParams.set('state', state);
+    // Ask PCO to show its account chooser instead of silently reusing the
+    // browser's existing Planning Center session (matters for people who
+    // administer several PCO organizations).
+    if (forceAccountSelect) url.searchParams.set('prompt', 'select_account');
 
     return json({ authorizeUrl: url.toString() });
   } catch (e) {
