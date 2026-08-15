@@ -173,7 +173,7 @@ const IntegrationsPage = () => {
   });
   const [oauthLoading, setOauthLoading] = useState(false);
 
-  const handleConnectPcoOAuth = async () => {
+  const handleConnectPcoOAuth = async (forceAccountSelect = false) => {
     if (!userOrgData?.organization_id) {
       toast.error('No organization');
       return;
@@ -195,11 +195,20 @@ const IntegrationsPage = () => {
           organizationId: userOrgData.organization_id,
           purpose: 'org',
           redirectOrigin: topOrigin,
+          forceAccountSelect,
         },
       });
       if (error || !data?.authorizeUrl) {
         throw new Error(data?.error || error?.message || 'Failed to start OAuth');
       }
+      // Switching accounts: sign out of Planning Center in a popup first so its
+      // authorize page prompts for login instead of reusing the current session.
+      if (forceAccountSelect) {
+        const w = window.open('https://login.planningcenteronline.com/logout', 'pco-logout', 'width=520,height=620');
+        await new Promise((r) => setTimeout(r, 2500));
+        try { w?.close(); } catch { /* popup blocked */ }
+      }
+
       // Redirect the top-level window (breaks out of the Lovable preview iframe).
       try {
         if (window.top) {
@@ -445,13 +454,23 @@ const IntegrationsPage = () => {
                     <p className="text-sm text-muted-foreground mb-3">
                       Your Planning Center session expired or was revoked. Reconnect to resume syncing.
                     </p>
-                    <Button
-                      size="sm"
-                      onClick={handleConnectPcoOAuth}
-                      disabled={oauthLoading || !userOrgData?.organization_id}
-                    >
-                      Reconnect Planning Center
-                    </Button>
+                    <div className="flex flex-col items-start gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => handleConnectPcoOAuth()}
+                        disabled={oauthLoading || !userOrgData?.organization_id}
+                      >
+                        Reconnect Planning Center
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => handleConnectPcoOAuth(true)}
+                        disabled={oauthLoading || !userOrgData?.organization_id}
+                        className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+                      >
+                        Reconnect with a different Planning Center account
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -471,7 +490,7 @@ const IntegrationsPage = () => {
                     </p>
                     <Button
                       size="sm"
-                      onClick={handleConnectPcoOAuth}
+                      onClick={() => handleConnectPcoOAuth()}
                       disabled={oauthLoading || !userOrgData?.organization_id}
                     >
                       {oauthLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
@@ -509,10 +528,20 @@ const IntegrationsPage = () => {
                     Sign in with your Planning Center account — no manual tokens, automatic refresh, and stays connected to a specific PCO organization.
                   </p>
                 </div>
-                <Button onClick={handleConnectPcoOAuth} disabled={oauthLoading || !userOrgData?.organization_id}>
-                  {oauthLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                  Connect Planning Center
-                </Button>
+                <div className="flex flex-col items-start gap-2">
+                  <Button onClick={() => handleConnectPcoOAuth()} disabled={oauthLoading || !userOrgData?.organization_id}>
+                    {oauthLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Connect Planning Center
+                  </Button>
+                <button
+                  type="button"
+                  onClick={() => handleConnectPcoOAuth(true)}
+                  disabled={oauthLoading || !userOrgData?.organization_id}
+                  className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
+                >
+                  Administer several Planning Center organizations? Choose a different account
+                </button>
+                </div>
               </div>
             )}
 
