@@ -541,7 +541,14 @@ const IntegrationsPage = () => {
                 >
                   Administer several Planning Center organizations? Choose a different account
                 </button>
+                {!userOrgData?.organization_id && (
+                  <p className="text-xs text-destructive">
+                    Your account isn't part of an organization yet, so Planning Center can't be connected.
+                    Finish setting up your organization (or ask an admin to invite you) first.
+                  </p>
+                )}
                 </div>
+
               </div>
             )}
 
