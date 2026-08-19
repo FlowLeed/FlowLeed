@@ -228,6 +228,14 @@ export const useContacts = (filters: ContactFilters) => {
         });
       }
 
+      // Apply tag filter
+      if (filters.tag && filters.tag !== "all") {
+        filteredData = filteredData.filter(contact => {
+          const tags = contact.contact_tags || [];
+          return tags.some((t: any) => t.tag === filters.tag);
+        });
+      }
+
 
       // Apply "no-flows" filter client-side (exclude contacts that are in flows)
       if (contactIdsNotInFlows !== null && contactIdsNotInFlows.length > 0) {

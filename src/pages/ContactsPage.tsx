@@ -34,6 +34,7 @@ export interface ContactFilters {
   campusId: string;
   signal: string;
   markerKey: string;
+  tag: string;
 }
 
 const ContactsPage = () => {
@@ -59,6 +60,7 @@ const ContactsPage = () => {
     campusId: initialCampus,
     signal: initialSignal,
     markerKey: initialMarker,
+    tag: "all",
   });
 
 
@@ -172,6 +174,7 @@ const ContactsPage = () => {
       campusId: "all",
       signal: "all",
       markerKey: "all",
+      tag: "all",
     });
   };
 
@@ -183,7 +186,8 @@ const ContactsPage = () => {
     filters.engagementLevel !== "all" ||
     filters.campusId !== "all" ||
     filters.signal !== "all" ||
-    filters.markerKey !== "all";
+    filters.markerKey !== "all" ||
+    filters.tag !== "all";
 
 
   const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null) => {

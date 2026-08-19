@@ -116,6 +116,45 @@ export const ContactFilters = ({
     enabled: !!user,
   });
 
+  // Fetch tags used in this organization
+  const { data: tags } = useQuery({
+    queryKey: ["contact-tags-for-filter", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      let organizationId: string | null = null;
+      const savedOrg = localStorage.getItem('active_organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          organizationId = orgData.id;
+        } catch {
+          // ignore
+        }
+      }
+      if (!organizationId) {
+        const { data: orgMembers } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .limit(1);
+        if (!orgMembers || orgMembers.length === 0) return [];
+        organizationId = orgMembers[0].organization_id;
+      }
+
+      const { data } = await supabase
+        .from("contact_tags")
+        .select("tag, contacts!inner(organization_id)")
+        .eq("contacts.organization_id", organizationId)
+        .order("tag")
+        .limit(1000);
+
+      const uniqueTags = [...new Set((data || []).map((r: any) => r.tag))];
+      return uniqueTags;
+    },
+    enabled: !!user,
+  });
+
   // Count active filters (excluding search term)
   const activeFilterCount = [
     filters.assignedToUserId !== "all",
@@ -125,6 +164,7 @@ export const ContactFilters = ({
     filters.campusId !== "all",
     filters.signal !== "all",
     filters.markerKey !== "all",
+    filters.tag !== "all",
   ].filter(Boolean).length;
 
   return (
@@ -253,6 +293,26 @@ export const ContactFilters = ({
                         {m.label} ({m.contact_count})
                       </SelectItem>
                     ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tag</label>
+              <Select
+                value={filters.tag}
+                onValueChange={(value) => onFilterChange("tag", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Any tag" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="all">Any tag</SelectItem>
+                  {tags?.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
