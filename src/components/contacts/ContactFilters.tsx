@@ -164,6 +164,7 @@ export const ContactFilters = ({
     filters.campusId !== "all",
     filters.signal !== "all",
     filters.markerKey !== "all",
+    filters.tag !== "all",
   ].filter(Boolean).length;
 
   return (
