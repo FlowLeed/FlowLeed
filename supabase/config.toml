@@ -136,3 +136,6 @@ verify_jwt = true
 
 [functions.pco-oauth-callback]
 verify_jwt = true
+
+[functions.contacts-csv-import]
+verify_jwt = false
