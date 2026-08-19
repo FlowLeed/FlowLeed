@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useOrgTags } from "@/hooks/useOrgTags";
 
 export const useContactTags = (contactId: string) => {
   const queryClient = useQueryClient();
