@@ -116,6 +116,45 @@ export const ContactFilters = ({
     enabled: !!user,
   });
 
+  // Fetch tags used in this organization
+  const { data: tags } = useQuery({
+    queryKey: ["contact-tags-for-filter", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+
+      let organizationId: string | null = null;
+      const savedOrg = localStorage.getItem('active_organization');
+      if (savedOrg) {
+        try {
+          const orgData = JSON.parse(savedOrg);
+          organizationId = orgData.id;
+        } catch {
+          // ignore
+        }
+      }
+      if (!organizationId) {
+        const { data: orgMembers } = await supabase
+          .from("organization_members")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .limit(1);
+        if (!orgMembers || orgMembers.length === 0) return [];
+        organizationId = orgMembers[0].organization_id;
+      }
+
+      const { data } = await supabase
+        .from("contact_tags")
+        .select("tag, contacts!inner(organization_id)")
+        .eq("contacts.organization_id", organizationId)
+        .order("tag")
+        .limit(1000);
+
+      const uniqueTags = [...new Set((data || []).map((r: any) => r.tag))];
+      return uniqueTags;
+    },
+    enabled: !!user,
+  });
+
   // Count active filters (excluding search term)
   const activeFilterCount = [
     filters.assignedToUserId !== "all",
