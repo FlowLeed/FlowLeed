@@ -12,6 +12,7 @@ import { AddPeopleToFlowDialog } from "./add-people/AddPeopleToFlowDialog";
 import { ImportContactsDialog } from "@/components/contacts/ImportContactsDialog";
 import { Header } from "../layout/Header";
 import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
@@ -658,7 +659,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
       <ImportContactsDialog
         open={isImportOpen}
         onOpenChange={setIsImportOpen}
-        organizationId={profile?.organization_id}
+        organizationId={organization?.id}
         lockedFlow={{
           id: flow.id,
           name: flow.name,
