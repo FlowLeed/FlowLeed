@@ -53,11 +53,19 @@ export default function PcoCallbackPage() {
       const where = auditIntent
         ? '/audit/connect'
         : (data?.purpose === 'user' ? '/profile' : '/integrations');
-      toast.success(
-        data?.providerAccountName
-          ? `Connected to ${data.providerAccountName}`
-          : 'Planning Center connected',
-      );
+      if (data?.needsConfirmation) {
+        toast.success(
+          data?.providerAccountName
+            ? `Confirm you want to connect ${data.providerAccountName}`
+            : 'Confirm your Planning Center organization',
+        );
+      } else {
+        toast.success(
+          data?.providerAccountName
+            ? `Connected to ${data.providerAccountName}`
+            : 'Planning Center connected',
+        );
+      }
       navigate(where, { replace: true });
     })();
   }, [params, navigate]);
