@@ -2,6 +2,12 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus, X, UserPlus, Tag as TagIcon, Workflow, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Header } from "@/components/layout/Header";
 import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { ContactFilters } from "@/components/contacts/ContactFilters";
@@ -298,18 +304,26 @@ const ContactsPage = () => {
         showAddButton={false}
         rightContent={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowImportDialog(true)}
-              size="sm"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Import CSV
-            </Button>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowImportDialog(true)}
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Import CSV</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button 
               variant="outline" 
               onClick={() => setShowAddDialog(true)}
               size="icon"
+              className="h-8 w-8"
             >
               <Plus className="h-5 w-5" />
             </Button>

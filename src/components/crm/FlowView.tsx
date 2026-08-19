@@ -13,6 +13,12 @@ import { ImportContactsDialog } from "@/components/contacts/ImportContactsDialog
 import { Header } from "../layout/Header";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
@@ -630,10 +636,16 @@ export const FlowView: React.FC<FlowViewProps> = ({
         }}
         onSettingsClick={() => setIsSettingsOpen(true)}
         rightContent={
-          <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV
-          </Button>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" onClick={() => setIsImportOpen(true)} className="h-8 w-8">
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Import CSV</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         }
         onDocsClick={() => navigate(`/flows/${flow.id}/documentation`)}
         onAnalyticsClick={() => navigate(`/flows/${flow.id}/analytics`)}
