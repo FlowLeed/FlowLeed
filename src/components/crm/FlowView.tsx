@@ -9,8 +9,10 @@ import { FlowSettingsDialog } from "./FlowSettingsDialog";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
 import { FlowCompletionConfetti } from "./FlowCompletionConfetti";
 import { AddPeopleToFlowDialog } from "./add-people/AddPeopleToFlowDialog";
+import { ImportContactsDialog } from "@/components/contacts/ImportContactsDialog";
 import { Header } from "../layout/Header";
 import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +40,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddPeopleOpen, setIsAddPeopleOpen] = useState(false);
   const [addPeopleStageId, setAddPeopleStageId] = useState<string | undefined>(undefined);
@@ -626,6 +629,12 @@ export const FlowView: React.FC<FlowViewProps> = ({
           setIsAddPeopleOpen(true);
         }}
         onSettingsClick={() => setIsSettingsOpen(true)}
+        rightContent={
+          <Button variant="outline" size="sm" onClick={() => setIsImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import CSV
+          </Button>
+        }
         onDocsClick={() => navigate(`/flows/${flow.id}/documentation`)}
         onAnalyticsClick={() => navigate(`/flows/${flow.id}/analytics`)}
         teamMembers={teamMembers}
@@ -646,6 +655,17 @@ export const FlowView: React.FC<FlowViewProps> = ({
         onEngagementFilterChange={setSelectedEngagementFilter}
         selectedCampusFilter={selectedCampusFilter}
         onCampusFilterChange={setSelectedCampusFilter}
+      />
+      <ImportContactsDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        organizationId={organization?.id}
+        lockedFlow={{
+          id: flow.id,
+          name: flow.name,
+          stages: filteredFlow.stages.map((s) => ({ id: s.id, name: s.name })),
+        }}
+        defaultStageId={flow.stages[0]?.id}
       />
       <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
         {viewMode === 'kanban' ? (

@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Plus, X, UserPlus, Tag as TagIcon, Workflow } from "lucide-react";
+import { Plus, X, UserPlus, Tag as TagIcon, Workflow, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { ContactsTable } from "@/components/contacts/ContactsTable";
@@ -9,6 +9,7 @@ import { ContactFormDialog, FlowEnrollmentData } from "@/components/crm/ContactF
 import { BulkReassignDialog } from "@/components/crm/BulkReassignDialog";
 import { BulkTagDialog } from "@/components/crm/BulkTagDialog";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
+import { ImportContactsDialog } from "@/components/contacts/ImportContactsDialog";
 import { useContacts } from "@/hooks/useContacts";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
@@ -31,6 +32,7 @@ export interface ContactFilters {
 
 const ContactsPage = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [searchParams] = useSearchParams();
   const initialEngagement = (() => {
     const v = searchParams.get("engagementLevel");
@@ -295,13 +297,23 @@ const ContactsPage = () => {
         showFlowIcon={false}
         showAddButton={false}
         rightContent={
-          <Button 
-            variant="outline" 
-            onClick={() => setShowAddDialog(true)}
-            size="icon"
-          >
-            <Plus className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowImportDialog(true)}
+              size="sm"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Import CSV
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAddDialog(true)}
+              size="icon"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          </div>
         }
       />
 
@@ -371,6 +383,12 @@ const ContactsPage = () => {
         onOpenChange={setAddTagsOpen}
         mode="add"
         onConfirm={handleBulkAddTags}
+      />
+
+      <ImportContactsDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        organizationId={organization?.id}
       />
 
       <ContactFormDialog
