@@ -802,6 +802,149 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_import_rows: {
+        Row: {
+          contact_id: string | null
+          created_at: string
+          id: string
+          import_id: string
+          outcome: string
+          raw: Json | null
+          reason: string | null
+          row_number: number
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          import_id: string
+          outcome: string
+          raw?: Json | null
+          reason?: string | null
+          row_number: number
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          import_id?: string
+          outcome?: string
+          raw?: Json | null
+          reason?: string | null
+          row_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_import_rows_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_import_rows_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "contact_imports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_imports: {
+        Row: {
+          created_at: string
+          created_by_user_id: string
+          created_count: number
+          enrolled_count: number
+          error_message: string | null
+          file_name: string
+          id: string
+          import_tag: string | null
+          mapping: Json
+          options: Json
+          organization_id: string
+          pipeline_id: string | null
+          skipped_count: number
+          stage_id: string | null
+          status: string
+          total_rows: number
+          undone_at: string | null
+          updated_at: string
+          updated_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id: string
+          created_count?: number
+          enrolled_count?: number
+          error_message?: string | null
+          file_name: string
+          id?: string
+          import_tag?: string | null
+          mapping?: Json
+          options?: Json
+          organization_id: string
+          pipeline_id?: string | null
+          skipped_count?: number
+          stage_id?: string | null
+          status?: string
+          total_rows?: number
+          undone_at?: string | null
+          updated_at?: string
+          updated_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string
+          created_count?: number
+          enrolled_count?: number
+          error_message?: string | null
+          file_name?: string
+          id?: string
+          import_tag?: string | null
+          mapping?: Json
+          options?: Json
+          organization_id?: string
+          pipeline_id?: string | null
+          skipped_count?: number
+          stage_id?: string | null
+          status?: string
+          total_rows?: number
+          undone_at?: string | null
+          updated_at?: string
+          updated_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_imports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_imports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_imports_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_imports_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_interactions: {
         Row: {
           assigned_to_user_id: string | null
