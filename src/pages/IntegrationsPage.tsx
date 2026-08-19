@@ -228,6 +228,29 @@ const IntegrationsPage = () => {
     }
   };
 
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const confirmPcoAccount = async (action: 'confirm' | 'reject') => {
+    if (!userOrgData?.organization_id) return;
+    setConfirmLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pco-oauth-confirm', {
+        body: { organizationId: userOrgData.organization_id, action },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      await queryClient.invalidateQueries({ queryKey: ['integrations', userOrgData.organization_id] });
+      if (action === 'confirm') {
+        toast.success('Planning Center connected');
+      } else {
+        toast.success('Connection removed — click Connect to pick another account');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update connection');
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
   const handlePlanningCenterDisconnect = () => {
     if (planningCenterIntegration) {
       deleteIntegrationMutation.mutate(planningCenterIntegration.id);
