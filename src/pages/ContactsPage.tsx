@@ -2,6 +2,12 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Plus, X, UserPlus, Tag as TagIcon, Workflow, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Header } from "@/components/layout/Header";
 import { ContactsTable } from "@/components/contacts/ContactsTable";
 import { ContactFilters } from "@/components/contacts/ContactFilters";
