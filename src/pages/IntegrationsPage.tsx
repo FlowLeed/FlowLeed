@@ -172,6 +172,7 @@ const IntegrationsPage = () => {
     }
   });
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [pendingAuthorizeUrl, setPendingAuthorizeUrl] = useState<string | null>(null);
 
   const handleConnectPcoOAuth = async (forceAccountSelect = false) => {
     if (!userOrgData?.organization_id) {
@@ -179,6 +180,7 @@ const IntegrationsPage = () => {
       return;
     }
     setOauthLoading(true);
+    setPendingAuthorizeUrl(null);
     // Use the top-level window's origin when we're inside the Lovable preview iframe,
     // so the OAuth redirect_uri matches what's registered in PCO and the callback page loads.
     let topOrigin = window.location.origin;
@@ -201,15 +203,10 @@ const IntegrationsPage = () => {
       if (error || !data?.authorizeUrl) {
         throw new Error(data?.error || error?.message || 'Failed to start OAuth');
       }
-      // Switching accounts: sign out of Planning Center in a popup first so its
-      // authorize page prompts for login instead of reusing the current session.
-      if (forceAccountSelect) {
-        const w = window.open('https://login.planningcenteronline.com/logout', 'pco-logout', 'width=520,height=620');
-        await new Promise((r) => setTimeout(r, 2500));
-        try { w?.close(); } catch { /* popup blocked */ }
-      }
 
       // Redirect the top-level window (breaks out of the Lovable preview iframe).
+      // If the browser blocks scripted navigation, fall back to a real link the
+      // user can click — a plain anchor always works.
       try {
         if (window.top) {
           window.top.location.href = data.authorizeUrl;
@@ -217,13 +214,20 @@ const IntegrationsPage = () => {
           window.location.href = data.authorizeUrl;
         }
       } catch {
-        window.location.href = data.authorizeUrl;
+        try {
+          window.location.href = data.authorizeUrl;
+        } catch {
+          setOauthLoading(false);
+          setPendingAuthorizeUrl(data.authorizeUrl);
+          toast.error('Your browser blocked the redirect. Use the link below to continue.');
+        }
       }
     } catch (e: any) {
       toast.error(e.message);
       setOauthLoading(false);
     }
   };
+
   const handlePlanningCenterDisconnect = () => {
     if (planningCenterIntegration) {
       deleteIntegrationMutation.mutate(planningCenterIntegration.id);
