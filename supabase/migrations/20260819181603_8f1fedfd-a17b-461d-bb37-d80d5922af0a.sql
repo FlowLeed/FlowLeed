@@ -1,0 +1,1 @@
+ALTER TABLE public.pco_oauth_states ADD COLUMN IF NOT EXISTS nonce text;
