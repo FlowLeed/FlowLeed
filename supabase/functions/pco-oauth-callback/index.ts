@@ -125,10 +125,12 @@ Deno.serve(async (req) => {
       ?? meJson?.data?.attributes?.login_identifier
       ?? null;
     const orgRel = meJson?.data?.relationships?.organization?.data;
-    const providerAccountId: string | null = orgRel?.id ?? null;
+    // Prefer the id_token claims (they reflect the account the user actually
+    // picked in PCO's chooser); fall back to /me.
+    const providerAccountId: string | null = idOrgId ?? orgRel?.id ?? null;
     const orgInc = (meJson?.included ?? []).find((x: any) =>
-      x.type === 'Organization' && x.id === providerAccountId);
-    const providerAccountName: string | null = orgInc?.attributes?.name ?? null;
+      x.type === 'Organization' && x.id === (orgRel?.id ?? providerAccountId));
+    const providerAccountName: string | null = idOrgName ?? orgInc?.attributes?.name ?? null;
 
 
     if (stateRow.purpose === 'org') {
