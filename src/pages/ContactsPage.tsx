@@ -60,6 +60,7 @@ const ContactsPage = () => {
     campusId: initialCampus,
     signal: initialSignal,
     markerKey: initialMarker,
+    tag: "all",
   });
 
 
