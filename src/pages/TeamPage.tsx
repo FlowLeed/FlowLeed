@@ -828,7 +828,8 @@ const TeamPage = () => {
                       Tag Management
                     </CardTitle>
                     <CardDescription>
-                      Manage tags across your organization ({tagStats.length} unique tags)
+                      Rename, merge or delete tags across your organization ({tagStats.length} unique tags).
+                      Click a tag to see everyone who has it.
                     </CardDescription>
                   </div>
                   {selectedTagsForMerge.length >= 2 && <Button onClick={handleMergeClick} variant="outline" className="gap-2">
