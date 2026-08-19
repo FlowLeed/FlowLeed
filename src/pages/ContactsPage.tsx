@@ -51,6 +51,7 @@ const ContactsPage = () => {
   const initialCampus = searchParams.get("campusId") || "all";
   const initialSignal = searchParams.get("signal") || "all";
   const initialMarker = searchParams.get("marker") || "all";
+  const initialTag = searchParams.get("tag") || "all";
   const [filters, setFilters] = useState<ContactFilters>({
     searchTerm: "",
     assignedToUserId: "all",
