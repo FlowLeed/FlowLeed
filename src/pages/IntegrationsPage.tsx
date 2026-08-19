@@ -384,6 +384,9 @@ const IntegrationsPage = () => {
     if (integration?.status === 'active') {
       return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Connected & Syncing</Badge>;
     }
+    if (integration?.status === 'pending_confirmation') {
+      return <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 dark:text-amber-400">Confirm account</Badge>;
+    }
     if (integration?.status === 'connecting') {
       return <Badge variant="secondary">Testing Connection...</Badge>;
     }
