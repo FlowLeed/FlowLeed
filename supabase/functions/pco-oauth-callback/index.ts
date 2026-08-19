@@ -151,9 +151,13 @@ Deno.serve(async (req) => {
         }, 409);
       }
 
+      // First-time connections wait for the admin to confirm the Planning
+      // Center organization they picked before any syncing starts.
+      const needsConfirmation = !existing?.provider_account_id;
+
       const baseFields = {
         auth_type: 'oauth',
-        status: 'active',
+        status: needsConfirmation ? 'pending_confirmation' : 'active',
         oauth_access_token: accessToken,
         oauth_refresh_token: refreshToken,
         oauth_token_expires_at: expiresAt,
