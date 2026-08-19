@@ -193,8 +193,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log('[pco-oauth-callback] org connected ok');
-      return json({ ok: true, purpose: 'org', providerAccountName });
+      console.log('[pco-oauth-callback] org connected ok', { needsConfirmation });
+      return json({
+        ok: true,
+        purpose: 'org',
+        providerAccountName,
+        providerAccountId,
+        needsConfirmation,
+      });
     }
 
     // purpose === 'user'
