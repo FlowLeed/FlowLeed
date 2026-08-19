@@ -39,6 +39,7 @@ export const ContactFilters = ({
   hasActiveFilters,
 }: ContactFiltersProps) => {
   const { user } = useAuth();
+  const { organization } = useProfile();
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
   const { data: campuses } = useCampuses();
   const { data: markerCatalog } = useMarkerCatalog();
