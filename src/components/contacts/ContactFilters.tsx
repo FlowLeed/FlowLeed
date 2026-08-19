@@ -266,7 +266,15 @@ export const ContactFilters = ({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Tag</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Tag</label>
+                <Link
+                  to="/team?tab=tags"
+                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                >
+                  Manage tags
+                </Link>
+              </div>
               <Select
                 value={filters.tag}
                 onValueChange={(value) => onFilterChange("tag", value)}
@@ -276,9 +284,9 @@ export const ContactFilters = ({
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   <SelectItem value="all">Any tag</SelectItem>
-                  {tags?.map((tag) => (
+                  {tagStats.map(({ tag, count }) => (
                     <SelectItem key={tag} value={tag}>
-                      {tag}
+                      {tag} ({count})
                     </SelectItem>
                   ))}
                 </SelectContent>
