@@ -478,16 +478,7 @@ const IntegrationsPage = () => {
                         </a>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Need a different Planning Center account?{' '}
-                        <a
-                          href="https://accounts.planningcenteronline.com/logout"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline underline-offset-2 hover:text-foreground"
-                        >
-                          Sign out of Planning Center first
-                        </a>
-                        , then reconnect.
+                        Need a different Planning Center account? Switch accounts in Planning Center, then reconnect.
                       </p>
                     </div>
 
@@ -564,16 +555,7 @@ const IntegrationsPage = () => {
                   </a>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Administer several Planning Center organizations?{' '}
-                  <a
-                    href="https://accounts.planningcenteronline.com/logout"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground"
-                  >
-                    Sign out of Planning Center first
-                  </a>
-                  , then come back and click Connect to pick a different account.
+                  Administer several Planning Center organizations? Switch accounts in Planning Center, then come back and click Connect.
                 </p>
                 {!userOrgData?.organization_id && (
                   <p className="text-xs text-destructive">
