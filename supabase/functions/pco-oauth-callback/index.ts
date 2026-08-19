@@ -248,6 +248,21 @@ Deno.serve(async (req) => {
   }
 });
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/')
+      .padEnd(part.length + ((4 - (part.length % 4)) % 4), '=');
+    return JSON.parse(new TextDecoder().decode(
+      Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)),
+    ));
+  } catch (e) {
+    console.error('[pco-oauth-callback] id_token decode failed', e);
+    return null;
+  }
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
