@@ -452,7 +452,11 @@ const TeamPage = () => {
       <Header title="My Organization" showFlowIcon={false} showAddButton={false} />
       
       <div className="flex-1 overflow-auto p-6">
-        <Tabs defaultValue="settings" className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setSearchParams(v === "settings" ? {} : { tab: v }, { replace: true })}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="settings">
               <Shield className="h-4 w-4 mr-2" />
