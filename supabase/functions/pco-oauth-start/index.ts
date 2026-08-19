@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     // Always let Planning Center show its own account chooser instead of
     // silently reusing the browser's existing PCO session — this is what makes
     // multi-organization admins able to pick the right account.
-    url.searchParams.set('prompt', forceAccountSelect === false ? 'select_account' : 'select_account');
+    url.searchParams.set('prompt', 'select_account');
 
     return json({ authorizeUrl: url.toString() });
   } catch (e) {
