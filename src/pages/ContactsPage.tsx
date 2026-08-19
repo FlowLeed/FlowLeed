@@ -34,6 +34,7 @@ export interface ContactFilters {
   campusId: string;
   signal: string;
   markerKey: string;
+  tag: string;
 }
 
 const ContactsPage = () => {
