@@ -227,7 +227,6 @@ Deno.serve(async (req) => {
               updated += 1;
               outcome = 'updated';
             }
-            if (isPco) updated += 0;
           } else {
             const { data: inserted, error } = await admin
               .from('contacts')
