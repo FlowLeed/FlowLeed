@@ -304,18 +304,26 @@ const ContactsPage = () => {
         showAddButton={false}
         rightContent={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowImportDialog(true)}
-              size="sm"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Import CSV
-            </Button>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowImportDialog(true)}
+                    size="icon"
+                    className="h-8 w-8"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Import CSV</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button 
               variant="outline" 
               onClick={() => setShowAddDialog(true)}
               size="icon"
+              className="h-8 w-8"
             >
               <Plus className="h-5 w-5" />
             </Button>
