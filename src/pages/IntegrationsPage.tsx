@@ -503,9 +503,6 @@ const IntegrationsPage = () => {
                           Continue to Planning Center →
                         </a>
                       )}
-                      <p className="text-xs text-muted-foreground">
-                        Need a different Planning Center account? Switch accounts in Planning Center, then reconnect.
-                      </p>
                     </div>
 
                   </div>
@@ -614,9 +611,6 @@ const IntegrationsPage = () => {
                     Continue to Planning Center →
                   </a>
                 )}
-                <p className="text-xs text-muted-foreground">
-                  Administer several Planning Center organizations? Switch accounts in Planning Center, then come back and click Connect.
-                </p>
                 {!userOrgData?.organization_id && (
                   <p className="text-xs text-destructive">
                     Your account isn't part of an organization yet, so Planning Center can't be connected.
