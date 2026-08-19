@@ -89,6 +89,25 @@ Deno.serve(async (req) => {
     const expiresAt = new Date(Date.now() + (tok.expires_in ?? 7200) * 1000).toISOString();
     const scopes = tok.scope as string | undefined;
 
+    // OpenID Connect: PCO returns an id_token that names the organization the
+    // user picked in PCO's own account chooser. The token arrives over the
+    // back-channel (TLS, client-secret authenticated), so we verify the nonce
+    // rather than the signature.
+    let idOrgId: string | null = null;
+    let idOrgName: string | null = null;
+    if (typeof tok.id_token === 'string') {
+      const claims = decodeJwtPayload(tok.id_token);
+      if (claims) {
+        if (stateRow.nonce && claims.nonce && claims.nonce !== stateRow.nonce) {
+          console.error('[pco-oauth-callback] nonce mismatch');
+          return json({ error: 'Nonce mismatch — please start the connection again' }, 400);
+        }
+        idOrgId = claims.organization_id ? String(claims.organization_id) : null;
+        idOrgName = claims.organization_name ? String(claims.organization_name) : null;
+      }
+    }
+
+
     // Fetch /me to identify provider account
     const meRes = await fetch(
       'https://api.planningcenteronline.com/people/v2/me?include=organization',
