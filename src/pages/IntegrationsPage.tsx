@@ -533,18 +533,32 @@ const IntegrationsPage = () => {
                   </p>
                 </div>
                 <div className="flex flex-col items-start gap-2">
-                  <Button onClick={() => handleConnectPcoOAuth()} disabled={oauthLoading || !userOrgData?.organization_id}>
+                  <Button onClick={() => handleConnectPcoOAuth(true)} disabled={oauthLoading || !userOrgData?.organization_id}>
                     {oauthLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                     Connect Planning Center
                   </Button>
-                <button
-                  type="button"
-                  onClick={() => handleConnectPcoOAuth(true)}
-                  disabled={oauthLoading || !userOrgData?.organization_id}
-                  className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
-                >
-                  Administer several Planning Center organizations? Choose a different account
-                </button>
+                {pendingAuthorizeUrl && (
+                  <a
+                    href={pendingAuthorizeUrl}
+                    target="_top"
+                    rel="noopener"
+                    className="text-xs text-primary underline underline-offset-2"
+                  >
+                    Continue to Planning Center →
+                  </a>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Administer several Planning Center organizations?{' '}
+                  <a
+                    href="https://accounts.planningcenteronline.com/logout"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    Sign out of Planning Center first
+                  </a>
+                  , then come back and click Connect to pick a different account.
+                </p>
                 {!userOrgData?.organization_id && (
                   <p className="text-xs text-destructive">
                     Your account isn't part of an organization yet, so Planning Center can't be connected.
@@ -552,6 +566,7 @@ const IntegrationsPage = () => {
                   </p>
                 )}
                 </div>
+
 
               </div>
             )}
