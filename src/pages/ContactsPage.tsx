@@ -186,7 +186,8 @@ const ContactsPage = () => {
     filters.engagementLevel !== "all" ||
     filters.campusId !== "all" ||
     filters.signal !== "all" ||
-    filters.markerKey !== "all";
+    filters.markerKey !== "all" ||
+    filters.tag !== "all";
 
 
   const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null) => {
