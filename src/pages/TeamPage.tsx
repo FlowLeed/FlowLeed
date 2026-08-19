@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +54,9 @@ interface PendingInvitation {
   };
 }
 const TeamPage = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") ?? "settings";
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
@@ -448,7 +452,11 @@ const TeamPage = () => {
       <Header title="My Organization" showFlowIcon={false} showAddButton={false} />
       
       <div className="flex-1 overflow-auto p-6">
-        <Tabs defaultValue="settings" className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setSearchParams(v === "settings" ? {} : { tab: v }, { replace: true })}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="settings">
               <Shield className="h-4 w-4 mr-2" />
@@ -820,7 +828,8 @@ const TeamPage = () => {
                       Tag Management
                     </CardTitle>
                     <CardDescription>
-                      Manage tags across your organization ({tagStats.length} unique tags)
+                      Rename, merge or delete tags across your organization ({tagStats.length} unique tags).
+                      Click a tag to see everyone who has it.
                     </CardDescription>
                   </div>
                   {selectedTagsForMerge.length >= 2 && <Button onClick={handleMergeClick} variant="outline" className="gap-2">
@@ -860,12 +869,22 @@ const TeamPage = () => {
                                 <input type="checkbox" checked={selectedTagsForMerge.includes(tag)} onChange={() => toggleTagForMerge(tag)} className="cursor-pointer" />
                               </TableCell>
                               <TableCell>
-                                <Badge variant="secondary">{tag}</Badge>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/contacts?tag=${encodeURIComponent(tag)}`)}
+                                  title="See everyone with this tag"
+                                >
+                                  <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/70">{tag}</Badge>
+                                </button>
                               </TableCell>
                               <TableCell>
-                                <span className="text-sm text-muted-foreground">
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/contacts?tag=${encodeURIComponent(tag)}`)}
+                                  className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+                                >
                                   {count} {count === 1 ? 'person' : 'people'}
-                                </span>
+                                </button>
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">

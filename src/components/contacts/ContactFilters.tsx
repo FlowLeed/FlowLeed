@@ -20,6 +20,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCampuses } from "@/hooks/useCampuses";
 import { useMarkerCatalog } from "@/hooks/useMarkerCatalog";
+import { useProfile } from "@/hooks/useProfile";
+import { useOrgTags } from "@/hooks/useOrgTags";
+import { Link } from "react-router-dom";
 import type { ContactFilters as Filters } from "@/pages/ContactsPage";
 
 interface ContactFiltersProps {
@@ -36,6 +39,7 @@ export const ContactFilters = ({
   hasActiveFilters,
 }: ContactFiltersProps) => {
   const { user } = useAuth();
+  const { organization } = useProfile();
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
   const { data: campuses } = useCampuses();
   const { data: markerCatalog } = useMarkerCatalog();
@@ -116,44 +120,8 @@ export const ContactFilters = ({
     enabled: !!user,
   });
 
-  // Fetch tags used in this organization
-  const { data: tags } = useQuery({
-    queryKey: ["contact-tags-for-filter", user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-
-      let organizationId: string | null = null;
-      const savedOrg = localStorage.getItem('active_organization');
-      if (savedOrg) {
-        try {
-          const orgData = JSON.parse(savedOrg);
-          organizationId = orgData.id;
-        } catch {
-          // ignore
-        }
-      }
-      if (!organizationId) {
-        const { data: orgMembers } = await supabase
-          .from("organization_members")
-          .select("organization_id")
-          .eq("user_id", user.id)
-          .limit(1);
-        if (!orgMembers || orgMembers.length === 0) return [];
-        organizationId = orgMembers[0].organization_id;
-      }
-
-      const { data } = await supabase
-        .from("contact_tags")
-        .select("tag, contacts!inner(organization_id)")
-        .eq("contacts.organization_id", organizationId)
-        .order("tag")
-        .limit(1000);
-
-      const uniqueTags = [...new Set((data || []).map((r: any) => r.tag))];
-      return uniqueTags;
-    },
-    enabled: !!user,
-  });
+  // Tags come from the shared org tag source (same list as Settings > Tag Management)
+  const { tagStats } = useOrgTags(organization?.id);
 
   // Count active filters (excluding search term)
   const activeFilterCount = [
@@ -298,7 +266,15 @@ export const ContactFilters = ({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Tag</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Tag</label>
+                <Link
+                  to="/team?tab=tags"
+                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                >
+                  Manage tags
+                </Link>
+              </div>
               <Select
                 value={filters.tag}
                 onValueChange={(value) => onFilterChange("tag", value)}
@@ -308,9 +284,9 @@ export const ContactFilters = ({
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
                   <SelectItem value="all">Any tag</SelectItem>
-                  {tags?.map((tag) => (
+                  {tagStats.map(({ tag, count }) => (
                     <SelectItem key={tag} value={tag}>
-                      {tag}
+                      {tag} ({count})
                     </SelectItem>
                   ))}
                 </SelectContent>

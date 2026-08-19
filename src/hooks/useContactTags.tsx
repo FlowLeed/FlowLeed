@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useOrgTags } from "@/hooks/useOrgTags";
 
 export const useContactTags = (contactId: string) => {
   const queryClient = useQueryClient();
@@ -98,43 +99,8 @@ export const useContactTags = (contactId: string) => {
   };
 };
 
+/** Existing org tags, most used first — shared with Settings > Tag Management. */
 export const useOrgTagSuggestions = (organizationId?: string) => {
-  const { data: suggestions = [] } = useQuery({
-    queryKey: ["org-tag-suggestions", organizationId],
-    queryFn: async () => {
-      if (!organizationId) return [];
-
-      // Get all contacts in the organization
-      const { data: contacts } = await supabase
-        .from("contacts")
-        .select("id")
-        .eq("organization_id", organizationId);
-
-      if (!contacts || contacts.length === 0) return [];
-
-      const contactIds = contacts.map((c) => c.id);
-
-      // Get unique tags from all contacts
-      const { data, error } = await supabase
-        .from("contact_tags")
-        .select("tag")
-        .in("contact_id", contactIds);
-
-      if (error) throw error;
-
-      // Get unique tags and sort by frequency
-      const tagCounts = new Map<string, number>();
-      data?.forEach((item) => {
-        const count = tagCounts.get(item.tag) || 0;
-        tagCounts.set(item.tag, count + 1);
-      });
-
-      return Array.from(tagCounts.entries())
-        .sort((a, b) => b[1] - a[1])
-        .map(([tag]) => tag);
-    },
-    enabled: !!organizationId,
-  });
-
-  return { suggestions };
+  const { tags } = useOrgTags(organizationId);
+  return { suggestions: tags };
 };

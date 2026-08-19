@@ -5103,6 +5103,10 @@ export type Database = {
         Args: { p_org_id: string; p_user_id: string }
         Returns: string
       }
+      delete_org_tag: {
+        Args: { p_org_id: string; p_tag: string }
+        Returns: number
+      }
       end_impersonation_session: {
         Args: { _session_id: string }
         Returns: boolean
@@ -5197,6 +5201,13 @@ export type Database = {
         Returns: {
           count: number
           engagement_level: string
+        }[]
+      }
+      get_org_tag_stats: {
+        Args: { p_org_id: string }
+        Returns: {
+          contact_count: number
+          tag: string
         }[]
       }
       get_org_team_activity_stats: {
@@ -5301,9 +5312,21 @@ export type Database = {
           video_id: string
         }[]
       }
+      merge_org_tags: {
+        Args: {
+          p_org_id: string
+          p_source_tags: string[]
+          p_target_tag: string
+        }
+        Returns: number
+      }
       recompute_contact_markers: {
         Args: { p_org_id: string }
         Returns: undefined
+      }
+      rename_org_tag: {
+        Args: { p_new_tag: string; p_old_tag: string; p_org_id: string }
+        Returns: number
       }
       replace_user_pco_visible_people: {
         Args: { _ids: string[]; _org: string; _user: string }
