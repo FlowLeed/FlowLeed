@@ -54,6 +54,9 @@ interface PendingInvitation {
   };
 }
 const TeamPage = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") ?? "settings";
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
