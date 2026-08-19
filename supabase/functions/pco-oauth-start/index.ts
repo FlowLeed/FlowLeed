@@ -57,10 +57,12 @@ Deno.serve(async (req) => {
       return json({ error: 'Only owners and admins can connect the organization' }, 403);
     }
 
-    // Generate state, store CSRF row
+    // Generate state + OIDC nonce, store CSRF row
     const state = crypto.randomUUID() + '-' + crypto.randomUUID();
+    const nonce = crypto.randomUUID();
     const { error: stateErr } = await supabase.from('pco_oauth_states').insert({
       state,
+      nonce,
       organization_id: organizationId,
       user_id: user.id,
       purpose,
