@@ -13,6 +13,12 @@ import { ImportContactsDialog } from "@/components/contacts/ImportContactsDialog
 import { Header } from "../layout/Header";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
