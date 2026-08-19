@@ -490,6 +490,40 @@ const IntegrationsPage = () => {
               </div>
             )}
 
+            {/* OAuth: confirm the Planning Center organization the admin picked */}
+            {planningCenterIntegration?.status === 'pending_confirmation' && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-sm">Confirm your Planning Center organization</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You signed in to{' '}
+                    <span className="font-medium text-foreground">
+                      {planningCenterIntegration.provider_account_name || 'a Planning Center organization'}
+                    </span>
+                    . Nothing syncs until you confirm this is the right one.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => confirmPcoAccount('confirm')}
+                    disabled={confirmLoading}
+                  >
+                    {confirmLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Yes, use this organization
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => confirmPcoAccount('reject')}
+                    disabled={confirmLoading}
+                  >
+                    Choose a different account
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Legacy PAT → OAuth migration prompt */}
             {planningCenterIntegration?.auth_type === 'pat' && planningCenterIntegration?.status !== 'reauth_required' && (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
