@@ -174,6 +174,7 @@ const ContactsPage = () => {
       campusId: "all",
       signal: "all",
       markerKey: "all",
+      tag: "all",
     });
   };
 
