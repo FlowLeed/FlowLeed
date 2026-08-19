@@ -172,6 +172,7 @@ const IntegrationsPage = () => {
     }
   });
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [pendingAuthorizeUrl, setPendingAuthorizeUrl] = useState<string | null>(null);
 
   const handleConnectPcoOAuth = async (forceAccountSelect = false) => {
     if (!userOrgData?.organization_id) {
@@ -179,6 +180,7 @@ const IntegrationsPage = () => {
       return;
     }
     setOauthLoading(true);
+    setPendingAuthorizeUrl(null);
     // Use the top-level window's origin when we're inside the Lovable preview iframe,
     // so the OAuth redirect_uri matches what's registered in PCO and the callback page loads.
     let topOrigin = window.location.origin;
@@ -201,15 +203,10 @@ const IntegrationsPage = () => {
       if (error || !data?.authorizeUrl) {
         throw new Error(data?.error || error?.message || 'Failed to start OAuth');
       }
-      // Switching accounts: sign out of Planning Center in a popup first so its
-      // authorize page prompts for login instead of reusing the current session.
-      if (forceAccountSelect) {
-        const w = window.open('https://login.planningcenteronline.com/logout', 'pco-logout', 'width=520,height=620');
-        await new Promise((r) => setTimeout(r, 2500));
-        try { w?.close(); } catch { /* popup blocked */ }
-      }
 
       // Redirect the top-level window (breaks out of the Lovable preview iframe).
+      // If the browser blocks scripted navigation, fall back to a real link the
+      // user can click — a plain anchor always works.
       try {
         if (window.top) {
           window.top.location.href = data.authorizeUrl;
@@ -217,13 +214,20 @@ const IntegrationsPage = () => {
           window.location.href = data.authorizeUrl;
         }
       } catch {
-        window.location.href = data.authorizeUrl;
+        try {
+          window.location.href = data.authorizeUrl;
+        } catch {
+          setOauthLoading(false);
+          setPendingAuthorizeUrl(data.authorizeUrl);
+          toast.error('Your browser blocked the redirect. Use the link below to continue.');
+        }
       }
     } catch (e: any) {
       toast.error(e.message);
       setOauthLoading(false);
     }
   };
+
   const handlePlanningCenterDisconnect = () => {
     if (planningCenterIntegration) {
       deleteIntegrationMutation.mutate(planningCenterIntegration.id);
@@ -457,20 +461,36 @@ const IntegrationsPage = () => {
                     <div className="flex flex-col items-start gap-2">
                       <Button
                         size="sm"
-                        onClick={() => handleConnectPcoOAuth()}
-                        disabled={oauthLoading || !userOrgData?.organization_id}
-                      >
-                        Reconnect Planning Center
-                      </Button>
-                      <button
-                        type="button"
                         onClick={() => handleConnectPcoOAuth(true)}
                         disabled={oauthLoading || !userOrgData?.organization_id}
-                        className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
                       >
-                        Reconnect with a different Planning Center account
-                      </button>
+                        {oauthLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                        Reconnect Planning Center
+                      </Button>
+                      {pendingAuthorizeUrl && (
+                        <a
+                          href={pendingAuthorizeUrl}
+                          target="_top"
+                          rel="noopener"
+                          className="text-xs text-primary underline underline-offset-2"
+                        >
+                          Continue to Planning Center →
+                        </a>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Need a different Planning Center account?{' '}
+                        <a
+                          href="https://accounts.planningcenteronline.com/logout"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-2 hover:text-foreground"
+                        >
+                          Sign out of Planning Center first
+                        </a>
+                        , then reconnect.
+                      </p>
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -529,18 +549,32 @@ const IntegrationsPage = () => {
                   </p>
                 </div>
                 <div className="flex flex-col items-start gap-2">
-                  <Button onClick={() => handleConnectPcoOAuth()} disabled={oauthLoading || !userOrgData?.organization_id}>
+                  <Button onClick={() => handleConnectPcoOAuth(true)} disabled={oauthLoading || !userOrgData?.organization_id}>
                     {oauthLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                     Connect Planning Center
                   </Button>
-                <button
-                  type="button"
-                  onClick={() => handleConnectPcoOAuth(true)}
-                  disabled={oauthLoading || !userOrgData?.organization_id}
-                  className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground disabled:opacity-50"
-                >
-                  Administer several Planning Center organizations? Choose a different account
-                </button>
+                {pendingAuthorizeUrl && (
+                  <a
+                    href={pendingAuthorizeUrl}
+                    target="_top"
+                    rel="noopener"
+                    className="text-xs text-primary underline underline-offset-2"
+                  >
+                    Continue to Planning Center →
+                  </a>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Administer several Planning Center organizations?{' '}
+                  <a
+                    href="https://accounts.planningcenteronline.com/logout"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    Sign out of Planning Center first
+                  </a>
+                  , then come back and click Connect to pick a different account.
+                </p>
                 {!userOrgData?.organization_id && (
                   <p className="text-xs text-destructive">
                     Your account isn't part of an organization yet, so Planning Center can't be connected.
@@ -548,6 +582,7 @@ const IntegrationsPage = () => {
                   </p>
                 )}
                 </div>
+
 
               </div>
             )}
