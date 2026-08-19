@@ -298,6 +298,26 @@ export const ContactFilters = ({
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium">Tag</label>
+              <Select
+                value={filters.tag}
+                onValueChange={(value) => onFilterChange("tag", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Any tag" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  <SelectItem value="all">Any tag</SelectItem>
+                  {tags?.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium">Engagement level</label>
               <Select
                 value={filters.engagementLevel}
