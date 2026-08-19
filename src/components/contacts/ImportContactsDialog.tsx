@@ -202,18 +202,24 @@ export const ImportContactsDialog: React.FC<ImportContactsDialogProps> = ({
   };
 
   const downloadTemplate = () => {
-    downloadCsv("flowleed-import-template.csv", toCsv(SAMPLE_CSV_HEADERS, SAMPLE_CSV_ROWS));
+    downloadCsv(
+      "flowleed-import-template.csv",
+      toCsv([SAMPLE_CSV_HEADERS, ...SAMPLE_CSV_ROWS]),
+    );
   };
 
   const downloadSkipped = () => {
     if (!problems.length) return;
     downloadCsv(
       "skipped-rows.csv",
-      toCsv(["Row", "Why it was skipped", ...headers], problems.map((p) => [
-        String(p.rowNumber),
-        p.reason,
-        ...headers.map((h) => p.raw[h] ?? ""),
-      ])),
+      toCsv([
+        ["Row", "Why it was skipped", ...headers],
+        ...problems.map((p) => [
+          String(p.rowNumber),
+          p.reason,
+          ...headers.map((h) => p.raw[h] ?? ""),
+        ]),
+      ]),
     );
   };
 
