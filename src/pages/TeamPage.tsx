@@ -869,12 +869,22 @@ const TeamPage = () => {
                                 <input type="checkbox" checked={selectedTagsForMerge.includes(tag)} onChange={() => toggleTagForMerge(tag)} className="cursor-pointer" />
                               </TableCell>
                               <TableCell>
-                                <Badge variant="secondary">{tag}</Badge>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/contacts?tag=${encodeURIComponent(tag)}`)}
+                                  title="See everyone with this tag"
+                                >
+                                  <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/70">{tag}</Badge>
+                                </button>
                               </TableCell>
                               <TableCell>
-                                <span className="text-sm text-muted-foreground">
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/contacts?tag=${encodeURIComponent(tag)}`)}
+                                  className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+                                >
                                   {count} {count === 1 ? 'person' : 'people'}
-                                </span>
+                                </button>
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex items-center justify-end gap-2">
