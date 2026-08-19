@@ -3722,6 +3722,7 @@ export type Database = {
           consumed_at: string | null
           created_at: string
           expires_at: string
+          nonce: string | null
           organization_id: string
           purpose: string
           redirect_to: string | null
@@ -3732,6 +3733,7 @@ export type Database = {
           consumed_at?: string | null
           created_at?: string
           expires_at?: string
+          nonce?: string | null
           organization_id: string
           purpose: string
           redirect_to?: string | null
@@ -3742,6 +3744,7 @@ export type Database = {
           consumed_at?: string | null
           created_at?: string
           expires_at?: string
+          nonce?: string | null
           organization_id?: string
           purpose?: string
           redirect_to?: string | null

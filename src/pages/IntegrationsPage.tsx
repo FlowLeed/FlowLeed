@@ -228,6 +228,29 @@ const IntegrationsPage = () => {
     }
   };
 
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const confirmPcoAccount = async (action: 'confirm' | 'reject') => {
+    if (!userOrgData?.organization_id) return;
+    setConfirmLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('pco-oauth-confirm', {
+        body: { organizationId: userOrgData.organization_id, action },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      await queryClient.invalidateQueries({ queryKey: ['integrations', userOrgData.organization_id] });
+      if (action === 'confirm') {
+        toast.success('Planning Center connected');
+      } else {
+        toast.success('Connection removed — click Connect to pick another account');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update connection');
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
   const handlePlanningCenterDisconnect = () => {
     if (planningCenterIntegration) {
       deleteIntegrationMutation.mutate(planningCenterIntegration.id);
@@ -384,6 +407,9 @@ const IntegrationsPage = () => {
     if (integration?.status === 'active') {
       return <Badge variant="default" className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Connected & Syncing</Badge>;
     }
+    if (integration?.status === 'pending_confirmation') {
+      return <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 dark:text-amber-400">Confirm account</Badge>;
+    }
     if (integration?.status === 'connecting') {
       return <Badge variant="secondary">Testing Connection...</Badge>;
     }
@@ -487,6 +513,40 @@ const IntegrationsPage = () => {
               </div>
             )}
 
+            {/* OAuth: confirm the Planning Center organization the admin picked */}
+            {planningCenterIntegration?.status === 'pending_confirmation' && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
+                <div>
+                  <h4 className="font-semibold text-sm">Confirm your Planning Center organization</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You signed in to{' '}
+                    <span className="font-medium text-foreground">
+                      {planningCenterIntegration.provider_account_name || 'a Planning Center organization'}
+                    </span>
+                    . Nothing syncs until you confirm this is the right one.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => confirmPcoAccount('confirm')}
+                    disabled={confirmLoading}
+                  >
+                    {confirmLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    Yes, use this organization
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => confirmPcoAccount('reject')}
+                    disabled={confirmLoading}
+                  >
+                    Choose a different account
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {/* Legacy PAT → OAuth migration prompt */}
             {planningCenterIntegration?.auth_type === 'pat' && planningCenterIntegration?.status !== 'reauth_required' && (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
@@ -514,7 +574,7 @@ const IntegrationsPage = () => {
 
 
             {/* OAuth: connected account label */}
-            {planningCenterIntegration?.auth_type === 'oauth' && planningCenterIntegration?.provider_account_name && (
+            {planningCenterIntegration?.auth_type === 'oauth' && planningCenterIntegration?.provider_account_name && planningCenterIntegration?.status !== 'pending_confirmation' && (
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-sm">
                 <span className="text-muted-foreground">Connected to:</span>{' '}
                 <span className="font-medium text-foreground">{planningCenterIntegration.provider_account_name}</span>

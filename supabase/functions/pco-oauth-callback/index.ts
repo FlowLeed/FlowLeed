@@ -89,6 +89,25 @@ Deno.serve(async (req) => {
     const expiresAt = new Date(Date.now() + (tok.expires_in ?? 7200) * 1000).toISOString();
     const scopes = tok.scope as string | undefined;
 
+    // OpenID Connect: PCO returns an id_token that names the organization the
+    // user picked in PCO's own account chooser. The token arrives over the
+    // back-channel (TLS, client-secret authenticated), so we verify the nonce
+    // rather than the signature.
+    let idOrgId: string | null = null;
+    let idOrgName: string | null = null;
+    if (typeof tok.id_token === 'string') {
+      const claims = decodeJwtPayload(tok.id_token);
+      if (claims) {
+        if (stateRow.nonce && claims.nonce && claims.nonce !== stateRow.nonce) {
+          console.error('[pco-oauth-callback] nonce mismatch');
+          return json({ error: 'Nonce mismatch — please start the connection again' }, 400);
+        }
+        idOrgId = claims.organization_id ? String(claims.organization_id) : null;
+        idOrgName = claims.organization_name ? String(claims.organization_name) : null;
+      }
+    }
+
+
     // Fetch /me to identify provider account
     const meRes = await fetch(
       'https://api.planningcenteronline.com/people/v2/me?include=organization',
@@ -106,10 +125,12 @@ Deno.serve(async (req) => {
       ?? meJson?.data?.attributes?.login_identifier
       ?? null;
     const orgRel = meJson?.data?.relationships?.organization?.data;
-    const providerAccountId: string | null = orgRel?.id ?? null;
+    // Prefer the id_token claims (they reflect the account the user actually
+    // picked in PCO's chooser); fall back to /me.
+    const providerAccountId: string | null = idOrgId ?? orgRel?.id ?? null;
     const orgInc = (meJson?.included ?? []).find((x: any) =>
-      x.type === 'Organization' && x.id === providerAccountId);
-    const providerAccountName: string | null = orgInc?.attributes?.name ?? null;
+      x.type === 'Organization' && x.id === (orgRel?.id ?? providerAccountId));
+    const providerAccountName: string | null = idOrgName ?? orgInc?.attributes?.name ?? null;
 
 
     if (stateRow.purpose === 'org') {
@@ -130,9 +151,13 @@ Deno.serve(async (req) => {
         }, 409);
       }
 
+      // First-time connections wait for the admin to confirm the Planning
+      // Center organization they picked before any syncing starts.
+      const needsConfirmation = !existing?.provider_account_id;
+
       const baseFields = {
         auth_type: 'oauth',
-        status: 'active',
+        status: needsConfirmation ? 'pending_confirmation' : 'active',
         oauth_access_token: accessToken,
         oauth_refresh_token: refreshToken,
         oauth_token_expires_at: expiresAt,
@@ -168,8 +193,14 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log('[pco-oauth-callback] org connected ok');
-      return json({ ok: true, purpose: 'org', providerAccountName });
+      console.log('[pco-oauth-callback] org connected ok', { needsConfirmation });
+      return json({
+        ok: true,
+        purpose: 'org',
+        providerAccountName,
+        providerAccountId,
+        needsConfirmation,
+      });
     }
 
     // purpose === 'user'
@@ -216,6 +247,21 @@ Deno.serve(async (req) => {
     return json({ error: (e as Error).message }, 500);
   }
 });
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/')
+      .padEnd(part.length + ((4 - (part.length % 4)) % 4), '=');
+    return JSON.parse(new TextDecoder().decode(
+      Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)),
+    ));
+  } catch (e) {
+    console.error('[pco-oauth-callback] id_token decode failed', e);
+    return null;
+  }
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {

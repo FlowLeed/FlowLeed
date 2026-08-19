@@ -200,4 +200,6 @@ export async function refreshUserToken(
   return tok.access_token;
 }
 
-export const PCO_OAUTH_SCOPES = 'people services check_ins giving groups';
+// `openid` makes PCO return an id_token that names the Planning Center
+// organization the user picked, so we can confirm it before syncing.
+export const PCO_OAUTH_SCOPES = 'openid people services check_ins giving groups';

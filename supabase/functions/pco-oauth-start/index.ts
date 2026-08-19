@@ -57,10 +57,12 @@ Deno.serve(async (req) => {
       return json({ error: 'Only owners and admins can connect the organization' }, 403);
     }
 
-    // Generate state, store CSRF row
+    // Generate state + OIDC nonce, store CSRF row
     const state = crypto.randomUUID() + '-' + crypto.randomUUID();
+    const nonce = crypto.randomUUID();
     const { error: stateErr } = await supabase.from('pco_oauth_states').insert({
       state,
+      nonce,
       organization_id: organizationId,
       user_id: user.id,
       purpose,
@@ -81,10 +83,11 @@ Deno.serve(async (req) => {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', PCO_OAUTH_SCOPES);
     url.searchParams.set('state', state);
-    // Ask PCO to show its account chooser instead of silently reusing the
-    // browser's existing Planning Center session (matters for people who
-    // administer several PCO organizations).
-    if (forceAccountSelect) url.searchParams.set('prompt', 'select_account');
+    url.searchParams.set('nonce', nonce);
+    // Always let Planning Center show its own account chooser instead of
+    // silently reusing the browser's existing PCO session — this is what makes
+    // multi-organization admins able to pick the right account.
+    url.searchParams.set('prompt', 'select_account');
 
     return json({ authorizeUrl: url.toString() });
   } catch (e) {
