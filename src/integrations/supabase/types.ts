@@ -5102,6 +5102,7 @@ export type Database = {
         Args: { _contact_id: string; _user: string }
         Returns: boolean
       }
+      clear_demo_data_for_org: { Args: { _org_id: string }; Returns: undefined }
       create_assignment_notification: {
         Args: {
           _contact_id: string
