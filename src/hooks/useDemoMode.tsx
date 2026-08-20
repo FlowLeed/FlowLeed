@@ -31,7 +31,7 @@ export function useDemoMode() {
     queryKey: ["demo-status", orgId],
     enabled: !!orgId,
     queryFn: async (): Promise<DemoStatus> => {
-      const [demo, real, org] = await Promise.all([
+      const [demo, real, org, pco, imports] = await Promise.all([
         supabase
           .from("contacts")
           .select("id", { count: "exact", head: true })
@@ -47,6 +47,15 @@ export function useDemoMode() {
           .select("demo_seeded_at, demo_cleared_at")
           .eq("id", orgId!)
           .maybeSingle(),
+        supabase
+          .from("integrations")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", orgId!)
+          .eq("service_name", "planning_center"),
+        supabase
+          .from("contact_imports")
+          .select("id", { count: "exact", head: true })
+          .eq("organization_id", orgId!),
       ]);
 
       return {
@@ -54,7 +63,10 @@ export function useDemoMode() {
         realContacts: real.count ?? 0,
         seededAt: org.data?.demo_seeded_at ?? null,
         clearedAt: org.data?.demo_cleared_at ?? null,
+        hasPcoIntegration: (pco.count ?? 0) > 0,
+        hasImports: (imports.count ?? 0) > 0,
       };
+
     },
   });
 
