@@ -2,13 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
-import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
-import { OnboardingProgressBar } from "@/components/onboarding/OnboardingProgressBar";
-import { OnboardingChecklist, ChecklistItem } from "@/components/onboarding/OnboardingChecklist";
-import { OnboardingCelebration } from "@/components/onboarding/OnboardingCelebration";
-import { OwnerOnboardingWizard } from "@/components/onboarding/OwnerOnboardingWizard";
-import { MemberOnboardingWizard } from "@/components/onboarding/MemberOnboardingWizard";
 import { AIChatInput } from "@/components/dashboard/AIChatInput";
 import { CategoryChips, type Category } from "@/components/dashboard/CategoryChips";
 import { SuggestedPrompts } from "@/components/dashboard/SuggestedPrompts";
@@ -34,76 +27,9 @@ const Dashboard = () => {
   // Category state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
-  // Onboarding state (preserved from original)
-  const [isOwner, setIsOwner] = useState(false);
-  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [showOwnerWizard, setShowOwnerWizard] = useState(false);
-  const [showMemberWizard, setShowMemberWizard] = useState(false);
 
-  const ownerOnboarding = useOrgOwnerOnboarding(organization?.id);
-  const memberOnboarding = useMemberOnboarding(user?.id);
-
-  // Check if user is organization owner (preserved)
-  useEffect(() => {
-    const checkRole = async () => {
-      if (!user?.id || !organization?.id) return;
-
-      const { data } = await supabase
-        .from("organization_members")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("organization_id", organization.id)
-        .single();
-
-      const userIsOwner = data?.role === "owner";
-      setIsOwner(userIsOwner);
-
-      if (userIsOwner && !ownerOnboarding.progress.pco_lists_mapped && !ownerOnboarding.isLoading) {
-        const { data: integration } = await supabase
-          .from("integrations")
-          .select("id")
-          .eq("organization_id", organization.id)
-          .eq("service_name", "planning_center")
-          .single();
-
-        if (integration) {
-          const { data: mappings } = await supabase
-            .from("integration_list_mappings")
-            .select("id")
-            .eq("integration_id", integration.id)
-            .limit(1);
-
-          if (mappings && mappings.length > 0) {
-            ownerOnboarding.updateProgress("pco_lists_mapped", true);
-          }
-        }
-      }
-
-      setIsInitialLoadComplete(true);
-
-      const hasSeenWizard = localStorage.getItem(`wizard-seen-${user.id}`);
-      if (!hasSeenWizard) {
-        if (userIsOwner && !ownerOnboarding.isCompleted && !ownerOnboarding.isLoading) {
-          setShowOwnerWizard(true);
-          localStorage.setItem(`wizard-seen-${user.id}`, "true");
-        } else if (!userIsOwner && !memberOnboarding.isCompleted && !memberOnboarding.isDismissed && !memberOnboarding.isLoading) {
-          setShowMemberWizard(true);
-          localStorage.setItem(`wizard-seen-${user.id}`, "true");
-        }
-      }
-    };
-
-    checkRole();
-  }, [user?.id, organization?.id, ownerOnboarding.isCompleted, ownerOnboarding.isLoading, memberOnboarding.isCompleted, memberOnboarding.isDismissed, memberOnboarding.isLoading]);
 
   useEffect(() => {
-    if (isOwner && ownerOnboarding.completedSteps === ownerOnboarding.totalSteps && !ownerOnboarding.isCompleted) {
-      setShowCelebration(true);
-    } else if (!isOwner && memberOnboarding.completedSteps === memberOnboarding.totalSteps && !memberOnboarding.isCompleted) {
-      setShowCelebration(true);
-    }
-  }, [isOwner, ownerOnboarding.completedSteps, ownerOnboarding.totalSteps, ownerOnboarding.isCompleted, memberOnboarding.completedSteps, memberOnboarding.totalSteps, memberOnboarding.isCompleted]);
 
   const handlePromptSelect = (prompt: string) => {
     setSelectedCategory(null);
