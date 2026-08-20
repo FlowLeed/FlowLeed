@@ -1176,6 +1176,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_demo: boolean
           last_synced_at: string | null
           name: string
           notes: string | null
@@ -1195,6 +1196,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_demo?: boolean
           last_synced_at?: string | null
           name: string
           notes?: string | null
@@ -1214,6 +1216,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_demo?: boolean
           last_synced_at?: string | null
           name?: string
           notes?: string | null
@@ -2517,6 +2520,7 @@ export type Database = {
           group_type: string
           id: string
           image_url: string | null
+          is_demo: boolean
           last_meeting_at: string | null
           last_synced_at: string | null
           leader_user_id: string | null
@@ -2550,6 +2554,7 @@ export type Database = {
           group_type?: string
           id?: string
           image_url?: string | null
+          is_demo?: boolean
           last_meeting_at?: string | null
           last_synced_at?: string | null
           leader_user_id?: string | null
@@ -2583,6 +2588,7 @@ export type Database = {
           group_type?: string
           id?: string
           image_url?: string | null
+          is_demo?: boolean
           last_meeting_at?: string | null
           last_synced_at?: string | null
           leader_user_id?: string | null
@@ -3454,6 +3460,8 @@ export type Database = {
         Row: {
           billing_email: string | null
           created_at: string
+          demo_cleared_at: string | null
+          demo_seeded_at: string | null
           fl_admin_assigned_to: string | null
           fl_admin_notes: string | null
           health_score: number | null
@@ -3486,6 +3494,8 @@ export type Database = {
         Insert: {
           billing_email?: string | null
           created_at?: string
+          demo_cleared_at?: string | null
+          demo_seeded_at?: string | null
           fl_admin_assigned_to?: string | null
           fl_admin_notes?: string | null
           health_score?: number | null
@@ -3518,6 +3528,8 @@ export type Database = {
         Update: {
           billing_email?: string | null
           created_at?: string
+          demo_cleared_at?: string | null
+          demo_seeded_at?: string | null
           fl_admin_assigned_to?: string | null
           fl_admin_notes?: string | null
           health_score?: number | null
@@ -4162,6 +4174,7 @@ export type Database = {
           flow_type: string
           icon: string | null
           id: string
+          is_demo: boolean
           name: string
           organization_id: string
           updated_at: string
@@ -4175,6 +4188,7 @@ export type Database = {
           flow_type?: string
           icon?: string | null
           id?: string
+          is_demo?: boolean
           name: string
           organization_id: string
           updated_at?: string
@@ -4188,6 +4202,7 @@ export type Database = {
           flow_type?: string
           icon?: string | null
           id?: string
+          is_demo?: boolean
           name?: string
           organization_id?: string
           updated_at?: string
