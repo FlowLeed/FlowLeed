@@ -732,8 +732,9 @@ const UserProfilePage = () => {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-bold break-words leading-tight">{contact.name}</h1>
-                <div className="mt-1.5">
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <EngagementBadge score={engagementScore} />
+                  {(contact as any).is_demo && <Badge variant="secondary">Sample</Badge>}
                 </div>
               </div>
               <Button
@@ -814,6 +815,7 @@ const UserProfilePage = () => {
                   <h1 className="text-3xl font-bold break-words">{contact.name}</h1>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
                     <EngagementBadge score={engagementScore} />
+                    {(contact as any).is_demo && <Badge variant="secondary">Sample</Badge>}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
