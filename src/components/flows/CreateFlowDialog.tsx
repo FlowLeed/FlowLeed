@@ -241,6 +241,25 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Create New Flow</DialogTitle>
         </DialogHeader>
+
+        <div className="mt-2 flex items-center justify-between rounded-lg border bg-muted/40 p-3">
+          <div>
+            <p className="text-sm font-medium">Not sure where to start?</p>
+            <p className="text-xs text-muted-foreground">
+              Use a ready-made flow like Guest Follow-Up or Pastoral Care.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setTemplatesOpen(true)}>
+            Start from a template
+          </Button>
+        </div>
+
+        <FlowTemplatePicker
+          open={templatesOpen}
+          onOpenChange={setTemplatesOpen}
+          onCreated={() => onOpenChange(false)}
+        />
+
         
         <div className="space-y-6 mt-4">
           <div className="space-y-2">
