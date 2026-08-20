@@ -38,7 +38,23 @@ A persistent, non-intrusive banner while demo data exists:
 
 > You're exploring sample data. **Ready to use your own people? → Set Up My Church**
 
-**Set Up My Church** opens a confirm dialog ("This deletes all sample people, flows, and activity — this can't be undone"), deletes everything demo-flagged, then routes to a lightweight choice: **Connect Planning Center** / **Import a CSV** / **Add people manually** / **Share a signup form**. No multi-step wizard — just the four doors.
+**Set Up My Church** opens a confirm dialog ("This deletes all sample people, flows, and activity — this can't be undone"), deletes everything demo-flagged, then presents two equal paths — no multi-step wizard.
+
+**Path A — Planning Center church**
+
+Connect Planning Center, confirm the organization, sync people, and map a list or two to flows. One screen, then data starts flowing.
+
+**Path B — Church without Planning Center**
+
+This is a first-class experience, not a fallback. The church should never feel like "FlowLeed works, but only if you have Planning Center."
+
+**Add your people — how would you like to get started?**
+
+- Import a CSV
+- Add people manually
+- Create your first form (public signup link)
+
+Either path can be switched at any time, and both land on the same finish line: people in a flow with a first follow-up action.
 
 Demo data is also auto-deleted the first time real data arrives (PCO sync, CSV import, or form submission) so nobody ends up with mixed data.
 
