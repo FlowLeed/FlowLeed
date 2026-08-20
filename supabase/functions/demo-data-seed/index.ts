@@ -453,14 +453,14 @@ Deno.serve(async (req) => {
     await admin.from('signal_agent_suggestions').insert([
       {
         organization_id: orgId, contact_id: id(12), signal_key: 'attendance_drop',
-        signal_source: 'builtin', action_type: 'assign_follow_up',
+        signal_source: 'builtin', action_type: 'notify',
         action_payload: { demo: true, suggested_channel: 'call' },
         reasoning: 'Ivan attended 9 of the last 12 weeks but has now missed 3 in a row. A quick personal call usually re-engages people at this stage.',
         confidence: 0.86, assignee_user_id: user.id,
       },
       {
         organization_id: orgId, contact_id: id(2), signal_key: 'guest_no_followup',
-        signal_source: 'builtin', action_type: 'assign_follow_up',
+        signal_source: 'builtin', action_type: 'notify',
         action_payload: { demo: true, suggested_channel: 'text' },
         reasoning: 'Devon visited 14 days ago and is still in "New Guest" with no contact logged. Guests contacted inside 48 hours are far more likely to return.',
         confidence: 0.91, assignee_user_id: user.id,
@@ -474,7 +474,7 @@ Deno.serve(async (req) => {
       },
       {
         organization_id: orgId, contact_id: id(26), signal_key: 'first_gift_no_thanks',
-        signal_source: 'builtin', action_type: 'send_message',
+        signal_source: 'builtin', action_type: 'draft_message',
         action_payload: { demo: true, suggested_channel: 'email' },
         reasoning: 'Tessa gave for the first time 2 days ago and has not been thanked yet. A personal thank-you doubles the odds of a second gift.',
         confidence: 0.83, assignee_user_id: user.id,
