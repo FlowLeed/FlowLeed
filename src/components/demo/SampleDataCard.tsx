@@ -10,7 +10,7 @@ import { toast } from "@/hooks/use-toast";
  * Settings card to load or remove the sample church.
  */
 export const SampleDataCard = () => {
-  const { isDemoMode, realContacts, seedDemoData, isSeeding, isLoading } = useDemoMode();
+  const { isDemoMode, realContacts, seedDemoData, isSeeding, isLoading, canOfferDemo } = useDemoMode();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleLoad = async () => {
@@ -26,8 +26,13 @@ export const SampleDataCard = () => {
     }
   };
 
+  // Nothing to show for orgs that removed sample data or already brought their own
+  // people in (Planning Center / CSV import).
+  if (!isDemoMode && !canOfferDemo) return null;
+
   return (
     <>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-light">
