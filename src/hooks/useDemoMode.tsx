@@ -9,7 +9,10 @@ interface DemoStatus {
   realContacts: number;
   seededAt: string | null;
   clearedAt: string | null;
+  hasPcoIntegration: boolean;
+  hasImports: boolean;
 }
+
 
 /**
  * Demo ("sample church") mode.
