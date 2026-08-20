@@ -41,12 +41,17 @@ Deno.serve(async (req) => {
     // Get contact info
     const { data: contact } = await supabaseClient
       .from('contacts')
-      .select('phone, organization_id')
+      .select('phone, organization_id, is_demo')
       .eq('id', contactId)
       .single()
 
     if (!contact || !contact.phone) {
       throw new Error('Contact has no phone number')
+    }
+
+    // Guardrail: never place real outbound traffic against sample (demo) people.
+    if (contact.is_demo) {
+      throw new Error('This is sample data — outbound messages and calls are disabled for sample people.')
     }
 
     // Determine which number to use

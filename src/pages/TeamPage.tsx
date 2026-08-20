@@ -13,6 +13,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SampleDataCard } from "@/components/demo/SampleDataCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useOrgTagManagement } from "@/hooks/useOrgTagManagement";
@@ -568,6 +569,8 @@ const TeamPage = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <SampleDataCard />
           </TabsContent>
 
           <TabsContent value="phone-numbers" className="space-y-6 mt-6">
