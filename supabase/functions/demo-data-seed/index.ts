@@ -120,6 +120,26 @@ Deno.serve(async (req) => {
       return json({ ok: true, alreadySeeded: true, contacts: existingDemo });
     }
 
+    // Never seed an org that removed sample data, connected Planning Center,
+    // or imported contacts by CSV.
+    const [{ data: org }, { count: pcoCount }, { count: importCount }] = await Promise.all([
+      admin.from('organizations').select('demo_cleared_at').eq('id', orgId).maybeSingle(),
+      admin
+        .from('integrations')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .eq('service_name', 'planning_center'),
+      admin
+        .from('contact_imports')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId),
+    ]);
+
+    if (org?.demo_cleared_at || (pcoCount ?? 0) > 0 || (importCount ?? 0) > 0) {
+      return json({ ok: true, skipped: true, reason: 'org_has_own_data', contacts: 0 });
+    }
+
+
     // Atomic claim: two concurrent invocations (double click, remounted effect)
     // would otherwise both pass the count check above and seed twice.
     const { data: claim } = await admin
