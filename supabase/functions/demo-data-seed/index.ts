@@ -67,14 +67,17 @@ const FLOWS = [
   },
 ];
 
+// Categories must match the flow_moment_types_category_check constraint:
+// salvation | next_step | serving | group | other
 const MOMENT_TYPES = [
-  { name: 'First Visit', category: 'attendance', icon: 'DoorOpen', color: '#3B82F6', weight: 20 },
-  { name: 'Salvation', category: 'milestone', icon: 'Sparkles', color: '#F59E0B', weight: 40 },
-  { name: 'Baptism Scheduled', category: 'milestone', icon: 'Droplets', color: '#06B6D4', weight: 30 },
-  { name: 'First Gift', category: 'giving', icon: 'Gift', color: '#10B981', weight: 25 },
-  { name: 'Joined a Group', category: 'community', icon: 'Users', color: '#8B5CF6', weight: 25 },
-  { name: 'Missed 3 Weeks', category: 'risk', icon: 'AlertTriangle', color: '#EF4444', weight: 15 },
+  { name: 'First Visit', category: 'next_step', icon: 'DoorOpen', color: '#3B82F6', weight: 20 },
+  { name: 'Salvation', category: 'salvation', icon: 'Sparkles', color: '#F59E0B', weight: 40 },
+  { name: 'Baptism Scheduled', category: 'next_step', icon: 'Droplets', color: '#06B6D4', weight: 30 },
+  { name: 'First Gift', category: 'other', icon: 'Gift', color: '#10B981', weight: 25 },
+  { name: 'Joined a Group', category: 'group', icon: 'Users', color: '#8B5CF6', weight: 25 },
+  { name: 'Missed 3 Weeks', category: 'other', icon: 'AlertTriangle', color: '#EF4444', weight: 15 },
 ];
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
