@@ -26,8 +26,13 @@ export const SampleDataCard = () => {
     }
   };
 
+  // Nothing to show for orgs that removed sample data or already brought their own
+  // people in (Planning Center / CSV import).
+  if (!isDemoMode && !canOfferDemo) return null;
+
   return (
     <>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-light">
