@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   let currentStep = 'setup';
+  let claimedOrgId: string | null = null;
   try {
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -118,6 +119,22 @@ Deno.serve(async (req) => {
     if ((existingDemo ?? 0) > 0) {
       return json({ ok: true, alreadySeeded: true, contacts: existingDemo });
     }
+
+    // Atomic claim: two concurrent invocations (double click, remounted effect)
+    // would otherwise both pass the count check above and seed twice.
+    const { data: claim } = await admin
+      .from('organizations')
+      .update({ demo_seeded_at: new Date().toISOString(), demo_cleared_at: null })
+      .eq('id', orgId)
+      .is('demo_seeded_at', null)
+      .select('id')
+      .maybeSingle();
+
+    if (!claim) {
+      return json({ ok: true, alreadySeeded: true, contacts: existingDemo ?? 0 });
+    }
+
+    claimedOrgId = orgId;
 
     currentStep = 'moment types';
     // ---- Moment types -------------------------------------------------------
@@ -481,11 +498,6 @@ Deno.serve(async (req) => {
       },
     ]);
 
-    await admin
-      .from('organizations')
-      .update({ demo_seeded_at: new Date().toISOString(), demo_cleared_at: null })
-      .eq('id', orgId);
-
     return json({
       ok: true,
       contacts: contacts!.length,
@@ -495,6 +507,16 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error('[demo-data-seed]', e);
+    // Release the claim so the user can retry after a failure.
+    try {
+      if (claimedOrgId) {
+        const releaseAdmin = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        );
+        await releaseAdmin.from('organizations').update({ demo_seeded_at: null }).eq('id', claimedOrgId);
+      }
+    } catch (_) { /* best effort */ }
     const err = e as { message?: string; details?: string; hint?: string };
     const detail = [err.message, err.details, err.hint].filter(Boolean).join(' — ');
     return json({ error: `Sample data failed while creating ${currentStep}: ${detail}` }, 500);

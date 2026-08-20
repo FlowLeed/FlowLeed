@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
 
     await admin
       .from('organizations')
-      .update({ demo_cleared_at: new Date().toISOString() })
+      .update({ demo_cleared_at: new Date().toISOString(), demo_seeded_at: null })
       .eq('id', orgId);
 
     return json({
