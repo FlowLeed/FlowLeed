@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { AlertTriangle, ArrowRight, FileSpreadsheet, Link2, Loader2, UserPlus, ClipboardList } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileSpreadsheet, Link2, Loader2, UserPlus, ClipboardList, Workflow } from "lucide-react";
 import { useDemoMode } from "@/hooks/useDemoMode";
+import { FlowTemplatePicker } from "@/components/flows/FlowTemplatePicker";
 
 interface Props {
   open: boolean;
@@ -26,6 +27,7 @@ export const SetUpChurchDialog = ({ open, onOpenChange }: Props) => {
   const navigate = useNavigate();
   const { clearDemoData, isClearing } = useDemoMode();
   const [step, setStep] = useState<"confirm" | "choose">("confirm");
+  const [templatesOpen, setTemplatesOpen] = useState(false);
 
   const handleConfirm = async () => {
     try {
@@ -86,6 +88,28 @@ export const SetUpChurchDialog = ({ open, onOpenChange }: Props) => {
             </DialogHeader>
 
             <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Set up your flows
+                </p>
+                <Card
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setTemplatesOpen(true)}
+                  onKeyDown={(e) => e.key === "Enter" && setTemplatesOpen(true)}
+                  className="flex cursor-pointer items-center gap-3 p-4 transition-colors hover:bg-accent"
+                >
+                  <Workflow className="h-5 w-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Start from a template</p>
+                    <p className="text-xs text-muted-foreground">
+                      Pick the follow-up flows your church runs — guests, care, baptism and more.
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                </Card>
+              </div>
+
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Planning Center church
@@ -150,6 +174,8 @@ export const SetUpChurchDialog = ({ open, onOpenChange }: Props) => {
                 ))}
               </div>
             </div>
+
+            <FlowTemplatePicker open={templatesOpen} onOpenChange={setTemplatesOpen} />
 
             <DialogFooter>
               <Button variant="ghost" onClick={() => onOpenChange(false)}>
