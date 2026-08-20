@@ -763,7 +763,7 @@ export const Sidebar = () => {
   }
 
   return <>
-      <div className="h-screen w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] flex-shrink-0 flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
+      <div className="h-full w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] flex-shrink-0 flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
         {sidebarContent}
       </div>
       
