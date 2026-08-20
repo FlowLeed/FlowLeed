@@ -57,6 +57,7 @@ import { useFlowContext } from "@/contexts/FlowContext";
 import { useProfile } from "@/hooks/useProfile";
 import type { LucideIcon } from "lucide-react";
 import { AIDescriptionSuggestions } from "./AIDescriptionSuggestions";
+import { FlowTemplatePicker } from "./FlowTemplatePicker";
 
 interface FlowStep {
   name: string;
@@ -103,6 +104,7 @@ export const CreateFlowDialog: React.FC<CreateFlowDialogProps> = ({
   const { toast } = useToast();
   const { createFlow } = useFlowContext();
   const { organization } = useProfile();
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [newFlowName, setNewFlowName] = useState("");
   const [newFlowDescription, setNewFlowDescription] = useState("");
   const [newFlowIcon, setNewFlowIcon] = useState<LucideIcon>(Users);
