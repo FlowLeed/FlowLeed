@@ -82,6 +82,7 @@ const MOMENT_TYPES = [
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  let currentStep = 'setup';
   try {
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -118,8 +119,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, alreadySeeded: true, contacts: existingDemo });
     }
 
-    let step = 'moment types';
-
+    currentStep = 'moment types';
     // ---- Moment types -------------------------------------------------------
     const momentTypeIds: Record<string, string> = {};
     for (const mt of MOMENT_TYPES) {
@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
       momentTypeIds[mt.name] = created.id;
     }
 
-    step = 'contacts';
+    currentStep = 'contacts';
 
     // ---- Contacts -----------------------------------------------------------
     const contactRows = PEOPLE.map((p, i) => ({
@@ -174,6 +174,7 @@ Deno.serve(async (req) => {
     const leaderIds = (orgMembers ?? []).map((m) => m.user_id as string);
     const leader = (i: number) => (leaderIds.length ? leaderIds[i % leaderIds.length] : null);
 
+    currentStep = 'flows and stages';
     // ---- Flows + stages -----------------------------------------------------
     const flowIds: Record<string, string> = {};
     const stageIds: Record<string, string[]> = {};
@@ -224,6 +225,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    currentStep = 'enrollments';
     // ---- Enrollments --------------------------------------------------------
     type Enrollment = { flow: string; person: number; stage: number; days: number };
     const enrollments: Enrollment[] = [
@@ -258,7 +260,7 @@ Deno.serve(async (req) => {
     const { error: enrollErr } = await admin.from('pipeline_contacts').insert(enrollmentRows);
     if (enrollErr) throw enrollErr;
 
-    step = 'groups';
+    currentStep = 'groups';
 
     // ---- Groups -------------------------------------------------------------
     const GROUPS = [
@@ -349,6 +351,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    currentStep = 'flow moments';
     // ---- Flow moments -------------------------------------------------------
     const moments: { person: number; type: string; days: number }[] = [
       { person: 0, type: 'First Visit', days: 21 },
@@ -383,6 +386,7 @@ Deno.serve(async (req) => {
       })),
     );
 
+    currentStep = 'engagement scores';
     // ---- Engagement scores (drives signals) --------------------------------
     const engagement = contacts!.map((c, i) => {
       const bucket = i % 10;
@@ -403,6 +407,7 @@ Deno.serve(async (req) => {
     });
     await admin.from('contact_engagement_scores').upsert(engagement, { onConflict: 'contact_id' });
 
+    currentStep = 'activity';
     // ---- Interactions, notes and upcoming tasks -----------------------------
     const interactions = [
       { person: 0, type: 'call', subject: 'Welcome call after first visit', days: 18 },
@@ -443,6 +448,7 @@ Deno.serve(async (req) => {
       { contact_id: id(0), content: 'First-time guest, sat with the Stroud family.', created_by_user_id: user.id, note_type: 'general' },
     ]);
 
+    currentStep = 'AI recommendations';
     // ---- Sample AI recommendations -----------------------------------------
     await admin.from('signal_agent_suggestions').insert([
       {
