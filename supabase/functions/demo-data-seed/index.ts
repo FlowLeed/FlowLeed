@@ -118,6 +118,8 @@ Deno.serve(async (req) => {
       return json({ ok: true, alreadySeeded: true, contacts: existingDemo });
     }
 
+    let step = 'moment types';
+
     // ---- Moment types -------------------------------------------------------
     const momentTypeIds: Record<string, string> = {};
     for (const mt of MOMENT_TYPES) {
@@ -139,6 +141,8 @@ Deno.serve(async (req) => {
       if (error) throw error;
       momentTypeIds[mt.name] = created.id;
     }
+
+    step = 'contacts';
 
     // ---- Contacts -----------------------------------------------------------
     const contactRows = PEOPLE.map((p, i) => ({
@@ -253,6 +257,8 @@ Deno.serve(async (req) => {
     }));
     const { error: enrollErr } = await admin.from('pipeline_contacts').insert(enrollmentRows);
     if (enrollErr) throw enrollErr;
+
+    step = 'groups';
 
     // ---- Groups -------------------------------------------------------------
     const GROUPS = [
@@ -483,6 +489,8 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error('[demo-data-seed]', e);
-    return json({ error: (e as Error).message }, 500);
+    const err = e as { message?: string; details?: string; hint?: string };
+    const detail = [err.message, err.details, err.hint].filter(Boolean).join(' — ');
+    return json({ error: `Sample data failed while creating ${currentStep}: ${detail}` }, 500);
   }
 });
