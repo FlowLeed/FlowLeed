@@ -67,18 +67,22 @@ const FLOWS = [
   },
 ];
 
+// Categories must match the flow_moment_types_category_check constraint:
+// salvation | next_step | serving | group | other
 const MOMENT_TYPES = [
-  { name: 'First Visit', category: 'attendance', icon: 'DoorOpen', color: '#3B82F6', weight: 20 },
-  { name: 'Salvation', category: 'milestone', icon: 'Sparkles', color: '#F59E0B', weight: 40 },
-  { name: 'Baptism Scheduled', category: 'milestone', icon: 'Droplets', color: '#06B6D4', weight: 30 },
-  { name: 'First Gift', category: 'giving', icon: 'Gift', color: '#10B981', weight: 25 },
-  { name: 'Joined a Group', category: 'community', icon: 'Users', color: '#8B5CF6', weight: 25 },
-  { name: 'Missed 3 Weeks', category: 'risk', icon: 'AlertTriangle', color: '#EF4444', weight: 15 },
+  { name: 'First Visit', category: 'next_step', icon: 'DoorOpen', color: '#3B82F6', weight: 20 },
+  { name: 'Salvation', category: 'salvation', icon: 'Sparkles', color: '#F59E0B', weight: 40 },
+  { name: 'Baptism Scheduled', category: 'next_step', icon: 'Droplets', color: '#06B6D4', weight: 30 },
+  { name: 'First Gift', category: 'other', icon: 'Gift', color: '#10B981', weight: 25 },
+  { name: 'Joined a Group', category: 'group', icon: 'Users', color: '#8B5CF6', weight: 25 },
+  { name: 'Missed 3 Weeks', category: 'other', icon: 'AlertTriangle', color: '#EF4444', weight: 15 },
 ];
+
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
+  let currentStep = 'setup';
   try {
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -115,6 +119,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, alreadySeeded: true, contacts: existingDemo });
     }
 
+    currentStep = 'moment types';
     // ---- Moment types -------------------------------------------------------
     const momentTypeIds: Record<string, string> = {};
     for (const mt of MOMENT_TYPES) {
@@ -136,6 +141,8 @@ Deno.serve(async (req) => {
       if (error) throw error;
       momentTypeIds[mt.name] = created.id;
     }
+
+    currentStep = 'contacts';
 
     // ---- Contacts -----------------------------------------------------------
     const contactRows = PEOPLE.map((p, i) => ({
@@ -167,6 +174,7 @@ Deno.serve(async (req) => {
     const leaderIds = (orgMembers ?? []).map((m) => m.user_id as string);
     const leader = (i: number) => (leaderIds.length ? leaderIds[i % leaderIds.length] : null);
 
+    currentStep = 'flows and stages';
     // ---- Flows + stages -----------------------------------------------------
     const flowIds: Record<string, string> = {};
     const stageIds: Record<string, string[]> = {};
@@ -217,6 +225,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    currentStep = 'enrollments';
     // ---- Enrollments --------------------------------------------------------
     type Enrollment = { flow: string; person: number; stage: number; days: number };
     const enrollments: Enrollment[] = [
@@ -250,6 +259,8 @@ Deno.serve(async (req) => {
     }));
     const { error: enrollErr } = await admin.from('pipeline_contacts').insert(enrollmentRows);
     if (enrollErr) throw enrollErr;
+
+    currentStep = 'groups';
 
     // ---- Groups -------------------------------------------------------------
     const GROUPS = [
@@ -340,6 +351,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    currentStep = 'flow moments';
     // ---- Flow moments -------------------------------------------------------
     const moments: { person: number; type: string; days: number }[] = [
       { person: 0, type: 'First Visit', days: 21 },
@@ -374,6 +386,7 @@ Deno.serve(async (req) => {
       })),
     );
 
+    currentStep = 'engagement scores';
     // ---- Engagement scores (drives signals) --------------------------------
     const engagement = contacts!.map((c, i) => {
       const bucket = i % 10;
@@ -394,6 +407,7 @@ Deno.serve(async (req) => {
     });
     await admin.from('contact_engagement_scores').upsert(engagement, { onConflict: 'contact_id' });
 
+    currentStep = 'activity';
     // ---- Interactions, notes and upcoming tasks -----------------------------
     const interactions = [
       { person: 0, type: 'call', subject: 'Welcome call after first visit', days: 18 },
@@ -434,18 +448,19 @@ Deno.serve(async (req) => {
       { contact_id: id(0), content: 'First-time guest, sat with the Stroud family.', created_by_user_id: user.id, note_type: 'general' },
     ]);
 
+    currentStep = 'AI recommendations';
     // ---- Sample AI recommendations -----------------------------------------
     await admin.from('signal_agent_suggestions').insert([
       {
         organization_id: orgId, contact_id: id(12), signal_key: 'attendance_drop',
-        signal_source: 'builtin', action_type: 'assign_follow_up',
+        signal_source: 'builtin', action_type: 'notify',
         action_payload: { demo: true, suggested_channel: 'call' },
         reasoning: 'Ivan attended 9 of the last 12 weeks but has now missed 3 in a row. A quick personal call usually re-engages people at this stage.',
         confidence: 0.86, assignee_user_id: user.id,
       },
       {
         organization_id: orgId, contact_id: id(2), signal_key: 'guest_no_followup',
-        signal_source: 'builtin', action_type: 'assign_follow_up',
+        signal_source: 'builtin', action_type: 'notify',
         action_payload: { demo: true, suggested_channel: 'text' },
         reasoning: 'Devon visited 14 days ago and is still in "New Guest" with no contact logged. Guests contacted inside 48 hours are far more likely to return.',
         confidence: 0.91, assignee_user_id: user.id,
@@ -459,7 +474,7 @@ Deno.serve(async (req) => {
       },
       {
         organization_id: orgId, contact_id: id(26), signal_key: 'first_gift_no_thanks',
-        signal_source: 'builtin', action_type: 'send_message',
+        signal_source: 'builtin', action_type: 'draft_message',
         action_payload: { demo: true, suggested_channel: 'email' },
         reasoning: 'Tessa gave for the first time 2 days ago and has not been thanked yet. A personal thank-you doubles the odds of a second gift.',
         confidence: 0.83, assignee_user_id: user.id,
@@ -480,6 +495,8 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error('[demo-data-seed]', e);
-    return json({ error: (e as Error).message }, 500);
+    const err = e as { message?: string; details?: string; hint?: string };
+    const detail = [err.message, err.details, err.hint].filter(Boolean).join(' — ');
+    return json({ error: `Sample data failed while creating ${currentStep}: ${detail}` }, 500);
   }
 });
