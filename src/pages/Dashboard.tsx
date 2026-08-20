@@ -1,14 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Header } from "@/components/layout/Header";
-import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
-import { useMemberOnboarding } from "@/hooks/useMemberOnboarding";
-import { OnboardingProgressBar } from "@/components/onboarding/OnboardingProgressBar";
-import { OnboardingChecklist, ChecklistItem } from "@/components/onboarding/OnboardingChecklist";
-import { OnboardingCelebration } from "@/components/onboarding/OnboardingCelebration";
-import { OwnerOnboardingWizard } from "@/components/onboarding/OwnerOnboardingWizard";
-import { MemberOnboardingWizard } from "@/components/onboarding/MemberOnboardingWizard";
 import { AIChatInput } from "@/components/dashboard/AIChatInput";
 import { CategoryChips, type Category } from "@/components/dashboard/CategoryChips";
 import { SuggestedPrompts } from "@/components/dashboard/SuggestedPrompts";
@@ -16,94 +8,19 @@ import { ChatThread } from "@/components/dashboard/ChatThread";
 import { useDashboardChat } from "@/hooks/useDashboardChat";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { ChatHistoryDrawer } from "@/components/dashboard/ChatHistoryDrawer";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PcoPersonalConnectPrompt } from "@/components/dashboard/PcoPersonalConnectPrompt";
-
+import { DemoHighlights } from "@/components/demo/DemoHighlights";
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { profile, organization } = useProfile();
+  const { profile } = useProfile();
   const { messages, isLoading, sendMessage, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
   const chatHistory = useChatHistory();
   const [historyOpen, setHistoryOpen] = useState(false);
 
   // Category state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-
-  // Onboarding state (preserved from original)
-  const [isOwner, setIsOwner] = useState(false);
-  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [showOwnerWizard, setShowOwnerWizard] = useState(false);
-  const [showMemberWizard, setShowMemberWizard] = useState(false);
-
-  const ownerOnboarding = useOrgOwnerOnboarding(organization?.id);
-  const memberOnboarding = useMemberOnboarding(user?.id);
-
-  // Check if user is organization owner (preserved)
-  useEffect(() => {
-    const checkRole = async () => {
-      if (!user?.id || !organization?.id) return;
-
-      const { data } = await supabase
-        .from("organization_members")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("organization_id", organization.id)
-        .single();
-
-      const userIsOwner = data?.role === "owner";
-      setIsOwner(userIsOwner);
-
-      if (userIsOwner && !ownerOnboarding.progress.pco_lists_mapped && !ownerOnboarding.isLoading) {
-        const { data: integration } = await supabase
-          .from("integrations")
-          .select("id")
-          .eq("organization_id", organization.id)
-          .eq("service_name", "planning_center")
-          .single();
-
-        if (integration) {
-          const { data: mappings } = await supabase
-            .from("integration_list_mappings")
-            .select("id")
-            .eq("integration_id", integration.id)
-            .limit(1);
-
-          if (mappings && mappings.length > 0) {
-            ownerOnboarding.updateProgress("pco_lists_mapped", true);
-          }
-        }
-      }
-
-      setIsInitialLoadComplete(true);
-
-      const hasSeenWizard = localStorage.getItem(`wizard-seen-${user.id}`);
-      if (!hasSeenWizard) {
-        if (userIsOwner && !ownerOnboarding.isCompleted && !ownerOnboarding.isLoading) {
-          setShowOwnerWizard(true);
-          localStorage.setItem(`wizard-seen-${user.id}`, "true");
-        } else if (!userIsOwner && !memberOnboarding.isCompleted && !memberOnboarding.isDismissed && !memberOnboarding.isLoading) {
-          setShowMemberWizard(true);
-          localStorage.setItem(`wizard-seen-${user.id}`, "true");
-        }
-      }
-    };
-
-    checkRole();
-  }, [user?.id, organization?.id, ownerOnboarding.isCompleted, ownerOnboarding.isLoading, memberOnboarding.isCompleted, memberOnboarding.isDismissed, memberOnboarding.isLoading]);
-
-  useEffect(() => {
-    if (isOwner && ownerOnboarding.completedSteps === ownerOnboarding.totalSteps && !ownerOnboarding.isCompleted) {
-      setShowCelebration(true);
-    } else if (!isOwner && memberOnboarding.completedSteps === memberOnboarding.totalSteps && !memberOnboarding.isCompleted) {
-      setShowCelebration(true);
-    }
-  }, [isOwner, ownerOnboarding.completedSteps, ownerOnboarding.totalSteps, ownerOnboarding.isCompleted, memberOnboarding.completedSteps, memberOnboarding.totalSteps, memberOnboarding.isCompleted]);
 
   const handlePromptSelect = (prompt: string) => {
     setSelectedCategory(null);
@@ -124,25 +41,6 @@ const Dashboard = () => {
     chatHistory.fetchConversations();
   };
 
-  // Owner checklist items (preserved)
-  const ownerChecklistItems: ChecklistItem[] = [
-    { id: "first_flow_created", title: "Create Your First Flow", description: "Set up a flow to track contacts through different stages", completed: ownerOnboarding.progress.first_flow_created, action: { label: "Create Flow", onClick: () => navigate("/") } },
-    { id: "pco_connected", title: "Connect Planning Center", description: "Sync your PCO lists and contacts automatically", completed: ownerOnboarding.progress.pco_connected, action: { label: "Connect", onClick: () => navigate("/integrations") } },
-    { id: "pco_lists_mapped", title: "Map PCO Lists to Flows", description: "Link your lists to the right flows for automatic sync", completed: ownerOnboarding.progress.pco_lists_mapped, action: { label: "Map Lists", onClick: () => navigate("/integrations") } },
-    { id: "team_members_invited", title: "Invite Team Members", description: "Add staff and volunteers to collaborate", completed: ownerOnboarding.progress.team_members_invited, action: { label: "Invite", onClick: () => navigate("/team") } },
-    { id: "flow_owners_assigned", title: "Assign Flow Owners", description: "Designate team members to manage specific flows", completed: ownerOnboarding.progress.flow_owners_assigned, action: { label: "Assign", onClick: () => navigate("/") } },
-  ];
-
-  const memberChecklistItems: ChecklistItem[] = [
-    { id: "profile_completed", title: "Complete Your Profile", description: "Add your name and photo so your team recognizes you", completed: memberOnboarding.progress.profile_completed, action: { label: "Update Profile", onClick: () => navigate("/profile") } },
-    { id: "flows_reviewed", title: "Review Your Flows", description: "See which ministry areas you'll help manage", completed: memberOnboarding.progress.flows_reviewed },
-    { id: "first_interaction", title: "Explore a People", description: "Click a card to view details and next steps for that person.", completed: memberOnboarding.progress.first_interaction },
-  ];
-
-  const shouldShowOnboarding = isInitialLoadComplete && (isOwner
-    ? !ownerOnboarding.isCompleted && !ownerOnboarding.isLoading
-    : !memberOnboarding.isCompleted && !memberOnboarding.isDismissed && !memberOnboarding.isLoading);
-
   const hasMessages = messages.length > 0;
 
   return (
@@ -151,26 +49,8 @@ const Dashboard = () => {
 
       <PcoPersonalConnectPrompt />
 
-      {shouldShowOnboarding && (
-        <OnboardingProgressBar
-          currentStep={isOwner ? ownerOnboarding.currentStep : memberOnboarding.currentStep}
-          totalSteps={isOwner ? ownerOnboarding.totalSteps : memberOnboarding.totalSteps}
-          completedSteps={isOwner ? ownerOnboarding.completedSteps : memberOnboarding.completedSteps}
-          onDismiss={!isOwner ? memberOnboarding.dismissOnboarding : undefined}
-        />
-      )}
-
       <div className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-4 md:py-6 space-y-6">
-          {/* Onboarding Checklist */}
-          {shouldShowOnboarding && (
-            <OnboardingChecklist
-              title={isOwner ? "Get Your Organization Ready" : "Get Started with FlowLeed"}
-              description={isOwner ? "Complete these steps to set up your organization" : "Complete these steps to start serving your community"}
-              checklist={isOwner ? ownerChecklistItems : memberChecklistItems}
-            />
-          )}
-
           {/* AI Hero Section - shown when no messages */}
           {!hasMessages && (
             <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6 relative">
@@ -207,6 +87,9 @@ const Dashboard = () => {
             />
           )}
 
+          {/* Sample-data highlights: "here are people who may need attention today" */}
+          {!hasMessages && <DemoHighlights />}
+
           {/* Category Chips - hidden when streaming */}
           {!hasMessages && !isLoading && (
             <CategoryChips selected={selectedCategory} onSelect={setSelectedCategory} />
@@ -236,25 +119,6 @@ const Dashboard = () => {
             hasMessages={true}
           />
         </div>
-      )}
-
-      {/* Onboarding Wizards (preserved) */}
-      <OwnerOnboardingWizard open={showOwnerWizard} onOpenChange={setShowOwnerWizard} progress={ownerOnboarding.progress} />
-      <MemberOnboardingWizard open={showMemberWizard} onOpenChange={setShowMemberWizard} progress={memberOnboarding.progress} />
-
-      {showCelebration && (
-        <OnboardingCelebration
-          message={isOwner ? "You're ready to flow forward! 🌊" : "You're Ready to Serve! 🎉"}
-          ctaLabel={isOwner ? "Start Managing Contacts" : "View My Flows"}
-          onComplete={() => {
-            setShowCelebration(false);
-            if (isOwner) {
-              ownerOnboarding.completeOnboarding();
-            } else {
-              memberOnboarding.completeOnboarding();
-            }
-          }}
-        />
       )}
 
       {/* Chat History Drawer */}
