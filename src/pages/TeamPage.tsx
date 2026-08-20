@@ -568,6 +568,8 @@ const TeamPage = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <SampleDataCard />
           </TabsContent>
 
           <TabsContent value="phone-numbers" className="space-y-6 mt-6">
