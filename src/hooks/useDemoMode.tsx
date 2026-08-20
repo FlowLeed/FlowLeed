@@ -102,15 +102,23 @@ export function useDemoMode() {
       toast({ title: "Couldn't remove sample data", description: e.message, variant: "destructive" }),
   });
 
-  // Auto-seed a sample church for a brand-new, empty organization.
+  // Auto-seed a sample church for a brand-new, empty organization only.
+  // Skip orgs that already removed sample data, connected Planning Center, or imported a CSV.
   useEffect(() => {
     if (!orgId || isLoading || !data || autoSeedAttempted.current) return;
     const isBrandNew =
-      data.demoContacts === 0 && data.realContacts === 0 && !data.seededAt && !data.clearedAt;
+      data.demoContacts === 0 &&
+      data.realContacts === 0 &&
+      !data.seededAt &&
+      !data.clearedAt &&
+      !data.hasPcoIntegration &&
+      !data.hasImports;
     if (!isBrandNew) return;
     autoSeedAttempted.current = true;
     seed.mutate();
   }, [orgId, isLoading, data]);
+
+  const hasOwnData = !!data && (data.hasPcoIntegration || data.hasImports || data.realContacts > 0);
 
   return {
     isLoading,
@@ -118,9 +126,15 @@ export function useDemoMode() {
     demoContacts: data?.demoContacts ?? 0,
     realContacts: data?.realContacts ?? 0,
     wasCleared: !!data?.clearedAt,
+    hasPcoIntegration: !!data?.hasPcoIntegration,
+    hasImports: !!data?.hasImports,
+    hasOwnData,
+    // Only offer sample data to orgs that never removed it and have no data of their own.
+    canOfferDemo: !!data && !data.clearedAt && !hasOwnData,
     seedDemoData: seed.mutateAsync,
     clearDemoData: clear.mutateAsync,
     isSeeding: seed.isPending,
     isClearing: clear.isPending,
   };
+
 }
