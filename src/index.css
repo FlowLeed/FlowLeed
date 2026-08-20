@@ -165,6 +165,7 @@
 
 /* Custom scrollbar for sidebar */
 .sidebar-scroll::-webkit-scrollbar {
+  display: block;
   width: 8px;
 }
 
