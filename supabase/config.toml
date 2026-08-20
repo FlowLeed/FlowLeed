@@ -143,3 +143,9 @@ verify_jwt = true
 
 [functions.contacts-csv-import]
 verify_jwt = false
+
+[functions.demo-data-seed]
+verify_jwt = false
+
+[functions.demo-data-clear]
+verify_jwt = false
