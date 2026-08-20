@@ -16,6 +16,7 @@ When a brand-new org is created, seed sample data automatically (and offer a man
 
 - **30 people** with realistic names, emails, phones, campuses, and staggered created dates
 - **10 new guests** in a Guest Follow-Up flow, spread across its stages
+- **3 groups** (a men's small group, a young adults group, a Sunday serve team) with demo members, meeting times, and a little attendance history
 - **10 people** in Pastoral Care, spread across stages with notes
 - **2 baptism candidates** in a Baptism flow
 - **5 people** in First Time Givers
