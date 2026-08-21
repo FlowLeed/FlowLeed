@@ -97,7 +97,6 @@ serve(async (req) => {
     const title = result.choices?.[0]?.message?.content?.trim() || "Untitled Chat";
 
     // Update the conversation title in DB
-    const adminClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     await adminClient
       .from("chat_conversations")
       .update({ title })
