@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/hooks/use-toast";
+
 
 interface DemoStatus {
   demoContacts: number;
