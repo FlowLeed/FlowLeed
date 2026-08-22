@@ -175,33 +175,16 @@ const GroupDetailPage = () => {
 
         {/* Hero Banner */}
         <Card className="overflow-hidden">
-          <div className="relative w-full aspect-video bg-muted overflow-hidden">
-            {group.image_url ? (
-              <>
-                <img
-                  src={group.image_url}
-                  alt={group.name}
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50"
-                />
-                <img
-                  src={group.image_url}
-                  alt={group.name}
-                  className="relative z-10 w-full h-full object-contain"
-                />
-              </>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <span className="text-5xl font-semibold text-muted-foreground">
-                  {group.name.trim().split(/\s+/).length >= 2
-                    ? (group.name.trim().split(/\s+/)[0][0] + group.name.trim().split(/\s+/)[1][0]).toUpperCase()
-                    : group.name.slice(0, 2).toUpperCase()}
-                </span>
-              </div>
-            )}
-          </div>
           <div className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+              <div className="shrink-0">
+                <GroupAvatar
+                  name={group.name}
+                  imageUrl={group.image_url}
+                  size="lg"
+                  className="rounded-xl"
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <Badge variant="secondary" className="mb-2">
                   {group.pco_group_type_name?.split(":")[0].trim() ||
@@ -225,7 +208,7 @@ const GroupDetailPage = () => {
                   </div>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <div className="flex flex-wrap items-start gap-2 shrink-0">
                 {group.allow_public_signup && group.public_signup_token && (
                   <Button variant="outline" size="icon" onClick={copySignupLink} title="Share signup link">
                     {linkCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
@@ -248,7 +231,6 @@ const GroupDetailPage = () => {
               </div>
             </div>
           </div>
-
         </Card>
 
         {/* Group Info Cards */}
