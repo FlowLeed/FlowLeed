@@ -27,7 +27,9 @@ export function useDemoMode() {
   const { organization } = useProfile();
   const orgId = organization?.id;
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const autoSeedAttempted = useRef(false);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["demo-status", orgId],
