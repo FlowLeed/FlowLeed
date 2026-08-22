@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/hooks/use-toast";
+
 
 interface DemoStatus {
   demoContacts: number;
@@ -25,7 +27,9 @@ export function useDemoMode() {
   const { organization } = useProfile();
   const orgId = organization?.id;
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const autoSeedAttempted = useRef(false);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ["demo-status", orgId],
@@ -84,8 +88,26 @@ export function useDemoMode() {
       if ((res as any)?.error) throw new Error((res as any).error);
       return res;
     },
-    onSuccess: () => invalidateAll(),
+    onSuccess: async () => {
+      invalidateAll();
+      // Land the user on a flow that actually has sample people in it, so the
+      // banner never shows above an empty board.
+      if (!orgId) return;
+      const { data: demoFlow } = await supabase
+        .from("pipelines")
+        .select("id")
+        .eq("organization_id", orgId)
+        .eq("is_demo", true)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      const path = window.location.pathname;
+      if (demoFlow?.id && (path === "/" || path.startsWith("/flows/"))) {
+        navigate(`/flows/${demoFlow.id}`, { replace: true });
+      }
+    },
   });
+
 
   const clear = useMutation({
     mutationFn: async () => {
