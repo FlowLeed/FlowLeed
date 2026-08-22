@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 interface GroupAvatarProps {
   name: string;
   imageUrl?: string | null;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
   className?: string;
 }
 
@@ -12,6 +12,7 @@ const sizeClasses = {
   md: "h-12 w-12 text-sm",
   lg: "h-16 w-16 text-lg",
   xl: "h-24 w-24 text-2xl",
+  "2xl": "h-48 w-48 sm:h-56 sm:w-56 md:h-64 md:w-64 text-5xl",
 };
 
 const getInitials = (name: string): string => {
