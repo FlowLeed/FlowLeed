@@ -175,45 +175,58 @@ const GroupDetailPage = () => {
 
         {/* Hero Banner */}
         <Card className="overflow-hidden">
-          <div className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-              <div className="shrink-0">
-                <GroupAvatar
-                  name={group.name}
-                  imageUrl={group.image_url}
-                  size="lg"
-                  className="rounded-xl"
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <Badge variant="secondary" className="mb-2">
-                  {group.pco_group_type_name?.split(":")[0].trim() ||
-                    groupTypeLabels[group.group_type]}
-                </Badge>
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight break-words">
-                  {group.name}
-                </h1>
-                {group.description && (
-                  <p className="text-sm sm:text-base text-muted-foreground mt-2 mb-2 whitespace-pre-line break-words">
-                    {group.description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim()}
-                  </p>
-                )}
-                {leaderProfile && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={leaderProfile.avatar_url || undefined} />
-                      <AvatarFallback className="text-[10px]">{leaderProfile.full_name?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm text-muted-foreground">Led by {leaderProfile.full_name}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-wrap items-start gap-2 shrink-0">
-                {group.allow_public_signup && group.public_signup_token && (
-                  <Button variant="outline" size="icon" onClick={copySignupLink} title="Share signup link">
-                    {linkCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4 sm:p-6">
+            {/* Group image */}
+            <div className="md:col-span-5 flex items-center justify-center">
+              <GroupAvatar
+                name={group.name}
+                imageUrl={group.image_url}
+                size="2xl"
+                className="rounded-2xl shadow-md"
+              />
+            </div>
+
+            {/* Group details */}
+            <div className="md:col-span-7 flex flex-col justify-center">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <Badge variant="secondary" className="mb-2">
+                    {group.pco_group_type_name?.split(":")[0].trim() ||
+                      groupTypeLabels[group.group_type]}
+                  </Badge>
+                  <h1 className="text-2xl sm:text-3xl font-bold tracking-tight break-words">
+                    {group.name}
+                  </h1>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {group.allow_public_signup && group.public_signup_token && (
+                    <Button variant="outline" size="icon" onClick={copySignupLink} title="Share signup link">
+                      {linkCopied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
+                    </Button>
+                  )}
+                  <Button variant="outline" size="icon" onClick={() => setEditGroupOpen(true)} title="Edit group">
+                    <Settings className="h-4 w-4" />
                   </Button>
-                )}
+                </div>
+              </div>
+
+              {group.description && (
+                <p className="text-sm sm:text-base text-muted-foreground mt-3 line-clamp-4 break-words">
+                  {group.description.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').trim()}
+                </p>
+              )}
+
+              {leaderProfile && (
+                <div className="flex items-center gap-2 mt-3">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={leaderProfile.avatar_url || undefined} />
+                    <AvatarFallback className="text-[10px]">{leaderProfile.full_name?.[0]}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm text-muted-foreground">Led by {leaderProfile.full_name}</span>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2 mt-4">
                 {group.allow_public_signup && (
                   <Button variant="outline" size="sm" onClick={() => setSignupRequestsOpen(true)} className="relative">
                     <UserCheck className="h-4 w-4 mr-2" />
@@ -225,9 +238,6 @@ const GroupDetailPage = () => {
                     )}
                   </Button>
                 )}
-                <Button variant="outline" size="icon" onClick={() => setEditGroupOpen(true)} title="Edit group">
-                  <Settings className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </div>
@@ -235,25 +245,21 @@ const GroupDetailPage = () => {
 
         {/* Group Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Members</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+          <Card className="flex flex-col justify-center">
+            <CardContent className="py-5">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Members</p>
+              <div className="text-3xl font-bold mt-1">
                 {group.member_count || 0}
-                {group.capacity && <span className="text-sm font-normal text-muted-foreground"> / {group.capacity}</span>}
+                {group.capacity && <span className="text-sm font-normal text-muted-foreground ml-1">/ {group.capacity}</span>}
               </div>
             </CardContent>
           </Card>
 
           {group.meeting_day && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Meeting Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg font-semibold">
+            <Card className="flex flex-col justify-center">
+              <CardContent className="py-5">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Meeting Time</p>
+                <div className="text-lg font-semibold mt-1">
                   {group.meeting_day}
                   {group.meeting_time && <span className="text-sm font-normal"> at {group.meeting_time}</span>}
                 </div>
@@ -265,12 +271,10 @@ const GroupDetailPage = () => {
           )}
 
           {group.location && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium">Location</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-semibold">{group.location}</p>
+            <Card className="flex flex-col justify-center">
+              <CardContent className="py-5">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Location</p>
+                <p className="text-lg font-semibold mt-1 break-words">{group.location}</p>
               </CardContent>
             </Card>
           )}
