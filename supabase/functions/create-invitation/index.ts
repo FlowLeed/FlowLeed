@@ -29,21 +29,30 @@ serve(async (req) => {
     // Create Supabase client with auth
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const authHeader = req.headers.get('Authorization')!
-    
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const jwt = authHeader.replace(/^Bearer\s+/i, '').trim()
+
+    if (!jwt) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      )
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      global: { headers: { Authorization: authHeader } }
+      auth: { autoRefreshToken: false, persistSession: false }
     })
 
-    // Verify user is authenticated
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    // Verify user is authenticated (validate the caller's JWT explicitly)
+    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt)
     if (authError || !user) {
-      console.error('Authentication failed:', authError)
+      console.error('Authentication failed:', authError?.message)
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       )
     }
+
 
     console.log('Authenticated user:', user.id)
 
