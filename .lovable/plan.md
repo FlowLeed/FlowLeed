@@ -1,38 +1,37 @@
-# The Promise Center: missing Custom Field Mappings
+# Restore The Promise Center's Custom Field Mappings
 
-## What happened
+## Why they're gone
 
-This is a system bug, not something a user deleted intentionally.
+Disconnecting Planning Center deleted the old integration record, and the field mappings are attached to that record with a delete-cascade rule, so they were removed with it. Reconnecting created a fresh integration record with no mappings.
 
-The Promise Center's Planning Center integration record was **replaced on Aug 19, 2026 at 18:57 UTC** (during the Planning Center OAuth reconnect work). Custom Field Mappings are stored with a foreign key to the integration record that uses `ON DELETE CASCADE`, so when the old integration row disappeared, **all of the org's field-to-moment mappings were silently deleted with it**.
+## What gets restored
 
-Supporting evidence from the database:
-- The org currently has 0 rows of PCO moment mappings, but 11,000+ Flow Moments with `source_system = 'pco'` that were created by those mappings.
-- The very last PCO-generated moment was created Aug 19, 2026 at 17:14 UTC — roughly 90 minutes before the integration was recreated. Nothing has been generated since.
-- The only org that still has mappings is one whose integration row dates from Nov 2025 and was never reconnected.
-- Two other orgs reconnected on Aug 19 and Aug 21 also have zero mappings, so this affects every org that reconnected Planning Center.
+Rebuild the mappings from the 11,000+ historical Planning Center Flow Moments still in the database. Each one recorded the source field ID, field label, tab name, matched value, and target Moment Type — enough to recreate each rule.
 
-## The good news
+Reconstructed rules (one row per field/value condition), attached to the current integration:
 
-The deleted mappings can be reconstructed. Every generated Flow Moment stored the source field in its metadata: PCO field definition ID (`source_reference`), field label, tab name, matched value, and the target Moment Type. That is enough to rebuild the mapping rows.
+| Moment Type | PCO field | Tab | Condition |
+| --- | --- | --- | --- |
+| Fresh Start / Recommitment | I have made a decision: | Fresh Start | is any of "To follow Jesus for the first time." / "To make a Fresh Start with Jesus" |
+| Join | Joined the Church | Join the Church | is true |
+| Group Leader | Approved | Group Leader Orientation | is true |
+| Freedom | Conference Date | FREEDOM | has any value |
+| Contributor | Given Last 45 Days | Stewardship | is true |
+| Dream Team / Serving | Team | Dream Team | has any value |
+| Welcome Party Attended | Attended Welcome Party | Welcome Party | has any value |
+| others found in history | — | — | derived the same way |
 
-## Plan
+Before writing anything, the full derived list (every field + condition, including the long tail beyond the rows above) is compiled from the moment history and shown for confirmation, since value-level conditions are inferred: fields whose recorded values are only true/checked become "is true", fields with many distinct values (dates, team names) become "has any value", and fields with a small fixed set of values become an equals/any-of condition.
 
-1. **Stop the bleeding (schema fix)**
-   Change the mappings' link to the integration so a reconnect no longer wipes them: keep the mapping scoped to the organization and let the integration reference go null instead of cascading. On reconnect, mappings get re-pointed at the new integration record.
+## How
 
-2. **Restore The Promise Center's mappings**
-   Rebuild mapping rows from the historical Flow Moments: group by PCO field definition ID + tab name + moment type, derive the trigger condition from the observed values (for example "Joined the Church = true", "I have made a decision is any of [To follow Jesus for the first time, To make a Fresh Start with Jesus]"), and attach them to the current integration. Present the reconstructed set for review before writing it, since value-level conditions are inferred and may need tightening.
+1. Query the full set of distinct (field ID, field label, tab name, moment type, observed values) combinations from the org's PCO-sourced Flow Moments.
+2. Derive the operator per field using the rules above.
+3. Insert the mapping rows for The Promise Center, pointed at its current Planning Center integration, marked active.
+4. Verify in Integrations → Planning Center → Advanced Settings that each rule appears with the right moment type, conditions, and AND/OR combinator, and adjust anything that looks off.
 
-3. **Restore the other affected orgs**
-   Apply the same reconstruction for the two other orgs that reconnected on Aug 19/21, where historical moments exist.
+No schema changes, no changes to existing Flow Moments. The unique constraint on (organization, field, moment type) makes the insert safe to re-run.
 
-4. **Reconnect flow hardening**
-   Where the code deletes and re-inserts the integration on reconnect, switch to an update-in-place/upsert keyed on organization + service so dependent configuration survives. Audit other tables that hang off `integrations` with cascade deletes (list mappings, sync settings) for the same exposure and fix them together.
+## Note
 
-## Technical notes
-
-- Affected table: `pco_moment_mappings` (`integration_id` FK → `integrations`, currently `ON DELETE CASCADE`).
-- Reconstruction source: `flow_moments.metadata` (`pco_field_label`, `pco_field_value`, `tab_name`) plus `source_reference` (PCO field definition ID) joined to `flow_moment_types`.
-- Schema changes go through a migration; no destructive statements on existing moments.
-- Unique constraint `(organization_id, pco_source_identifier, flow_moment_type_id)` makes the restore idempotent.
+Until the cascade behavior is changed, disconnecting Planning Center again will wipe these mappings a second time. That fix isn't part of this restore — worth scheduling separately.
