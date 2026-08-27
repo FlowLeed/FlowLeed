@@ -84,6 +84,10 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading…
             </div>
+          ) : error ? (
+            <p className="text-sm text-muted-foreground py-2">
+              Couldn't load Planning Center fields right now. Try again in a moment.
+            </p>
           ) : !hasSelection ? (
             <div className="flex flex-col items-start gap-3 py-2">
               <p className="text-sm text-muted-foreground">
@@ -99,10 +103,16 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
                 </p>
               )}
             </div>
+          ) : personMissing ? (
+            <p className="text-sm text-muted-foreground py-2">
+              This person no longer exists in Planning Center (deleted or merged), so no field values
+              could be loaded.
+            </p>
           ) : visible.length === 0 ? (
             <p className="text-sm text-muted-foreground py-2">
               No values for your selected fields.
             </p>
+
           ) : (
             <dl className="divide-y">
               {visible.map(f => {
