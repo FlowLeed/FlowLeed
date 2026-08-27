@@ -159,9 +159,16 @@ Deno.serve(async (req) => {
       if (defId) values[defId] = v.attributes?.value ?? '';
     }
 
-    return new Response(JSON.stringify({ fields, tabs, values }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        fields,
+        tabs,
+        values,
+        personMissing: !!(valuesAll as any).missing || !contact.pc_person_id,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (err: any) {
     console.error(err);
     return new Response(JSON.stringify({ error: err.message }), {
