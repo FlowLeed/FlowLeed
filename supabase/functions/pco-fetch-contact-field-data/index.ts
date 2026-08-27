@@ -88,7 +88,10 @@ Deno.serve(async (req) => {
     };
 
     // Paginated fetch helper
-    async function fetchAll(initialUrl: string): Promise<{ data: any[]; included: any[] }> {
+    async function fetchAll(
+      initialUrl: string,
+      opts: { tolerate404?: boolean } = {}
+    ): Promise<{ data: any[]; included: any[]; missing?: boolean }> {
       let url: string | null = initialUrl;
       const allData: any[] = [];
       const allIncluded: any[] = [];
@@ -98,6 +101,9 @@ Deno.serve(async (req) => {
         if (!res.ok) {
           const err = await res.text();
           console.error('PCO fetch error', url, err);
+          if (res.status === 404 && opts.tolerate404) {
+            return { data: allData, included: allIncluded, missing: true };
+          }
           throw new Error(`PCO fetch failed: ${res.status}`);
         }
         const json: any = await res.json();
@@ -112,9 +118,13 @@ Deno.serve(async (req) => {
     const [defsAll, valuesAll] = await Promise.all([
       fetchAll('https://api.planningcenteronline.com/people/v2/field_definitions?include=tab&per_page=100'),
       contact.pc_person_id
-        ? fetchAll(`https://api.planningcenteronline.com/people/v2/people/${contact.pc_person_id}/field_data?per_page=100`)
-        : Promise.resolve({ data: [], included: [] }),
+        ? fetchAll(
+            `https://api.planningcenteronline.com/people/v2/people/${contact.pc_person_id}/field_data?per_page=100`,
+            { tolerate404: true }
+          )
+        : Promise.resolve({ data: [], included: [], missing: !contact.pc_person_id }),
     ]);
+
 
     const tabMap = new Map<string, string>();
     for (const inc of defsAll.included) {
@@ -149,9 +159,16 @@ Deno.serve(async (req) => {
       if (defId) values[defId] = v.attributes?.value ?? '';
     }
 
-    return new Response(JSON.stringify({ fields, tabs, values }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        fields,
+        tabs,
+        values,
+        personMissing: !!(valuesAll as any).missing || !contact.pc_person_id,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (err: any) {
     console.error(err);
     return new Response(JSON.stringify({ error: err.message }), {

@@ -18,7 +18,9 @@ interface ContactPcoFieldData {
   fields: PcoFieldDef[];
   tabs: PcoTabGroup[];
   values: Record<string, string>;
+  personMissing?: boolean;
 }
+
 
 export function useContactPcoFieldData(contactId?: string, enabled = true) {
   return useQuery({
