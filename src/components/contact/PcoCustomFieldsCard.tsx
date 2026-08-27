@@ -19,11 +19,13 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
     if (!prefsLoading) setIsOpen(preferences.open_by_default);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefsLoading, preferences.open_by_default, contactId]);
-  const { data, isLoading: dataLoading } = useContactPcoFieldData(contactId, !prefsLoading);
+  const { data, isLoading: dataLoading, error } = useContactPcoFieldData(contactId, !prefsLoading);
 
   const fields = data?.fields ?? [];
   const tabs = data?.tabs ?? [];
   const values = data?.values ?? {};
+  const personMissing = data?.personMissing ?? false;
+
 
   const fieldMap = useMemo(() => {
     const m = new Map<string, typeof fields[number]>();
