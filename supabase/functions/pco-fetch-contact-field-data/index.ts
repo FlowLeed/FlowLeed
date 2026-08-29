@@ -164,7 +164,8 @@ Deno.serve(async (req) => {
         fields,
         tabs,
         values,
-        personMissing: !!(valuesAll as any).missing || !contact.pc_person_id,
+        personMissing: !!contact.pc_person_id && !!(valuesAll as any).missing,
+        notLinked: !contact.pc_person_id,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
