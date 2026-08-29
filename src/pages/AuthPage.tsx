@@ -60,58 +60,14 @@ const AuthPage = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Debounced slug check
-  const checkSlugAvailability = useCallback(async (name: string) => {
-    if (!name || name.trim().length < 2) {
-      setSlugStatus('idle');
-      setSlugSuggestions([]);
-      setCurrentSlug('');
-      return;
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    setError('');
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
     }
-
-    setSlugStatus('checking');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('check-org-slug', {
-        body: { organizationName: name.trim() },
-      });
-
-      if (error) {
-        console.error('Error checking slug:', error);
-        setSlugStatus('idle');
-        return;
-      }
-
-      setCurrentSlug(data.slug);
-      if (data.available) {
-        setSlugStatus('available');
-        setSlugSuggestions([]);
-      } else {
-        setSlugStatus('taken');
-        setSlugSuggestions(data.suggestions || []);
-      }
-    } catch (err) {
-      console.error('Error checking slug:', err);
-      setSlugStatus('idle');
-    }
-  }, []);
-
-  // Debounce organization name changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      checkSlugAvailability(organizationName);
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [organizationName, checkSlugAvailability]);
-
-  const handleSuggestionClick = (suggestion: string) => {
-    // Convert slug back to readable name (e.g., "my-church-1" -> "My Church 1")
-    const readableName = suggestion
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-    setOrganizationName(readableName);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -126,87 +82,38 @@ const AuthPage = () => {
 
     if (error) {
       setError(error.message);
-      setNeedsVerification(error.code === 'email_not_verified');
     } else {
-      setNeedsVerification(false);
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
       });
       navigate('/');
     }
-    
+
     setLoading(false);
-  };
-
-  const [needsVerification, setNeedsVerification] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [resendLoading, setResendLoading] = useState(false);
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
-
-  const handleResendVerification = async () => {
-    if (!email || resendCooldown > 0 || resendLoading) return;
-    setResendLoading(true);
-    try {
-      const { error } = await supabase.functions.invoke('send-signup-confirmation', {
-        body: { email, resend: true },
-      });
-      if (error) throw error;
-      toast({
-        title: 'Verification email sent',
-        description: `We sent a fresh verification link to ${email}.`,
-      });
-      setResendCooldown(60);
-    } catch (err: any) {
-      toast({
-        title: 'Could not send email',
-        description: err?.message ?? 'Please try again in a moment.',
-        variant: 'destructive',
-      });
-    } finally {
-      setResendLoading(false);
-    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Prevent submission if slug is taken
-    if (slugStatus === 'taken') {
-      setError('Please choose an available organization name before continuing.');
-      return;
-    }
-    
     setLoading(true);
     setError('');
 
-    const { error } = await signUp(email, password, fullName, organizationName);
-    
+    const { error } = await signUp(email, password);
+
     if (error) {
-      // Check if it's a duplicate organization name error
-      const errorMessage = error.message?.toLowerCase() || '';
-      if (errorMessage.includes('duplicate') || 
-          errorMessage.includes('organizations_slug_key') ||
-          errorMessage.includes('unique constraint')) {
-        setError('An organization with this name already exists. Please choose a different organization name.');
-      } else {
-        setError(error.message);
-      }
-    } else {
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
-      });
-      // Stay on auth page to show verification message
+      setError(error.message);
+      setLoading(false);
+      return;
     }
-    
+
+    toast({
+      title: 'Welcome to Flowleed!',
+      description: 'Your account is ready.',
+    });
+    navigate('/');
     setLoading(false);
   };
+
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
