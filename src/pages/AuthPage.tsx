@@ -10,17 +10,15 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase, setRememberMe, getRememberMe } from '@/integrations/supabase/client';
 import { Checkbox } from '@/components/ui/checkbox';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
-import { Check, AlertTriangle, Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Loader2 } from 'lucide-react';
 
-type SlugStatus = 'idle' | 'checking' | 'available' | 'taken';
+const LEGAL_URL = 'http://flowleed.com/legal';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [isResetMode, setIsResetMode] = useState(false);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -31,13 +29,8 @@ const AuthPage = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberMe, setRememberMeState] = useState<boolean>(() => getRememberMe());
-  
-  // Slug availability state
-  const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle');
-  const [slugSuggestions, setSlugSuggestions] = useState<string[]>([]);
-  const [currentSlug, setCurrentSlug] = useState('');
-  
-  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
+
+  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
