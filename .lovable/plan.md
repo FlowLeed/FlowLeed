@@ -13,7 +13,7 @@ Make account creation a single step: enter email and password, get signed in imm
 - "By continuing, you agree to our Terms of Use and Privacy Policy" (both link to http://flowleed.com/legal, new tab)
 - "Already have an account? Sign in"
 
-Removed from signup: full name, church/organization name, the slug availability checker, and the "check your email to verify" step.
+Removed from signup: full name and the "check your email to verify" step. The church/organization name field and its slug availability checker move to the Profile page, where the user is prompted to rename their auto-created organization.
 
 **After signup:** the user is signed in right away and redirected to the dashboard (Flowleed AI). Their organization is auto-created from their email address; they can rename it later in Organization Settings.
 
