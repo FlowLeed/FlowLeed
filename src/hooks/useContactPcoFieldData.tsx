@@ -19,6 +19,7 @@ interface ContactPcoFieldData {
   tabs: PcoTabGroup[];
   values: Record<string, string>;
   personMissing?: boolean;
+  notLinked?: boolean;
 }
 
 

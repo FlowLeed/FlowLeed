@@ -25,6 +25,7 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
   const tabs = data?.tabs ?? [];
   const values = data?.values ?? {};
   const personMissing = data?.personMissing ?? false;
+  const notLinked = data?.notLinked ?? false;
 
 
   const fieldMap = useMemo(() => {
