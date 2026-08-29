@@ -23,6 +23,7 @@ import { SecuritySettings } from "@/components/profile/SecuritySettings";
 import { NotificationSettings } from "@/components/profile/NotificationSettings";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PcoPersonalConnection } from "@/components/profile/PcoPersonalConnection";
+import { OrganizationNameCard } from "@/components/profile/OrganizationNameCard";
 const ProfilePage = () => {
   const navigate = useNavigate();
   const {
@@ -252,6 +253,9 @@ const ProfilePage = () => {
       />
 
       <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6 pb-12">
+        {/* Church / Organization naming */}
+        <OrganizationNameCard organization={organization as any} />
+
         {/* Personal Information Card */}
         <Card>
           <CardHeader>

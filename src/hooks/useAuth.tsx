@@ -8,7 +8,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName: string, organizationName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName?: string, organizationName?: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (password: string) => Promise<{ error: any }>;
@@ -102,47 +103,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) return { error };
-
-    // Gate login on our own verification flag so we don't rely on Supabase's
-    // built-in "Confirm email" setting. If a user was created before their
-    // branded Resend email was verified, block sign-in and prompt to resend.
-    if (data.user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email_verified_at')
-        .eq('user_id', data.user.id)
-        .maybeSingle();
-
-      if (profile && !profile.email_verified_at) {
-        await supabase.auth.signOut();
-        return {
-          error: {
-            message: 'Please verify your email before signing in.',
-            code: 'email_not_verified',
-            email,
-          },
-        };
-      }
-    }
-
     return { error: null };
   };
 
-  const signUp = async (email: string, password: string, fullName: string, organizationName: string) => {
-    // Create user without auto-confirming email
-    const { data, error } = await supabase.auth.signUp({
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName?: string,
+    organizationName?: string,
+  ) => {
+    const metadata: Record<string, string> = {};
+    if (fullName) metadata.full_name = fullName;
+    if (organizationName) metadata.organization_name = organizationName;
+
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          full_name: fullName,
-          organization_name: organizationName,
-        },
+        emailRedirectTo: `${window.location.origin}/`,
+        data: metadata,
       },
     });
 
@@ -150,31 +134,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { error };
     }
 
-    // Send custom verification email via edge function
-    if (data.user) {
-      try {
-        console.log('Sending signup confirmation email to:', email);
-        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-signup-confirmation', {
-          body: {
-            email,
-            userId: data.user.id,
-            fullName,
-            organizationName,
-          },
-        });
-
-        if (emailError) {
-          console.error('Error sending verification email:', emailError);
-        } else {
-          console.log('Confirmation email sent successfully:', emailData);
-        }
-      } catch (err) {
-        console.error('Failed to send verification email:', err);
-      }
-    }
-
     return { error: null };
   };
+
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/`,
+      },
+    });
+    return { error };
+  };
+
 
   const signOut = async () => {
     sessionStorage.removeItem('last_tracked_login');
@@ -244,6 +216,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loading,
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
     resetPassword,
     updatePassword,

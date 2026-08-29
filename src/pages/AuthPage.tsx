@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,17 +10,15 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase, setRememberMe, getRememberMe } from '@/integrations/supabase/client';
 import { Checkbox } from '@/components/ui/checkbox';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
-import { Check, AlertTriangle, Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Loader2 } from 'lucide-react';
 
-type SlugStatus = 'idle' | 'checking' | 'available' | 'taken';
+const LEGAL_URL = 'http://flowleed.com/legal';
 
 const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [isResetMode, setIsResetMode] = useState(false);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -31,13 +29,8 @@ const AuthPage = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberMe, setRememberMeState] = useState<boolean>(() => getRememberMe());
-  
-  // Slug availability state
-  const [slugStatus, setSlugStatus] = useState<SlugStatus>('idle');
-  const [slugSuggestions, setSlugSuggestions] = useState<string[]>([]);
-  const [currentSlug, setCurrentSlug] = useState('');
-  
-  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
+
+  const { signIn, signUp, signInWithGoogle, resetPassword, updatePassword } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -67,58 +60,14 @@ const AuthPage = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Debounced slug check
-  const checkSlugAvailability = useCallback(async (name: string) => {
-    if (!name || name.trim().length < 2) {
-      setSlugStatus('idle');
-      setSlugSuggestions([]);
-      setCurrentSlug('');
-      return;
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    setError('');
+    const { error } = await signInWithGoogle();
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
     }
-
-    setSlugStatus('checking');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('check-org-slug', {
-        body: { organizationName: name.trim() },
-      });
-
-      if (error) {
-        console.error('Error checking slug:', error);
-        setSlugStatus('idle');
-        return;
-      }
-
-      setCurrentSlug(data.slug);
-      if (data.available) {
-        setSlugStatus('available');
-        setSlugSuggestions([]);
-      } else {
-        setSlugStatus('taken');
-        setSlugSuggestions(data.suggestions || []);
-      }
-    } catch (err) {
-      console.error('Error checking slug:', err);
-      setSlugStatus('idle');
-    }
-  }, []);
-
-  // Debounce organization name changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      checkSlugAvailability(organizationName);
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [organizationName, checkSlugAvailability]);
-
-  const handleSuggestionClick = (suggestion: string) => {
-    // Convert slug back to readable name (e.g., "my-church-1" -> "My Church 1")
-    const readableName = suggestion
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-    setOrganizationName(readableName);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -133,87 +82,38 @@ const AuthPage = () => {
 
     if (error) {
       setError(error.message);
-      setNeedsVerification(error.code === 'email_not_verified');
     } else {
-      setNeedsVerification(false);
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
       });
       navigate('/');
     }
-    
+
     setLoading(false);
-  };
-
-  const [needsVerification, setNeedsVerification] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [resendLoading, setResendLoading] = useState(false);
-
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
-
-  const handleResendVerification = async () => {
-    if (!email || resendCooldown > 0 || resendLoading) return;
-    setResendLoading(true);
-    try {
-      const { error } = await supabase.functions.invoke('send-signup-confirmation', {
-        body: { email, resend: true },
-      });
-      if (error) throw error;
-      toast({
-        title: 'Verification email sent',
-        description: `We sent a fresh verification link to ${email}.`,
-      });
-      setResendCooldown(60);
-    } catch (err: any) {
-      toast({
-        title: 'Could not send email',
-        description: err?.message ?? 'Please try again in a moment.',
-        variant: 'destructive',
-      });
-    } finally {
-      setResendLoading(false);
-    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Prevent submission if slug is taken
-    if (slugStatus === 'taken') {
-      setError('Please choose an available organization name before continuing.');
-      return;
-    }
-    
     setLoading(true);
     setError('');
 
-    const { error } = await signUp(email, password, fullName, organizationName);
-    
+    const { error } = await signUp(email, password);
+
     if (error) {
-      // Check if it's a duplicate organization name error
-      const errorMessage = error.message?.toLowerCase() || '';
-      if (errorMessage.includes('duplicate') || 
-          errorMessage.includes('organizations_slug_key') ||
-          errorMessage.includes('unique constraint')) {
-        setError('An organization with this name already exists. Please choose a different organization name.');
-      } else {
-        setError(error.message);
-      }
-    } else {
-      toast({
-        title: "Account created!",
-        description: "Please check your email to verify your account.",
-      });
-      // Stay on auth page to show verification message
+      setError(error.message);
+      setLoading(false);
+      return;
     }
-    
+
+    toast({
+      title: 'Welcome to Flowleed!',
+      description: 'Your account is ready.',
+    });
+    navigate('/');
     setLoading(false);
   };
+
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -275,56 +175,53 @@ const AuthPage = () => {
     setLoading(false);
   };
 
-  const renderSlugStatus = () => {
-    if (slugStatus === 'idle' || !organizationName.trim()) {
-      return null;
-    }
+  const googleBlock = (
+    <div className="space-y-4">
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={handleGoogle}
+        disabled={googleLoading || loading}
+      >
+        {googleLoading ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <svg className="h-4 w-4 mr-2" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+            <path fill="#FBBC05" d="M10.54 28.59A14.5 14.5 0 0 1 9.8 24c0-1.6.27-3.14.74-4.59l-7.98-6.19A23.94 23.94 0 0 0 0 24c0 3.88.93 7.54 2.56 10.78l7.98-6.19z" />
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.31-8.16 2.31-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+          </svg>
+        )}
+        Continue with Google
+      </Button>
 
-    if (slugStatus === 'checking') {
-      return (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          <span>Checking availability...</span>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
         </div>
-      );
-    }
-
-    if (slugStatus === 'available') {
-      return (
-        <div className="flex items-center gap-2 text-sm text-green-600 mt-1">
-          <Check className="h-3 w-3" />
-          <span>"{currentSlug}" is available!</span>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-2 text-muted-foreground">or</span>
         </div>
-      );
-    }
+      </div>
+    </div>
+  );
 
-    if (slugStatus === 'taken') {
-      return (
-        <div className="mt-2 space-y-2">
-          <div className="flex items-center gap-2 text-sm text-destructive">
-            <AlertTriangle className="h-3 w-3" />
-            <span>This name is taken. Try one of these:</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {slugSuggestions.map((suggestion) => (
-              <Badge
-                key={suggestion}
-                variant="outline"
-                className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                onClick={() => handleSuggestionClick(suggestion)}
-              >
-                {suggestion}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      );
-    }
+  const legalNotice = (
+    <p className="text-center text-xs text-muted-foreground">
+      By continuing, you agree to our{' '}
+      <a href={LEGAL_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+        Terms of Use
+      </a>{' '}
+      and{' '}
+      <a href={LEGAL_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+        Privacy Policy
+      </a>
+      .
+    </p>
+  );
 
-    return null;
-  };
-
-  const isSignUpDisabled = loading || slugStatus === 'taken' || slugStatus === 'checking';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -385,32 +282,15 @@ const AuthPage = () => {
             <div className="w-full space-y-4">
               {mode === 'signin' ? (
                 <div className="space-y-4">
+                  {!isResetMode && googleBlock}
                   {!isResetMode ? (
                     <form onSubmit={handleSignIn} className="space-y-4">
                       {error && (
                         <Alert variant="destructive">
-                          <AlertDescription>
-                            <div>{error}</div>
-                            {needsVerification && (
-                              <div className="mt-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={handleResendVerification}
-                                  disabled={resendLoading || resendCooldown > 0 || !email}
-                                >
-                                  {resendLoading
-                                    ? 'Sending…'
-                                    : resendCooldown > 0
-                                      ? `Resend in ${resendCooldown}s`
-                                      : 'Resend verification email'}
-                                </Button>
-                              </div>
-                            )}
-                          </AlertDescription>
+                          <AlertDescription>{error}</AlertDescription>
                         </Alert>
                       )}
+
 
                       <div className="space-y-2">
                         <Label htmlFor="signin-email">Email</Label>
@@ -530,35 +410,18 @@ const AuthPage = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold">Create your free account</h3>
+                  </div>
+
+                  {googleBlock}
+
                   <form onSubmit={handleSignUp} className="space-y-4">
                     {error && (
                       <Alert variant="destructive">
                         <AlertDescription>{error}</AlertDescription>
                       </Alert>
                     )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-name">Full Name</Label>
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-org">Organization Name</Label>
-                      <Input
-                        id="signup-org"
-                        type="text"
-                        value={organizationName}
-                        onChange={(e) => setOrganizationName(e.target.value)}
-                        required
-                      />
-                      {renderSlugStatus()}
-                    </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="signup-email">Email</Label>
@@ -583,10 +446,14 @@ const AuthPage = () => {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={isSignUpDisabled}>
-                      {loading ? 'Creating account...' : 'Create Account'}
+                    <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+                      {loading ? 'Creating account...' : 'Create account'}
                     </Button>
                   </form>
+
+                  {legalNotice}
+
+
 
                   <div className="text-center text-sm">
                     <span className="text-muted-foreground">Already have an account? </span>
