@@ -282,32 +282,15 @@ const AuthPage = () => {
             <div className="w-full space-y-4">
               {mode === 'signin' ? (
                 <div className="space-y-4">
+                  {!isResetMode && googleBlock}
                   {!isResetMode ? (
                     <form onSubmit={handleSignIn} className="space-y-4">
                       {error && (
                         <Alert variant="destructive">
-                          <AlertDescription>
-                            <div>{error}</div>
-                            {needsVerification && (
-                              <div className="mt-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={handleResendVerification}
-                                  disabled={resendLoading || resendCooldown > 0 || !email}
-                                >
-                                  {resendLoading
-                                    ? 'Sending…'
-                                    : resendCooldown > 0
-                                      ? `Resend in ${resendCooldown}s`
-                                      : 'Resend verification email'}
-                                </Button>
-                              </div>
-                            )}
-                          </AlertDescription>
+                          <AlertDescription>{error}</AlertDescription>
                         </Alert>
                       )}
+
 
                       <div className="space-y-2">
                         <Label htmlFor="signin-email">Email</Label>
