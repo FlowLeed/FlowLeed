@@ -253,6 +253,9 @@ const ProfilePage = () => {
       />
 
       <div className="flex-1 overflow-auto p-4 md:p-6 space-y-6 pb-12">
+        {/* Church / Organization naming */}
+        <OrganizationNameCard organization={organization as any} />
+
         {/* Personal Information Card */}
         <Card>
           <CardHeader>
