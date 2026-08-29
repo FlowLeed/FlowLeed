@@ -104,6 +104,10 @@ export function PcoCustomFieldsCard({ contactId }: Props) {
                 </p>
               )}
             </div>
+          ) : notLinked ? (
+            <p className="text-sm text-muted-foreground py-2">
+              This contact isn't linked to a Planning Center person, so there are no field values to show.
+            </p>
           ) : personMissing ? (
             <p className="text-sm text-muted-foreground py-2">
               This person no longer exists in Planning Center (deleted or merged), so no field values
