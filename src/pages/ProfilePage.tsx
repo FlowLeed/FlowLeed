@@ -23,6 +23,7 @@ import { SecuritySettings } from "@/components/profile/SecuritySettings";
 import { NotificationSettings } from "@/components/profile/NotificationSettings";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { PcoPersonalConnection } from "@/components/profile/PcoPersonalConnection";
+import { OrganizationNameCard } from "@/components/profile/OrganizationNameCard";
 const ProfilePage = () => {
   const navigate = useNavigate();
   const {
