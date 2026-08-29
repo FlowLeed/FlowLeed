@@ -410,35 +410,18 @@ const AuthPage = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold">Create your free account</h3>
+                  </div>
+
+                  {googleBlock}
+
                   <form onSubmit={handleSignUp} className="space-y-4">
                     {error && (
                       <Alert variant="destructive">
                         <AlertDescription>{error}</AlertDescription>
                       </Alert>
                     )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-name">Full Name</Label>
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-org">Organization Name</Label>
-                      <Input
-                        id="signup-org"
-                        type="text"
-                        value={organizationName}
-                        onChange={(e) => setOrganizationName(e.target.value)}
-                        required
-                      />
-                      {renderSlugStatus()}
-                    </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="signup-email">Email</Label>
@@ -463,10 +446,14 @@ const AuthPage = () => {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={isSignUpDisabled}>
-                      {loading ? 'Creating account...' : 'Create Account'}
+                    <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+                      {loading ? 'Creating account...' : 'Create account'}
                     </Button>
                   </form>
+
+                  {legalNotice}
+
+
 
                   <div className="text-center text-sm">
                     <span className="text-muted-foreground">Already have an account? </span>
