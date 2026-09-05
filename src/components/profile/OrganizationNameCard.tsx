@@ -126,11 +126,16 @@ export const OrganizationNameCard: React.FC<OrganizationNameCardProps> = ({ orga
     if (!trimmed || trimmed === organization.name) return;
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('organizations')
         .update({ name: trimmed, ...(currentSlug ? { slug: currentSlug } : {}) })
-        .eq('id', organization.id);
+        .eq('id', organization.id)
+        .select('id')
+        .maybeSingle();
       if (error) throw error;
+      if (!data) {
+        throw new Error("You don't have permission to rename this church. Ask the account owner to update it.");
+      }
       await queryClient.invalidateQueries({ queryKey: ['profile-organization'] });
       toast({
         title: 'Church name updated',
