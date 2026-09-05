@@ -93,6 +93,7 @@ export function useDemoMode() {
     },
     onSuccess: async () => {
       invalidateAll();
+      await flowCtx?.refreshFlows();
       // Land the user on a flow that actually has sample people in it, so the
       // banner never shows above an empty board.
       if (!orgId) return;
