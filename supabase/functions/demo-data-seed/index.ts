@@ -17,6 +17,10 @@ const json = (body: unknown, status = 200) =>
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 const daysAhead = (n: number) => new Date(Date.now() + n * 86400000).toISOString();
 
+// Deterministic illustrated portrait for a sample person (no API key, stable per name).
+const demoAvatar = (name: string) =>
+  `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}&backgroundColor=c0aede,b6e3f4,ffd5dc,ffdfbf,d1d4f9&radius=50`;
+
 // Fictional people. Emails/phones are non-routable on purpose.
 const PEOPLE: { first: string; last: string }[] = [
   { first: 'Marcus', last: 'Whitfield' }, { first: 'Tanya', last: 'Whitfield' },
@@ -187,6 +191,8 @@ Deno.serve(async (req) => {
       name: `${p.first} ${p.last}`,
       email: `${p.first.toLowerCase()}.${p.last.toLowerCase()}@sample-church.example`,
       phone: `555010${String(1000 + i).slice(-4)}`,
+      // Friendly illustrated portraits so sample profiles don't look empty.
+      avatar: demoAvatar(`${p.first} ${p.last}`),
       status: 'active',
       source_type: 'demo',
       is_demo: true,
