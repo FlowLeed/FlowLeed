@@ -30,6 +30,8 @@ export function useDemoMode() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const autoSeedAttempted = useRef(false);
+  // FlowContext keeps flows in local state, so seeding/clearing must tell it to reload.
+  const flowCtx = useOptionalFlowContext();
 
 
   const { data, isLoading } = useQuery({
