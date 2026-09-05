@@ -187,6 +187,8 @@ Deno.serve(async (req) => {
       name: `${p.first} ${p.last}`,
       email: `${p.first.toLowerCase()}.${p.last.toLowerCase()}@sample-church.example`,
       phone: `555010${String(1000 + i).slice(-4)}`,
+      // Friendly illustrated portraits so sample profiles don't look empty.
+      avatar: demoAvatar(`${p.first} ${p.last}`),
       status: 'active',
       source_type: 'demo',
       is_demo: true,
