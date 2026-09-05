@@ -120,8 +120,9 @@ export function useDemoMode() {
       if ((res as any)?.error) throw new Error((res as any).error);
       return res;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       invalidateAll();
+      await flowCtx?.refreshFlows();
       toast({ title: "Sample data removed", description: "Your church starts with a clean slate." });
     },
     onError: (e: Error) =>
