@@ -27,6 +27,9 @@ export const useFlowContext = () => {
   return context;
 };
 
+// Same context, but safe to call outside the provider (returns undefined).
+export const useOptionalFlowContext = () => useContext(FlowContext);
+
 interface FlowProviderProps {
   children: ReactNode;
 }

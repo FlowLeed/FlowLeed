@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
 import { toast } from "@/hooks/use-toast";
+import { useOptionalFlowContext } from "@/contexts/FlowContext";
 
 
 interface DemoStatus {
@@ -29,6 +30,8 @@ export function useDemoMode() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const autoSeedAttempted = useRef(false);
+  // FlowContext keeps flows in local state, so seeding/clearing must tell it to reload.
+  const flowCtx = useOptionalFlowContext();
 
 
   const { data, isLoading } = useQuery({
@@ -90,6 +93,7 @@ export function useDemoMode() {
     },
     onSuccess: async () => {
       invalidateAll();
+      await flowCtx?.refreshFlows();
       // Land the user on a flow that actually has sample people in it, so the
       // banner never shows above an empty board.
       if (!orgId) return;
@@ -116,8 +120,9 @@ export function useDemoMode() {
       if ((res as any)?.error) throw new Error((res as any).error);
       return res;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       invalidateAll();
+      await flowCtx?.refreshFlows();
       toast({ title: "Sample data removed", description: "Your church starts with a clean slate." });
     },
     onError: (e: Error) =>
