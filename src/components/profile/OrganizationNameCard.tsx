@@ -46,6 +46,33 @@ export const OrganizationNameCard: React.FC<OrganizationNameCardProps> = ({ orga
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const orgId = organization?.id;
+    if (!orgId) {
+      setIsOwner(null);
+      return;
+    }
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id;
+      if (!uid) {
+        if (!cancelled) setIsOwner(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('organization_members')
+        .select('role')
+        .eq('organization_id', orgId)
+        .eq('user_id', uid)
+        .maybeSingle();
+      if (!cancelled) setIsOwner(data?.role === 'owner');
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [organization?.id]);
+
   const checkSlug = useCallback(
     async (value: string) => {
       const trimmed = value.trim();
