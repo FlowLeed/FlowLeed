@@ -223,10 +223,20 @@ const AuthPage = () => {
   );
 
   const signUpBenefits = [
-    'Start with sample church data',
-    'Connect Planning Center later',
-    'No credit card required',
+    {
+      title: 'Start instantly',
+      body: 'Explore Flowleed with sample church data before you connect anything.',
+    },
+    {
+      title: 'Bring your people',
+      body: 'Connect Planning Center or import a spreadsheet whenever you are ready.',
+    },
+    {
+      title: 'Care that scales',
+      body: 'Smart follow-ups and clear insights so nobody slips through the cracks.',
+    },
   ];
+
 
   const signInCard = (
     <Card className="w-full max-w-md">
@@ -377,98 +387,105 @@ const AuthPage = () => {
   );
 
   const signUpCard = (
-    <Card className="w-full max-w-2xl overflow-hidden">
-      <div className="flex flex-col md:flex-row">
-        <div className="md:w-60 bg-primary/5 border-b md:border-b-0 md:border-r border-border p-8 flex flex-col justify-between">
-          <div>
-            <img src={flowleedLogo} alt="Flowleed" className="h-7 mb-4" />
-            <p className="text-sm text-muted-foreground mb-8">
-              A Digital Co-Pastor that helps caring for people
-            </p>
-            <h3 className="text-lg font-semibold mb-2">Join Flowleed</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Start caring for your church community with smart follow-ups and clear insights.
-            </p>
-          </div>
+    <div className="w-full max-w-4xl grid md:grid-cols-2 gap-10 md:gap-14 items-start">
+      <div>
+        <Card className="w-full">
+          <CardHeader>
+            <img src={flowleedLogo} alt="Flowleed" className="h-7 mb-3" />
+            <CardTitle className="text-2xl">Create account</CardTitle>
+            <CardDescription>Get started with an account.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {googleButton}
+              {divider}
 
-          <ul className="mt-8 space-y-3">
-            {signUpBenefits.map((benefit) => (
-              <li key={benefit} className="flex items-start gap-2.5">
-                <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Check className="w-2.5 h-2.5 text-primary" strokeWidth={3} />
+              <form onSubmit={handleSignUp} className="space-y-4">
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Email address</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </div>
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-tight">
-                  {benefit}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
 
-        <div className="flex-1 p-8">
-          <div className="mb-6">
-            <CardTitle className="text-2xl">Create your free account</CardTitle>
-            <CardDescription className="mt-1">
-              Get started in seconds
-            </CardDescription>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Create password</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                </div>
 
-          <div className="space-y-4">
-            {googleButton}
-            {divider}
+                <Button type="submit" className="w-full" disabled={loading || googleLoading}>
+                  {loading ? 'Creating account...' : 'Create account'}
+                </Button>
+              </form>
 
-            <form onSubmit={handleSignUp} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
-                <Input
-                  id="signup-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              <Button type="submit" className="w-full" disabled={loading || googleLoading}>
-                {loading ? 'Creating account...' : 'Create account'}
-              </Button>
-            </form>
-
-            {legalNotice}
-
-            <div className="text-center text-sm pt-2">
-              <span className="text-muted-foreground">Already have an account? </span>
-              <button
-                type="button"
-                onClick={() => { setMode('signin'); setError(''); }}
-                className="text-primary hover:underline font-medium"
-              >
-                Sign In
-              </button>
+              {legalNotice}
             </div>
-          </div>
+          </CardContent>
+        </Card>
+
+        <div className="text-center text-sm pt-4">
+          <span className="text-muted-foreground">Already have an account? </span>
+          <button
+            type="button"
+            onClick={() => { setMode('signin'); setError(''); }}
+            className="text-primary hover:underline font-medium"
+          >
+            Sign In
+          </button>
         </div>
       </div>
-    </Card>
+
+      <div className="md:pt-6">
+        <h2 className="text-2xl font-bold leading-snug mb-3">
+          A Digital Co-Pastor that helps you care for every person.
+        </h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Flowleed keeps your guests, volunteers and members from slipping through the
+          cracks — with clear next steps for your team every day.
+        </p>
+
+        <ul className="mt-8 space-y-6">
+          {signUpBenefits.map((benefit) => (
+            <li key={benefit.title} className="flex items-start gap-4">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Check className="w-4 h-4 text-primary" strokeWidth={3} />
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                <span className="font-semibold text-foreground">{benefit.title}: </span>
+                {benefit.body}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-8 pt-8 border-t border-border">
+          <h3 className="text-base font-semibold mb-2">Already using Planning Center?</h3>
+          <p className="text-sm text-muted-foreground">
+            Create your account first — you can connect Planning Center in one click from
+            your settings right after you sign in.
+          </p>
+        </div>
+      </div>
+    </div>
   );
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
