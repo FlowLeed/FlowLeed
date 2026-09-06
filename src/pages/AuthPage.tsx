@@ -241,7 +241,7 @@ const AuthPage = () => {
   const signInCard = (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <img src={flowleedLogo} alt="Flowleed" className="h-8 mx-auto mb-2" />
+        <img src={flowleedLogo} alt="Flowleed" className="h-8 w-auto object-contain mx-auto mb-2" />
         <CardTitle className="text-2xl">Welcome back</CardTitle>
         <CardDescription>
           Enter your details to sign in
@@ -391,7 +391,7 @@ const AuthPage = () => {
       <div>
         <Card className="w-full">
           <CardHeader>
-            <img src={flowleedLogo} alt="Flowleed" className="h-7 mb-3" />
+            <img src={flowleedLogo} alt="Flowleed" className="h-7 w-auto object-contain mb-3" />
             <CardTitle className="text-2xl">Create account</CardTitle>
             <CardDescription>Get started with an account.</CardDescription>
           </CardHeader>
@@ -492,7 +492,7 @@ const AuthPage = () => {
       {isRecoveryMode ? (
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <img src={flowleedLogo} alt="Flowleed" className="h-8 mx-auto mb-2" />
+            <img src={flowleedLogo} alt="Flowleed" className="h-8 w-auto object-contain mx-auto mb-2" />
             <CardTitle className="text-2xl">Set New Password</CardTitle>
             <CardDescription>
               Enter your new password below
