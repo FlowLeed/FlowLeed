@@ -223,10 +223,20 @@ const AuthPage = () => {
   );
 
   const signUpBenefits = [
-    'Start with sample church data',
-    'Connect Planning Center later',
-    'No credit card required',
+    {
+      title: 'Start instantly',
+      body: 'Explore Flowleed with sample church data before you connect anything.',
+    },
+    {
+      title: 'Bring your people',
+      body: 'Connect Planning Center or import a spreadsheet whenever you are ready.',
+    },
+    {
+      title: 'Care that scales',
+      body: 'Smart follow-ups and clear insights so nobody slips through the cracks.',
+    },
   ];
+
 
   const signInCard = (
     <Card className="w-full max-w-md">
