@@ -955,11 +955,12 @@ async function autoSyncAllMappings() {
         const metadata = integration.metadata as {
           last_full_sync_at?: string;
           checkin_sync_last_run_at?: string;
+          people_sync_cursor?: string;
         } | null;
         // Use last_full_sync_completed_at for accurate delta calculation
         const lastFullSync = integration.last_full_sync_completed_at || metadata?.last_full_sync_at;
         const frequency = integration.sync_frequency || 'daily';
-        
+
         // Skip if frequency is manual
         if (frequency === 'manual') {
           console.log(`Skipping integration ${integration.id} - manual sync only`);
@@ -981,9 +982,12 @@ async function autoSyncAllMappings() {
           console.log(`Skipping integration ${integration.id} - Planning Center account ${accountKey} already synced in this run`);
           continue;
         }
-        
+
+        // A partially fetched people sync must resume regardless of frequency
+        const hasPendingPeopleCursor = !!metadata?.people_sync_cursor;
+
         // Check if enough time has passed
-        if (shouldSyncNow(lastFullSync || null, frequency)) {
+        if (hasPendingPeopleCursor || shouldSyncNow(lastFullSync || null, frequency)) {
           console.log(`Triggering full people sync for integration ${integration.id} (last sync: ${lastFullSync || 'never'})`);
           
           // Check for existing active job to prevent duplicates
