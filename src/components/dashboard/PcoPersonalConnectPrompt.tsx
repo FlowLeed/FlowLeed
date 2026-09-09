@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useNeedsPersonalPco } from "@/hooks/useNeedsPersonalPco";
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -75,7 +77,7 @@ export function PcoPersonalConnectPrompt() {
       }
     };
     check();
-  }, [user?.id, organization?.id]);
+  }, [user?.id, organization?.id, needsPersonal.needed, needsPersonal.isLoading]);
 
 
   const dismissDialog = () => {
