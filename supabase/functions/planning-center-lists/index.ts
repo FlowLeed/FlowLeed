@@ -1324,10 +1324,28 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     if (nextUrl) await sleep(PCO_PAGE_DELAY);
   }
 
-  console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
+  // More pages remain (page cap reached or rate limited): this run is partial and resumes next time.
+  const isPartialRun = rateLimited || !!nextUrl;
+  console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)${isPartialRun ? ' - PARTIAL, will resume' : ''}`);
 
   // Always sync campuses, even if no contacts changed
-  await syncCampusesFromPCO(organizationId, pcoAuthHeader);
+  if (!savedPeopleCursor) {
+    await syncCampusesFromPCO(organizationId, pcoAuthHeader);
+  }
+
+  // Persist / clear the resume cursor before anything else can time out
+  const nextMetadata = { ...integrationMetadata };
+  if (isPartialRun && nextUrl) {
+    nextMetadata.people_sync_cursor = nextUrl;
+    nextMetadata.people_sync_started_at = integrationMetadata.people_sync_started_at || new Date().toISOString();
+  } else {
+    delete nextMetadata.people_sync_cursor;
+    delete nextMetadata.people_sync_started_at;
+  }
+  await supabase
+    .from('integrations')
+    .update({ metadata: nextMetadata })
+    .eq('id', integrationId);
 
   if (allPeople.length === 0) {
     console.log('[Auto-sync] No people found/modified in Planning Center');
