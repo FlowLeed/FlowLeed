@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-import { pcoFetch, sleep } from '../_shared/pco-fetch.ts';
+import { pcoFetch, sleep } from './pco-fetch.ts';
 
 // Shared retry/backoff wrapper (429 + 5xx) lives in _shared/pco-fetch.ts
 const fetchWithRetry = (url: string, options: RequestInit, maxRetries = 3) =>
