@@ -1203,7 +1203,7 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
   // Get integration credentials
   const { data: integration, error: integrationError } = await supabase
     .from('integrations')
-    .select('credentials, organization_id, user_id')
+    .select('credentials, organization_id, user_id, metadata')
     .eq('id', integrationId)
     .single();
 
@@ -1212,28 +1212,36 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
   }
 
   const { header: pcoAuthHeader } = await getPcoAuthHeader(supabase, integrationId);
-  
+
+  const integrationMetadata = (integration.metadata as Record<string, any>) || {};
+  const savedPeopleCursor: string | null = integrationMetadata.people_sync_cursor || null;
+
   // Determine if this is an incremental sync
-  const isIncrementalSync = !!lastFullSyncCompletedAt;
-  
+  const isIncrementalSync = !savedPeopleCursor && !!lastFullSyncCompletedAt;
+
   // Build URL with pre-fetched data and optional incremental filter
   let baseUrl = 'https://api.planningcenteronline.com/people/v2/people?per_page=100&include=emails,phone_numbers,addresses,households,field_data&where[status]=active';
-  
-  if (isIncrementalSync && lastFullSyncCompletedAt) {
+
+  if (savedPeopleCursor) {
+    baseUrl = savedPeopleCursor;
+    console.log(`[Auto-sync] Resuming full people sync from saved cursor`);
+  } else if (isIncrementalSync && lastFullSyncCompletedAt) {
     const sinceDate = new Date(lastFullSyncCompletedAt).toISOString();
     baseUrl += `&where[updated_at][gte]=${encodeURIComponent(sinceDate)}`;
     console.log(`[Auto-sync] Incremental sync: fetching contacts updated since ${sinceDate}`);
   } else {
     console.log(`[Auto-sync] Full sync: fetching all contacts`);
   }
-  
-  // Fetch ALL people from PCO with pagination
+
+  // Fetch people from PCO with pagination, capped per run so the function never
+  // hits the edge runtime wall clock on large orgs (18k+ people = 180+ pages).
+  const MAX_PAGES_PER_RUN = 50;
   let allPeople: any[] = [];
   let nextUrl: string | null = baseUrl;
   let pageCount = 0;
   let rateLimited = false;
 
-  while (nextUrl) {
+  while (nextUrl && pageCount < MAX_PAGES_PER_RUN) {
     pageCount++;
     console.log(`[Auto-sync] Fetching people page ${pageCount}...`);
 
