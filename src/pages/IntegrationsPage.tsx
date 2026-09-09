@@ -440,7 +440,8 @@ const IntegrationsPage = () => {
                 </div>
                 <div>
                   <CardTitle>Planning Center</CardTitle>
-                  <CardDescription>Assign people to the right Flow</CardDescription>
+                  <CardDescription>Church-wide connection — syncs people, groups and check-ins</CardDescription>
+
                 </div>
               </div>
               {getStatusBadge(planningCenterIntegration, integrationsLoading, deleteIntegrationMutation.isPending)}
