@@ -1366,8 +1366,10 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
         sync_type: isIncrementalSync ? 'auto_incremental_sync' : 'auto_full_people_sync',
         pages_fetched: pageCount,
         includes_prefetched_data: true,
-        partial: rateLimited,
-        paused_reason: rateLimited ? 'planning_center_rate_limit' : undefined
+        partial: isPartialRun,
+        paused_reason: isPartialRun
+          ? (rateLimited ? 'planning_center_rate_limit' : 'page_limit_per_run')
+          : null
       }
     })
     .select()
@@ -1379,16 +1381,12 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
 
   console.log(`[Auto-sync] Created sync job: ${job.id}`);
 
-  // CRITICAL: Set last_full_sync_completed_at IMMEDIATELY after job creation
-  // This ensures incremental sync works even if edge function times out during chunk creation
-  // Without this, large orgs (15k+ contacts) never complete chunk creation before timeout,
-  // leaving last_full_sync_completed_at NULL and causing endless full syncs
-  // EXCEPTION: if we were rate limited mid-pagination, this run is incomplete, so we only
-  // bump last_sync_at and leave last_full_sync_completed_at alone to retry the remaining pages.
+  // Mark the full sync complete only when every page has been fetched. Partial runs
+  // just bump last_sync_at so the next run resumes from the saved cursor.
   await supabase
     .from('integrations')
     .update(
-      rateLimited
+      isPartialRun
         ? { last_sync_at: new Date().toISOString() }
         : {
             last_sync_at: new Date().toISOString(),
