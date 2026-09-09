@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link2, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useNeedsPersonalPco } from "@/hooks/useNeedsPersonalPco";
+
 
 interface Conn {
   email: string | null;
@@ -18,10 +20,12 @@ interface Conn {
 }
 
 export function PcoPersonalConnection({ organizationId }: { organizationId?: string }) {
+  const needsPersonal = useNeedsPersonalPco();
   const [conn, setConn] = useState<Conn | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
 
   const load = async () => {
     if (!organizationId) { setLoading(false); return; }

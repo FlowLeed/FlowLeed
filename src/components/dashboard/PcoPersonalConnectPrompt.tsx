@@ -20,9 +20,11 @@ export function PcoPersonalConnectPrompt() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { organization } = useProfile();
+  const needsPersonal = useNeedsPersonalPco();
   const [status, setStatus] = useState<Status>("loading");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+
 
   useEffect(() => {
     const check = async () => {
