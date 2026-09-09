@@ -139,7 +139,7 @@ const App = () => (
               <Route path="/team" element={<TeamPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/integrations/:integrationName/advanced" element={<IntegrationAdvancedSettingsPage />} />
-              <Route path="/integrations/church-online/advanced" element={<ChurchOnlineAdvancedPage />} />
+              <Route path="/integrations/church-online/advanced" element={<FeatureGate feature="church_online"><ChurchOnlineAdvancedPage /></FeatureGate>} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/messages" element={<FeatureGate feature="texting"><MessagesPage /></FeatureGate>} />
               <Route path="/calls" element={<FeatureGate feature="calling"><CallsPage /></FeatureGate>} />
