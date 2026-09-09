@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "./useProfile";
-import { FEATURE_KEYS, type FeatureKey } from "@/lib/features";
+import { FEATURE_KEYS, DEFAULT_OFF_FEATURES, type FeatureKey } from "@/lib/features";
 
 /**
  * Returns enabled state for each feature module for a given organization.
@@ -28,7 +28,9 @@ export const useOrgFeaturesFor = (organizationId: string | null | undefined) => 
   });
 
   const isEnabled = (key: FeatureKey) => {
-    if (!data) return true; // default-enabled while loading
+    const defaultOn = !DEFAULT_OFF_FEATURES.includes(key);
+    if (!data) return defaultOn;
+    if (data[key] === undefined) return defaultOn;
     return data[key] !== false;
   };
 

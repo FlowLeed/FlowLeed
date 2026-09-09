@@ -20,6 +20,7 @@ import { ChurchOnlineIntegration } from "@/components/integrations/ChurchOnlineI
 import { PcoEnforcementToggle } from "@/components/integrations/PcoEnforcementToggle";
 import { useOrgOwnerOnboarding } from "@/hooks/useOrgOwnerOnboarding";
 import { usePcoSyncJob } from "@/hooks/usePcoSyncJob";
+import { useOrgFeatures } from "@/hooks/useOrgFeatures";
 
 const IntegrationsPage = () => {
   const queryClient = useQueryClient();
@@ -33,6 +34,8 @@ const IntegrationsPage = () => {
   const [mappingDialogOpen, setMappingDialogOpen] = useState(false);
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<string>('');
   
+  const { isEnabled: isFeatureEnabled } = useOrgFeatures();
+
   const { data: syncJob } = usePcoSyncJob(currentSyncJobId);
   const isSyncing = isPreparing || syncJob?.status === 'processing' || syncJob?.status === 'pending';
 
@@ -684,7 +687,7 @@ const IntegrationsPage = () => {
         </Card>
 
         {/* Church Online Platform Integration */}
-        {userOrgData?.organization_id && (
+        {userOrgData?.organization_id && isFeatureEnabled("church_online") && (
           <ChurchOnlineIntegration organizationId={userOrgData.organization_id} />
         )}
 

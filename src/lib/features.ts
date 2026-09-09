@@ -1,6 +1,6 @@
-import { MessageSquare, Phone, Sparkles, Activity, Film, Wand2, Bot, ClipboardList, type LucideIcon } from "lucide-react";
+import { MessageSquare, Phone, Sparkles, Activity, Film, Wand2, Bot, ClipboardList, Radio, type LucideIcon } from "lucide-react";
 
-export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "custom_signals" | "signal_agent" | "forms";
+export type FeatureKey = "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "custom_signals" | "signal_agent" | "forms" | "church_online";
 
 
 export interface FeatureModule {
@@ -8,6 +8,8 @@ export interface FeatureModule {
   label: string;
   description: string;
   icon: LucideIcon;
+  /** When false, the module is OFF unless explicitly enabled for the org. */
+  defaultEnabled?: boolean;
 }
 
 export const FEATURE_MODULES: FeatureModule[] = [
@@ -59,7 +61,19 @@ export const FEATURE_MODULES: FeatureModule[] = [
     description: "Public forms and lead capture with routing into Flows.",
     icon: ClipboardList,
   },
+  {
+    key: "church_online",
+    label: "Church Online Platform",
+    description: "Live-stream engagement webhooks (salvations, prayer requests) from Church Online Platform.",
+    icon: Radio,
+    defaultEnabled: false,
+  },
 ];
+
+/** Feature keys that are OFF by default for every organization. */
+export const DEFAULT_OFF_FEATURES: FeatureKey[] = FEATURE_MODULES.filter(
+  (m) => m.defaultEnabled === false
+).map((m) => m.key);
 
 
 

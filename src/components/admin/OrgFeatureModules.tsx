@@ -60,7 +60,10 @@ export const OrgFeatureModules: React.FC<Props> = ({ organizationId }) => {
           </>
         ) : (
           FEATURE_MODULES.map((mod) => {
-            const enabled = overrides[mod.key] !== false; // default true
+            const enabled =
+              overrides[mod.key] === undefined
+                ? mod.defaultEnabled !== false
+                : overrides[mod.key] !== false;
             return (
               <div
                 key={mod.key}
