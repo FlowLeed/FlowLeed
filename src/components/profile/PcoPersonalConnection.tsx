@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Link2, AlertTriangle, CheckCircle2, Loader2, RefreshCw, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useNeedsPersonalPco } from "@/hooks/useNeedsPersonalPco";
+
 
 interface Conn {
   email: string | null;
@@ -18,10 +20,12 @@ interface Conn {
 }
 
 export function PcoPersonalConnection({ organizationId }: { organizationId?: string }) {
+  const needsPersonal = useNeedsPersonalPco();
   const [conn, setConn] = useState<Conn | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
 
   const load = async () => {
     if (!organizationId) { setLoading(false); return; }
@@ -98,13 +102,17 @@ export function PcoPersonalConnection({ organizationId }: { organizationId?: str
 
   const reauth = conn?.status === "reauth_required";
 
+  // Admins/owners use the church-wide connection on the Integrations page, and
+  // nobody needs a personal sign-in unless per-user visibility is enforced.
+  if (needsPersonal.isLoading || !needsPersonal.needed) return null;
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link2 className="h-4 w-4 text-muted-foreground" />
-            <CardTitle>Planning Center Account</CardTitle>
+            <CardTitle>Your Planning Center permissions</CardTitle>
           </div>
           {conn && !reauth && (
             <Badge variant="secondary" className="gap-1">
@@ -118,9 +126,11 @@ export function PcoPersonalConnection({ organizationId }: { organizationId?: str
           )}
         </div>
         <CardDescription>
-          Sign in with your personal Planning Center account so FlowLeed only shows you what you can see in PCO.
+          A personal Planning Center sign-in, used only to match what you're allowed to see in
+          Planning Center. This is separate from your church's Planning Center connection.
         </CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-3">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

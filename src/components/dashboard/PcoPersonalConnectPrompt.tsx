@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useNeedsPersonalPco } from "@/hooks/useNeedsPersonalPco";
 import { Button } from "@/components/ui/button";
+
 import {
   Dialog,
   DialogContent,
@@ -20,13 +22,17 @@ export function PcoPersonalConnectPrompt() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { organization } = useProfile();
+  const needsPersonal = useNeedsPersonalPco();
   const [status, setStatus] = useState<Status>("loading");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
+
   useEffect(() => {
     const check = async () => {
       if (!user?.id || !organization?.id) return;
+      if (needsPersonal.isLoading || !needsPersonal.needed) { setStatus("na"); return; }
+
 
       // Only prompt if the org actually uses Planning Center on OAuth
       const { data: integ } = await supabase
@@ -71,7 +77,7 @@ export function PcoPersonalConnectPrompt() {
       }
     };
     check();
-  }, [user?.id, organization?.id]);
+  }, [user?.id, organization?.id, needsPersonal.needed, needsPersonal.isLoading]);
 
 
   const dismissDialog = () => {
