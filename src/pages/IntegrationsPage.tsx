@@ -574,7 +574,7 @@ const IntegrationsPage = () => {
             {/* OAuth: connected account label */}
             {planningCenterIntegration?.auth_type === 'oauth' && planningCenterIntegration?.provider_account_name && planningCenterIntegration?.status !== 'pending_confirmation' && (
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3 text-sm">
-                <span className="text-muted-foreground">Connected to:</span>{' '}
+                <span className="text-muted-foreground">Church connected to:</span>{' '}
                 <span className="font-medium text-foreground">{planningCenterIntegration.provider_account_name}</span>
                 {planningCenterIntegration.oauth_scopes && (
                   <span className="text-xs text-muted-foreground ml-2">
