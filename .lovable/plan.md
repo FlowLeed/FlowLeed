@@ -42,3 +42,12 @@ When a sync that previously covered thousands of people suddenly returns a handf
 - Account guard goes in `pco-oauth-callback` / `pco-oauth-confirm`, surfaced in `IntegrationsPage.tsx`.
 - Check-in window change in `supabase/functions/pco-sync-checkins/index.ts`: replace `where[updated_at][gte]` with a `created_at`/`checked_in_at` window plus a bounded overlap, keeping the existing cursor/paging.
 - Backfill by clearing `last_checkin_sync_at` (and any stale `checkin_sync_cursor`) after the reconnect, then draining `pco-checkin-auto-sync`.
+
+## About the two "Connect Planning Center" buttons
+
+They are two different connections, so both are expected:
+
+- **Integrations page** — the church-wide connection that syncs all people, groups and check-ins. Currently connected, but to the wrong account ("Admin Account").
+- **Profile page** — your own personal Planning Center sign-in, which limits what you personally see to what you can see in Planning Center. That one is not connected yet for you, which is why it prompts.
+
+Wording change to remove the confusion: label the Profile one "Your personal Planning Center sign-in" with a note that it is separate from the church connection, and label the Integrations one "Church-wide Planning Center connection". Also show the connected Planning Center church name on both cards so a mismatch is obvious.
