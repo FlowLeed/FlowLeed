@@ -8,7 +8,7 @@ const corsHeaders = {
 
 import { pcoFetch, sleep } from './pco-fetch.ts';
 
-// Shared retry/backoff wrapper (429 + 5xx) lives in _shared/pco-fetch.ts
+// Shared retry/backoff wrapper (429 + 5xx) lives in ./pco-fetch.ts
 const fetchWithRetry = (url: string, options: RequestInit, maxRetries = 3) =>
   pcoFetch(url, options, { maxRetries, label: 'checkins' });
 
