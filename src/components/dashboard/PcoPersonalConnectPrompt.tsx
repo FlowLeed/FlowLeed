@@ -29,6 +29,8 @@ export function PcoPersonalConnectPrompt() {
   useEffect(() => {
     const check = async () => {
       if (!user?.id || !organization?.id) return;
+      if (needsPersonal.isLoading || !needsPersonal.needed) { setStatus("na"); return; }
+
 
       // Only prompt if the org actually uses Planning Center on OAuth
       const { data: integ } = await supabase
