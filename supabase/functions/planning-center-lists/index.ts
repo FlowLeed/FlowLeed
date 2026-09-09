@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { syncDemographicData } from "../_shared/pco-demographics.ts";
 import { getPcoAuthHeader, getUserPcoAuthHeader } from "../_shared/pco-auth.ts";
+import { pcoFetch, sleep, PCO_PAGE_DELAY, PcoRateLimitError } from "../_shared/pco-fetch.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -137,12 +138,12 @@ async function testPlanningCenterConnection(integrationId: string, userId: strin
     console.log('Planning Center auth type:', authType);
     console.log('Making API call to Planning Center...');
     
-    const response = await fetch('https://api.planningcenteronline.com/people/v2/me', {
+    const response = await pcoFetch('https://api.planningcenteronline.com/people/v2/me', {
       headers: {
         'Authorization': pcoAuthHeader,
         'Content-Type': 'application/json',
       },
-    });
+    }, { label: 'test-connection' });
 
     console.log('PC API response status:', response.status);
 
@@ -257,12 +258,12 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
     while (nextUrl) {
       console.log(`Fetching lists from: ${nextUrl}`);
 
-      const response = await fetch(nextUrl, {
+      const response = await pcoFetch(nextUrl, {
         headers: {
           'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
-      });
+      }, { label: 'fetch-lists' });
 
       if (response.status === 401) {
         return new Response(JSON.stringify({ error: 'USER_PCO_REAUTH_REQUIRED' }), {
@@ -282,6 +283,7 @@ async function fetchPlanningCenterLists(integrationId: string, userId: string) {
       nextUrl = data.links?.next || null;
 
       console.log(`Fetched ${lists.length} lists, total so far: ${allLists.length}`);
+      if (nextUrl) await sleep(PCO_PAGE_DELAY);
     }
 
     console.log(`Total lists fetched: ${allLists.length}`);
@@ -406,12 +408,12 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       pageCount++;
       console.log(`Fetching people page ${pageCount}...`);
       
-      const response = await fetch(nextUrl, {
+      const response = await pcoFetch(nextUrl, {
         headers: {
           'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
-      });
+      }, { label: 'sync-all-people' });
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -482,6 +484,7 @@ async function syncAllPeopleFromPCO(integrationId: string, userId: string) {
       nextUrl = data.links?.next || null;
       
       console.log(`Page ${pageCount}: fetched ${people.length} people, total: ${allPeople.length}`);
+      if (nextUrl) await sleep(PCO_PAGE_DELAY);
     }
 
     console.log(`Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
@@ -703,12 +706,12 @@ async function syncSingleList(mapping: any, userId: string) {
     pageCount++;
     console.log(`Fetching page ${pageCount} from Planning Center...`);
     
-    const response = await fetch(nextUrl, {
+    const response = await pcoFetch(nextUrl, {
       headers: {
         'Authorization': pcoAuthHeader,
         'Content-Type': 'application/json',
       },
-    });
+    }, { label: `list-${mapping.external_list_id}` });
 
     if (!response.ok) {
       // Handle authentication failures
@@ -732,6 +735,18 @@ async function syncSingleList(mapping: any, userId: string) {
         }
         
         throw new Error('Planning Center authentication failed - please reconnect your account');
+      }
+
+      // The saved list no longer exists in Planning Center (deleted/renamed away).
+      // Turn off auto-sync for it instead of failing on every scheduled run.
+      if (response.status === 404) {
+        console.warn(`Planning Center list ${mapping.external_list_id} not found (404) - disabling auto-sync for mapping ${mapping.id}`);
+        await supabase
+          .from('integration_list_mappings')
+          .update({ auto_sync: false })
+          .eq('id', mapping.id);
+
+        throw new Error(`Planning Center list "${mapping.external_list_name || mapping.external_list_id}" no longer exists in Planning Center - auto-sync disabled`);
       }
       
       console.error('PC API error:', response.status, response.statusText);
@@ -769,6 +784,7 @@ async function syncSingleList(mapping: any, userId: string) {
     nextUrl = data.links?.next || null;
     
     console.log(`Page ${pageCount}: extracted ${personRefs.length} person IDs from ${listResults.length} list results, next URL: ${nextUrl ? 'yes' : 'no'}`);
+    if (nextUrl) await sleep(PCO_PAGE_DELAY);
   }
 
   console.log(`Total pages fetched: ${pageCount}, Total people: ${allPeople.length}`);
@@ -921,7 +937,7 @@ async function autoSyncAllMappings() {
     
     const { data: autoSyncIntegrations, error: intError } = await supabase
       .from('integrations')
-      .select('id, user_id, organization_id, sync_frequency, metadata, last_full_sync_completed_at')
+      .select('id, user_id, organization_id, sync_frequency, metadata, last_full_sync_completed_at, provider_account_id')
       .eq('service_name', 'planning_center')
       .eq('status', 'active')
       .eq('auto_sync_all_people', true);
@@ -931,8 +947,15 @@ async function autoSyncAllMappings() {
     } else if (autoSyncIntegrations && autoSyncIntegrations.length > 0) {
       console.log(`Found ${autoSyncIntegrations.length} integrations with auto-sync-all enabled`);
       
+      // Churches that share one Planning Center account share one rate limit -
+      // only run one people sync per account per pass.
+      const accountsSyncedThisRun = new Set<string>();
+
       for (const integration of autoSyncIntegrations) {
-        const metadata = integration.metadata as { last_full_sync_at?: string } | null;
+        const metadata = integration.metadata as {
+          last_full_sync_at?: string;
+          checkin_sync_cursor?: string;
+        } | null;
         // Use last_full_sync_completed_at for accurate delta calculation
         const lastFullSync = integration.last_full_sync_completed_at || metadata?.last_full_sync_at;
         const frequency = integration.sync_frequency || 'daily';
@@ -940,6 +963,18 @@ async function autoSyncAllMappings() {
         // Skip if frequency is manual
         if (frequency === 'manual') {
           console.log(`Skipping integration ${integration.id} - manual sync only`);
+          continue;
+        }
+
+        // A check-in backfill is mid-run against the same PCO account - don't compete for the rate limit
+        if (metadata?.checkin_sync_cursor) {
+          console.log(`Skipping integration ${integration.id} - check-in sync currently in progress`);
+          continue;
+        }
+
+        const accountKey = integration.provider_account_id || `integration:${integration.id}`;
+        if (accountsSyncedThisRun.has(accountKey)) {
+          console.log(`Skipping integration ${integration.id} - Planning Center account ${accountKey} already synced in this run`);
           continue;
         }
         
@@ -966,6 +1001,7 @@ async function autoSyncAllMappings() {
             // Note: last_full_sync_completed_at is set inside triggerAutoFullPeopleSync
             // AFTER job and queue items are created, not before, to prevent race conditions
             await triggerAutoFullPeopleSync(integration.id, integration.organization_id, integration.last_full_sync_completed_at);
+            accountsSyncedThisRun.add(accountKey);
             
             console.log(`Successfully triggered auto full sync for integration ${integration.id}`);
           } catch (syncError) {
@@ -1100,14 +1136,15 @@ async function syncCampusesFromPCO(organizationId: string, pcoAuthHeader: string
   try {
     console.log(`🏛️ Syncing campuses for org ${organizationId}`);
     
-    const response = await fetch(
+    const response = await pcoFetch(
       'https://api.planningcenteronline.com/people/v2/campuses',
       {
         headers: {
           'Authorization': pcoAuthHeader,
           'Content-Type': 'application/json',
         },
-      }
+      },
+      { label: 'campuses' }
     );
     
     if (!response.ok) {
@@ -1190,17 +1227,29 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
   let allPeople: any[] = [];
   let nextUrl: string | null = baseUrl;
   let pageCount = 0;
+  let rateLimited = false;
 
   while (nextUrl) {
     pageCount++;
     console.log(`[Auto-sync] Fetching people page ${pageCount}...`);
-    
-    const response = await fetch(nextUrl, {
-      headers: {
-        'Authorization': pcoAuthHeader,
-        'Content-Type': 'application/json',
-      },
-    });
+
+    let response: Response;
+    try {
+      response = await pcoFetch(nextUrl, {
+        headers: {
+          'Authorization': pcoAuthHeader,
+          'Content-Type': 'application/json',
+        },
+      }, { label: 'auto-full-people' });
+    } catch (error) {
+      if (error instanceof PcoRateLimitError) {
+        // Keep the pages we already have; this run stays "partial" so the next run resumes.
+        console.warn(`[Auto-sync] Rate limited at page ${pageCount} - saving ${allPeople.length} people fetched so far and pausing`);
+        rateLimited = true;
+        break;
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -1260,6 +1309,7 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
     
     nextUrl = data.links?.next || null;
     console.log(`[Auto-sync] Page ${pageCount}: fetched ${people.length} people, total: ${allPeople.length}`);
+    if (nextUrl) await sleep(PCO_PAGE_DELAY);
   }
 
   console.log(`[Auto-sync] Total people fetched: ${allPeople.length} in ${pageCount} pages (${isIncrementalSync ? 'incremental' : 'full'} sync)`);
@@ -1285,7 +1335,9 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
       metadata: {
         sync_type: isIncrementalSync ? 'auto_incremental_sync' : 'auto_full_people_sync',
         pages_fetched: pageCount,
-        includes_prefetched_data: true
+        includes_prefetched_data: true,
+        partial: rateLimited,
+        paused_reason: rateLimited ? 'planning_center_rate_limit' : undefined
       }
     })
     .select()
@@ -1301,12 +1353,18 @@ async function triggerAutoFullPeopleSync(integrationId: string, organizationId: 
   // This ensures incremental sync works even if edge function times out during chunk creation
   // Without this, large orgs (15k+ contacts) never complete chunk creation before timeout,
   // leaving last_full_sync_completed_at NULL and causing endless full syncs
+  // EXCEPTION: if we were rate limited mid-pagination, this run is incomplete, so we only
+  // bump last_sync_at and leave last_full_sync_completed_at alone to retry the remaining pages.
   await supabase
     .from('integrations')
-    .update({ 
-      last_sync_at: new Date().toISOString(),
-      last_full_sync_completed_at: new Date().toISOString()
-    })
+    .update(
+      rateLimited
+        ? { last_sync_at: new Date().toISOString() }
+        : {
+            last_sync_at: new Date().toISOString(),
+            last_full_sync_completed_at: new Date().toISOString()
+          }
+    )
     .eq('id', integrationId);
 
   console.log(`[Auto-sync] Set last_full_sync_completed_at immediately after job creation`);
