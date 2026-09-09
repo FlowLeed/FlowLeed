@@ -235,6 +235,8 @@ Deno.serve(async (req) => {
             ...metadata,
             checkin_sync_cursor: nextUrl,
             checkin_sync_started_at: metadata.checkin_sync_started_at || new Date().toISOString(),
+            // Short-lived marker so the people sync knows a check-in run just used the rate limit
+            checkin_sync_last_run_at: new Date().toISOString(),
           },
         })
         .eq('id', integrationId);
