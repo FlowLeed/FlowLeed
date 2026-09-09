@@ -6,37 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { pcoFetch, sleep } from './pco-fetch.ts';
 
-async function fetchWithRetry(
-  url: string,
-  options: RequestInit,
-  maxRetries: number = 3
-): Promise<Response> {
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await fetch(url, options);
-      if (response.status === 429) {
-        const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
-        const backoffDelay = Math.max(retryAfter * 1000, 1000 * Math.pow(2, attempt));
-        console.log(`Rate limited (429). Waiting ${backoffDelay}ms before retry ${attempt + 1}/${maxRetries}`);
-        if (attempt < maxRetries) {
-          await sleep(backoffDelay);
-          continue;
-        }
-        throw new Error(`Rate limited after ${maxRetries} retries`);
-      }
-      return response;
-    } catch (error) {
-      lastError = error as Error;
-      if (attempt < maxRetries) {
-        await sleep(1000 * Math.pow(2, attempt));
-      }
-    }
-  }
-  throw lastError || new Error('Fetch failed after retries');
-}
+// Shared retry/backoff wrapper (429 + 5xx) lives in ./pco-fetch.ts
+const fetchWithRetry = (url: string, options: RequestInit, maxRetries = 3) =>
+  pcoFetch(url, options, { maxRetries, label: 'checkins' });
 
 const API_CALL_DELAY = 500;
 const DEFAULT_MAX_PAGES = 30; // ~3000 records, well within 60s timeout
@@ -261,6 +235,8 @@ Deno.serve(async (req) => {
             ...metadata,
             checkin_sync_cursor: nextUrl,
             checkin_sync_started_at: metadata.checkin_sync_started_at || new Date().toISOString(),
+            // Short-lived marker so the people sync knows a check-in run just used the rate limit
+            checkin_sync_last_run_at: new Date().toISOString(),
           },
         })
         .eq('id', integrationId);
