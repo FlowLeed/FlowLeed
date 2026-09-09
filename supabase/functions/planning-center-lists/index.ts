@@ -954,7 +954,7 @@ async function autoSyncAllMappings() {
       for (const integration of autoSyncIntegrations) {
         const metadata = integration.metadata as {
           last_full_sync_at?: string;
-          checkin_sync_cursor?: string;
+          checkin_sync_last_run_at?: string;
         } | null;
         // Use last_full_sync_completed_at for accurate delta calculation
         const lastFullSync = integration.last_full_sync_completed_at || metadata?.last_full_sync_at;
@@ -966,10 +966,14 @@ async function autoSyncAllMappings() {
           continue;
         }
 
-        // A check-in backfill is mid-run against the same PCO account - don't compete for the rate limit
-        if (metadata?.checkin_sync_cursor) {
-          console.log(`Skipping integration ${integration.id} - check-in sync currently in progress`);
-          continue;
+        // A check-in run just used this account's rate limit (within 5 minutes) - don't compete with it.
+        // Time-bounded on purpose: a saved check-in cursor can live for days between resumable runs.
+        if (metadata?.checkin_sync_last_run_at) {
+          const sinceCheckinRunMs = Date.now() - new Date(metadata.checkin_sync_last_run_at).getTime();
+          if (sinceCheckinRunMs < 5 * 60 * 1000) {
+            console.log(`Skipping integration ${integration.id} - check-in sync ran ${Math.round(sinceCheckinRunMs / 1000)}s ago`);
+            continue;
+          }
         }
 
         const accountKey = integration.provider_account_id || `integration:${integration.id}`;
