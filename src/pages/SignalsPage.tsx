@@ -39,16 +39,26 @@ const SignalsPage = () => {
   const { data: members } = useOrgMembers(user?.id, !!user?.id);
   const { data: catalog, isLoading } = useMarkerCatalog({ campusId, assignedUserId });
   const recompute = useRecomputeMarkers();
-  const [filter, setFilter] = useState<"all" | "positive" | "negative" | "phase2">("all");
+  const { isOrgAdmin } = useIsOrgAdmin(user?.id);
+  const [filter, setFilter] = useState<"all" | "positive" | "negative" | "off" | "phase2">("all");
+  const [editing, setEditing] = useState<MarkerCatalogEntry | null>(null);
   const hasFilters = campusId !== null || assignedUserId !== null;
+
+  const offCount = useMemo(
+    () => (catalog || []).filter((m) => !m.is_phase_two && m.enabled === false).length,
+    [catalog]
+  );
 
   const filtered = useMemo(() => {
     if (!catalog) return [];
     if (filter === "phase2") return catalog.filter((m) => m.is_phase_two);
-    if (filter === "positive") return catalog.filter((m) => !m.is_phase_two && m.polarity === "positive");
-    if (filter === "negative") return catalog.filter((m) => !m.is_phase_two && m.polarity === "negative");
-    return catalog.filter((m) => !m.is_phase_two);
+    if (filter === "off") return catalog.filter((m) => !m.is_phase_two && m.enabled === false);
+    const live = catalog.filter((m) => !m.is_phase_two && m.enabled !== false);
+    if (filter === "positive") return live.filter((m) => m.polarity === "positive");
+    if (filter === "negative") return live.filter((m) => m.polarity === "negative");
+    return live;
   }, [catalog, filter]);
+
 
   const grouped = useMemo(() => {
     const g = new Map<string, MarkerCatalogEntry[]>();
