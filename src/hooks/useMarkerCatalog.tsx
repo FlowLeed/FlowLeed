@@ -13,6 +13,11 @@ export interface MarkerCatalogEntry {
   requires_integration: string | null;
   is_phase_two: boolean;
   contact_count: number;
+  enabled: boolean;
+  default_label: string;
+  default_description: string;
+  params: Record<string, number> | null;
+  is_customized: boolean;
 }
 
 export interface MarkerCatalogFilters {

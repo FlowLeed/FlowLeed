@@ -7,32 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles, Building2, User, X, Info, Wand2, Bot } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { RefreshCw, Lock, ArrowRight, Activity, TrendingDown, Sparkles, Building2, User, X, Info, Wand2, Bot, MoreVertical, Pencil, EyeOff, Eye, RotateCcw } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { markerFormula } from "@/lib/markerParams";
+import { MarkerSettingsDialog } from "@/components/signals/MarkerSettingsDialog";
+import { useSaveMarkerSettings, useResetMarkerSettings } from "@/hooks/useMarkerSettings";
+import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 
-const markerFormulas: Record<string, string> = {
-  attended_sunday_recent: "Fires when the contact has any service check-in in the last 14 days.",
-  consistent_attender: "Attended a service in at least 3 of the last 4 weeks.",
-  first_time_guest: "Has a check-in flagged as guest in the last 30 days.",
-  kids_checked_in: "A household member checked in (e.g. kids) in the last 30 days.",
-  missed_3_sundays: "Previously regular (4+ lifetime check-ins) AND last service attendance is between 21 and 42 days ago.",
-  drifting_6_weeks: "Previously regular (4+ lifetime check-ins) AND last service attendance is more than 42 days ago (or never recorded).",
-  attendance_dropped: "Attended 4+ of the prior 12 weeks, and the last 12 weeks are ≤ half of that prior count.",
-  in_group: "Active member of at least one small group.",
-  group_attendance_high: "Attended ≥ 66% of the last 3+ group meetings.",
-  group_attendance_mid: "Attended 33–66% of the last 3+ group meetings.",
-  group_attendance_low: "Attended < 33% of the last 4+ group meetings.",
-  group_inactive_30d: "In a group but no group attendance in the last 30 days.",
-  served_recently: "Volunteered / served at least once in the last 30 days.",
-  serves_regularly: "Served 3+ times in the last 90 days.",
-  stopped_serving: "Served 3+ times in the last 180 days, but 0 times in the last 90, and last serve was 60+ days ago.",
-  in_active_flow: "Currently in 1+ active flows.",
-  stuck_in_stage_30d: "Has been in their current flow stage for 30+ days.",
-  flow_moment_recent: "Logged 1+ flow moment (next step) in the last 90 days.",
-  salvation_moment: "Has a salvation decision recorded.",
-  watched_online_recent: "Watched 1+ online events in the last 30 days.",
-  prayer_request_submitted: "Submitted 1+ prayer requests in the last 90 days.",
-};
 import { useMarkerCatalog, useRecomputeMarkers, type MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
 import { useCampuses } from "@/hooks/useCampuses";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,16 +39,26 @@ const SignalsPage = () => {
   const { data: members } = useOrgMembers(user?.id, !!user?.id);
   const { data: catalog, isLoading } = useMarkerCatalog({ campusId, assignedUserId });
   const recompute = useRecomputeMarkers();
-  const [filter, setFilter] = useState<"all" | "positive" | "negative" | "phase2">("all");
+  const { isOrgAdmin } = useIsOrgAdmin(user?.id);
+  const [filter, setFilter] = useState<"all" | "positive" | "negative" | "off" | "phase2">("all");
+  const [editing, setEditing] = useState<MarkerCatalogEntry | null>(null);
   const hasFilters = campusId !== null || assignedUserId !== null;
+
+  const offCount = useMemo(
+    () => (catalog || []).filter((m) => !m.is_phase_two && m.enabled === false).length,
+    [catalog]
+  );
 
   const filtered = useMemo(() => {
     if (!catalog) return [];
     if (filter === "phase2") return catalog.filter((m) => m.is_phase_two);
-    if (filter === "positive") return catalog.filter((m) => !m.is_phase_two && m.polarity === "positive");
-    if (filter === "negative") return catalog.filter((m) => !m.is_phase_two && m.polarity === "negative");
-    return catalog.filter((m) => !m.is_phase_two);
+    if (filter === "off") return catalog.filter((m) => !m.is_phase_two && m.enabled === false);
+    const live = catalog.filter((m) => !m.is_phase_two && m.enabled !== false);
+    if (filter === "positive") return live.filter((m) => m.polarity === "positive");
+    if (filter === "negative") return live.filter((m) => m.polarity === "negative");
+    return live;
   }, [catalog, filter]);
+
 
   const grouped = useMemo(() => {
     const g = new Map<string, MarkerCatalogEntry[]>();
@@ -173,7 +170,7 @@ const SignalsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard
             label="Active markers tracked"
-            value={catalog?.filter((m) => !m.is_phase_two).length || 0}
+            value={catalog?.filter((m) => !m.is_phase_two && m.enabled !== false).length || 0}
             icon={Activity}
           />
           <SummaryCard label="Positive signals (totals)" value={totals.pos} icon={Sparkles} tone="positive" />
@@ -185,6 +182,7 @@ const SignalsPage = () => {
             <TabsTrigger value="all">All active</TabsTrigger>
             <TabsTrigger value="positive">Positive</TabsTrigger>
             <TabsTrigger value="negative">Risk</TabsTrigger>
+            {offCount > 0 && <TabsTrigger value="off">Turned off ({offCount})</TabsTrigger>}
             <TabsTrigger value="phase2">Coming soon</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -202,7 +200,12 @@ const SignalsPage = () => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {items.map((m) => (
-                    <MarkerRow key={m.key} marker={m} />
+                    <MarkerRow
+                      key={m.key}
+                      marker={m}
+                      canEdit={isOrgAdmin}
+                      onEdit={() => setEditing(m)}
+                    />
                   ))}
                 </div>
               </div>
@@ -211,11 +214,19 @@ const SignalsPage = () => {
               <p className="text-sm text-muted-foreground text-center py-8">No markers in this view.</p>
             )}
           </div>
+
         )}
       </div>
+
+      <MarkerSettingsDialog
+        marker={editing}
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+      />
     </div>
   );
 };
+
 
 function SummaryCard({ label, value, icon: Icon, tone }: any) {
   const toneClass =
@@ -239,10 +250,21 @@ function SummaryCard({ label, value, icon: Icon, tone }: any) {
   );
 }
 
-function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
+function MarkerRow({
+  marker,
+  canEdit,
+  onEdit,
+}: {
+  marker: MarkerCatalogEntry;
+  canEdit?: boolean;
+  onEdit?: () => void;
+}) {
   const locked = marker.is_phase_two;
+  const isOff = marker.enabled === false;
+  const save = useSaveMarkerSettings();
+  const reset = useResetMarkerSettings();
   return (
-    <Card className={locked ? "opacity-60" : ""}>
+    <Card className={locked || isOff ? "opacity-60" : ""}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -251,6 +273,16 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
                 {marker.polarity}
               </Badge>
               <p className="font-medium text-sm truncate">{marker.label}</p>
+              {isOff && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                  Off
+                </Badge>
+              )}
+              {!isOff && marker.is_customized && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                  Edited
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground line-clamp-2">{marker.description}</p>
             {locked && marker.requires_integration && (
@@ -276,14 +308,53 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
                   <TooltipContent side="left" className="max-w-xs">
                     <p className="text-xs font-medium mb-1">How it's calculated</p>
                     <p className="text-xs text-muted-foreground">
-                      {markerFormulas[marker.key] || marker.description}
+                      {markerFormula(marker.key, marker.params) || marker.description}
                     </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
               <span className="text-2xl font-light">{marker.contact_count}</span>
+              {canEdit && !locked && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground"
+                      aria-label="Signal options"
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={onEdit}>
+                      <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        save.mutate({ markerKey: marker.key, enabled: isOff })
+                      }
+                    >
+                      {isOff ? (
+                        <>
+                          <Eye className="h-3.5 w-3.5 mr-2" /> Turn on
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="h-3.5 w-3.5 mr-2" /> Turn off
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    {marker.is_customized && (
+                      <DropdownMenuItem onClick={() => reset.mutate(marker.key)}>
+                        <RotateCcw className="h-3.5 w-3.5 mr-2" /> Reset to default
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
-            {!locked && marker.contact_count > 0 && (
+            {!locked && !isOff && marker.contact_count > 0 && (
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
                 <Link to={`/contacts?marker=${marker.key}`}>
                   View <ArrowRight className="h-3 w-3 ml-1" />
@@ -297,5 +368,6 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
     </Card>
   );
 }
+
 
 export default SignalsPage;
