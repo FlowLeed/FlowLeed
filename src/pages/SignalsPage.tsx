@@ -170,7 +170,7 @@ const SignalsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard
             label="Active markers tracked"
-            value={catalog?.filter((m) => !m.is_phase_two).length || 0}
+            value={catalog?.filter((m) => !m.is_phase_two && m.enabled !== false).length || 0}
             icon={Activity}
           />
           <SummaryCard label="Positive signals (totals)" value={totals.pos} icon={Sparkles} tone="positive" />
@@ -182,6 +182,7 @@ const SignalsPage = () => {
             <TabsTrigger value="all">All active</TabsTrigger>
             <TabsTrigger value="positive">Positive</TabsTrigger>
             <TabsTrigger value="negative">Risk</TabsTrigger>
+            {offCount > 0 && <TabsTrigger value="off">Turned off ({offCount})</TabsTrigger>}
             <TabsTrigger value="phase2">Coming soon</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -199,7 +200,12 @@ const SignalsPage = () => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {items.map((m) => (
-                    <MarkerRow key={m.key} marker={m} />
+                    <MarkerRow
+                      key={m.key}
+                      marker={m}
+                      canEdit={isOrgAdmin}
+                      onEdit={() => setEditing(m)}
+                    />
                   ))}
                 </div>
               </div>
@@ -208,6 +214,7 @@ const SignalsPage = () => {
               <p className="text-sm text-muted-foreground text-center py-8">No markers in this view.</p>
             )}
           </div>
+
         )}
       </div>
     </div>
