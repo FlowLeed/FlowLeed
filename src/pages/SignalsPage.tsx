@@ -217,9 +217,16 @@ const SignalsPage = () => {
 
         )}
       </div>
+
+      <MarkerSettingsDialog
+        marker={editing}
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+      />
     </div>
   );
 };
+
 
 function SummaryCard({ label, value, icon: Icon, tone }: any) {
   const toneClass =
