@@ -250,10 +250,21 @@ function SummaryCard({ label, value, icon: Icon, tone }: any) {
   );
 }
 
-function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
+function MarkerRow({
+  marker,
+  canEdit,
+  onEdit,
+}: {
+  marker: MarkerCatalogEntry;
+  canEdit?: boolean;
+  onEdit?: () => void;
+}) {
   const locked = marker.is_phase_two;
+  const isOff = marker.enabled === false;
+  const save = useSaveMarkerSettings();
+  const reset = useResetMarkerSettings();
   return (
-    <Card className={locked ? "opacity-60" : ""}>
+    <Card className={locked || isOff ? "opacity-60" : ""}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -262,6 +273,16 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
                 {marker.polarity}
               </Badge>
               <p className="font-medium text-sm truncate">{marker.label}</p>
+              {isOff && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                  Off
+                </Badge>
+              )}
+              {!isOff && marker.is_customized && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                  Edited
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground line-clamp-2">{marker.description}</p>
             {locked && marker.requires_integration && (
@@ -287,14 +308,53 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
                   <TooltipContent side="left" className="max-w-xs">
                     <p className="text-xs font-medium mb-1">How it's calculated</p>
                     <p className="text-xs text-muted-foreground">
-                      {markerFormulas[marker.key] || marker.description}
+                      {markerFormula(marker.key, marker.params) || marker.description}
                     </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
               <span className="text-2xl font-light">{marker.contact_count}</span>
+              {canEdit && !locked && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground"
+                      aria-label="Signal options"
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={onEdit}>
+                      <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        save.mutate({ markerKey: marker.key, enabled: isOff })
+                      }
+                    >
+                      {isOff ? (
+                        <>
+                          <Eye className="h-3.5 w-3.5 mr-2" /> Turn on
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="h-3.5 w-3.5 mr-2" /> Turn off
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    {marker.is_customized && (
+                      <DropdownMenuItem onClick={() => reset.mutate(marker.key)}>
+                        <RotateCcw className="h-3.5 w-3.5 mr-2" /> Reset to default
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
-            {!locked && marker.contact_count > 0 && (
+            {!locked && !isOff && marker.contact_count > 0 && (
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
                 <Link to={`/contacts?marker=${marker.key}`}>
                   View <ArrowRight className="h-3 w-3 ml-1" />
@@ -308,5 +368,6 @@ function MarkerRow({ marker }: { marker: MarkerCatalogEntry }) {
     </Card>
   );
 }
+
 
 export default SignalsPage;
