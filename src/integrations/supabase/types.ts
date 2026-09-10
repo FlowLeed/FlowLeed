@@ -3240,6 +3240,64 @@ export type Database = {
           },
         ]
       }
+      org_marker_settings: {
+        Row: {
+          created_at: string
+          custom_description: string | null
+          custom_label: string | null
+          enabled: boolean
+          id: string
+          marker_key: string
+          organization_id: string
+          params: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_description?: string | null
+          custom_label?: string | null
+          enabled?: boolean
+          id?: string
+          marker_key: string
+          organization_id: string
+          params?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_description?: string | null
+          custom_label?: string | null
+          enabled?: boolean
+          id?: string
+          marker_key?: string
+          organization_id?: string
+          params?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_marker_settings_marker_key_fkey"
+            columns: ["marker_key"]
+            isOneToOne: false
+            referencedRelation: "marker_definitions"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "org_marker_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_marker_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_activity_stats: {
         Row: {
           ai_descriptions_generated: number | null
@@ -5170,39 +5228,29 @@ export type Database = {
         Args: { _admin_user_id: string }
         Returns: string
       }
-      get_marker_catalog:
-        | {
-            Args: { p_org_id: string }
-            Returns: {
-              category: string
-              contact_count: number
-              description: string
-              is_phase_two: boolean
-              key: string
-              label: string
-              polarity: string
-              requires_integration: string
-              sort_order: number
-            }[]
-          }
-        | {
-            Args: {
-              p_assigned_user_id?: string
-              p_campus_id?: string
-              p_org_id: string
-            }
-            Returns: {
-              category: string
-              contact_count: number
-              description: string
-              is_phase_two: boolean
-              key: string
-              label: string
-              polarity: string
-              requires_integration: string
-              sort_order: number
-            }[]
-          }
+      get_marker_catalog: {
+        Args: {
+          p_assigned_user_id?: string
+          p_campus_id?: string
+          p_org_id: string
+        }
+        Returns: {
+          category: string
+          contact_count: number
+          default_description: string
+          default_label: string
+          description: string
+          enabled: boolean
+          is_customized: boolean
+          is_phase_two: boolean
+          key: string
+          label: string
+          params: Json
+          polarity: string
+          requires_integration: string
+          sort_order: number
+        }[]
+      }
       get_org_checkin_counts: {
         Args: {
           p_campus_id?: string
@@ -5295,6 +5343,15 @@ export type Database = {
           _session_id: string
         }
         Returns: string
+      }
+      marker_param: {
+        Args: {
+          p_default: number
+          p_key: string
+          p_org_id: string
+          p_param: string
+        }
+        Returns: number
       }
       match_content_chunks: {
         Args: {
