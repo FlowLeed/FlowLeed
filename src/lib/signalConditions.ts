@@ -54,18 +54,18 @@ export const CONDITION_SOURCES: ConditionSource[] = [
   },
   {
     value: "flow.in_flow",
-    label: "Flow",
+    label: "Is in Flow",
     category: "Flows",
     operators: [
-      { value: "eq", label: "is in", input: "flow" },
-      { value: "neq", label: "is not in", input: "flow" },
+      { value: "eq", label: "equals", input: "flow" },
+      { value: "neq", label: "does not equal", input: "flow" },
     ],
   },
   {
     value: "flow.in_stage",
-    label: "Flow stage",
+    label: "Is in Flow stage",
     category: "Flows",
-    operators: [{ value: "eq", label: "is in", input: "stage" }],
+    operators: [{ value: "eq", label: "equals", input: "stage" }],
   },
   {
     value: "group.is_in_group",
