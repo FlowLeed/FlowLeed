@@ -287,7 +287,12 @@ function MarkerRow({
                   Off
                 </Badge>
               )}
-              {!isOff && marker.is_customized && (
+              {isRewritten && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                  Your own rule
+                </Badge>
+              )}
+              {!isOff && !isRewritten && marker.is_customized && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
                   Edited
                 </Badge>
