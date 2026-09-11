@@ -1,4 +1,13 @@
-export type ConditionInputKind = "number" | "days" | "text" | "none";
+export type ConditionInputKind =
+  | "number"
+  | "days"
+  | "text"
+  | "none"
+  | "campus"
+  | "flow"
+  | "stage"
+  | "moment"
+  | "moment_days";
 
 export interface ConditionSource {
   value: string;
@@ -34,6 +43,31 @@ export const CONDITION_SOURCES: ConditionSource[] = [
     operators: [{ value: "true", label: "is true", input: "none" }],
   },
   {
+    value: "campus.assignment",
+    label: "Campus",
+    category: "Campus",
+    operators: [
+      { value: "eq", label: "is", input: "campus" },
+      { value: "neq", label: "is not", input: "campus" },
+      { value: "unassigned", label: "is not assigned", input: "none" },
+    ],
+  },
+  {
+    value: "flow.in_flow",
+    label: "Is in Flow",
+    category: "Flows",
+    operators: [
+      { value: "eq", label: "equals", input: "flow" },
+      { value: "neq", label: "does not equal", input: "flow" },
+    ],
+  },
+  {
+    value: "flow.in_stage",
+    label: "Is in Flow stage",
+    category: "Flows",
+    operators: [{ value: "eq", label: "equals", input: "stage" }],
+  },
+  {
     value: "group.is_in_group",
     label: "Is in a group",
     category: "Groups",
@@ -62,7 +96,7 @@ export const CONDITION_SOURCES: ConditionSource[] = [
   },
   {
     value: "flow.in_any_flow",
-    label: "Is in any active flow",
+    label: "Is in any active Flow",
     category: "Flows",
     operators: [
       { value: "true", label: "yes", input: "none" },
@@ -71,11 +105,29 @@ export const CONDITION_SOURCES: ConditionSource[] = [
   },
   {
     value: "flow.days_in_stage",
-    label: "Days in current stage",
+    label: "Days in current Flow stage",
     category: "Flows",
     operators: [
       { value: "gte", label: "is at least", input: "days" },
       { value: "lte", label: "is at most", input: "days" },
+    ],
+  },
+  {
+    value: "moment.has_type",
+    label: "Flow Moment",
+    category: "Flow Moments",
+    operators: [
+      { value: "has", label: "has", input: "moment" },
+      { value: "not_has", label: "does not have", input: "moment" },
+    ],
+  },
+  {
+    value: "moment.days_since_type",
+    label: "Days since Flow Moment",
+    category: "Flow Moments",
+    operators: [
+      { value: "lte", label: "is at most", input: "moment_days" },
+      { value: "gte", label: "is at least", input: "moment_days" },
     ],
   },
   {

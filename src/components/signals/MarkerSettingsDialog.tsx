@@ -107,7 +107,14 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
   });
   const currentKey = JSON.stringify({ c: combinator, x: conditions });
   const logicChanged = currentKey !== seedKey;
-  const logicValid = conditions.length > 0 && conditions.every((c) => c.source && c.operator);
+  const logicValid = conditions.length > 0 && conditions.every((c) => {
+    if (!c.source || !c.operator) return false;
+    if (c.operator === "unassigned" || c.operator === "true" || c.operator === "false") return true;
+    if (c.source === "moment.days_since_type") {
+      return !!c.value?.moment_type_id && c.value?.days !== "" && c.value?.days !== undefined;
+    }
+    return c.value !== "" && c.value !== null && c.value !== undefined;
+  });
   const needsPromote = !!promotedId || logicChanged;
 
   const handleSave = async () => {

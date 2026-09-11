@@ -49,7 +49,14 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) 
   const canSave =
     label.trim().length > 0 &&
     conditions.length > 0 &&
-    conditions.every((c) => c.source && c.operator);
+    conditions.every((c) => {
+      if (!c.source || !c.operator) return false;
+      if (c.operator === "unassigned" || c.operator === "true" || c.operator === "false") return true;
+      if (c.source === "moment.days_since_type") {
+        return !!c.value?.moment_type_id && c.value?.days !== "" && c.value?.days !== undefined;
+      }
+      return c.value !== "" && c.value !== null && c.value !== undefined;
+    });
 
   const handleSave = async () => {
     if (!canSave) return;

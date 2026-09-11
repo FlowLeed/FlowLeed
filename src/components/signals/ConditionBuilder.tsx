@@ -4,13 +4,19 @@ import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
 import { CONDITION_SOURCES, findSource } from "@/lib/signalConditions";
 import type { CustomSignalCondition, RuleCombinator } from "@/hooks/useCustomSignals";
+import { useSignalConditionOptions } from "@/hooks/useSignalConditionOptions";
+
+const CATEGORY_ORDER = ["Attendance", "Campus", "Flows", "Flow Moments", "Groups", "Serving", "Tags"];
 
 interface Props {
   combinator: RuleCombinator;
@@ -25,6 +31,13 @@ export function ConditionBuilder({
   conditions,
   onConditionsChange,
 }: Props) {
+  const { data: optionData } = useSignalConditionOptions();
+  const dynamicOptions = {
+    campus: optionData?.campuses || [],
+    flow: optionData?.flows || [],
+    stage: optionData?.stages || [],
+    moment: optionData?.moments || [],
+  };
   const addCondition = () =>
     onConditionsChange([
       ...conditions,
@@ -87,10 +100,18 @@ export function ConditionBuilder({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {CONDITION_SOURCES.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
+                  {CATEGORY_ORDER.map((category, categoryIndex) => (
+                    <SelectGroup key={category}>
+                      {categoryIndex > 0 && <SelectSeparator />}
+                      <SelectLabel className="pl-2 text-[11px] uppercase text-muted-foreground">
+                        {category}
+                      </SelectLabel>
+                      {CONDITION_SOURCES.filter((source) => source.category === category).map((source) => (
+                        <SelectItem key={source.value} value={source.value}>
+                          {source.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>
@@ -106,10 +127,52 @@ export function ConditionBuilder({
                   ))}
                 </SelectContent>
               </Select>
-              {op.input && op.input !== "none" && (
+              {op.input && ["campus", "flow", "stage", "moment"].includes(op.input) && (
+                <Select value={String(c.value || "")} onValueChange={(value) => updateCond(i, { value })}>
+                  <SelectTrigger className="h-8 min-w-[180px] flex-1 text-xs">
+                    <SelectValue placeholder={`Choose ${op.input}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dynamicOptions[op.input as keyof typeof dynamicOptions].map((option) => (
+                      <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {op.input === "moment_days" && (
+                <>
+                  <Select
+                    value={typeof c.value === "object" ? String(c.value?.moment_type_id || "") : ""}
+                    onValueChange={(momentTypeId) => updateCond(i, {
+                      value: { moment_type_id: momentTypeId, days: typeof c.value === "object" ? c.value?.days || "" : "" },
+                    })}
+                  >
+                    <SelectTrigger className="h-8 min-w-[180px] flex-1 text-xs">
+                      <SelectValue placeholder="Choose Flow Moment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dynamicOptions.moment.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    className="h-8 w-24 text-xs"
+                    type="number"
+                    min={0}
+                    value={typeof c.value === "object" ? c.value?.days ?? "" : ""}
+                    onChange={(e) => updateCond(i, {
+                      value: { moment_type_id: typeof c.value === "object" ? c.value?.moment_type_id || "" : "", days: e.target.value },
+                    })}
+                    placeholder="days"
+                  />
+                </>
+              )}
+              {op.input && ["number", "days", "text"].includes(op.input) && (
                 <Input
                   className="h-8 text-xs w-24"
                   type={op.input === "text" ? "text" : "number"}
+                  min={op.input === "text" ? undefined : 0}
                   value={c.value ?? ""}
                   onChange={(e) => updateCond(i, { value: e.target.value })}
                   placeholder={op.input === "days" ? "days" : op.input === "number" ? "#" : "value"}

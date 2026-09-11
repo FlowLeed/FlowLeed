@@ -17,6 +17,7 @@ interface Condition {
 
 type ContactFacts = {
   contact_id: string;
+  campus_id: string | null;
   last_service_days_ago: number | null;
   services_last_12w: number;
   is_first_time_guest: boolean;
@@ -24,7 +25,10 @@ type ContactFacts = {
   group_attendance_rate: number | null; // 0-100
   days_since_last_serve: number | null;
   in_any_flow: boolean;
+  active_flow_ids: Set<string>;
+  active_stage_ids: Set<string>;
   days_in_stage: number | null;
+  moment_days_by_type: Map<string, number>;
   tags: Set<string>;
 };
 
@@ -38,6 +42,10 @@ function daysBetween(iso: string | null): number | null {
 function evalCond(c: Condition, f: ContactFacts): boolean {
   const num = (v: any) => Number(v);
   switch (c.source) {
+    case "campus.assignment":
+      if (c.operator === "unassigned") return f.campus_id === null;
+      if (c.operator === "neq") return f.campus_id !== null && f.campus_id !== String(c.value || "");
+      return f.campus_id === String(c.value || "");
     case "attendance.last_service_days_ago": {
       if (f.last_service_days_ago === null) return false;
       return c.operator === "lte"
@@ -66,6 +74,12 @@ function evalCond(c: Condition, f: ContactFacts): boolean {
     }
     case "flow.in_any_flow":
       return c.operator === "true" ? f.in_any_flow : !f.in_any_flow;
+    case "flow.in_flow": {
+      const hasFlow = f.active_flow_ids.has(String(c.value || ""));
+      return c.operator === "neq" ? !hasFlow : hasFlow;
+    }
+    case "flow.in_stage":
+      return f.active_stage_ids.has(String(c.value || ""));
     case "flow.days_in_stage": {
       if (f.days_in_stage === null) return false;
       return c.operator === "gte"
@@ -76,6 +90,16 @@ function evalCond(c: Condition, f: ContactFacts): boolean {
       return f.tags.has(String(c.value || "").toLowerCase());
     case "tag.not_has":
       return !f.tags.has(String(c.value || "").toLowerCase());
+    case "moment.has_type": {
+      const hasMoment = f.moment_days_by_type.has(String(c.value || ""));
+      return c.operator === "not_has" ? !hasMoment : hasMoment;
+    }
+    case "moment.days_since_type": {
+      const value = typeof c.value === "object" && c.value !== null ? c.value : {};
+      const days = f.moment_days_by_type.get(String(value.moment_type_id || ""));
+      if (days === undefined) return false;
+      return c.operator === "lte" ? days <= num(value.days) : days >= num(value.days);
+    }
     default:
       return false;
   }
@@ -113,12 +137,13 @@ async function loadFacts(
 
   const { data: contacts } = await sb
     .from("contacts")
-    .select("id")
+    .select("id, campus_id")
     .eq("organization_id", orgId)
     .limit(50000);
   for (const c of contacts || []) {
     facts.set((c as any).id, {
       contact_id: (c as any).id,
+      campus_id: (c as any).campus_id || null,
       last_service_days_ago: null,
       services_last_12w: 0,
       is_first_time_guest: false,
@@ -126,7 +151,10 @@ async function loadFacts(
       group_attendance_rate: null,
       days_since_last_serve: null,
       in_any_flow: false,
+      active_flow_ids: new Set(),
+      active_stage_ids: new Set(),
       days_in_stage: null,
+      moment_days_by_type: new Map(),
       tags: new Set(),
     });
   }
@@ -215,18 +243,53 @@ async function loadFacts(
   }
 
   // Flows (pipeline_contacts)
-  const { data: pc } = await sb
-    .from("pipeline_contacts")
-    .select("contact_id, stage_entered_at, completed_end_at")
-    .is("completed_end_at", null)
-    .limit(100000);
+  const { data: orgFlows } = await sb
+    .from("pipelines")
+    .select("id")
+    .eq("organization_id", orgId);
+  const flowIds = (orgFlows || []).map((flow: any) => flow.id as string);
+  const { data: pc } = flowIds.length
+    ? await sb
+      .from("pipeline_contacts")
+      .select("contact_id, pipeline_id, stage_id, stage_entered_at, completed_end_at")
+      .in("pipeline_id", flowIds)
+      .is("completed_end_at", null)
+      .limit(100000)
+    : { data: [] };
   for (const p of pc || []) {
     const cid = (p as any).contact_id;
     const f = facts.get(cid);
     if (!f) continue;
     f.in_any_flow = true;
+    f.active_flow_ids.add((p as any).pipeline_id);
+    f.active_stage_ids.add((p as any).stage_id);
     const d = daysBetween((p as any).stage_entered_at);
     if (d !== null && (f.days_in_stage === null || d > f.days_in_stage)) f.days_in_stage = d;
+  }
+
+  // Flow Moments — retain the latest occurrence for each active moment type.
+  const { data: momentTypes } = await sb
+    .from("flow_moment_types")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("is_active", true);
+  const momentTypeIds = (momentTypes || []).map((type: any) => type.id as string);
+  const { data: moments } = momentTypeIds.length
+    ? await sb
+      .from("flow_moments")
+      .select("contact_id, flow_moment_type_id, occurred_at")
+      .in("flow_moment_type_id", momentTypeIds)
+      .order("occurred_at", { ascending: false })
+      .limit(100000)
+    : { data: [] };
+  for (const moment of moments || []) {
+    const f = facts.get((moment as any).contact_id);
+    if (!f) continue;
+    const typeId = (moment as any).flow_moment_type_id as string;
+    const days = daysBetween((moment as any).occurred_at);
+    if (days === null) continue;
+    const previous = f.moment_days_by_type.get(typeId);
+    if (previous === undefined || days < previous) f.moment_days_by_type.set(typeId, days);
   }
 
   // Tags
