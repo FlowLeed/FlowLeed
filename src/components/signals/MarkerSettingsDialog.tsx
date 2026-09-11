@@ -24,7 +24,7 @@ import {
 import { RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
-import { markerParamSpecs, paramValue } from "@/lib/markerParams";
+
 import { markerLogicSeed, severityForPolarity } from "@/lib/markerLogicSeeds";
 import {
   useSaveMarkerSettings,
@@ -120,18 +120,13 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
   const needsPromote = !!promotedId || logicChanged;
 
   const handleSave = async () => {
-    const cleaned: Record<string, number> = {};
-    for (const s of specs) {
-      const v = params[s.key];
-      if (Number.isFinite(v)) cleaned[s.key] = v;
-    }
     await save.mutateAsync({
       markerKey: marker.key,
       enabled,
       customLabel: label.trim() === (marker.default_label || "").trim() ? null : label.trim(),
       customDescription:
         description.trim() === (marker.default_description || "").trim() ? null : description.trim(),
-      params: cleaned,
+      params: (marker.params as Record<string, number>) || {},
     });
     if (needsPromote && logicValid) {
       await promote.mutateAsync({
