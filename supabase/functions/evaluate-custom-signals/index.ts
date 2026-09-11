@@ -696,7 +696,7 @@ async function loadFacts(
       if (previous === undefined || days < previous) f.moment_days_by_type.set(typeId, days);
 
       // Any moment window counts
-      for (const windowDays of [7, 14, 30, 60, 90, 180, 365]) {
+      for (const windowDays of allWindows) {
         if (days <= windowDays) {
           f.any_moment_recent_in_days.set(
             windowDays,
@@ -705,8 +705,8 @@ async function loadFacts(
         }
       }
 
-      // Salvation
-      if (salvationTypeIds.has(typeId)) {
+      // Salvation (only within the last 365 days, matching SQL)
+      if (salvationTypeIds.has(typeId) && days !== null && days <= 365) {
         f.has_salvation = true;
       }
     }
