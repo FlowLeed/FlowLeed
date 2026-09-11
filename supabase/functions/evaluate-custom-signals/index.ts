@@ -66,12 +66,13 @@ function daysBetween(iso: string | null): number | null {
 }
 
 function startOfWeekIso(iso: string): string {
+  // Match PostgreSQL date_trunc('week', ...) which uses ISO-8601 Monday weeks.
   const d = new Date(iso);
-  const day = d.getDay();
-  const sunday = new Date(d);
-  sunday.setDate(d.getDate() - day);
-  sunday.setHours(0, 0, 0, 0);
-  return sunday.toISOString().slice(0, 10);
+  const day = d.getDay() || 7; // Sunday=7, Monday=1, ... Saturday=6
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - day + 1);
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString().slice(0, 10);
 }
 
 function getWindowCount(m: WindowCountMap, days: number): number | null {
