@@ -437,7 +437,7 @@ async function loadFacts(
     const weeksByWindow = new Map<number, Set<string>>();
     for (const ci of myCheckins) {
       const atMs = new Date(ci.checked_in_at).getTime();
-      for (const days of [7, 14, 21, 28, 30, 60, 90, 180, 365]) {
+      for (const days of allWindows) {
         if (atMs >= now - days * 86400000) {
           f.checkins_in_days.set(days, (f.checkins_in_days.get(days) || 0) + 1);
           if (!weeksByWindow.has(days)) weeksByWindow.set(days, new Set());
