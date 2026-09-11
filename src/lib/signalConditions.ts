@@ -62,6 +62,15 @@ export const CONDITION_SOURCES: ConditionSource[] = [
     ],
   },
   {
+    value: "attendance.first_seen_days_ago",
+    label: "Days since first seen (first check-in or date added)",
+    category: "Attendance",
+    operators: [
+      { value: "lte", label: "is at most", input: "days" },
+      { value: "gte", label: "is at least", input: "days" },
+    ],
+  },
+  {
     value: "attendance.guest_checkins_in_days",
     label: "Guest check-ins in the last",
     category: "Attendance",

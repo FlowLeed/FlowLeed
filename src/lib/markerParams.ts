@@ -20,7 +20,7 @@ export const markerParamSpecs: Record<string, MarkerParamDescriptor[]> = {
     { key: "window_weeks", label: "Out of the last", suffix: "weeks", default: 4, min: 2, max: 26 },
   ],
   first_time_guest: [
-    { key: "days", label: "Guest check-in within the last", suffix: "days", default: 30, min: 1, max: 180 },
+    { key: "days", label: "Counts as new if first seen within the last", suffix: "days", default: 30, min: 1, max: 180 },
   ],
   kids_checked_in: [
     { key: "days", label: "Household check-in within the last", suffix: "days", default: 30, min: 1, max: 180 },
@@ -91,7 +91,7 @@ export function markerFormula(key: string, params?: Record<string, unknown> | nu
     case "consistent_attender":
       return `Attended a service in at least ${n(p, "min_weeks", 3)} of the last ${n(p, "window_weeks", 4)} weeks.`;
     case "first_time_guest":
-      return `Has a check-in flagged as guest in the last ${n(p, "days", 30)} days.`;
+      return `First check-in ever (or, if never checked in, the date they were added) falls within the last ${n(p, "days", 30)} days.`;
     case "kids_checked_in":
       return `A household member checked in (e.g. kids) in the last ${n(p, "days", 30)} days.`;
     case "missed_3_sundays":

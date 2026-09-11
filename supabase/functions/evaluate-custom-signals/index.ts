@@ -26,6 +26,7 @@ export type ContactFacts = {
   lifetime_checkins: number;
   never_attended: boolean;
   is_first_time_guest: boolean;
+  first_seen_days_ago: number | null;
   checkins_in_days: WindowCountMap;
   distinct_weeks_in_window: WindowCountMap;
   guest_checkins_in_days: WindowCountMap;
@@ -182,6 +183,9 @@ export function evalCond(c: Condition, f: ContactFacts): boolean {
     case "attendance.is_first_time_guest":
       return f.is_first_time_guest;
 
+    case "attendance.first_seen_days_ago":
+      return cmp(f.first_seen_days_ago, c.operator, Number(c.value));
+
     case "group.is_in_group":
       return c.operator === "true" ? f.is_in_group : !f.is_in_group;
 
@@ -301,7 +305,7 @@ async function loadFacts(
   // Contacts
   const { data: contacts } = await sb
     .from("contacts")
-    .select("id, campus_id")
+    .select("id, campus_id, created_at")
     .eq("organization_id", orgId)
     .limit(50000);
   for (const c of contacts || []) {
@@ -313,6 +317,7 @@ async function loadFacts(
       lifetime_checkins: 0,
       never_attended: true,
       is_first_time_guest: false,
+      first_seen_days_ago: daysBetween((c as any).created_at || null),
       checkins_in_days: new Map(),
       distinct_weeks_in_window: new Map(),
       guest_checkins_in_days: new Map(),
@@ -461,6 +466,13 @@ async function loadFacts(
     }
     f.weeks_last_12 = weeksLast12.size;
     f.weeks_prior_12 = weeksPrior12.size;
+
+    // First seen = earliest check-in if any, otherwise the date the contact was added
+    const firstCheckin = firstSeen.get(cid);
+    if (firstCheckin) {
+      const d = daysBetween(firstCheckin);
+      if (d !== null) f.first_seen_days_ago = d;
+    }
 
     // First-time guest = exactly one checkin in last 12 weeks, within 30 days
     if (f.services_last_12w === 1) {

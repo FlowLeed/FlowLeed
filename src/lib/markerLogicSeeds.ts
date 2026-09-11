@@ -58,7 +58,7 @@ export function markerLogicSeed(
       return {
         combinator: "AND",
         conditions: [
-          cond("attendance.guest_checkins_in_days", "gte", windowCount(n(p, "days", 30), 1)),
+          cond("attendance.first_seen_days_ago", "lte", n(p, "days", 30)),
         ],
       };
 

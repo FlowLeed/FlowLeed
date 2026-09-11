@@ -19,6 +19,7 @@ function baseFacts(): ContactFacts {
     is_first_time_guest: false,
     checkins_in_days: new Map(),
     distinct_weeks_in_window: new Map(),
+    first_seen_days_ago: null,
     guest_checkins_in_days: new Map(),
     household_checkins_in_days: new Map(),
     weeks_last_12: 0,
