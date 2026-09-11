@@ -455,17 +455,27 @@ async function loadFacts(
     }
   }
 
+  // Group check-ins by contact once — rescanning every check-in per contact does
+  // not scale to a full church (18k contacts x 124k check-ins).
+  const checkinsByContact = new Map<string, Array<{ atMs: number; weekKey: string }>>();
+  for (const ci of ownCheckins) {
+    if (!ci.contact_id || !facts.has(ci.contact_id)) continue;
+    const list = checkinsByContact.get(ci.contact_id) || [];
+    list.push({ atMs: new Date(ci.checked_in_at).getTime(), weekKey: startOfWeekIso(ci.checked_in_at) });
+    checkinsByContact.set(ci.contact_id, list);
+  }
+
   // Compute windowed counts and distinct weeks after all check-ins are loaded
   for (const [cid, f] of facts) {
-    const myCheckins = ownCheckins.filter((c) => c.contact_id === cid);
+    const myCheckins = checkinsByContact.get(cid) || [];
     const weeksByWindow = new Map<number, Set<string>>();
     for (const ci of myCheckins) {
-      const atMs = new Date(ci.checked_in_at).getTime();
+      const atMs = ci.atMs;
       for (const days of allWindows) {
         if (atMs >= now - days * 86400000) {
           f.checkins_in_days.set(days, (f.checkins_in_days.get(days) || 0) + 1);
           if (!weeksByWindow.has(days)) weeksByWindow.set(days, new Set());
-          weeksByWindow.get(days)!.add(startOfWeekIso(ci.checked_in_at));
+          weeksByWindow.get(days)!.add(ci.weekKey);
         }
       }
     }
