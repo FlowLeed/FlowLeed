@@ -17,7 +17,7 @@ export interface Condition {
 
 export type WindowCountMap = Map<number, number>;
 
-type ContactFacts = {
+export type ContactFacts = {
   contact_id: string;
   campus_id: string | null;
   // Attendance
