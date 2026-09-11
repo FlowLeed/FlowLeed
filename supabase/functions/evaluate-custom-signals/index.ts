@@ -305,7 +305,7 @@ async function loadFacts(
   // Contacts
   const { data: contacts } = await sb
     .from("contacts")
-    .select("id, campus_id, created_at")
+    .select("id, campus_id, created_at, source_type")
     .eq("organization_id", orgId)
     .limit(50000);
   for (const c of contacts || []) {
@@ -317,7 +317,9 @@ async function loadFacts(
       lifetime_checkins: 0,
       never_attended: true,
       is_first_time_guest: false,
-      first_seen_days_ago: daysBetween((c as any).created_at || null),
+      // Planning Center imports carry the import date, not a real "joined" date — ignore it
+      first_seen_days_ago:
+        (c as any).source_type === "planning_center" ? null : daysBetween((c as any).created_at || null),
       checkins_in_days: new Map(),
       distinct_weeks_in_window: new Map(),
       guest_checkins_in_days: new Map(),
