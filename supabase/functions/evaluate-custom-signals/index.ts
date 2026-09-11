@@ -486,26 +486,20 @@ async function loadFacts(
     }
   }
 
-  // Household check-ins
-  const householdCheckins: Array<{ contact_id: string; checked_in_at: string }> = [];
-  for (const [cid, others] of householdLinks) {
-    for (const otherCid of others) {
-      const otherFacts = facts.get(otherCid);
-      if (!otherFacts) continue;
-      for (const ci of ownCheckins) {
-        if (ci.contact_id === otherCid) {
-          householdCheckins.push({ contact_id: cid, checked_in_at: ci.checked_in_at });
+  // Kids check-ins: a child of the contact checked in (serving check-ins excluded)
+  for (const ci of ownCheckins) {
+    if (!ci.pc_person_id) continue;
+    if ((ci.checkin_kind || "regular") === "volunteer") continue;
+    const parents = kidPersonToParents.get(ci.pc_person_id);
+    if (!parents) continue;
+    const atMs = new Date(ci.checked_in_at).getTime();
+    for (const parentId of parents) {
+      const f = facts.get(parentId);
+      if (!f) continue;
+      for (const days of allWindows) {
+        if (atMs >= now - days * 86400000) {
+          f.household_checkins_in_days.set(days, (f.household_checkins_in_days.get(days) || 0) + 1);
         }
-      }
-    }
-  }
-  for (const hc of householdCheckins) {
-    const f = facts.get(hc.contact_id);
-    if (!f) continue;
-    const atMs = new Date(hc.checked_in_at).getTime();
-    for (const days of allWindows) {
-      if (atMs >= now - days * 86400000) {
-        f.household_checkins_in_days.set(days, (f.household_checkins_in_days.get(days) || 0) + 1);
       }
     }
   }
