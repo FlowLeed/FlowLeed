@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RotateCcw, SlidersHorizontal } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
 import { markerParamSpecs, paramValue } from "@/lib/markerParams";
