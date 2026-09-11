@@ -383,8 +383,7 @@ async function loadFacts(
     const familyRows = await fetchAll("contact_family_members", (from, to) =>
       sb
         .from("contact_family_members")
-        .select("contact_id, pc_person_id, relationship, contact:contacts!inner(organization_id)")
-        .eq("contact.organization_id", orgId)
+        .select("contact_id, pc_person_id, relationship")
         .ilike("relationship", "child")
         .not("pc_person_id", "is", null)
         .order("id", { ascending: true })
@@ -597,14 +596,22 @@ async function loadFacts(
   }
   const attendanceByMember = new Map<string, { present: number; total: number; lastPresent: string | null }>();
   if (meetingIds.size && activeGroupMemberIds.size) {
-    const ga = await fetchAll("group_attendance", (from, to) =>
-      sb
-        .from("group_attendance")
-        .select("group_member_id, group_meeting_id, status, checked_in_at")
-        .in("group_member_id", Array.from(activeGroupMemberIds))
-        .in("group_meeting_id", Array.from(meetingIds))
-        .order("id", { ascending: true })
-        .range(from, to));
+    // Filter by meeting only — an `in` list of every group member blows the URL limit
+    const meetingIdList = Array.from(meetingIds);
+    const ga: any[] = [];
+    for (let i = 0; i < meetingIdList.length; i += 100) {
+      const chunk = meetingIdList.slice(i, i + 100);
+      const rows = await fetchAll("group_attendance", (from, to) =>
+        sb
+          .from("group_attendance")
+          .select("group_member_id, group_meeting_id, status, checked_in_at")
+          .in("group_meeting_id", chunk)
+          .order("id", { ascending: true })
+          .range(from, to));
+      for (const row of rows as any[]) {
+        if (activeGroupMemberIds.has(row.group_member_id)) ga.push(row);
+      }
+    }
     for (const a of ga || []) {
       const gmId = (a as any).group_member_id as string;
       const status = String((a as any).status || "");
@@ -800,12 +807,11 @@ async function loadFacts(
     }
   }
 
-  // Tags
+  // Tags (contact_tags has no organization_id — filter by this org's contacts in memory)
   const tags = await fetchAll("contact_tags", (from, to) =>
     sb
       .from("contact_tags")
       .select("contact_id, tag")
-      .eq("organization_id", orgId)
       .order("id", { ascending: true })
       .range(from, to));
   for (const t of tags || []) {
