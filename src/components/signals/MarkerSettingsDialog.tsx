@@ -192,37 +192,7 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
             />
           </div>
 
-          {specs.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Quick settings</p>
-              {specs.map((s) => (
-                <div key={s.key} className="flex items-center justify-between gap-3">
-                  <Label
-                    htmlFor={`p-${s.key}`}
-                    className="text-xs font-normal text-muted-foreground flex-1"
-                  >
-                    {s.label}
-                  </Label>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Input
-                      id={`p-${s.key}`}
-                      type="number"
-                      min={s.min}
-                      max={s.max}
-                      className="w-20 h-8"
-                      value={params[s.key] ?? s.default}
-                      onChange={(e) =>
-                        setParams((prev) => ({ ...prev, [s.key]: Number(e.target.value) }))
-                      }
-                    />
-                    {s.suffix && (
-                      <span className="text-xs text-muted-foreground w-20">{s.suffix}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          
 
           <div className="space-y-4 border-t pt-5">
             <div>
