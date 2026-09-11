@@ -71,6 +71,7 @@ export interface PromoteMarkerInput {
   description?: string | null;
   polarity: SignalPolarity;
   severity: SignalSeverity;
+  enabled: boolean;
   combinator: RuleCombinator;
   conditions: CustomSignalCondition[];
   /** Existing promoted signal to update instead of creating a new one. */
@@ -79,7 +80,7 @@ export interface PromoteMarkerInput {
 
 /**
  * Replaces a built-in signal's logic with a church-owned custom signal:
- * creates (or updates) the custom signal + rule, turns the built-in off,
+ * creates (or updates) the custom signal + rule, replaces the built-in,
  * and evaluates the new rule so counts appear right away.
  */
 export function usePromoteMarkerToCustom() {
@@ -100,7 +101,7 @@ export function usePromoteMarkerToCustom() {
             description: input.description || null,
             polarity: input.polarity,
             severity: input.severity,
-            enabled: true,
+            enabled: input.enabled,
           })
           .eq("id", signalId)
           .select("id")
@@ -119,6 +120,7 @@ export function usePromoteMarkerToCustom() {
             polarity: input.polarity,
             severity: input.severity,
             category: "Custom",
+            enabled: input.enabled,
           })
           .select("id")
           .maybeSingle();

@@ -79,7 +79,7 @@ const SignalsPage = () => {
 
   const totals = useMemo(() => {
     if (!catalog) return { pos: 0, neg: 0 };
-    const live = catalog.filter((m) => !m.is_phase_two);
+    const live = catalog.filter((m) => !m.is_phase_two && m.enabled !== false);
     return {
       pos: live.filter((m) => m.polarity === "positive").reduce((s, m) => s + m.contact_count, 0),
       neg: live.filter((m) => m.polarity === "negative").reduce((s, m) => s + m.contact_count, 0),
@@ -323,7 +323,7 @@ function MarkerRow({
                     <p className="text-xs font-medium mb-1">How it's calculated</p>
                     <p className="text-xs text-muted-foreground">
                       {isRewritten
-                        ? "Uses your church's own conditions. Open Edit → Logic to see them."
+                        ? "Uses your church's own conditions. Open Edit to see them."
                         : markerFormula(marker.key, marker.params) || marker.description}
                     </p>
                   </TooltipContent>
@@ -372,20 +372,12 @@ function MarkerRow({
                 </DropdownMenu>
               )}
             </div>
-            {isRewritten ? (
+            {!locked && !isOff && marker.contact_count > 0 && (
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                <Link to="/signals/custom">
-                  Custom <ArrowRight className="h-3 w-3 ml-1" />
+                <Link to={`/contacts?marker=${marker.key}`}>
+                  View <ArrowRight className="h-3 w-3 ml-1" />
                 </Link>
               </Button>
-            ) : (
-              !locked && !isOff && marker.contact_count > 0 && (
-                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                  <Link to={`/contacts?marker=${marker.key}`}>
-                    View <ArrowRight className="h-3 w-3 ml-1" />
-                  </Link>
-                </Button>
-              )
             )}
           </div>
 
