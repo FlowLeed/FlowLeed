@@ -289,7 +289,7 @@ function evalRule(
 }
 
 async function loadFacts(
-  sb: ReturnType<typeof createClient>,
+  sb: any,
   orgId: string,
   windowDays: number[],
 ): Promise<Map<string, ContactFacts>> {
