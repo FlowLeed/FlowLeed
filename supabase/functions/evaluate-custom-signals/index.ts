@@ -781,12 +781,12 @@ async function evaluateOrg(sb: ReturnType<typeof createClient>, orgId: string) {
       }
     }
     if (toInsert.length) {
-      await sb.from("custom_signal_contacts").insert(toInsert);
+      await sb.from("custom_signal_contacts").insert(toInsert as any);
     }
     if (toReopen.length) {
       await sb
         .from("custom_signal_contacts")
-        .update({ matched_at: now, cleared_at: null })
+        .update({ matched_at: now, cleared_at: null } as any)
         .in("id", toReopen);
     }
 
@@ -798,7 +798,7 @@ async function evaluateOrg(sb: ReturnType<typeof createClient>, orgId: string) {
     if (toClear.length) {
       await sb
         .from("custom_signal_contacts")
-        .update({ cleared_at: now })
+        .update({ cleared_at: now } as any)
         .in("id", toClear);
     }
   }
