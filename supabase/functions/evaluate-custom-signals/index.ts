@@ -58,14 +58,14 @@ export type ContactFacts = {
   tags: Set<string>;
 };
 
-function daysBetween(iso: string | null): number | null {
+export function daysBetween(iso: string | null): number | null {
   if (!iso) return null;
   const t = new Date(iso).getTime();
   if (isNaN(t)) return null;
   return Math.floor((Date.now() - t) / 86400000);
 }
 
-function startOfWeekIso(iso: string): string {
+export function startOfWeekIso(iso: string): string {
   // Match PostgreSQL date_trunc('week', ...) which uses ISO-8601 Monday weeks.
   const d = new Date(iso);
   const day = d.getDay() || 7; // Sunday=7, Monday=1, ... Saturday=6
