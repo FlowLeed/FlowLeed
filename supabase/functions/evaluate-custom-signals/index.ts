@@ -79,6 +79,26 @@ function getWindowCount(m: WindowCountMap, days: number): number | null {
   return m.has(days) ? m.get(days)! : null;
 }
 
+function extractWindowDays(conditions: Condition[]): number[] {
+  const days = new Set<number>();
+  const windowSources = new Set([
+    "attendance.checkins_in_days",
+    "attendance.distinct_weeks_in_window",
+    "attendance.guest_checkins_in_days",
+    "attendance.household_checkins_in_days",
+    "serve.checkins_in_days",
+    "moment.any_recent_in_days",
+    "online.watched_recent_in_days",
+    "online.prayer_recent_in_days",
+  ]);
+  for (const c of conditions) {
+    if (!windowSources.has(c.source)) continue;
+    const v = windowCountValue(c.value);
+    if (v.days > 0) days.add(v.days);
+  }
+  return Array.from(days).sort((a, b) => a - b);
+}
+
 function cmp(a: number | null, op: string, b: number): boolean {
   if (a === null) return false;
   switch (op) {
