@@ -372,12 +372,20 @@ function MarkerRow({
                 </DropdownMenu>
               )}
             </div>
-            {!locked && !isOff && marker.contact_count > 0 && (
+            {isRewritten ? (
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                <Link to={`/contacts?marker=${marker.key}`}>
-                  View <ArrowRight className="h-3 w-3 ml-1" />
+                <Link to="/signals/custom">
+                  Custom <ArrowRight className="h-3 w-3 ml-1" />
                 </Link>
               </Button>
+            ) : (
+              !locked && !isOff && marker.contact_count > 0 && (
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                  <Link to={`/contacts?marker=${marker.key}`}>
+                    View <ArrowRight className="h-3 w-3 ml-1" />
+                  </Link>
+                </Button>
+              )
             )}
           </div>
 
