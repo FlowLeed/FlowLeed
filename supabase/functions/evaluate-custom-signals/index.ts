@@ -549,7 +549,7 @@ async function loadFacts(
   }
 
   for (const [gmId, s] of attendanceByMember) {
-    const cid = (gm || []).find((m: any) => m.id === gmId)?.contact_id as string | undefined;
+    const cid = ((gm || []) as any[]).find((m: any) => m.id === gmId)?.contact_id as string | undefined;
     if (!cid) continue;
     const f = facts.get(cid);
     if (!f) continue;
