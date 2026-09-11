@@ -423,7 +423,7 @@ async function loadFacts(
 
     // Guest check-ins by window
     if (ci.checkin_kind === "guest") {
-      for (const days of [1, 7, 14, 30, 60, 90, 180, 365]) {
+      for (const days of allWindows) {
         if (atMs >= now - days * 86400000) {
           f.guest_checkins_in_days.set(days, (f.guest_checkins_in_days.get(days) || 0) + 1);
         }
