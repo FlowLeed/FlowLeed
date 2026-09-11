@@ -83,7 +83,7 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
 
   useEffect(() => {
     if (!marker || !open) return;
-    setTab("basics");
+    
     setLabel(marker.label || "");
     setDescription(marker.description || "");
     setEnabled(marker.enabled !== false || !!marker.promoted_signal_id);
