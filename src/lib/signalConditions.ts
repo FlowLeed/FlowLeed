@@ -27,6 +27,8 @@ export const CONDITION_SOURCES: ConditionSource[] = [
     operators: [
       { value: "lte", label: "is at most", input: "days" },
       { value: "gte", label: "is at least", input: "days" },
+      { value: "gt", label: "is more than", input: "days" },
+      { value: "lt", label: "is less than", input: "days" },
     ],
   },
   {
@@ -166,6 +168,7 @@ export const CONDITION_SOURCES: ConditionSource[] = [
     operators: [
       { value: "gte", label: "is at least", input: "days" },
       { value: "lte", label: "is at most", input: "days" },
+      { value: "gt", label: "is more than", input: "days" },
     ],
   },
   {
@@ -184,6 +187,8 @@ export const CONDITION_SOURCES: ConditionSource[] = [
     operators: [
       { value: "gte", label: "is at least (%)", input: "number" },
       { value: "lte", label: "is at most (%)", input: "number" },
+      { value: "gt", label: "is more than (%)", input: "number" },
+      { value: "lt", label: "is less than (%)", input: "number" },
     ],
   },
   // Serving
@@ -194,6 +199,7 @@ export const CONDITION_SOURCES: ConditionSource[] = [
     operators: [
       { value: "lte", label: "is at most", input: "days" },
       { value: "gte", label: "is at least", input: "days" },
+      { value: "gt", label: "is more than", input: "days" },
     ],
   },
   {
