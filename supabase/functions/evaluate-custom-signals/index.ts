@@ -265,7 +265,7 @@ export function evalCond(c: Condition, f: ContactFacts): boolean {
   }
 }
 
-function evalRule(
+export function evalRule(
   combinator: "AND" | "OR",
   conditions: Condition[],
   f: ContactFacts,
