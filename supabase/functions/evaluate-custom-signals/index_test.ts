@@ -1,54 +1,14 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import {
+  cmp,
+  evalCond,
+  evalRule,
+  extractWindowDays,
+  startOfWeekIso,
+  type ContactFacts,
+} from "./index.ts";
 
-// Re-import the internal functions by evaluating the module in a test-friendly way.
-// We import the file as a module and rely on the fact that Deno.serve won't run
-// during the test because no request is made.
-const module = await import("./index.ts");
-
-// The internal functions are not exported, so we re-implement the public
-// condition-evaluation helpers here to test the logic.
-// NOTE: Keep these in sync with index.ts.
-
-function daysBetween(iso: string | null): number | null {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (isNaN(t)) return null;
-  return Math.floor((Date.now() - t) / 86400000);
-}
-
-function getWindowCount(m: Map<number, number>, days: number): number | null {
-  return m.has(days) ? m.get(days)! : null;
-}
-
-function windowCountValue(value: any): { days: number; count: number } {
-  if (typeof value === "object" && value !== null) {
-    return {
-      days: Number(value.days) || 0,
-      count: Number(value.count) || 0,
-    };
-  }
-  return { days: 0, count: Number(value) || 0 };
-}
-
-function cmp(a: number | null, op: string, b: number): boolean {
-  if (a === null) return false;
-  switch (op) {
-    case "eq":
-      return a === b;
-    case "gte":
-      return a >= b;
-    case "lte":
-      return a <= b;
-    case "gt":
-      return a > b;
-    case "lt":
-      return a < b;
-    default:
-      return false;
-  }
-}
-
-function baseFacts(): any {
+function baseFacts(): ContactFacts {
   return {
     contact_id: "c1",
     campus_id: null,
@@ -84,87 +44,33 @@ function baseFacts(): any {
   };
 }
 
-function evalCond(c: any, f: any): boolean {
-  switch (c.source) {
-    case "attendance.last_service_days_ago":
-      return cmp(f.last_service_days_ago, c.operator, Number(c.value));
-    case "attendance.never_attended":
-      return f.never_attended;
-    case "attendance.checkins_in_days": {
-      const v = windowCountValue(c.value);
-      return cmp(getWindowCount(f.checkins_in_days, v.days), c.operator, v.count);
-    }
-    case "attendance.distinct_weeks_in_window": {
-      const v = windowCountValue(c.value);
-      return cmp(getWindowCount(f.distinct_weeks_in_window, v.days), c.operator, v.count);
-    }
-    case "attendance.lifetime_checkins":
-      return cmp(f.lifetime_checkins, c.operator, Number(c.value));
-    case "attendance.weeks_last_12":
-      return cmp(f.weeks_last_12, c.operator, Number(c.value));
-    case "attendance.weeks_prior_12":
-      return cmp(f.weeks_prior_12, c.operator, Number(c.value));
-    case "attendance.weeks_last_12_ratio_to_prior": {
-      if (f.weeks_prior_12 === 0) return false;
-      const ratio = Math.round((f.weeks_last_12 * 100) / f.weeks_prior_12);
-      return cmp(ratio, c.operator, Number(c.value));
-    }
-    case "group.is_in_group":
-      return c.operator === "true" ? f.is_in_group : !f.is_in_group;
-    case "group.never_attended":
-      return f.never_attended_group;
-    case "group.last_attended_days_ago":
-      return cmp(f.last_group_attended_days_ago, c.operator, Number(c.value));
-    case "group.meetings_count":
-      return cmp(f.group_meetings_count, c.operator, Number(c.value));
-    case "group.attendance_rate":
-      return f.group_attendance_rate === null ? false : cmp(f.group_attendance_rate, c.operator, Number(c.value));
-    case "serve.checkins_in_days": {
-      const v = windowCountValue(c.value);
-      return cmp(getWindowCount(f.volunteer_checkins_in_days, v.days), c.operator, v.count);
-    }
-    case "serve.never_served":
-      return f.never_served;
-    case "serve.days_since_last":
-      return cmp(f.days_since_last_serve, c.operator, Number(c.value));
-    case "flow.in_any_flow":
-      return c.operator === "true" ? f.in_any_flow : !f.in_any_flow;
-    case "moment.any_recent_in_days": {
-      const v = windowCountValue(c.value);
-      return cmp(getWindowCount(f.any_moment_recent_in_days, v.days), c.operator, v.count);
-    }
-    case "moment.has_salvation":
-      return f.has_salvation;
-    case "online.watched_recent_in_days": {
-      const v = windowCountValue(c.value);
-      return cmp(getWindowCount(f.online_watched_in_days, v.days), c.operator, v.count);
-    }
-    case "online.prayer_recent_in_days": {
-      const v = windowCountValue(c.value);
-      return cmp(getWindowCount(f.online_prayer_in_days, v.days), c.operator, v.count);
-    }
-    default:
-      return false;
-  }
-}
+Deno.test("cmp operators", () => {
+  assertEquals(cmp(5, "gte", 5), true);
+  assertEquals(cmp(5, "gt", 5), false);
+  assertEquals(cmp(5, "lte", 5), true);
+  assertEquals(cmp(5, "lt", 5), false);
+  assertEquals(cmp(null, "gte", 5), false);
+});
 
-function evalRule(combinator: "AND" | "OR", conditions: any[], f: any): boolean {
-  if (!conditions.length) return false;
-  const groups = new Map<number, any[]>();
-  for (const c of conditions) {
-    const g = c.condition_group ?? 0;
-    (groups.get(g) ?? groups.set(g, []).get(g)!).push(c);
-  }
-  const inner: "AND" | "OR" = combinator === "AND" ? "OR" : "AND";
-  const items: boolean[] = [];
-  for (const c of groups.get(0) ?? []) items.push(evalCond(c, f));
-  for (const [gid, list] of groups) {
-    if (gid === 0) continue;
-    const res = list.map((c) => evalCond(c, f));
-    items.push(inner === "AND" ? res.every(Boolean) : res.some(Boolean));
-  }
-  return combinator === "AND" ? items.every(Boolean) : items.some(Boolean);
-}
+Deno.test("startOfWeekIso uses Monday weeks", () => {
+  // 2026-09-14 is a Monday
+  assertEquals(startOfWeekIso("2026-09-14T12:00:00Z"), "2026-09-14");
+  // 2026-09-13 is a Sunday, should roll back to Monday 2026-09-07
+  assertEquals(startOfWeekIso("2026-09-13T12:00:00Z"), "2026-09-07");
+  // 2026-09-19 is a Saturday, should roll back to Monday 2026-09-14
+  assertEquals(startOfWeekIso("2026-09-19T12:00:00Z"), "2026-09-14");
+});
+
+Deno.test("extractWindowDays gathers unique windows from conditions", () => {
+  const conditions = [
+    { source: "attendance.checkins_in_days", operator: "gte", value: { days: 14, count: 1 } },
+    { source: "serve.checkins_in_days", operator: "gte", value: { days: 90, count: 3 } },
+    { source: "attendance.checkins_in_days", operator: "gte", value: { days: 14, count: 2 } },
+    { source: "online.watched_recent_in_days", operator: "gte", value: { days: 30, count: 1 } },
+    { source: "attendance.last_service_days_ago", operator: "lte", value: 7 },
+  ];
+  assertEquals(extractWindowDays(conditions), [14, 30, 90]);
+});
 
 Deno.test("attended_sunday_recent exact via checkins_in_days", () => {
   const f = baseFacts();
@@ -328,10 +234,15 @@ Deno.test("flow_moment_recent", () => {
   assertEquals(evalCond({ source: "moment.any_recent_in_days", operator: "gte", value: { days: 90, count: 1 } }, f), true);
 });
 
-Deno.test("salvation_moment", () => {
+Deno.test("salvation_moment only within 365 days", () => {
   const f = baseFacts();
   f.has_salvation = true;
   assertEquals(evalCond({ source: "moment.has_salvation", operator: "true", value: "" }, f), true);
+
+  // The evaluator reads the precomputed boolean; loadFacts limits salvation to <= 365 days.
+  // This test documents that the condition itself is a simple boolean read.
+  f.has_salvation = false;
+  assertEquals(evalCond({ source: "moment.has_salvation", operator: "true", value: "" }, f), false);
 });
 
 Deno.test("online events", () => {
