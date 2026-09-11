@@ -572,20 +572,39 @@ async function loadFacts(
     }
   }
 
-  for (const [gmId, s] of attendanceByMember) {
+  for (const gmId of activeGroupMemberIds) {
     const cid = ((gm || []) as any[]).find((m: any) => m.id === gmId)?.contact_id as string | undefined;
     if (!cid) continue;
     const f = facts.get(cid);
     if (!f) continue;
-    if (s.total > 0) {
-      f.group_attendance_rate = Math.round((s.present / s.total) * 100);
-      f.group_meetings_count = s.total;
-      f.never_attended_group = false;
-      if (s.lastPresent) {
-        const d = daysBetween(s.lastPresent);
-        if (d !== null && (f.last_group_attended_days_ago === null || d < f.last_group_attended_days_ago)) {
-          f.last_group_attended_days_ago = d;
-        }
+
+    const gid = groupMemberToGroup.get(gmId);
+    const recentMeetings = gid ? recentMeetingsByGroup.get(gid) || [] : [];
+    const totalMeetings = recentMeetings.length;
+    const attended = attendanceByMember.get(gmId) || { present: 0, total: 0, lastPresent: null };
+
+    if (totalMeetings > 0) {
+      f.group_meetings_count = totalMeetings;
+      f.group_attendance_rate = Math.round((attended.present / totalMeetings) * 100);
+      f.never_attended_group = attended.present === 0;
+    } else if (attended.total > 0) {
+      // Fallback when no recent meetings are loaded but attendance records exist
+      f.group_meetings_count = attended.total;
+      f.group_attendance_rate = Math.round((attended.present / attended.total) * 100);
+      f.never_attended_group = attended.present === 0;
+    }
+
+    if (attended.lastPresent) {
+      const d = daysBetween(attended.lastPresent);
+      if (d !== null && (f.last_group_attended_days_ago === null || d < f.last_group_attended_days_ago)) {
+        f.last_group_attended_days_ago = d;
+      }
+    }
+    const lastAttendedAt = groupMemberLastAttended.get(gmId);
+    if (lastAttendedAt) {
+      const d = daysBetween(lastAttendedAt);
+      if (d !== null && (f.last_group_attended_days_ago === null || d < f.last_group_attended_days_ago)) {
+        f.last_group_attended_days_ago = d;
       }
     }
   }
