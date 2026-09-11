@@ -293,6 +293,8 @@ async function loadFacts(
   orgId: string,
   windowDays: number[],
 ): Promise<Map<string, ContactFacts>> {
+  const defaultWindows = [1, 7, 14, 21, 28, 30, 42, 60, 90, 180, 365];
+  const allWindows = Array.from(new Set([...defaultWindows, ...windowDays])).sort((a, b) => a - b);
   const now = Date.now();
   const facts = new Map<string, ContactFacts>();
 
