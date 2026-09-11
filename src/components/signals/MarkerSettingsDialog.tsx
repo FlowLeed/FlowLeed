@@ -65,13 +65,24 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
     queryKey: ["promoted-signal-rule", promotedId],
     enabled: !!promotedId && open,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("custom_signal_rules" as any)
-        .select("rule_combinator, conditions")
-        .eq("signal_id", promotedId)
-        .maybeSingle();
-      if (error) throw error;
-      return data as any;
+      const [ruleResult, signalResult] = await Promise.all([
+        supabase
+          .from("custom_signal_rules" as any)
+          .select("rule_combinator, conditions")
+          .eq("signal_id", promotedId)
+          .maybeSingle(),
+        supabase
+          .from("custom_signals" as any)
+          .select("polarity, severity, enabled")
+          .eq("id", promotedId)
+          .maybeSingle(),
+      ]);
+      if (ruleResult.error) throw ruleResult.error;
+      if (signalResult.error) throw signalResult.error;
+      return {
+        ...(ruleResult.data as any),
+        signal: signalResult.data as any,
+      };
     },
   });
 
@@ -92,6 +103,9 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
     if (promotedRule) {
       setCombinator((promotedRule.rule_combinator as RuleCombinator) || "AND");
       setConditions((promotedRule.conditions as CustomSignalCondition[]) || []);
+      setPolarity((promotedRule.signal?.polarity as SignalPolarity) || "neutral");
+      setSeverity((promotedRule.signal?.severity as SignalSeverity) || "info");
+      setEnabled(promotedRule.signal?.enabled !== false);
     } else {
       const s = markerLogicSeed(marker.key, marker.params as any);
       setCombinator(s.combinator);
@@ -133,6 +147,7 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
         description: description.trim() || null,
         polarity,
         severity,
+        enabled,
         combinator,
         conditions,
         existingSignalId: promotedId,

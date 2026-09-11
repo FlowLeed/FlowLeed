@@ -47,7 +47,7 @@ const SignalsPage = () => {
   const offCount = useMemo(
     () =>
       (catalog || []).filter(
-        (m) => !m.is_phase_two && m.enabled === false && !m.promoted_signal_id
+        (m) => !m.is_phase_two && m.enabled === false
       ).length,
     [catalog]
   );
@@ -57,10 +57,10 @@ const SignalsPage = () => {
     if (filter === "phase2") return catalog.filter((m) => m.is_phase_two);
     if (filter === "off")
       return catalog.filter(
-        (m) => !m.is_phase_two && m.enabled === false && !m.promoted_signal_id
+        (m) => !m.is_phase_two && m.enabled === false
       );
     const live = catalog.filter(
-      (m) => !m.is_phase_two && (m.enabled !== false || !!m.promoted_signal_id)
+      (m) => !m.is_phase_two && m.enabled !== false
     );
     if (filter === "positive") return live.filter((m) => m.polarity === "positive");
     if (filter === "negative") return live.filter((m) => m.polarity === "negative");
@@ -79,7 +79,7 @@ const SignalsPage = () => {
 
   const totals = useMemo(() => {
     if (!catalog) return { pos: 0, neg: 0 };
-    const live = catalog.filter((m) => !m.is_phase_two);
+    const live = catalog.filter((m) => !m.is_phase_two && m.enabled !== false);
     return {
       pos: live.filter((m) => m.polarity === "positive").reduce((s, m) => s + m.contact_count, 0),
       neg: live.filter((m) => m.polarity === "negative").reduce((s, m) => s + m.contact_count, 0),
@@ -178,7 +178,7 @@ const SignalsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard
             label="Active markers tracked"
-            value={catalog?.filter((m) => !m.is_phase_two && (m.enabled !== false || !!m.promoted_signal_id)).length || 0}
+            value={catalog?.filter((m) => !m.is_phase_two && m.enabled !== false).length || 0}
             icon={Activity}
           />
           <SummaryCard label="Positive signals (totals)" value={totals.pos} icon={Sparkles} tone="positive" />
@@ -269,7 +269,7 @@ function MarkerRow({
 }) {
   const locked = marker.is_phase_two;
   const isRewritten = !!marker.promoted_signal_id;
-  const isOff = marker.enabled === false && !isRewritten;
+  const isOff = marker.enabled === false;
   const save = useSaveMarkerSettings();
   const reset = useResetMarkerSettings();
   return (
@@ -323,7 +323,7 @@ function MarkerRow({
                     <p className="text-xs font-medium mb-1">How it's calculated</p>
                     <p className="text-xs text-muted-foreground">
                       {isRewritten
-                        ? "Uses your church's own conditions. Open Edit → Logic to see them."
+                        ? "Uses your church's own conditions. Open Edit to see them."
                         : markerFormula(marker.key, marker.params) || marker.description}
                     </p>
                   </TooltipContent>
@@ -372,20 +372,12 @@ function MarkerRow({
                 </DropdownMenu>
               )}
             </div>
-            {isRewritten ? (
+            {!locked && !isOff && marker.contact_count > 0 && (
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                <Link to="/signals/custom">
-                  Custom <ArrowRight className="h-3 w-3 ml-1" />
+                <Link to={`/contacts?marker=${marker.key}`}>
+                  View <ArrowRight className="h-3 w-3 ml-1" />
                 </Link>
               </Button>
-            ) : (
-              !locked && !isOff && marker.contact_count > 0 && (
-                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                  <Link to={`/contacts?marker=${marker.key}`}>
-                    View <ArrowRight className="h-3 w-3 ml-1" />
-                  </Link>
-                </Button>
-              )
             )}
           </div>
 

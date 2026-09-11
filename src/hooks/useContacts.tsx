@@ -111,11 +111,25 @@ export const useContacts = (filters: ContactFilters) => {
       // Marker filter: get contact IDs that have the marker
       let contactIdsWithMarker: string[] | null = null;
       if (filters.markerKey && filters.markerKey !== "all") {
-        const { data: markerRows } = await supabase
-          .from("contact_markers")
-          .select("contact_id")
+        const { data: markerSetting } = await supabase
+          .from("org_marker_settings" as any)
+          .select("promoted_signal_id")
           .eq("organization_id", organizationId)
-          .eq("marker_key", filters.markerKey);
+          .eq("marker_key", filters.markerKey)
+          .maybeSingle();
+        const promotedSignalId = (markerSetting as any)?.promoted_signal_id as string | undefined;
+        const { data: markerRows } = promotedSignalId
+          ? await supabase
+              .from("custom_signal_contacts" as any)
+              .select("contact_id")
+              .eq("organization_id", organizationId)
+              .eq("signal_id", promotedSignalId)
+              .is("cleared_at", null)
+          : await supabase
+              .from("contact_markers")
+              .select("contact_id")
+              .eq("organization_id", organizationId)
+              .eq("marker_key", filters.markerKey);
         contactIdsWithMarker = (markerRows || []).map((r: any) => r.contact_id);
         if (contactIdsWithMarker.length === 0) {
           return [];
