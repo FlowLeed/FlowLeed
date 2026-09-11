@@ -383,7 +383,9 @@ async function loadFacts(
     const familyRows = await fetchAll("contact_family_members", (from, to) =>
       sb
         .from("contact_family_members")
-        .select("contact_id, pc_person_id, relationship")
+        .select("contact_id, pc_person_id, relationship, contact:contacts!inner(organization_id)")
+        .eq("contact.organization_id", orgId)
+        .ilike("relationship", "child")
         .not("pc_person_id", "is", null)
         .order("id", { ascending: true })
         .range(from, to));
