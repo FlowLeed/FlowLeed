@@ -81,6 +81,7 @@ export function useRecomputeMarkers() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["marker-catalog"] });
+      qc.invalidateQueries({ queryKey: ["marker-last-computed"] });
       qc.invalidateQueries({ queryKey: ["contact-signal"] });
       qc.invalidateQueries({ queryKey: ["contact-markers-by-key"] });
       qc.invalidateQueries({ queryKey: ["all-contacts"] });

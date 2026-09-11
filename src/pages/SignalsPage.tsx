@@ -31,6 +31,17 @@ const polarityClass: Record<string, string> = {
   negative: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300",
 };
 
+function formatUpdated(iso: string) {
+  const then = new Date(iso).getTime();
+  const mins = Math.round((Date.now() - then) / 60000);
+  if (mins < 2) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.round(hrs / 24);
+  return days === 1 ? "yesterday" : `${days} days ago`;
+}
+
 const SignalsPage = () => {
   const { user } = useAuth();
   const [campusId, setCampusId] = useState<string | null>(null);
