@@ -347,40 +347,41 @@ async function loadFacts(
     });
   }
 
-  // Household links (for kids_checked_in)
-  const householdLinks = new Map<string, Set<string>>(); // contact_id -> Set<hh_contact_id>
-  const { data: hhContacts } = await sb
-    .from("contacts")
-    .select("id, pc_household_id")
-    .eq("organization_id", orgId)
-    .not("pc_household_id", "is", null)
-    .limit(50000);
-  const householdMembers = new Map<string, Set<string>>(); // pc_household_id -> Set<contact_id>
-  for (const c of hhContacts || []) {
-    const hid = (c as any).pc_household_id as string;
-    const cid = (c as any).id as string;
-    if (!hid || !cid) continue;
-    if (!householdMembers.has(hid)) householdMembers.set(hid, new Set());
-    householdMembers.get(hid)!.add(cid);
-  }
-  for (const c of hhContacts || []) {
-    const cid = (c as any).id as string;
-    const hid = (c as any).pc_household_id as string;
-    const members = householdMembers.get(hid);
-    if (!members) continue;
-    const others = new Set(members);
-    others.delete(cid);
-    if (others.size) householdLinks.set(cid, others);
+  // Children links (for kids_checked_in): only family members recorded as a child
+  const kidPersonToParents = new Map<string, Set<string>>(); // kid pc_person_id -> Set<parent contact_id>
+  {
+    let fmOffset = 0;
+    const FM_PAGE = 10000;
+    while (true) {
+      const { data: page } = await sb
+        .from("contact_family_members")
+        .select("contact_id, pc_person_id, relationship")
+        .not("pc_person_id", "is", null)
+        .range(fmOffset, fmOffset + FM_PAGE - 1);
+      const rows = (page || []) as any[];
+      if (!rows.length) break;
+      for (const row of rows) {
+        const cid = row.contact_id as string;
+        const pid = row.pc_person_id as string;
+        const rel = String(row.relationship || "").toLowerCase();
+        if (!cid || !pid || rel !== "child") continue;
+        if (!facts.has(cid)) continue; // outside this org
+        if (!kidPersonToParents.has(pid)) kidPersonToParents.set(pid, new Set());
+        kidPersonToParents.get(pid)!.add(cid);
+      }
+      if (rows.length < FM_PAGE) break;
+      fmOffset += FM_PAGE;
+    }
   }
 
   // Check-ins (service attendance) — load all for lifetime/last-service exactness
-  const ownCheckins: Array<{ contact_id: string; checked_in_at: string; checkin_kind: string | null }> = [];
+  const ownCheckins: Array<{ contact_id: string; pc_person_id: string | null; checked_in_at: string; checkin_kind: string | null }> = [];
   let checkinOffset = 0;
   const CHECKIN_PAGE = 50000;
   while (true) {
     const { data: page } = await sb
       .from("pco_checkins")
-      .select("contact_id, checked_in_at, checkin_kind")
+      .select("contact_id, pc_person_id, checked_in_at, checkin_kind")
       .eq("organization_id", orgId)
       .order("checked_in_at", { ascending: true })
       .range(checkinOffset, checkinOffset + CHECKIN_PAGE - 1);
@@ -389,6 +390,7 @@ async function loadFacts(
     for (const row of rows) {
       ownCheckins.push({
         contact_id: row.contact_id as string,
+        pc_person_id: (row.pc_person_id || null) as string | null,
         checked_in_at: row.checked_in_at as string,
         checkin_kind: (row.checkin_kind || null) as string | null,
       });
@@ -484,26 +486,20 @@ async function loadFacts(
     }
   }
 
-  // Household check-ins
-  const householdCheckins: Array<{ contact_id: string; checked_in_at: string }> = [];
-  for (const [cid, others] of householdLinks) {
-    for (const otherCid of others) {
-      const otherFacts = facts.get(otherCid);
-      if (!otherFacts) continue;
-      for (const ci of ownCheckins) {
-        if (ci.contact_id === otherCid) {
-          householdCheckins.push({ contact_id: cid, checked_in_at: ci.checked_in_at });
+  // Kids check-ins: a child of the contact checked in (serving check-ins excluded)
+  for (const ci of ownCheckins) {
+    if (!ci.pc_person_id) continue;
+    if ((ci.checkin_kind || "regular") === "volunteer") continue;
+    const parents = kidPersonToParents.get(ci.pc_person_id);
+    if (!parents) continue;
+    const atMs = new Date(ci.checked_in_at).getTime();
+    for (const parentId of parents) {
+      const f = facts.get(parentId);
+      if (!f) continue;
+      for (const days of allWindows) {
+        if (atMs >= now - days * 86400000) {
+          f.household_checkins_in_days.set(days, (f.household_checkins_in_days.get(days) || 0) + 1);
         }
-      }
-    }
-  }
-  for (const hc of householdCheckins) {
-    const f = facts.get(hc.contact_id);
-    if (!f) continue;
-    const atMs = new Date(hc.checked_in_at).getTime();
-    for (const days of allWindows) {
-      if (atMs >= now - days * 86400000) {
-        f.household_checkins_in_days.set(days, (f.household_checkins_in_days.get(days) || 0) + 1);
       }
     }
   }
