@@ -487,10 +487,10 @@ async function loadFacts(
     const weeksLast12 = new Set<string>();
     const weeksPrior12 = new Set<string>();
     for (const ci of myCheckins) {
-      const atMs = new Date(ci.checked_in_at).getTime();
-      if (atMs >= twelveWksAgo) weeksLast12.add(startOfWeekIso(ci.checked_in_at));
+      const atMs = ci.atMs;
+      if (atMs >= twelveWksAgo) weeksLast12.add(ci.weekKey);
       if (atMs >= twentyFourWksAgo && atMs < twelveWksAgo) {
-        weeksPrior12.add(startOfWeekIso(ci.checked_in_at));
+        weeksPrior12.add(ci.weekKey);
       }
     }
     f.weeks_last_12 = weeksLast12.size;
