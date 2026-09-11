@@ -141,7 +141,7 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) 
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t bg-background shrink-0">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSave} disabled={!canSave || create.isPending || update.isPending}>
             {signal ? "Save changes" : "Create signal"}
