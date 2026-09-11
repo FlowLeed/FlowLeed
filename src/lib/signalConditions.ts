@@ -78,7 +78,7 @@ export const CONDITION_SOURCES: ConditionSource[] = [
   },
   {
     value: "attendance.household_checkins_in_days",
-    label: "Household check-ins in the last",
+    label: "Kids check-ins in the last",
     category: "Attendance",
     operators: [{ value: "gte", label: "is at least", input: "window_count" }],
   },

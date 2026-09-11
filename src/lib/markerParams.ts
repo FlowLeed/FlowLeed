@@ -93,7 +93,7 @@ export function markerFormula(key: string, params?: Record<string, unknown> | nu
     case "first_time_guest":
       return `First check-in ever (or, if never checked in, the date they were added) falls within the last ${n(p, "days", 30)} days.`;
     case "kids_checked_in":
-      return `A household member checked in (e.g. kids) in the last ${n(p, "days", 30)} days.`;
+      return `A child in this person's family checked in during the last ${n(p, "days", 30)} days (serving check-ins don't count).`;
     case "missed_3_sundays":
       return `Previously regular (${n(p, "min_lifetime_checkins", 4)}+ lifetime check-ins) AND last service attendance is between ${n(p, "min_days", 21)} and ${n(p, "max_days", 42)} days ago.`;
     case "drifting_6_weeks":
