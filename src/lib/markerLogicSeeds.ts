@@ -75,14 +75,13 @@ export function markerLogicSeed(
       const maxDays = n(p, "max_days", 42);
       const minLifetime = n(p, "min_lifetime_checkins", 4);
       return {
-        // (lifetime >= X AND never attended) OR (lifetime >= X AND days in range)
-        combinator: "OR",
+        // lifetime >= X AND (never attended OR days in range)
+        combinator: "AND",
         conditions: [
-          cond("attendance.lifetime_checkins", "gte", minLifetime, 1),
+          cond("attendance.lifetime_checkins", "gte", minLifetime, 0),
           cond("attendance.never_attended", "true", "", 1),
-          cond("attendance.lifetime_checkins", "gte", minLifetime, 2),
-          cond("attendance.last_service_days_ago", "gt", minDays, 2),
-          cond("attendance.last_service_days_ago", "lte", maxDays, 2),
+          cond("attendance.last_service_days_ago", "gt", minDays, 1),
+          cond("attendance.last_service_days_ago", "lte", maxDays, 1),
         ],
       };
     }
@@ -91,13 +90,12 @@ export function markerLogicSeed(
       const driftDays = n(p, "days", 42);
       const minLifetime = n(p, "min_lifetime_checkins", 4);
       return {
-        // (lifetime >= X AND never attended) OR (lifetime >= X AND days > driftDays)
-        combinator: "OR",
+        // lifetime >= X AND (never attended OR days > driftDays)
+        combinator: "AND",
         conditions: [
-          cond("attendance.lifetime_checkins", "gte", minLifetime, 1),
+          cond("attendance.lifetime_checkins", "gte", minLifetime, 0),
           cond("attendance.never_attended", "true", "", 1),
-          cond("attendance.lifetime_checkins", "gte", minLifetime, 2),
-          cond("attendance.last_service_days_ago", "gt", driftDays, 2),
+          cond("attendance.last_service_days_ago", "gt", driftDays, 1),
         ],
       };
     }
