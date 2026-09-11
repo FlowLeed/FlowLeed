@@ -1,4 +1,13 @@
-export type ConditionInputKind = "number" | "days" | "text" | "none";
+export type ConditionInputKind =
+  | "number"
+  | "days"
+  | "text"
+  | "none"
+  | "campus"
+  | "flow"
+  | "stage"
+  | "moment"
+  | "moment_days";
 
 export interface ConditionSource {
   value: string;
@@ -32,6 +41,31 @@ export const CONDITION_SOURCES: ConditionSource[] = [
     label: "First-time guest (last 30d)",
     category: "Attendance",
     operators: [{ value: "true", label: "is true", input: "none" }],
+  },
+  {
+    value: "campus.assignment",
+    label: "Campus",
+    category: "Campus",
+    operators: [
+      { value: "eq", label: "is", input: "campus" },
+      { value: "neq", label: "is not", input: "campus" },
+      { value: "unassigned", label: "is not assigned", input: "none" },
+    ],
+  },
+  {
+    value: "flow.in_flow",
+    label: "Flow",
+    category: "Flows",
+    operators: [
+      { value: "eq", label: "is in", input: "flow" },
+      { value: "neq", label: "is not in", input: "flow" },
+    ],
+  },
+  {
+    value: "flow.in_stage",
+    label: "Flow stage",
+    category: "Flows",
+    operators: [{ value: "eq", label: "is in", input: "stage" }],
   },
   {
     value: "group.is_in_group",
@@ -76,6 +110,24 @@ export const CONDITION_SOURCES: ConditionSource[] = [
     operators: [
       { value: "gte", label: "is at least", input: "days" },
       { value: "lte", label: "is at most", input: "days" },
+    ],
+  },
+  {
+    value: "moment.has_type",
+    label: "Flow Moment",
+    category: "Flow Moments",
+    operators: [
+      { value: "has", label: "has", input: "moment" },
+      { value: "not_has", label: "does not have", input: "moment" },
+    ],
+  },
+  {
+    value: "moment.days_since_type",
+    label: "Days since Flow Moment",
+    category: "Flow Moments",
+    operators: [
+      { value: "lte", label: "is at most", input: "moment_days" },
+      { value: "gte", label: "is at least", input: "moment_days" },
     ],
   },
   {
