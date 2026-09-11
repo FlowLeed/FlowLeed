@@ -177,7 +177,7 @@ const SignalsPage = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard
-            label="Active markers tracked"
+            label="Active Signals tracked"
             value={catalog?.filter((m) => !m.is_phase_two && m.enabled !== false).length || 0}
             icon={Activity}
           />
