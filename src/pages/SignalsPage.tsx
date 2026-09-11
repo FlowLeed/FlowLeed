@@ -178,7 +178,7 @@ const SignalsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard
             label="Active markers tracked"
-            value={catalog?.filter((m) => !m.is_phase_two && m.enabled !== false).length || 0}
+            value={catalog?.filter((m) => !m.is_phase_two && (m.enabled !== false || !!m.promoted_signal_id)).length || 0}
             icon={Activity}
           />
           <SummaryCard label="Positive signals (totals)" value={totals.pos} icon={Sparkles} tone="positive" />
@@ -268,7 +268,8 @@ function MarkerRow({
   onEdit?: () => void;
 }) {
   const locked = marker.is_phase_two;
-  const isOff = marker.enabled === false;
+  const isRewritten = !!marker.promoted_signal_id;
+  const isOff = marker.enabled === false && !isRewritten;
   const save = useSaveMarkerSettings();
   const reset = useResetMarkerSettings();
   return (
