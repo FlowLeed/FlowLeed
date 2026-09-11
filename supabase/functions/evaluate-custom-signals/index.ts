@@ -782,7 +782,8 @@ async function evaluateOrg(sb: any, orgId: string) {
   const rulesBySignal = new Map<string, any>();
   for (const r of rules || []) rulesBySignal.set((r as any).signal_id, r);
 
-  const facts = await loadFacts(sb, orgId);
+  const allConditions = (rules || []).flatMap((r: any) => r.conditions || []);
+  const facts = await loadFacts(sb, orgId, extractWindowDays(allConditions));
 
   const now = new Date().toISOString();
   let totalMatches = 0;
