@@ -487,7 +487,7 @@ async function loadFacts(
     const f = facts.get(hc.contact_id);
     if (!f) continue;
     const atMs = new Date(hc.checked_in_at).getTime();
-    for (const days of [7, 14, 21, 28, 30, 60, 90, 180, 365]) {
+    for (const days of allWindows) {
       if (atMs >= now - days * 86400000) {
         f.household_checkins_in_days.set(days, (f.household_checkins_in_days.get(days) || 0) + 1);
       }
