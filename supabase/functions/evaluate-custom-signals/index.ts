@@ -375,13 +375,13 @@ async function loadFacts(
   }
 
   // Check-ins (service attendance) — load all for lifetime/last-service exactness
-  const ownCheckins: Array<{ contact_id: string; checked_in_at: string; checkin_kind: string | null }> = [];
+  const ownCheckins: Array<{ contact_id: string; pc_person_id: string | null; checked_in_at: string; checkin_kind: string | null }> = [];
   let checkinOffset = 0;
   const CHECKIN_PAGE = 50000;
   while (true) {
     const { data: page } = await sb
       .from("pco_checkins")
-      .select("contact_id, checked_in_at, checkin_kind")
+      .select("contact_id, pc_person_id, checked_in_at, checkin_kind")
       .eq("organization_id", orgId)
       .order("checked_in_at", { ascending: true })
       .range(checkinOffset, checkinOffset + CHECKIN_PAGE - 1);
@@ -390,6 +390,7 @@ async function loadFacts(
     for (const row of rows) {
       ownCheckins.push({
         contact_id: row.contact_id as string,
+        pc_person_id: (row.pc_person_id || null) as string | null,
         checked_in_at: row.checked_in_at as string,
         checkin_kind: (row.checkin_kind || null) as string | null,
       });
