@@ -112,7 +112,7 @@ export function ConditionBuilder({
               const src = findSource(c.source);
               const op = src.operators.find((o) => o.value === c.operator) || src.operators[0];
               return (
-                <div key={i} className="group relative flex w-full min-w-0 items-center gap-1.5 overflow-hidden rounded-full border bg-background py-1.5 pl-2 pr-11 shadow-sm transition-colors hover:border-primary/40">
+                <div key={i} className="group relative flex w-full min-w-0 flex-wrap items-center gap-1.5 rounded-lg border bg-background py-2 pl-2 pr-11 shadow-sm transition-colors hover:border-primary/40">
                   <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
               <Select
                 value={src.category}
