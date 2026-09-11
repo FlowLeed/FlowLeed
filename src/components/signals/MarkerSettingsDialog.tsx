@@ -49,13 +49,9 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
   const save = useSaveMarkerSettings();
   const reset = useResetMarkerSettings();
   const promote = usePromoteMarkerToCustom();
-  const specs = marker ? markerParamSpecs[marker.key] || [] : [];
-
-  
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
   const [enabled, setEnabled] = useState(true);
-  const [params, setParams] = useState<Record<string, number>>({});
 
   const [polarity, setPolarity] = useState<SignalPolarity>("neutral");
   const [severity, setSeverity] = useState<SignalSeverity>("info");
@@ -87,11 +83,6 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
     setLabel(marker.label || "");
     setDescription(marker.description || "");
     setEnabled(marker.enabled !== false || !!marker.promoted_signal_id);
-    const next: Record<string, number> = {};
-    for (const s of markerParamSpecs[marker.key] || []) {
-      next[s.key] = paramValue(marker.params as any, s);
-    }
-    setParams(next);
     setPolarity((marker.polarity as SignalPolarity) || "neutral");
     setSeverity(severityForPolarity(marker.polarity));
   }, [marker, open]);
