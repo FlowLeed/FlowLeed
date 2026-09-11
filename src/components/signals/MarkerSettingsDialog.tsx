@@ -127,6 +127,18 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
     if (c.source === "moment.days_since_type") {
       return !!c.value?.moment_type_id && c.value?.days !== "" && c.value?.days !== undefined;
     }
+    if (c.source === "attendance.checkins_in_days" ||
+        c.source === "attendance.distinct_weeks_in_window" ||
+        c.source === "attendance.guest_checkins_in_days" ||
+        c.source === "attendance.household_checkins_in_days" ||
+        c.source === "serve.checkins_in_days" ||
+        c.source === "moment.any_recent_in_days" ||
+        c.source === "online.watched_recent_in_days" ||
+        c.source === "online.prayer_recent_in_days") {
+      const v = c.value || {};
+      return v.days !== "" && v.days !== undefined && v.days !== null &&
+             v.count !== "" && v.count !== undefined && v.count !== null;
+    }
     return c.value !== "" && c.value !== null && c.value !== undefined;
   });
   const needsPromote = !!promotedId || logicChanged;

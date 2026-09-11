@@ -13,13 +13,28 @@ import type { CustomSignalCondition, RuleCombinator } from "@/hooks/useCustomSig
 import { useSignalConditionOptions } from "@/hooks/useSignalConditionOptions";
 import { cn } from "@/lib/utils";
 
-const CATEGORY_ORDER = ["Attendance", "Campus", "Flows", "Flow Moments", "Groups", "Serving", "Tags"];
+const CATEGORY_ORDER = [
+  "Attendance",
+  "Campus",
+  "Flows",
+  "Flow Moments",
+  "Groups",
+  "Serving",
+  "Church Online",
+  "Tags",
+];
 
 interface Props {
   combinator: RuleCombinator;
   onCombinatorChange: (c: RuleCombinator) => void;
   conditions: CustomSignalCondition[];
   onConditionsChange: (c: CustomSignalCondition[]) => void;
+}
+
+function emptyValueForInput(input?: string): any {
+  if (input === "window_count") return { days: "", count: "" };
+  if (input === "moment_days") return { moment_type_id: "", days: "" };
+  return "";
 }
 
 export function ConditionBuilder({
@@ -41,7 +56,7 @@ export function ConditionBuilder({
       {
         source: CONDITION_SOURCES[0].value,
         operator: CONDITION_SOURCES[0].operators[0].value,
-        value: "",
+        value: emptyValueForInput(CONDITION_SOURCES[0].operators[0].input),
         condition_group: 0,
       },
     ]);
@@ -107,7 +122,7 @@ export function ConditionBuilder({
                     updateCond(i, {
                       source: nextSrc.value,
                       operator: nextSrc.operators[0].value,
-                      value: "",
+                      value: emptyValueForInput(nextSrc.operators[0].input),
                     });
                   }
                 }}
@@ -125,7 +140,11 @@ export function ConditionBuilder({
                 value={c.source}
                 onValueChange={(v) => {
                   const nextSrc = findSource(v);
-                  updateCond(i, { source: v, operator: nextSrc.operators[0].value, value: "" });
+                  updateCond(i, {
+                    source: v,
+                    operator: nextSrc.operators[0].value,
+                    value: emptyValueForInput(nextSrc.operators[0].input),
+                  });
                 }}
               >
                 <SelectTrigger className="h-8 min-w-0 flex-[1.4] text-xs border-0 shadow-none bg-transparent px-1 hover:bg-muted/50">
@@ -187,6 +206,37 @@ export function ConditionBuilder({
                       value: { moment_type_id: typeof c.value === "object" ? c.value?.moment_type_id || "" : "", days: e.target.value },
                     })}
                     placeholder="days"
+                  />
+                </>
+              )}
+              {op.input === "window_count" && (
+                <>
+                  <Input
+                    className="h-8 w-16 shrink-0 text-xs border-0 shadow-none bg-transparent focus-visible:ring-1"
+                    type="number"
+                    min={0}
+                    value={typeof c.value === "object" ? c.value?.days ?? "" : ""}
+                    onChange={(e) => updateCond(i, {
+                      value: {
+                        days: e.target.value,
+                        count: typeof c.value === "object" ? c.value?.count ?? "" : "",
+                      },
+                    })}
+                    placeholder="days"
+                  />
+                  <span className="text-xs text-muted-foreground shrink-0">days</span>
+                  <Input
+                    className="h-8 w-14 shrink-0 text-xs border-0 shadow-none bg-transparent focus-visible:ring-1"
+                    type="number"
+                    min={0}
+                    value={typeof c.value === "object" ? c.value?.count ?? "" : ""}
+                    onChange={(e) => updateCond(i, {
+                      value: {
+                        days: typeof c.value === "object" ? c.value?.days ?? "" : "",
+                        count: e.target.value,
+                      },
+                    })}
+                    placeholder="#"
                   />
                 </>
               )}
