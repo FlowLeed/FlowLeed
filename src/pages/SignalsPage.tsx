@@ -45,15 +45,23 @@ const SignalsPage = () => {
   const hasFilters = campusId !== null || assignedUserId !== null;
 
   const offCount = useMemo(
-    () => (catalog || []).filter((m) => !m.is_phase_two && m.enabled === false).length,
+    () =>
+      (catalog || []).filter(
+        (m) => !m.is_phase_two && m.enabled === false && !m.promoted_signal_id
+      ).length,
     [catalog]
   );
 
   const filtered = useMemo(() => {
     if (!catalog) return [];
     if (filter === "phase2") return catalog.filter((m) => m.is_phase_two);
-    if (filter === "off") return catalog.filter((m) => !m.is_phase_two && m.enabled === false);
-    const live = catalog.filter((m) => !m.is_phase_two && m.enabled !== false);
+    if (filter === "off")
+      return catalog.filter(
+        (m) => !m.is_phase_two && m.enabled === false && !m.promoted_signal_id
+      );
+    const live = catalog.filter(
+      (m) => !m.is_phase_two && (m.enabled !== false || !!m.promoted_signal_id)
+    );
     if (filter === "positive") return live.filter((m) => m.polarity === "positive");
     if (filter === "negative") return live.filter((m) => m.polarity === "negative");
     return live;
@@ -170,7 +178,7 @@ const SignalsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard
             label="Active markers tracked"
-            value={catalog?.filter((m) => !m.is_phase_two && m.enabled !== false).length || 0}
+            value={catalog?.filter((m) => !m.is_phase_two && (m.enabled !== false || !!m.promoted_signal_id)).length || 0}
             icon={Activity}
           />
           <SummaryCard label="Positive signals (totals)" value={totals.pos} icon={Sparkles} tone="positive" />
@@ -260,7 +268,8 @@ function MarkerRow({
   onEdit?: () => void;
 }) {
   const locked = marker.is_phase_two;
-  const isOff = marker.enabled === false;
+  const isRewritten = !!marker.promoted_signal_id;
+  const isOff = marker.enabled === false && !isRewritten;
   const save = useSaveMarkerSettings();
   const reset = useResetMarkerSettings();
   return (
@@ -278,7 +287,12 @@ function MarkerRow({
                   Off
                 </Badge>
               )}
-              {!isOff && marker.is_customized && (
+              {isRewritten && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                  Your own rule
+                </Badge>
+              )}
+              {!isOff && !isRewritten && marker.is_customized && (
                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
                   Edited
                 </Badge>
@@ -308,7 +322,9 @@ function MarkerRow({
                   <TooltipContent side="left" className="max-w-xs">
                     <p className="text-xs font-medium mb-1">How it's calculated</p>
                     <p className="text-xs text-muted-foreground">
-                      {markerFormula(marker.key, marker.params) || marker.description}
+                      {isRewritten
+                        ? "Uses your church's own conditions. Open Edit → Logic to see them."
+                        : markerFormula(marker.key, marker.params) || marker.description}
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -330,21 +346,23 @@ function MarkerRow({
                     <DropdownMenuItem onClick={onEdit}>
                       <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        save.mutate({ markerKey: marker.key, enabled: isOff })
-                      }
-                    >
-                      {isOff ? (
-                        <>
-                          <Eye className="h-3.5 w-3.5 mr-2" /> Turn on
-                        </>
-                      ) : (
-                        <>
-                          <EyeOff className="h-3.5 w-3.5 mr-2" /> Turn off
-                        </>
-                      )}
-                    </DropdownMenuItem>
+                    {!isRewritten && (
+                      <DropdownMenuItem
+                        onClick={() =>
+                          save.mutate({ markerKey: marker.key, enabled: isOff })
+                        }
+                      >
+                        {isOff ? (
+                          <>
+                            <Eye className="h-3.5 w-3.5 mr-2" /> Turn on
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="h-3.5 w-3.5 mr-2" /> Turn off
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    )}
                     {marker.is_customized && (
                       <DropdownMenuItem onClick={() => reset.mutate(marker.key)}>
                         <RotateCcw className="h-3.5 w-3.5 mr-2" /> Reset to default
@@ -354,12 +372,20 @@ function MarkerRow({
                 </DropdownMenu>
               )}
             </div>
-            {!locked && !isOff && marker.contact_count > 0 && (
+            {isRewritten ? (
               <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                <Link to={`/contacts?marker=${marker.key}`}>
-                  View <ArrowRight className="h-3 w-3 ml-1" />
+                <Link to="/signals/custom">
+                  Custom <ArrowRight className="h-3 w-3 ml-1" />
                 </Link>
               </Button>
+            ) : (
+              !locked && !isOff && marker.contact_count > 0 && (
+                <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                  <Link to={`/contacts?marker=${marker.key}`}>
+                    View <ArrowRight className="h-3 w-3 ml-1" />
+                  </Link>
+                </Button>
+              )
             )}
           </div>
 

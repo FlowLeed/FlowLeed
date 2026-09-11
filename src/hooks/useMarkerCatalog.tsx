@@ -18,6 +18,7 @@ export interface MarkerCatalogEntry {
   default_description: string;
   params: Record<string, number> | null;
   is_customized: boolean;
+  promoted_signal_id: string | null;
 }
 
 export interface MarkerCatalogFilters {

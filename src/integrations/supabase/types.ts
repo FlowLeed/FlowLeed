@@ -3250,6 +3250,7 @@ export type Database = {
           marker_key: string
           organization_id: string
           params: Json
+          promoted_signal_id: string | null
           updated_at: string
         }
         Insert: {
@@ -3261,6 +3262,7 @@ export type Database = {
           marker_key: string
           organization_id: string
           params?: Json
+          promoted_signal_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -3272,6 +3274,7 @@ export type Database = {
           marker_key?: string
           organization_id?: string
           params?: Json
+          promoted_signal_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3294,6 +3297,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_marker_settings_promoted_signal_id_fkey"
+            columns: ["promoted_signal_id"]
+            isOneToOne: false
+            referencedRelation: "custom_signals"
             referencedColumns: ["id"]
           },
         ]
@@ -5247,6 +5257,7 @@ export type Database = {
           label: string
           params: Json
           polarity: string
+          promoted_signal_id: string
           requires_integration: string
           sort_order: number
         }[]
