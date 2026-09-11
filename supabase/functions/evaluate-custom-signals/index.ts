@@ -869,11 +869,12 @@ async function evaluateOrg(sb: any, orgId: string) {
       const { error } = await sb.from("custom_signal_contacts").insert(chunk as any);
       if (error) console.error(`insert matches failed for ${sig.id}: ${error.message}`);
     }
-    if (toReopen.length) {
-      await sb
+    for (let i = 0; i < toReopen.length; i += 500) {
+      const { error } = await sb
         .from("custom_signal_contacts")
         .update({ matched_at: now, cleared_at: null } as any)
-        .in("id", toReopen);
+        .in("id", toReopen.slice(i, i + 500));
+      if (error) console.error(`reopen matches failed for ${sig.id}: ${error.message}`);
     }
 
     // Clear stale matches
@@ -881,11 +882,12 @@ async function evaluateOrg(sb: any, orgId: string) {
     const toClear = (existing || [])
       .filter((e: any) => !e.cleared_at && !matchedSet.has(e.contact_id))
       .map((e: any) => e.id);
-    if (toClear.length) {
-      await sb
+    for (let i = 0; i < toClear.length; i += 500) {
+      const { error } = await sb
         .from("custom_signal_contacts")
         .update({ cleared_at: now } as any)
-        .in("id", toClear);
+        .in("id", toClear.slice(i, i + 500));
+      if (error) console.error(`clear matches failed for ${sig.id}: ${error.message}`);
     }
   }
 
