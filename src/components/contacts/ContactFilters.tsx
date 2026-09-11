@@ -255,7 +255,7 @@ export const ContactFilters = ({
                 <SelectContent className="max-h-[300px]">
                   <SelectItem value="all">Any marker</SelectItem>
                   {(markerCatalog || [])
-                    .filter((m) => !m.is_phase_two)
+                    .filter((m) => !m.is_phase_two && m.enabled !== false)
                     .map((m) => (
                       <SelectItem key={m.key} value={m.key}>
                         {m.label} ({m.contact_count})

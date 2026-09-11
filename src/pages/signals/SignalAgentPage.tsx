@@ -38,6 +38,7 @@ const SignalAgentPage = () => {
   const { list: pending, review } = useAgentSuggestions("pending");
   const { query: config, save } = useAgentConfig();
   const { data: markers } = useMarkerCatalog();
+  const liveMarkers = (markers || []).filter((m) => !m.is_phase_two && m.enabled !== false);
   const { list: customSignals } = useCustomSignals();
   const qc = useQueryClient();
 
@@ -223,11 +224,11 @@ const SignalAgentPage = () => {
                     </p>
                   </div>
 
-                  {(markers?.length ?? 0) > 0 && (
+                  {liveMarkers.length > 0 && (
                     <div className="space-y-1.5">
                       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Built-in markers</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {markers!.map((m) => {
+                        {liveMarkers.map((m) => {
                           const on = watched.includes(m.key);
                           return (
                             <Button
@@ -273,7 +274,7 @@ const SignalAgentPage = () => {
                     </div>
                   )}
 
-                  {!markers?.length && !customSignals.data?.length && (
+                  {!liveMarkers.length && !customSignals.data?.length && (
                     <p className="text-xs text-muted-foreground">No signals available yet.</p>
                   )}
                 </div>
