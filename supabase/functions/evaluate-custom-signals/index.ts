@@ -838,10 +838,13 @@ async function evaluateOrg(sb: any, orgId: string) {
     totalMatches += matched.length;
 
     // Current matches for this signal
-    const { data: existing } = await sb
-      .from("custom_signal_contacts")
-      .select("id, contact_id, cleared_at")
-      .eq("signal_id", sig.id);
+    const existing = await fetchAll("custom_signal_contacts", (from, to) =>
+      sb
+        .from("custom_signal_contacts")
+        .select("id, contact_id, cleared_at")
+        .eq("signal_id", sig.id)
+        .order("id", { ascending: true })
+        .range(from, to));
     const existingMap = new Map<string, any>();
     for (const e of existing || []) existingMap.set((e as any).contact_id, e);
 
@@ -861,8 +864,10 @@ async function evaluateOrg(sb: any, orgId: string) {
         toReopen.push(row.id);
       }
     }
-    if (toInsert.length) {
-      await sb.from("custom_signal_contacts").insert(toInsert as any);
+    for (let i = 0; i < toInsert.length; i += 500) {
+      const chunk = toInsert.slice(i, i + 500);
+      const { error } = await sb.from("custom_signal_contacts").insert(chunk as any);
+      if (error) console.error(`insert matches failed for ${sig.id}: ${error.message}`);
     }
     if (toReopen.length) {
       await sb
