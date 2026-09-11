@@ -112,9 +112,20 @@ Deno.serve(async (req) => {
 
         triggeredCount++;
         console.log(`[checkin-auto-sync] Completed sync for org ${integration.organization_id} in ${round} round(s)`);
+
+        // Refresh signal (marker) results so counts reflect the new check-ins.
+        const { error: recomputeError } = await supabase.rpc('recompute_contact_markers', {
+          p_org_id: integration.organization_id,
+        });
+        if (recomputeError) {
+          console.error(`[checkin-auto-sync] Recompute failed for org ${integration.organization_id}:`, recomputeError.message);
+        } else {
+          console.log(`[checkin-auto-sync] Recomputed signals for org ${integration.organization_id}`);
+        }
       } catch (err) {
         console.error(`[checkin-auto-sync] Failed sync for org ${integration.organization_id}:`, err);
       }
+
     }
 
     console.log(`[checkin-auto-sync] Done. Synced ${triggeredCount} of ${integrations.length} integrations`);

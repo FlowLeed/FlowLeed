@@ -76,6 +76,15 @@ Deno.serve(async (req) => {
           console.warn(`[groups-auto] org ${integ.organization_id} attendance cursor did not drain in ${MAX_ATT_ROUNDS} rounds`);
         }
         triggered++;
+
+        // Refresh signal (marker) results so group counts stay current.
+        const { error: recomputeError } = await supabase.rpc('recompute_contact_markers', {
+          p_org_id: integ.organization_id,
+        });
+        if (recomputeError) {
+          console.error(`[groups-auto] recompute failed for org ${integ.organization_id}:`, recomputeError.message);
+        }
+
       } catch (e) {
         console.error(`[groups-auto] org ${integ.organization_id} failed:`, e);
       }
