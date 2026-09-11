@@ -96,7 +96,7 @@ export const CONDITION_SOURCES: ConditionSource[] = [
   },
   {
     value: "flow.in_any_flow",
-    label: "Is in any active flow",
+    label: "Is in any active Flow",
     category: "Flows",
     operators: [
       { value: "true", label: "yes", input: "none" },
@@ -105,7 +105,7 @@ export const CONDITION_SOURCES: ConditionSource[] = [
   },
   {
     value: "flow.days_in_stage",
-    label: "Days in current stage",
+    label: "Days in current Flow stage",
     category: "Flows",
     operators: [
       { value: "gte", label: "is at least", input: "days" },
