@@ -322,7 +322,9 @@ function MarkerRow({
                   <TooltipContent side="left" className="max-w-xs">
                     <p className="text-xs font-medium mb-1">How it's calculated</p>
                     <p className="text-xs text-muted-foreground">
-                      {markerFormula(marker.key, marker.params) || marker.description}
+                      {isRewritten
+                        ? "Uses your church's own conditions. Open Edit → Logic to see them."
+                        : markerFormula(marker.key, marker.params) || marker.description}
                     </p>
                   </TooltipContent>
                 </Tooltip>
@@ -344,21 +346,23 @@ function MarkerRow({
                     <DropdownMenuItem onClick={onEdit}>
                       <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() =>
-                        save.mutate({ markerKey: marker.key, enabled: isOff })
-                      }
-                    >
-                      {isOff ? (
-                        <>
-                          <Eye className="h-3.5 w-3.5 mr-2" /> Turn on
-                        </>
-                      ) : (
-                        <>
-                          <EyeOff className="h-3.5 w-3.5 mr-2" /> Turn off
-                        </>
-                      )}
-                    </DropdownMenuItem>
+                    {!isRewritten && (
+                      <DropdownMenuItem
+                        onClick={() =>
+                          save.mutate({ markerKey: marker.key, enabled: isOff })
+                        }
+                      >
+                        {isOff ? (
+                          <>
+                            <Eye className="h-3.5 w-3.5 mr-2" /> Turn on
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="h-3.5 w-3.5 mr-2" /> Turn off
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    )}
                     {marker.is_customized && (
                       <DropdownMenuItem onClick={() => reset.mutate(marker.key)}>
                         <RotateCcw className="h-3.5 w-3.5 mr-2" /> Reset to default
