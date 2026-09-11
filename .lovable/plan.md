@@ -1,7 +1,7 @@
 # Make every built-in signal rule exactly editable
 
 ## Goal
-Replace approximate built-in signal conditions with exact, editable versions. Opening a built-in signal will show the complete rule that currently determines its matches, so saving it unchanged preserves the same people count. The approximation warning can then be removed.
+Replace approximate built-in signal conditions with exact, editable versions. Opening a built-in signal will show the complete rule that currently determines its matches, so saving it unchanged preserves the same people count. The approximation warning can then be removed. Also update the Signals page summary card to say "Active Signals tracked" instead of "Active markers tracked".
 
 ## What will change
 
