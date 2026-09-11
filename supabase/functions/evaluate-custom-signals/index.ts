@@ -494,11 +494,11 @@ async function loadFacts(
     }
   }
 
-  // Groups
+  // Groups (join through groups because group_members has no organization_id)
   const { data: gm } = await sb
     .from("group_members")
-    .select("contact_id, group_id, id, status, last_attended_at")
-    .eq("organization_id", orgId)
+    .select("contact_id, group_id, id, status, last_attended_at, group:groups!inner(organization_id)")
+    .eq("group.organization_id", orgId)
     .limit(100000);
   const activeGroupMemberIds = new Set<string>();
   const groupMemberToGroup = new Map<string, string>();
