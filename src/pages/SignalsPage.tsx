@@ -20,7 +20,7 @@ import { MarkerSettingsDialog } from "@/components/signals/MarkerSettingsDialog"
 import { useSaveMarkerSettings, useResetMarkerSettings } from "@/hooks/useMarkerSettings";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 
-import { useMarkerCatalog, useRecomputeMarkers, type MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
+import { useMarkerCatalog, useRecomputeMarkers, useMarkersLastComputed, type MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
 import { useCampuses } from "@/hooks/useCampuses";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
@@ -39,6 +39,7 @@ const SignalsPage = () => {
   const { data: members } = useOrgMembers(user?.id, !!user?.id);
   const { data: catalog, isLoading } = useMarkerCatalog({ campusId, assignedUserId });
   const recompute = useRecomputeMarkers();
+  const { data: lastComputed } = useMarkersLastComputed();
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
   const [filter, setFilter] = useState<"all" | "positive" | "negative" | "off" | "phase2">("all");
   const [editing, setEditing] = useState<MarkerCatalogEntry | null>(null);
@@ -109,16 +110,23 @@ const SignalsPage = () => {
                 <Bot className="h-4 w-4" /> AI Agent
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => recompute.mutate()}
-              disabled={recompute.isPending}
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${recompute.isPending ? "animate-spin" : ""}`} />
-              Recompute
-            </Button>
+            <div className="flex items-center gap-2">
+              {lastComputed && (
+                <span className="hidden md:inline text-xs text-muted-foreground">
+                  Updated {formatUpdated(lastComputed)}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => recompute.mutate()}
+                disabled={recompute.isPending}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${recompute.isPending ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         }
       />
