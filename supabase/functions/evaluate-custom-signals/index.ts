@@ -724,7 +724,7 @@ async function loadFacts(
     const days = daysBetween((e as any).created_at);
     if (days === null) continue;
     const type = String((e as any).event_type || "").toLowerCase();
-    for (const windowDays of [7, 14, 30, 60, 90, 180, 365]) {
+    for (const windowDays of allWindows) {
       if (days <= windowDays) {
         f.online_watched_in_days.set(windowDays, (f.online_watched_in_days.get(windowDays) || 0) + 1);
         if (type.includes("prayer")) {
