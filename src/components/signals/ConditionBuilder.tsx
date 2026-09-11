@@ -1,20 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, X } from "lucide-react";
+import { GripVertical, Plus, X } from "lucide-react";
 import { CONDITION_SOURCES, findSource } from "@/lib/signalConditions";
 import type { CustomSignalCondition, RuleCombinator } from "@/hooks/useCustomSignals";
 import { useSignalConditionOptions } from "@/hooks/useSignalConditionOptions";
+import { cn } from "@/lib/utils";
 
 const CATEGORY_ORDER = ["Attendance", "Campus", "Flows", "Flow Moments", "Groups", "Serving", "Tags"];
 
@@ -56,12 +53,11 @@ export function ConditionBuilder({
     onConditionsChange(conditions.filter((_, idx) => idx !== i));
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>Trigger when</span>
           <Select value={combinator} onValueChange={(v) => onCombinatorChange(v as RuleCombinator)}>
-            <SelectTrigger className="h-7 w-24 text-xs">
+            <SelectTrigger className="h-9 w-28 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -69,26 +65,62 @@ export function ConditionBuilder({
               <SelectItem value="OR">ANY (OR)</SelectItem>
             </SelectContent>
           </Select>
-          <span>match</span>
-        </div>
-        <Button size="sm" variant="outline" onClick={addCondition} className="gap-1" type="button">
-          <Plus className="h-3 w-3" /> Add condition
-        </Button>
+          <span>of the following match</span>
       </div>
 
       {conditions.length === 0 && (
         <p className="text-xs text-muted-foreground italic">Add at least one condition.</p>
       )}
 
-      <div className="space-y-2">
-        {conditions.map((c, i) => {
-          const src = findSource(c.source);
-          const op = src.operators.find((o) => o.value === c.operator) || src.operators[0];
-          return (
-            <div key={i} className="flex items-center gap-2 p-2 rounded-lg border bg-muted/30 flex-wrap">
-              <Badge variant="outline" className="text-[10px]">
-                {src.category}
-              </Badge>
+      <div className="flex items-stretch gap-3">
+        <div className="flex items-center shrink-0">
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide shadow-sm border",
+              combinator === "AND"
+                ? "bg-primary/10 text-primary border-primary/20"
+                : "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30"
+            )}
+          >
+            {combinator}
+          </span>
+        </div>
+        <div className="relative flex-1 pl-5 min-w-0">
+          <div
+            className={cn(
+              "absolute left-0 top-1 bottom-1 w-3 border-l-2 border-t-2 border-b-2 rounded-l-md pointer-events-none",
+              combinator === "AND" ? "border-primary/40" : "border-amber-400/60"
+            )}
+          />
+          <div className="space-y-2 py-1">
+            {conditions.map((c, i) => {
+              const src = findSource(c.source);
+              const op = src.operators.find((o) => o.value === c.operator) || src.operators[0];
+              return (
+                <div key={i} className="group flex items-center gap-2 rounded-full border bg-background px-2 py-1.5 shadow-sm hover:border-primary/40 transition-colors min-w-0">
+                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
+              <Select
+                value={src.category}
+                onValueChange={(category) => {
+                  const nextSrc = CONDITION_SOURCES.find((source) => source.category === category);
+                  if (nextSrc) {
+                    updateCond(i, {
+                      source: nextSrc.value,
+                      operator: nextSrc.operators[0].value,
+                      value: "",
+                    });
+                  }
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs w-[120px] border-0 shadow-none bg-transparent px-1 hover:bg-muted/50">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORY_ORDER.map((category) => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select
                 value={c.source}
                 onValueChange={(v) => {
@@ -96,27 +128,17 @@ export function ConditionBuilder({
                   updateCond(i, { source: v, operator: nextSrc.operators[0].value, value: "" });
                 }}
               >
-                <SelectTrigger className="h-8 text-xs w-[220px]">
-                  <SelectValue />
+                <SelectTrigger className="h-8 text-xs min-w-[170px] flex-1 border-0 shadow-none bg-transparent px-1 hover:bg-muted/50">
+                  <SelectValue placeholder="Trigger" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CATEGORY_ORDER.map((category, categoryIndex) => (
-                    <SelectGroup key={category}>
-                      {categoryIndex > 0 && <SelectSeparator />}
-                      <SelectLabel className="pl-2 text-[11px] uppercase text-muted-foreground">
-                        {category}
-                      </SelectLabel>
-                      {CONDITION_SOURCES.filter((source) => source.category === category).map((source) => (
-                        <SelectItem key={source.value} value={source.value}>
-                          {source.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
+                  {CONDITION_SOURCES.filter((source) => source.category === src.category).map((source) => (
+                    <SelectItem key={source.value} value={source.value}>{source.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={c.operator} onValueChange={(v) => updateCond(i, { operator: v })}>
-                <SelectTrigger className="h-8 text-xs w-[140px]">
+                <SelectTrigger className="h-8 text-xs min-w-[120px] flex-1 border-0 shadow-none bg-transparent px-1 hover:bg-muted/50 font-medium">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -129,7 +151,7 @@ export function ConditionBuilder({
               </Select>
               {op.input && ["campus", "flow", "stage", "moment"].includes(op.input) && (
                 <Select value={String(c.value || "")} onValueChange={(value) => updateCond(i, { value })}>
-                  <SelectTrigger className="h-8 min-w-[180px] flex-1 text-xs">
+                  <SelectTrigger className="h-8 min-w-[150px] flex-1 text-xs border-0 shadow-none bg-transparent px-1 hover:bg-muted/50">
                     <SelectValue placeholder={`Choose ${op.input}`} />
                   </SelectTrigger>
                   <SelectContent>
@@ -147,7 +169,7 @@ export function ConditionBuilder({
                       value: { moment_type_id: momentTypeId, days: typeof c.value === "object" ? c.value?.days || "" : "" },
                     })}
                   >
-                    <SelectTrigger className="h-8 min-w-[180px] flex-1 text-xs">
+                    <SelectTrigger className="h-8 min-w-[150px] flex-1 text-xs border-0 shadow-none bg-transparent px-1 hover:bg-muted/50">
                       <SelectValue placeholder="Choose Flow Moment" />
                     </SelectTrigger>
                     <SelectContent>
@@ -157,7 +179,7 @@ export function ConditionBuilder({
                     </SelectContent>
                   </Select>
                   <Input
-                    className="h-8 w-24 text-xs"
+                    className="h-8 w-24 text-xs border-0 shadow-none bg-transparent focus-visible:ring-1"
                     type="number"
                     min={0}
                     value={typeof c.value === "object" ? c.value?.days ?? "" : ""}
@@ -170,7 +192,7 @@ export function ConditionBuilder({
               )}
               {op.input && ["number", "days", "text"].includes(op.input) && (
                 <Input
-                  className="h-8 text-xs w-24"
+                  className="h-8 text-xs w-24 border-0 shadow-none bg-transparent focus-visible:ring-1"
                   type={op.input === "text" ? "text" : "number"}
                   min={op.input === "text" ? undefined : 0}
                   value={c.value ?? ""}
@@ -181,15 +203,20 @@ export function ConditionBuilder({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-7 w-7 ml-auto"
+                className="h-7 w-7 ml-auto shrink-0 rounded-full text-muted-foreground hover:text-destructive opacity-60 group-hover:opacity-100"
                 onClick={() => removeCond(i)}
                 type="button"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
-            </div>
-          );
-        })}
+                </div>
+              );
+            })}
+            <Button size="sm" variant="outline" onClick={addCondition} className="h-8 gap-1" type="button">
+              <Plus className="h-3.5 w-3.5" /> Add condition
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
