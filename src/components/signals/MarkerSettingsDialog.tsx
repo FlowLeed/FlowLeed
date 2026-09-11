@@ -165,15 +165,15 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle>Edit signal</DialogTitle>
           <DialogDescription>
             Change how this signal appears and when it fires. This only affects your church.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
+        <div className="space-y-5 py-4 px-6 overflow-y-auto flex-1 min-h-0">
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
               <p className="text-sm font-medium">Track this signal</p>
@@ -254,7 +254,7 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-between">
+        <DialogFooter className="gap-2 sm:justify-between px-6 py-4 border-t bg-background shrink-0">
           <Button
             type="button"
             variant="ghost"
