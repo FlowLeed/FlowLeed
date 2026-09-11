@@ -110,7 +110,16 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
 
   if (!marker) return null;
 
-  const handleSaveBasics = async () => {
+  const seedKey = JSON.stringify({
+    c: seed?.combinator ?? "AND",
+    x: seed?.conditions ?? [],
+  });
+  const currentKey = JSON.stringify({ c: combinator, x: conditions });
+  const logicChanged = currentKey !== seedKey;
+  const logicValid = conditions.length > 0 && conditions.every((c) => c.source && c.operator);
+  const needsPromote = !!promotedId || logicChanged;
+
+  const handleSave = async () => {
     const cleaned: Record<string, number> = {};
     for (const s of specs) {
       const v = params[s.key];
@@ -124,20 +133,18 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
         description.trim() === (marker.default_description || "").trim() ? null : description.trim(),
       params: cleaned,
     });
-    onOpenChange(false);
-  };
-
-  const handleSaveLogic = async () => {
-    await promote.mutateAsync({
-      markerKey: marker.key,
-      label: label.trim() || marker.default_label,
-      description: description.trim() || null,
-      polarity,
-      severity,
-      combinator,
-      conditions,
-      existingSignalId: promotedId,
-    });
+    if (needsPromote && logicValid) {
+      await promote.mutateAsync({
+        markerKey: marker.key,
+        label: label.trim() || marker.default_label,
+        description: description.trim() || null,
+        polarity,
+        severity,
+        combinator,
+        conditions,
+        existingSignalId: promotedId,
+      });
+    }
     onOpenChange(false);
   };
 
@@ -146,8 +153,7 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
     onOpenChange(false);
   };
 
-  const canSaveLogic =
-    conditions.length > 0 && conditions.every((c) => c.source && c.operator);
+  const saving = save.isPending || promote.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -159,104 +165,74 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList>
-            <TabsTrigger value="basics">Basics</TabsTrigger>
-            <TabsTrigger value="logic" className="gap-1">
-              <SlidersHorizontal className="h-3.5 w-3.5" /> Logic
-            </TabsTrigger>
-          </TabsList>
-
-
-          <TabsContent value="basics" className="space-y-5 py-3">
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-medium">Track this signal</p>
-                <p className="text-xs text-muted-foreground">
-                  Turn off to hide it from people, filters and the AI agent.
-                </p>
-              </div>
-              <Switch checked={enabled} onCheckedChange={setEnabled} />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="marker-label">Name</Label>
-              <Input id="marker-label" value={label} onChange={(e) => setLabel(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Default: {marker.default_label}</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="marker-description">Explanation</Label>
-              <Textarea
-                id="marker-description"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            {specs.length > 0 ? (
-              <div className="space-y-3">
-                <p className="text-sm font-medium">When it fires</p>
-                {specs.map((s) => (
-                  <div key={s.key} className="flex items-center justify-between gap-3">
-                    <Label
-                      htmlFor={`p-${s.key}`}
-                      className="text-xs font-normal text-muted-foreground flex-1"
-                    >
-                      {s.label}
-                    </Label>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <Input
-                        id={`p-${s.key}`}
-                        type="number"
-                        min={s.min}
-                        max={s.max}
-                        className="w-20 h-8"
-                        value={params[s.key] ?? s.default}
-                        onChange={(e) =>
-                          setParams((prev) => ({ ...prev, [s.key]: Number(e.target.value) }))
-                        }
-                      />
-                      {s.suffix && (
-                        <span className="text-xs text-muted-foreground w-20">{s.suffix}</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
+        <div className="space-y-5 py-2">
+          <div className="flex items-center justify-between rounded-lg border p-3">
+            <div>
+              <p className="text-sm font-medium">Track this signal</p>
               <p className="text-xs text-muted-foreground">
-                This signal has no simple numbers to adjust. Use the Logic tab to rebuild the rule.
+                Turn off to hide it from people, filters and the AI agent.
               </p>
-            )}
-
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed p-3">
-              <div>
-                <p className="text-sm font-medium">Want to change the rule itself?</p>
-                <p className="text-xs text-muted-foreground">
-                  Build your own conditions for this signal.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1 flex-shrink-0"
-                onClick={() => setTab("logic")}
-              >
-                <SlidersHorizontal className="h-3.5 w-3.5" /> Edit logic
-              </Button>
             </div>
+            <Switch checked={enabled} onCheckedChange={setEnabled} />
+          </div>
 
-          </TabsContent>
+          <div className="space-y-2">
+            <Label htmlFor="marker-label">Name</Label>
+            <Input id="marker-label" value={label} onChange={(e) => setLabel(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Default: {marker.default_label}</p>
+          </div>
 
-          <TabsContent value="logic" className="space-y-4 py-3">
-            <p className="text-xs text-muted-foreground">
-              {promotedId
-                ? "This signal already uses your own rule. Change the conditions below."
-                : "Rebuild this signal with your own conditions. Saving here replaces the built-in version with your church's own copy."}
-            </p>
+          <div className="space-y-2">
+            <Label htmlFor="marker-description">Explanation</Label>
+            <Textarea
+              id="marker-description"
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          {specs.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Quick settings</p>
+              {specs.map((s) => (
+                <div key={s.key} className="flex items-center justify-between gap-3">
+                  <Label
+                    htmlFor={`p-${s.key}`}
+                    className="text-xs font-normal text-muted-foreground flex-1"
+                  >
+                    {s.label}
+                  </Label>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Input
+                      id={`p-${s.key}`}
+                      type="number"
+                      min={s.min}
+                      max={s.max}
+                      className="w-20 h-8"
+                      value={params[s.key] ?? s.default}
+                      onChange={(e) =>
+                        setParams((prev) => ({ ...prev, [s.key]: Number(e.target.value) }))
+                      }
+                    />
+                    {s.suffix && (
+                      <span className="text-xs text-muted-foreground w-20">{s.suffix}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-4 border-t pt-5">
+            <div>
+              <p className="text-sm font-medium">When it fires</p>
+              <p className="text-xs text-muted-foreground">
+                {promotedId
+                  ? "This signal uses your own rule. Change the conditions below."
+                  : "Change these conditions to replace the built-in rule with your church's own version."}
+              </p>
+            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -297,8 +273,8 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
             {!promotedId && seed?.note && (
               <p className="text-xs text-amber-600 dark:text-amber-400">{seed.note}</p>
             )}
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
 
         <DialogFooter className="gap-2 sm:justify-between">
           <Button
@@ -314,22 +290,17 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            {tab === "logic" ? (
-              <Button
-                type="button"
-                onClick={handleSaveLogic}
-                disabled={promote.isPending || !canSaveLogic}
-              >
-                {promote.isPending ? "Saving..." : "Save logic"}
-              </Button>
-            ) : (
-              <Button type="button" onClick={handleSaveBasics} disabled={save.isPending}>
-                {save.isPending ? "Saving..." : "Save"}
-              </Button>
-            )}
+            <Button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || (needsPromote && !logicValid)}
+            >
+              {saving ? "Saving..." : "Save"}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
