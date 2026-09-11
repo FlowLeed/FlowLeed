@@ -117,7 +117,7 @@ export function cmp(a: number | null, op: string, b: number): boolean {
   }
 }
 
-function windowCountValue(value: any): { days: number; count: number } {
+export function windowCountValue(value: any): { days: number; count: number } {
   if (typeof value === "object" && value !== null) {
     return {
       days: Number(value.days) || 0,
@@ -127,7 +127,7 @@ function windowCountValue(value: any): { days: number; count: number } {
   return { days: 0, count: Number(value) || 0 };
 }
 
-function evalCond(c: Condition, f: ContactFacts): boolean {
+export function evalCond(c: Condition, f: ContactFacts): boolean {
   switch (c.source) {
     case "campus.assignment":
       if (c.operator === "unassigned") return f.campus_id === null;
