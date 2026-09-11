@@ -20,7 +20,7 @@ import { MarkerSettingsDialog } from "@/components/signals/MarkerSettingsDialog"
 import { useSaveMarkerSettings, useResetMarkerSettings } from "@/hooks/useMarkerSettings";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 
-import { useMarkerCatalog, useRecomputeMarkers, type MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
+import { useMarkerCatalog, useRecomputeMarkers, useMarkersLastComputed, type MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
 import { useCampuses } from "@/hooks/useCampuses";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
@@ -31,6 +31,17 @@ const polarityClass: Record<string, string> = {
   negative: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300",
 };
 
+function formatUpdated(iso: string) {
+  const then = new Date(iso).getTime();
+  const mins = Math.round((Date.now() - then) / 60000);
+  if (mins < 2) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.round(hrs / 24);
+  return days === 1 ? "yesterday" : `${days} days ago`;
+}
+
 const SignalsPage = () => {
   const { user } = useAuth();
   const [campusId, setCampusId] = useState<string | null>(null);
@@ -39,6 +50,7 @@ const SignalsPage = () => {
   const { data: members } = useOrgMembers(user?.id, !!user?.id);
   const { data: catalog, isLoading } = useMarkerCatalog({ campusId, assignedUserId });
   const recompute = useRecomputeMarkers();
+  const { data: lastComputed } = useMarkersLastComputed();
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
   const [filter, setFilter] = useState<"all" | "positive" | "negative" | "off" | "phase2">("all");
   const [editing, setEditing] = useState<MarkerCatalogEntry | null>(null);
@@ -109,16 +121,23 @@ const SignalsPage = () => {
                 <Bot className="h-4 w-4" /> AI Agent
               </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => recompute.mutate()}
-              disabled={recompute.isPending}
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${recompute.isPending ? "animate-spin" : ""}`} />
-              Recompute
-            </Button>
+            <div className="flex items-center gap-2">
+              {lastComputed && (
+                <span className="hidden md:inline text-xs text-muted-foreground">
+                  Updated {formatUpdated(lastComputed)}
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => recompute.mutate()}
+                disabled={recompute.isPending}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${recompute.isPending ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         }
       />

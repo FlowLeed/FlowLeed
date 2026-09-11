@@ -46,6 +46,28 @@ export function useMarkerCatalog(filters: MarkerCatalogFilters = {}) {
   });
 }
 
+export function useMarkersLastComputed() {
+  const { organization } = useProfile();
+  return useQuery({
+    queryKey: ["marker-last-computed", organization?.id],
+    enabled: !!organization?.id,
+    staleTime: 60_000,
+    queryFn: async (): Promise<string | null> => {
+      if (!organization?.id) return null;
+      const { data, error } = await supabase
+        .from("contact_markers")
+        .select("computed_at")
+        .eq("organization_id", organization.id)
+        .order("computed_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return (data?.[0] as any)?.computed_at ?? null;
+    },
+  });
+}
+
+
+
 export function useRecomputeMarkers() {
   const { organization } = useProfile();
   const qc = useQueryClient();
@@ -59,6 +81,7 @@ export function useRecomputeMarkers() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["marker-catalog"] });
+      qc.invalidateQueries({ queryKey: ["marker-last-computed"] });
       qc.invalidateQueries({ queryKey: ["contact-signal"] });
       qc.invalidateQueries({ queryKey: ["contact-markers-by-key"] });
       qc.invalidateQueries({ queryKey: ["all-contacts"] });
