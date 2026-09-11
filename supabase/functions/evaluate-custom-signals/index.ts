@@ -624,11 +624,11 @@ async function loadFacts(
     f.never_served = false;
     if (!lastServe.has(cid)) lastServe.set(cid, s.checked_in_at);
     const atMs = new Date(s.checked_in_at).getTime();
-    for (const days of [7, 14, 30, 60, 90, 180, 365]) {
-      if (atMs >= now - days * 86400000) {
-        f.volunteer_checkins_in_days.set(days, (f.volunteer_checkins_in_days.get(days) || 0) + 1);
+      for (const days of allWindows) {
+        if (atMs >= now - days * 86400000) {
+          f.volunteer_checkins_in_days.set(days, (f.volunteer_checkins_in_days.get(days) || 0) + 1);
+        }
       }
-    }
   }
   for (const [cid, at] of lastServe) {
     const f = facts.get(cid);
