@@ -254,7 +254,7 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-between">
+        <DialogFooter className="gap-2 sm:justify-between px-6 py-4 border-t bg-background shrink-0">
           <Button
             type="button"
             variant="ghost"
