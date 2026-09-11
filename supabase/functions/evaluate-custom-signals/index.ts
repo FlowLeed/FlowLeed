@@ -724,7 +724,7 @@ async function loadFacts(
   return facts;
 }
 
-async function evaluateOrg(sb: ReturnType<typeof createClient>, orgId: string) {
+async function evaluateOrg(sb: any, orgId: string) {
   const { data: signals } = await sb
     .from("custom_signals")
     .select("id, organization_id, enabled")
