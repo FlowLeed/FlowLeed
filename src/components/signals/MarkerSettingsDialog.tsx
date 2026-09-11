@@ -162,8 +162,11 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
-            <TabsTrigger value="logic">Logic</TabsTrigger>
+            <TabsTrigger value="logic" className="gap-1">
+              <SlidersHorizontal className="h-3.5 w-3.5" /> Logic
+            </TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="basics" className="space-y-5 py-3">
             <div className="flex items-center justify-between rounded-lg border p-3">
