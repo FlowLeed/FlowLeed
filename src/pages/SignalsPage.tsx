@@ -47,7 +47,7 @@ const SignalsPage = () => {
   const offCount = useMemo(
     () =>
       (catalog || []).filter(
-        (m) => !m.is_phase_two && m.enabled === false && !m.promoted_signal_id
+        (m) => !m.is_phase_two && m.enabled === false
       ).length,
     [catalog]
   );
@@ -57,10 +57,10 @@ const SignalsPage = () => {
     if (filter === "phase2") return catalog.filter((m) => m.is_phase_two);
     if (filter === "off")
       return catalog.filter(
-        (m) => !m.is_phase_two && m.enabled === false && !m.promoted_signal_id
+        (m) => !m.is_phase_two && m.enabled === false
       );
     const live = catalog.filter(
-      (m) => !m.is_phase_two && (m.enabled !== false || !!m.promoted_signal_id)
+      (m) => !m.is_phase_two && m.enabled !== false
     );
     if (filter === "positive") return live.filter((m) => m.polarity === "positive");
     if (filter === "negative") return live.filter((m) => m.polarity === "negative");
@@ -178,7 +178,7 @@ const SignalsPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <SummaryCard
             label="Active markers tracked"
-            value={catalog?.filter((m) => !m.is_phase_two && (m.enabled !== false || !!m.promoted_signal_id)).length || 0}
+            value={catalog?.filter((m) => !m.is_phase_two && m.enabled !== false).length || 0}
             icon={Activity}
           />
           <SummaryCard label="Positive signals (totals)" value={totals.pos} icon={Sparkles} tone="positive" />
@@ -269,7 +269,7 @@ function MarkerRow({
 }) {
   const locked = marker.is_phase_two;
   const isRewritten = !!marker.promoted_signal_id;
-  const isOff = marker.enabled === false && !isRewritten;
+  const isOff = marker.enabled === false;
   const save = useSaveMarkerSettings();
   const reset = useResetMarkerSettings();
   return (
