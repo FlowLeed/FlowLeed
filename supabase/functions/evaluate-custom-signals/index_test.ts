@@ -185,24 +185,27 @@ Deno.test("consistent_attender via distinct_weeks_in_window", () => {
 Deno.test("missed_3_sundays lifetime gate plus range", () => {
   const f = baseFacts();
   f.lifetime_checkins = 4;
+  f.never_attended = false;
   f.last_service_days_ago = 25;
   assertEquals(
-    evalRule("AND", [
-      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 0 },
+    evalRule("OR", [
+      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 1 },
       { source: "attendance.never_attended", operator: "true", value: "", condition_group: 1 },
-      { source: "attendance.last_service_days_ago", operator: "gt", value: 21, condition_group: 1 },
-      { source: "attendance.last_service_days_ago", operator: "lte", value: 42, condition_group: 1 },
+      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 2 },
+      { source: "attendance.last_service_days_ago", operator: "gt", value: 21, condition_group: 2 },
+      { source: "attendance.last_service_days_ago", operator: "lte", value: 42, condition_group: 2 },
     ], f),
     true,
   );
 
   f.last_service_days_ago = 21;
   assertEquals(
-    evalRule("AND", [
-      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 0 },
+    evalRule("OR", [
+      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 1 },
       { source: "attendance.never_attended", operator: "true", value: "", condition_group: 1 },
-      { source: "attendance.last_service_days_ago", operator: "gt", value: 21, condition_group: 1 },
-      { source: "attendance.last_service_days_ago", operator: "lte", value: 42, condition_group: 1 },
+      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 2 },
+      { source: "attendance.last_service_days_ago", operator: "gt", value: 21, condition_group: 2 },
+      { source: "attendance.last_service_days_ago", operator: "lte", value: 42, condition_group: 2 },
     ], f),
     false,
   );
@@ -213,11 +216,12 @@ Deno.test("missed_3_sundays never_attended branch", () => {
   f.lifetime_checkins = 4;
   f.never_attended = true;
   assertEquals(
-    evalRule("AND", [
-      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 0 },
+    evalRule("OR", [
+      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 1 },
       { source: "attendance.never_attended", operator: "true", value: "", condition_group: 1 },
-      { source: "attendance.last_service_days_ago", operator: "gt", value: 21, condition_group: 1 },
-      { source: "attendance.last_service_days_ago", operator: "lte", value: 42, condition_group: 1 },
+      { source: "attendance.lifetime_checkins", operator: "gte", value: 4, condition_group: 2 },
+      { source: "attendance.last_service_days_ago", operator: "gt", value: 21, condition_group: 2 },
+      { source: "attendance.last_service_days_ago", operator: "lte", value: 42, condition_group: 2 },
     ], f),
     true,
   );
