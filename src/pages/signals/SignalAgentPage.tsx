@@ -38,6 +38,7 @@ const SignalAgentPage = () => {
   const { list: pending, review } = useAgentSuggestions("pending");
   const { query: config, save } = useAgentConfig();
   const { data: markers } = useMarkerCatalog();
+  const liveMarkers = (markers || []).filter((m) => !m.is_phase_two && m.enabled !== false);
   const { list: customSignals } = useCustomSignals();
   const qc = useQueryClient();
 
