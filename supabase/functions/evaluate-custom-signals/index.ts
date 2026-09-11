@@ -75,11 +75,11 @@ export function startOfWeekIso(iso: string): string {
   return monday.toISOString().slice(0, 10);
 }
 
-function getWindowCount(m: WindowCountMap, days: number): number | null {
+export function getWindowCount(m: WindowCountMap, days: number): number | null {
   return m.has(days) ? m.get(days)! : null;
 }
 
-function extractWindowDays(conditions: Condition[]): number[] {
+export function extractWindowDays(conditions: Condition[]): number[] {
   const days = new Set<number>();
   const windowSources = new Set([
     "attendance.checkins_in_days",
@@ -99,7 +99,7 @@ function extractWindowDays(conditions: Condition[]): number[] {
   return Array.from(days).sort((a, b) => a - b);
 }
 
-function cmp(a: number | null, op: string, b: number): boolean {
+export function cmp(a: number | null, op: string, b: number): boolean {
   if (a === null) return false;
   switch (op) {
     case "eq":
