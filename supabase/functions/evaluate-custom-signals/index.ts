@@ -8,14 +8,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface Condition {
+export interface Condition {
   source: string;
   operator: string;
   value: any;
   condition_group?: number;
 }
 
-type WindowCountMap = Map<number, number>;
+export type WindowCountMap = Map<number, number>;
 
 type ContactFacts = {
   contact_id: string;
