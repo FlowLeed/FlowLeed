@@ -45,15 +45,23 @@ const SignalsPage = () => {
   const hasFilters = campusId !== null || assignedUserId !== null;
 
   const offCount = useMemo(
-    () => (catalog || []).filter((m) => !m.is_phase_two && m.enabled === false).length,
+    () =>
+      (catalog || []).filter(
+        (m) => !m.is_phase_two && m.enabled === false && !m.promoted_signal_id
+      ).length,
     [catalog]
   );
 
   const filtered = useMemo(() => {
     if (!catalog) return [];
     if (filter === "phase2") return catalog.filter((m) => m.is_phase_two);
-    if (filter === "off") return catalog.filter((m) => !m.is_phase_two && m.enabled === false);
-    const live = catalog.filter((m) => !m.is_phase_two && m.enabled !== false);
+    if (filter === "off")
+      return catalog.filter(
+        (m) => !m.is_phase_two && m.enabled === false && !m.promoted_signal_id
+      );
+    const live = catalog.filter(
+      (m) => !m.is_phase_two && (m.enabled !== false || !!m.promoted_signal_id)
+    );
     if (filter === "positive") return live.filter((m) => m.polarity === "positive");
     if (filter === "negative") return live.filter((m) => m.polarity === "negative");
     return live;
