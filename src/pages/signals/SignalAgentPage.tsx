@@ -274,7 +274,7 @@ const SignalAgentPage = () => {
                     </div>
                   )}
 
-                  {!markers?.length && !customSignals.data?.length && (
+                  {!liveMarkers.length && !customSignals.data?.length && (
                     <p className="text-xs text-muted-foreground">No signals available yet.</p>
                   )}
                 </div>
