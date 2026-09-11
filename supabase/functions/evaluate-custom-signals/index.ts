@@ -292,6 +292,34 @@ export function evalRule(
   return combinator === "AND" ? items.every(Boolean) : items.some(Boolean);
 }
 
+/**
+ * PostgREST caps every response at a fixed row count, so a single large
+ * `.limit()` silently truncates. Always read in pages and keep going until a
+ * short page proves the data ran out.
+ */
+const PAGE_SIZE = 1000;
+
+async function fetchAll<T = any>(
+  label: string,
+  make: (from: number, to: number) => any,
+): Promise<T[]> {
+  const out: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await make(from, from + PAGE_SIZE - 1);
+    if (error) {
+      console.error(`fetchAll(${label}) failed at offset ${from}: ${error.message}`);
+      break;
+    }
+    const rows = (data || []) as T[];
+    out.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
+  }
+  console.log(`fetchAll(${label}): ${out.length} rows`);
+  return out;
+}
+
 async function loadFacts(
   sb: any,
   orgId: string,
@@ -303,11 +331,13 @@ async function loadFacts(
   const facts = new Map<string, ContactFacts>();
 
   // Contacts
-  const { data: contacts } = await sb
-    .from("contacts")
-    .select("id, campus_id, created_at, source_type")
-    .eq("organization_id", orgId)
-    .limit(50000);
+  const contacts = await fetchAll("contacts", (from, to) =>
+    sb
+      .from("contacts")
+      .select("id, campus_id, created_at, source_type")
+      .eq("organization_id", orgId)
+      .order("id", { ascending: true })
+      .range(from, to));
   for (const c of contacts || []) {
     facts.set((c as any).id, {
       contact_id: (c as any).id,
@@ -350,54 +380,39 @@ async function loadFacts(
   // Children links (for kids_checked_in): only family members recorded as a child
   const kidPersonToParents = new Map<string, Set<string>>(); // kid pc_person_id -> Set<parent contact_id>
   {
-    let fmOffset = 0;
-    const FM_PAGE = 10000;
-    while (true) {
-      const { data: page } = await sb
+    const familyRows = await fetchAll("contact_family_members", (from, to) =>
+      sb
         .from("contact_family_members")
         .select("contact_id, pc_person_id, relationship")
         .not("pc_person_id", "is", null)
-        .range(fmOffset, fmOffset + FM_PAGE - 1);
-      const rows = (page || []) as any[];
-      if (!rows.length) break;
-      for (const row of rows) {
-        const cid = row.contact_id as string;
-        const pid = row.pc_person_id as string;
-        const rel = String(row.relationship || "").toLowerCase();
-        if (!cid || !pid || rel !== "child") continue;
-        if (!facts.has(cid)) continue; // outside this org
-        if (!kidPersonToParents.has(pid)) kidPersonToParents.set(pid, new Set());
-        kidPersonToParents.get(pid)!.add(cid);
-      }
-      if (rows.length < FM_PAGE) break;
-      fmOffset += FM_PAGE;
+        .order("id", { ascending: true })
+        .range(from, to));
+    for (const row of familyRows as any[]) {
+      const cid = row.contact_id as string;
+      const pid = row.pc_person_id as string;
+      const rel = String(row.relationship || "").toLowerCase();
+      if (!cid || !pid || rel !== "child") continue;
+      if (!facts.has(cid)) continue; // outside this org
+      if (!kidPersonToParents.has(pid)) kidPersonToParents.set(pid, new Set());
+      kidPersonToParents.get(pid)!.add(cid);
     }
   }
 
   // Check-ins (service attendance) — load all for lifetime/last-service exactness
-  const ownCheckins: Array<{ contact_id: string; pc_person_id: string | null; checked_in_at: string; checkin_kind: string | null }> = [];
-  let checkinOffset = 0;
-  const CHECKIN_PAGE = 50000;
-  while (true) {
-    const { data: page } = await sb
+  const checkinRows = await fetchAll("pco_checkins", (from, to) =>
+    sb
       .from("pco_checkins")
       .select("contact_id, pc_person_id, checked_in_at, checkin_kind")
       .eq("organization_id", orgId)
       .order("checked_in_at", { ascending: true })
-      .range(checkinOffset, checkinOffset + CHECKIN_PAGE - 1);
-    const rows = (page || []) as any[];
-    if (!rows.length) break;
-    for (const row of rows) {
-      ownCheckins.push({
-        contact_id: row.contact_id as string,
-        pc_person_id: (row.pc_person_id || null) as string | null,
-        checked_in_at: row.checked_in_at as string,
-        checkin_kind: (row.checkin_kind || null) as string | null,
-      });
-    }
-    if (rows.length < CHECKIN_PAGE) break;
-    checkinOffset += CHECKIN_PAGE;
-  }
+      .order("id", { ascending: true })
+      .range(from, to));
+  const ownCheckins = (checkinRows as any[]).map((row) => ({
+    contact_id: row.contact_id as string,
+    pc_person_id: (row.pc_person_id || null) as string | null,
+    checked_in_at: row.checked_in_at as string,
+    checkin_kind: (row.checkin_kind || null) as string | null,
+  }));
 
   const twelveWksAgo = now - 84 * 86400000;
   const twentyFourWksAgo = now - 168 * 86400000;
@@ -505,13 +520,16 @@ async function loadFacts(
   }
 
   // Groups (join through groups because group_members has no organization_id)
-  const { data: gm } = await sb
-    .from("group_members")
-    .select("contact_id, group_id, id, status, last_attended_at, group:groups!inner(organization_id)")
-    .eq("group.organization_id", orgId)
-    .limit(100000);
+  const gm = await fetchAll("group_members", (from, to) =>
+    sb
+      .from("group_members")
+      .select("contact_id, group_id, id, status, last_attended_at, group:groups!inner(organization_id)")
+      .eq("group.organization_id", orgId)
+      .order("id", { ascending: true })
+      .range(from, to));
   const activeGroupMemberIds = new Set<string>();
   const groupMemberToGroup = new Map<string, string>();
+  const groupMemberToContact = new Map<string, string>();
   const groupMemberLastAttended = new Map<string, string | null>();
   for (const m of gm || []) {
     const cid = (m as any).contact_id as string;
@@ -523,27 +541,32 @@ async function loadFacts(
     if (status === "active") {
       activeGroupMemberIds.add(gmId);
       groupMemberToGroup.set(gmId, (m as any).group_id as string);
+      groupMemberToContact.set(gmId, cid);
       groupMemberLastAttended.set(gmId, (m as any).last_attended_at || null);
     }
   }
 
   // Recent group meetings per group (last 8)
-  const { data: orgGroups } = await sb
-    .from("groups")
-    .select("id")
-    .eq("organization_id", orgId)
-    .eq("status", "active")
-    .limit(50000);
+  const orgGroups = await fetchAll("groups", (from, to) =>
+    sb
+      .from("groups")
+      .select("id")
+      .eq("organization_id", orgId)
+      .eq("status", "active")
+      .order("id", { ascending: true })
+      .range(from, to));
   const activeGroupIds = new Set((orgGroups || []).map((g: any) => g.id as string));
 
   const recentMeetingsByGroup = new Map<string, Array<{ id: string; meeting_date: string }>>();
   if (activeGroupIds.size) {
-    const { data: meetings } = await sb
-      .from("group_meetings")
-      .select("id, group_id, meeting_date")
-      .in("group_id", Array.from(activeGroupIds))
-      .order("meeting_date", { ascending: false })
-      .limit(200000);
+    const meetings = await fetchAll("group_meetings", (from, to) =>
+      sb
+        .from("group_meetings")
+        .select("id, group_id, meeting_date")
+        .in("group_id", Array.from(activeGroupIds))
+        .order("meeting_date", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to));
     const perGroup = new Map<string, Array<{ id: string; meeting_date: string }>>();
     for (const m of meetings || []) {
       const gid = (m as any).group_id as string;
@@ -562,12 +585,14 @@ async function loadFacts(
   }
   const attendanceByMember = new Map<string, { present: number; total: number; lastPresent: string | null }>();
   if (meetingIds.size && activeGroupMemberIds.size) {
-    const { data: ga } = await sb
-      .from("group_attendance")
-      .select("group_member_id, group_meeting_id, status, checked_in_at")
-      .in("group_member_id", Array.from(activeGroupMemberIds))
-      .in("group_meeting_id", Array.from(meetingIds))
-      .limit(200000);
+    const ga = await fetchAll("group_attendance", (from, to) =>
+      sb
+        .from("group_attendance")
+        .select("group_member_id, group_meeting_id, status, checked_in_at")
+        .in("group_member_id", Array.from(activeGroupMemberIds))
+        .in("group_meeting_id", Array.from(meetingIds))
+        .order("id", { ascending: true })
+        .range(from, to));
     for (const a of ga || []) {
       const gmId = (a as any).group_member_id as string;
       const status = String((a as any).status || "");
@@ -583,7 +608,7 @@ async function loadFacts(
   }
 
   for (const gmId of activeGroupMemberIds) {
-    const cid = ((gm || []) as any[]).find((m: any) => m.id === gmId)?.contact_id as string | undefined;
+    const cid = groupMemberToContact.get(gmId);
     if (!cid) continue;
     const f = facts.get(cid);
     if (!f) continue;
@@ -621,28 +646,19 @@ async function loadFacts(
   // Contacts in a group but with no attendance records stay never_attended_group=true
 
   // Serving — volunteer check-ins
-  const volunteerCheckins: Array<{ contact_id: string; checked_in_at: string }> = [];
-  let serveOffset = 0;
-  const SERVE_PAGE = 50000;
-  while (true) {
-    const { data: page } = await sb
+  const serveRows = await fetchAll("pco_checkins(volunteer)", (from, to) =>
+    sb
       .from("pco_checkins")
       .select("contact_id, checked_in_at, checkin_kind")
       .eq("organization_id", orgId)
       .ilike("checkin_kind", "%volunteer%")
       .order("checked_in_at", { ascending: true })
-      .range(serveOffset, serveOffset + SERVE_PAGE - 1);
-    const rows = (page || []) as any[];
-    if (!rows.length) break;
-    for (const row of rows) {
-      volunteerCheckins.push({
-        contact_id: row.contact_id as string,
-        checked_in_at: row.checked_in_at as string,
-      });
-    }
-    if (rows.length < SERVE_PAGE) break;
-    serveOffset += SERVE_PAGE;
-  }
+      .order("id", { ascending: true })
+      .range(from, to));
+  const volunteerCheckins = (serveRows as any[]).map((row) => ({
+    contact_id: row.contact_id as string,
+    checked_in_at: row.checked_in_at as string,
+  }));
 
   const lastServe = new Map<string, string>();
   for (const s of volunteerCheckins) {
@@ -665,19 +681,24 @@ async function loadFacts(
   }
 
   // Flows (pipeline_contacts)
-  const { data: orgFlows } = await sb
-    .from("pipelines")
-    .select("id")
-    .eq("organization_id", orgId);
+  const orgFlows = await fetchAll("pipelines", (from, to) =>
+    sb
+      .from("pipelines")
+      .select("id")
+      .eq("organization_id", orgId)
+      .order("id", { ascending: true })
+      .range(from, to));
   const flowIds = (orgFlows || []).map((flow: any) => flow.id as string);
-  const { data: pc } = flowIds.length
-    ? await sb
-      .from("pipeline_contacts")
-      .select("contact_id, pipeline_id, stage_id, stage_entered_at, completed_end_at")
-      .in("pipeline_id", flowIds)
-      .is("completed_end_at", null)
-      .limit(100000)
-    : { data: [] };
+  const pc = flowIds.length
+    ? await fetchAll("pipeline_contacts", (from, to) =>
+      sb
+        .from("pipeline_contacts")
+        .select("contact_id, pipeline_id, stage_id, stage_entered_at, completed_end_at")
+        .in("pipeline_id", flowIds)
+        .is("completed_end_at", null)
+        .order("id", { ascending: true })
+        .range(from, to))
+    : [];
   for (const p of pc || []) {
     const cid = (p as any).contact_id;
     const f = facts.get(cid);
@@ -707,12 +728,14 @@ async function loadFacts(
   );
 
   if (momentTypeIds.length) {
-    const { data: moments } = await sb
-      .from("flow_moments")
-      .select("contact_id, flow_moment_type_id, occurred_at")
-      .in("flow_moment_type_id", momentTypeIds)
-      .order("occurred_at", { ascending: false })
-      .limit(100000);
+    const moments = await fetchAll("flow_moments", (from, to) =>
+      sb
+        .from("flow_moments")
+        .select("contact_id, flow_moment_type_id, occurred_at")
+        .in("flow_moment_type_id", momentTypeIds)
+        .order("occurred_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to));
     for (const moment of moments || []) {
       const f = facts.get((moment as any).contact_id);
       if (!f) continue;
@@ -742,11 +765,13 @@ async function loadFacts(
   }
 
   // Church Online events
-  const { data: onlineEvents } = await sb
-    .from("church_online_events")
-    .select("contact_id, event_type, created_at")
-    .eq("organization_id", orgId)
-    .limit(100000);
+  const onlineEvents = await fetchAll("church_online_events", (from, to) =>
+    sb
+      .from("church_online_events")
+      .select("contact_id, event_type, created_at")
+      .eq("organization_id", orgId)
+      .order("id", { ascending: true })
+      .range(from, to));
   for (const e of onlineEvents || []) {
     const f = facts.get((e as any).contact_id);
     if (!f) continue;
@@ -764,11 +789,13 @@ async function loadFacts(
   }
 
   // Tags
-  const { data: tags } = await sb
-    .from("contact_tags")
-    .select("contact_id, tag")
-    .eq("organization_id", orgId)
-    .limit(200000);
+  const tags = await fetchAll("contact_tags", (from, to) =>
+    sb
+      .from("contact_tags")
+      .select("contact_id, tag")
+      .eq("organization_id", orgId)
+      .order("id", { ascending: true })
+      .range(from, to));
   for (const t of tags || []) {
     const f = facts.get((t as any).contact_id);
     if (f) f.tags.add(String((t as any).tag || "").toLowerCase());
