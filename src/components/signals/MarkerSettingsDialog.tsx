@@ -51,7 +51,7 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
   const promote = usePromoteMarkerToCustom();
   const specs = marker ? markerParamSpecs[marker.key] || [] : [];
 
-  const [tab, setTab] = useState("basics");
+  
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
   const [enabled, setEnabled] = useState(true);
