@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { MarkerCatalogEntry } from "@/hooks/useMarkerCatalog";
 import { markerParamSpecs, paramValue } from "@/lib/markerParams";
@@ -162,8 +162,11 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
             <TabsTrigger value="basics">Basics</TabsTrigger>
-            <TabsTrigger value="logic">Logic</TabsTrigger>
+            <TabsTrigger value="logic" className="gap-1">
+              <SlidersHorizontal className="h-3.5 w-3.5" /> Logic
+            </TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="basics" className="space-y-5 py-3">
             <div className="flex items-center justify-between rounded-lg border p-3">
@@ -227,6 +230,25 @@ export function MarkerSettingsDialog({ marker, open, onOpenChange }: Props) {
                 This signal has no simple numbers to adjust. Use the Logic tab to rebuild the rule.
               </p>
             )}
+
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed p-3">
+              <div>
+                <p className="text-sm font-medium">Want to change the rule itself?</p>
+                <p className="text-xs text-muted-foreground">
+                  Build your own conditions for this signal.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1 flex-shrink-0"
+                onClick={() => setTab("logic")}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" /> Edit logic
+              </Button>
+            </div>
+
           </TabsContent>
 
           <TabsContent value="logic" className="space-y-4 py-3">
