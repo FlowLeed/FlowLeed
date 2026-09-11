@@ -347,30 +347,31 @@ async function loadFacts(
     });
   }
 
-  // Household links (for kids_checked_in)
-  const householdLinks = new Map<string, Set<string>>(); // contact_id -> Set<hh_contact_id>
-  const { data: hhContacts } = await sb
-    .from("contacts")
-    .select("id, pc_household_id")
-    .eq("organization_id", orgId)
-    .not("pc_household_id", "is", null)
-    .limit(50000);
-  const householdMembers = new Map<string, Set<string>>(); // pc_household_id -> Set<contact_id>
-  for (const c of hhContacts || []) {
-    const hid = (c as any).pc_household_id as string;
-    const cid = (c as any).id as string;
-    if (!hid || !cid) continue;
-    if (!householdMembers.has(hid)) householdMembers.set(hid, new Set());
-    householdMembers.get(hid)!.add(cid);
-  }
-  for (const c of hhContacts || []) {
-    const cid = (c as any).id as string;
-    const hid = (c as any).pc_household_id as string;
-    const members = householdMembers.get(hid);
-    if (!members) continue;
-    const others = new Set(members);
-    others.delete(cid);
-    if (others.size) householdLinks.set(cid, others);
+  // Children links (for kids_checked_in): only family members recorded as a child
+  const kidPersonToParents = new Map<string, Set<string>>(); // kid pc_person_id -> Set<parent contact_id>
+  {
+    let fmOffset = 0;
+    const FM_PAGE = 10000;
+    while (true) {
+      const { data: page } = await sb
+        .from("contact_family_members")
+        .select("contact_id, pc_person_id, relationship")
+        .not("pc_person_id", "is", null)
+        .range(fmOffset, fmOffset + FM_PAGE - 1);
+      const rows = (page || []) as any[];
+      if (!rows.length) break;
+      for (const row of rows) {
+        const cid = row.contact_id as string;
+        const pid = row.pc_person_id as string;
+        const rel = String(row.relationship || "").toLowerCase();
+        if (!cid || !pid || rel !== "child") continue;
+        if (!facts.has(cid)) continue; // outside this org
+        if (!kidPersonToParents.has(pid)) kidPersonToParents.set(pid, new Set());
+        kidPersonToParents.get(pid)!.add(cid);
+      }
+      if (rows.length < FM_PAGE) break;
+      fmOffset += FM_PAGE;
+    }
   }
 
   // Check-ins (service attendance) — load all for lifetime/last-service exactness
