@@ -224,11 +224,11 @@ const SignalAgentPage = () => {
                     </p>
                   </div>
 
-                  {(markers?.length ?? 0) > 0 && (
+                  {liveMarkers.length > 0 && (
                     <div className="space-y-1.5">
                       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Built-in markers</p>
                       <div className="flex flex-wrap gap-1.5">
-                        {markers!.map((m) => {
+                        {liveMarkers.map((m) => {
                           const on = watched.includes(m.key);
                           return (
                             <Button
