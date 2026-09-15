@@ -6,6 +6,7 @@ import { toast } from "sonner";
 export type SignalPolarity = "positive" | "neutral" | "negative";
 export type SignalSeverity = "info" | "watch" | "risk";
 export type RuleCombinator = "AND" | "OR";
+export type SignalVisibility = "org" | "personal";
 
 export interface CustomSignalCondition {
   /** e.g. attendance.last_service_days_ago, group.attendance_rate, tag.has, pco_field */
@@ -25,6 +26,7 @@ export interface CustomSignal {
   polarity: SignalPolarity;
   category: string;
   severity: SignalSeverity;
+  visibility: SignalVisibility;
   enabled: boolean;
   created_by: string | null;
   created_at: string;
@@ -90,12 +92,14 @@ export function useCustomSignals() {
       description?: string;
       polarity: SignalPolarity;
       severity: SignalSeverity;
+      visibility?: SignalVisibility;
       category?: string;
       combinator: RuleCombinator;
       conditions: CustomSignalCondition[];
     }) => {
       if (!orgId) throw new Error("No organization");
       const key = input.label.toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 60);
+      const { data: { user } } = await supabase.auth.getUser();
       const { data: signal, error } = await supabase
         .from("custom_signals" as any)
         .insert({
@@ -105,6 +109,8 @@ export function useCustomSignals() {
           description: input.description || null,
           polarity: input.polarity,
           severity: input.severity,
+          visibility: input.visibility || "org",
+          created_by: user?.id ?? null,
           category: input.category || "Custom",
         })
         .select()
@@ -134,6 +140,7 @@ export function useCustomSignals() {
       description?: string;
       polarity?: SignalPolarity;
       severity?: SignalSeverity;
+      visibility?: SignalVisibility;
       enabled?: boolean;
       combinator?: RuleCombinator;
       conditions?: CustomSignalCondition[];
