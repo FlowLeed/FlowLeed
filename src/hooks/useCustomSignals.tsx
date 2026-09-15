@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useIsMutating } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "./useProfile";
 import { toast } from "sonner";
@@ -86,6 +86,23 @@ export function useCustomSignals() {
     },
   });
 
+  /** Pulls matching people for this org's signals right after a change. */
+  const evaluate = useMutation({
+    mutationKey: ["evaluate-custom-signals", orgId],
+    mutationFn: async () => {
+      if (!orgId) return;
+      const { error } = await supabase.functions.invoke("evaluate-custom-signals", {
+        body: { organization_id: orgId },
+      });
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["custom-signals", orgId] });
+    },
+  });
+
+  const isEvaluating = useIsMutating({ mutationKey: ["evaluate-custom-signals"] }) > 0;
+
   const create = useMutation({
     mutationFn: async (input: {
       label: string;
@@ -127,8 +144,9 @@ export function useCustomSignals() {
       return signal;
     },
     onSuccess: () => {
-      toast.success("Signal created");
+      toast.success("Signal created — finding matching people…");
       qc.invalidateQueries({ queryKey: ["custom-signals", orgId] });
+      evaluate.mutate();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -163,8 +181,10 @@ export function useCustomSignals() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["custom-signals", orgId] });
+      // Only re-pull people when the rule or on/off state actually changed
+      if (vars.conditions || vars.enabled !== undefined) evaluate.mutate();
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -181,5 +201,5 @@ export function useCustomSignals() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  return { list, create, update, remove };
+  return { list, create, update, remove, evaluate, isEvaluating };
 }

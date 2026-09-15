@@ -26,7 +26,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { useCustomSignals, type CustomSignal } from "@/hooks/useCustomSignals";
 import { CustomSignalEditorDialog } from "@/components/signals/CustomSignalEditorDialog";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 
 const polarityClass: Record<string, string> = {
   positive: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300",
@@ -57,7 +57,7 @@ const SignalsPage = () => {
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
   const [filter, setFilter] = useState<"all" | "positive" | "negative" | "off" | "personal">("all");
   const [editing, setEditing] = useState<MarkerCatalogEntry | null>(null);
-  const { list: customSignals } = useCustomSignals();
+  const { list: customSignals, isEvaluating } = useCustomSignals();
   const [newPersonal, setNewPersonal] = useState(false);
   const [editingPersonal, setEditingPersonal] = useState<CustomSignal | null>(null);
 
@@ -262,8 +262,17 @@ const SignalsPage = () => {
                         {s.description && (
                           <p className="text-xs text-muted-foreground line-clamp-2">{s.description}</p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {s.rule?.conditions.length || 0} condition{(s.rule?.conditions.length || 0) !== 1 ? "s" : ""} · {s.contact_count || 0} {(s.contact_count || 0) === 1 ? "person" : "people"}
+                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+                          <span>
+                            {s.rule?.conditions.length || 0} condition{(s.rule?.conditions.length || 0) !== 1 ? "s" : ""} ·{" "}
+                          </span>
+                          {isEvaluating ? (
+                            <span className="flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" /> finding people…
+                            </span>
+                          ) : (
+                            <span>{s.contact_count || 0} {(s.contact_count || 0) === 1 ? "person" : "people"}</span>
+                          )}
                         </p>
                       </div>
                       <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0" onClick={() => setEditingPersonal(s)}>

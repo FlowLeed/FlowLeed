@@ -32,7 +32,7 @@ const polarityClass: Record<string, string> = {
 };
 
 const CustomSignalsPage = () => {
-  const { list, update, remove } = useCustomSignals();
+  const { list, update, remove, isEvaluating } = useCustomSignals();
   const { organization } = useProfile();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<CustomSignal | null>(null);
@@ -123,8 +123,17 @@ const CustomSignalsPage = () => {
                       {s.description && (
                         <p className="text-xs text-muted-foreground line-clamp-2">{s.description}</p>
                       )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {s.rule?.conditions.length || 0} condition{(s.rule?.conditions.length || 0) !== 1 ? "s" : ""} · {s.contact_count || 0} contact{s.contact_count !== 1 ? "s" : ""}
+                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+                        <span>
+                          {s.rule?.conditions.length || 0} condition{(s.rule?.conditions.length || 0) !== 1 ? "s" : ""} ·{" "}
+                        </span>
+                        {isEvaluating || recomputing ? (
+                          <span className="flex items-center gap-1">
+                            <RefreshCw className="h-3 w-3 animate-spin" /> finding contacts…
+                          </span>
+                        ) : (
+                          <span>{s.contact_count || 0} contact{s.contact_count !== 1 ? "s" : ""}</span>
+                        )}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-2 flex-shrink-0">
