@@ -127,11 +127,6 @@ const SignalsPage = () => {
                 <Wand2 className="h-4 w-4" /> Custom
               </Link>
             </Button>
-            <Button asChild variant="outline" size="sm" className="gap-2">
-              <Link to="/signals/agent">
-                <Bot className="h-4 w-4" /> AI Agent
-              </Link>
-            </Button>
             <div className="flex items-center gap-2">
               {lastComputed && (
                 <span className="hidden md:inline text-xs text-muted-foreground">
