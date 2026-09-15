@@ -275,9 +275,18 @@ const SignalsPage = () => {
                           )}
                         </p>
                       </div>
-                      <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0" onClick={() => setEditingPersonal(s)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {!isEvaluating && (s.contact_count || 0) > 0 && (
+                          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                            <Link to={`/contacts?marker=signal:${s.id}`}>
+                              View <ArrowRight className="h-3 w-3 ml-1" />
+                            </Link>
+                          </Button>
+                        )}
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingPersonal(s)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

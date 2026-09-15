@@ -142,6 +142,11 @@ const CustomSignalsPage = () => {
                         onCheckedChange={(v) => update.mutate({ id: s.id, enabled: v })}
                       />
                       <div className="flex items-center gap-1">
+                        {!isEvaluating && !recomputing && (s.contact_count || 0) > 0 && (
+                          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                            <Link to={`/contacts?marker=signal:${s.id}`}>View</Link>
+                          </Button>
+                        )}
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditing(s)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
