@@ -357,27 +357,6 @@ export const useContacts = (filters: ContactFilters) => {
         });
       }
 
-      // Get last interaction for each contact
-      const contactIds = filteredData.map((c) => c.id);
-      if (contactIds.length > 0) {
-        const { data: interactions } = await supabase
-          .from("contact_interactions")
-          .select("contact_id, created_at")
-          .in("contact_id", contactIds)
-          .order("created_at", { ascending: false });
-
-        const lastInteractionMap = new Map();
-        interactions?.forEach((interaction) => {
-          if (!lastInteractionMap.has(interaction.contact_id)) {
-            lastInteractionMap.set(interaction.contact_id, interaction.created_at);
-          }
-        });
-
-        filteredData = filteredData.map((contact) => ({
-          ...contact,
-          lastInteraction: lastInteractionMap.get(contact.id),
-        }));
-      }
 
       console.log('✅ Final contacts to return:', filteredData.length);
       return filteredData;
