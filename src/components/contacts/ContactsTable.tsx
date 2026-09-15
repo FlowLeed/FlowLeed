@@ -77,20 +77,8 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedI
     return 0;
   }) : contacts;
 
-  if (isLoading) {
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        Loading people...
-      </div>
-    );
-  }
-
-  if (contacts === undefined) {
-    return (
-      <div className="p-8 text-center text-muted-foreground">
-        Loading people...
-      </div>
-    );
+  if (isLoading || contacts === undefined) {
+    return <LoadingStatus />;
   }
 
   if (!contacts || contacts.length === 0) {
