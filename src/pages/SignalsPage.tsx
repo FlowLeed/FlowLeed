@@ -26,7 +26,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { useCustomSignals, type CustomSignal } from "@/hooks/useCustomSignals";
 import { CustomSignalEditorDialog } from "@/components/signals/CustomSignalEditorDialog";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 
 const polarityClass: Record<string, string> = {
   positive: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300",
