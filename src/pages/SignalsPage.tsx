@@ -24,6 +24,9 @@ import { useMarkerCatalog, useRecomputeMarkers, useMarkersLastComputed, type Mar
 import { useCampuses } from "@/hooks/useCampuses";
 import { useAuth } from "@/hooks/useAuth";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
+import { useCustomSignals, type CustomSignal } from "@/hooks/useCustomSignals";
+import { CustomSignalEditorDialog } from "@/components/signals/CustomSignalEditorDialog";
+import { Plus } from "lucide-react";
 
 const polarityClass: Record<string, string> = {
   positive: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-300",
@@ -52,8 +55,16 @@ const SignalsPage = () => {
   const recompute = useRecomputeMarkers();
   const { data: lastComputed } = useMarkersLastComputed();
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
-  const [filter, setFilter] = useState<"all" | "positive" | "negative" | "off" | "phase2">("all");
+  const [filter, setFilter] = useState<"all" | "positive" | "negative" | "off" | "personal">("all");
   const [editing, setEditing] = useState<MarkerCatalogEntry | null>(null);
+  const { list: customSignals } = useCustomSignals();
+  const [newPersonal, setNewPersonal] = useState(false);
+  const [editingPersonal, setEditingPersonal] = useState<CustomSignal | null>(null);
+
+  const personalSignals = useMemo(
+    () => (customSignals.data || []).filter((s) => s.visibility === "personal"),
+    [customSignals.data]
+  );
   const hasFilters = campusId !== null || assignedUserId !== null;
 
   const offCount = useMemo(
