@@ -165,9 +165,17 @@ export function useCustomSignals() {
     }) => {
       const { id, combinator, conditions, ...patch } = input;
       if (Object.keys(patch).length) {
+        const finalPatch: Record<string, any> = { ...patch };
+        // Making a signal personal must record the owner, otherwise the row
+        // would become invisible to everyone (including the editor).
+        if (patch.visibility === "personal") {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user?.id) throw new Error("You must be signed in to make a signal personal");
+          finalPatch.created_by = user.id;
+        }
         const { error } = await supabase
           .from("custom_signals" as any)
-          .update(patch)
+          .update(finalPatch)
           .eq("id", id);
         if (error) throw error;
       }
