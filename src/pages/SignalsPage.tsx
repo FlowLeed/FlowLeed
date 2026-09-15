@@ -262,8 +262,17 @@ const SignalsPage = () => {
                         {s.description && (
                           <p className="text-xs text-muted-foreground line-clamp-2">{s.description}</p>
                         )}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {s.rule?.conditions.length || 0} condition{(s.rule?.conditions.length || 0) !== 1 ? "s" : ""} · {s.contact_count || 0} {(s.contact_count || 0) === 1 ? "person" : "people"}
+                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
+                          <span>
+                            {s.rule?.conditions.length || 0} condition{(s.rule?.conditions.length || 0) !== 1 ? "s" : ""} ·{" "}
+                          </span>
+                          {isEvaluating ? (
+                            <span className="flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" /> finding people…
+                            </span>
+                          ) : (
+                            <span>{s.contact_count || 0} {(s.contact_count || 0) === 1 ? "person" : "people"}</span>
+                          )}
                         </p>
                       </div>
                       <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0" onClick={() => setEditingPersonal(s)}>
