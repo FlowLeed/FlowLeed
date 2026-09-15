@@ -77,7 +77,10 @@ export function startOfWeekIso(iso: string): string {
 }
 
 export function getWindowCount(m: WindowCountMap, days: number): number | null {
-  return m.has(days) ? m.get(days)! : null;
+  // Absence of a key means no matching records were found in that window,
+  // which is a real count of zero (not "unknown"). Returning null here would
+  // make "equals 0" style rules (e.g. "Stopped serving") never match.
+  return m.has(days) ? m.get(days)! : 0;
 }
 
 export function extractWindowDays(conditions: Condition[]): number[] {
