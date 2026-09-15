@@ -57,7 +57,7 @@ const SignalsPage = () => {
   const { isOrgAdmin } = useIsOrgAdmin(user?.id);
   const [filter, setFilter] = useState<"all" | "positive" | "negative" | "off" | "personal">("all");
   const [editing, setEditing] = useState<MarkerCatalogEntry | null>(null);
-  const { list: customSignals } = useCustomSignals();
+  const { list: customSignals, isEvaluating } = useCustomSignals();
   const [newPersonal, setNewPersonal] = useState(false);
   const [editingPersonal, setEditingPersonal] = useState<CustomSignal | null>(null);
 
