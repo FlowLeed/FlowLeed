@@ -181,8 +181,10 @@ export function useCustomSignals() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["custom-signals", orgId] });
+      // Only re-pull people when the rule or on/off state actually changed
+      if (vars.conditions || vars.enabled !== undefined) evaluate.mutate();
     },
     onError: (e: any) => toast.error(e.message),
   });
