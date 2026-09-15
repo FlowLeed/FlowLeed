@@ -19,12 +19,15 @@ import {
   type RuleCombinator,
   type SignalPolarity,
   type SignalSeverity,
+  type SignalVisibility,
 } from "@/hooks/useCustomSignals";
 
 interface Props {
   signal: CustomSignal | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Visibility pre-selected for brand new signals. */
+  defaultVisibility?: SignalVisibility;
 }
 
 export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) {
@@ -34,6 +37,7 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) 
   const [polarity, setPolarity] = useState<SignalPolarity>("neutral");
   const [severity, setSeverity] = useState<SignalSeverity>("info");
   const [combinator, setCombinator] = useState<RuleCombinator>("AND");
+  const [visibility, setVisibility] = useState<SignalVisibility>("org");
   const [conditions, setConditions] = useState<CustomSignalCondition[]>([]);
 
   useEffect(() => {
@@ -42,6 +46,7 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) 
     setDescription(signal?.description ?? "");
     setPolarity(signal?.polarity ?? "neutral");
     setSeverity(signal?.severity ?? "info");
+    setVisibility(signal?.visibility ?? defaultVisibility ?? "org");
     setCombinator(signal?.rule?.combinator ?? "AND");
     setConditions(signal?.rule?.conditions ?? []);
   }, [signal, open]);
