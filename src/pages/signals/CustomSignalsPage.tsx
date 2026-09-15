@@ -115,6 +115,9 @@ const CustomSignalsPage = () => {
                           {s.polarity}
                         </Badge>
                         <Badge variant="outline" className="text-[10px]">{s.severity}</Badge>
+                        {s.visibility === "personal" && (
+                          <Badge variant="secondary" className="text-[10px]">Only me</Badge>
+                        )}
                         <p className="font-medium text-sm truncate">{s.label}</p>
                       </div>
                       {s.description && (

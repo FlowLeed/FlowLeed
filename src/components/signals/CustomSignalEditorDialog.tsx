@@ -19,21 +19,25 @@ import {
   type RuleCombinator,
   type SignalPolarity,
   type SignalSeverity,
+  type SignalVisibility,
 } from "@/hooks/useCustomSignals";
 
 interface Props {
   signal: CustomSignal | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Visibility pre-selected for brand new signals. */
+  defaultVisibility?: SignalVisibility;
 }
 
-export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) {
+export function CustomSignalEditorDialog({ signal, open, onOpenChange, defaultVisibility }: Props) {
   const { create, update } = useCustomSignals();
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
   const [polarity, setPolarity] = useState<SignalPolarity>("neutral");
   const [severity, setSeverity] = useState<SignalSeverity>("info");
   const [combinator, setCombinator] = useState<RuleCombinator>("AND");
+  const [visibility, setVisibility] = useState<SignalVisibility>("org");
   const [conditions, setConditions] = useState<CustomSignalCondition[]>([]);
 
   useEffect(() => {
@@ -42,6 +46,7 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) 
     setDescription(signal?.description ?? "");
     setPolarity(signal?.polarity ?? "neutral");
     setSeverity(signal?.severity ?? "info");
+    setVisibility(signal?.visibility ?? defaultVisibility ?? "org");
     setCombinator(signal?.rule?.combinator ?? "AND");
     setConditions(signal?.rule?.conditions ?? []);
   }, [signal, open]);
@@ -67,6 +72,7 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) 
         description,
         polarity,
         severity,
+        visibility,
         combinator,
         conditions,
       });
@@ -76,6 +82,7 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) 
         description,
         polarity,
         severity,
+        visibility,
         combinator,
         conditions,
       });
@@ -129,6 +136,20 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange }: Props) 
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Who can see it</Label>
+            <Select value={visibility} onValueChange={(v) => setVisibility(v as SignalVisibility)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="org">Everyone on the team</SelectItem>
+                <SelectItem value="personal">Personal — only me</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Personal signals stay private to you and won't show up for other people on your team.
+            </p>
           </div>
 
           <div className="pt-2 border-t">
