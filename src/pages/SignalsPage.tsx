@@ -316,6 +316,20 @@ const SignalsPage = () => {
         open={!!editing}
         onOpenChange={(o) => !o && setEditing(null)}
       />
+
+      {(newPersonal || editingPersonal) && (
+        <CustomSignalEditorDialog
+          signal={editingPersonal}
+          defaultVisibility="personal"
+          open={newPersonal || !!editingPersonal}
+          onOpenChange={(o) => {
+            if (!o) {
+              setNewPersonal(false);
+              setEditingPersonal(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
