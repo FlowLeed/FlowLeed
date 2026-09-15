@@ -234,14 +234,23 @@ export const useContacts = (filters: ContactFilters) => {
           if (page.length < PAGE) break;
         }
       } else {
+        const chunks: string[][] = [];
         for (let i = 0; i < restrictIds.length; i += ID_CHUNK) {
-          const chunk = restrictIds.slice(i, i + ID_CHUNK);
-          const { data, error } = await buildQuery(chunk);
-          if (error) {
-            console.error('❌ Query error:', error);
-            throw error;
+          chunks.push(restrictIds.slice(i, i + ID_CHUNK));
+        }
+        // Run a few chunks at a time so large signals load quickly
+        const CONCURRENCY = 4;
+        for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+          const results = await Promise.all(
+            chunks.slice(i, i + CONCURRENCY).map((chunk) => buildQuery(chunk))
+          );
+          for (const { data, error } of results as any[]) {
+            if (error) {
+              console.error('❌ Query error:', error);
+              throw error;
+            }
+            rows.push(...(data || []));
           }
-          rows.push(...(data || []));
         }
       }
 
