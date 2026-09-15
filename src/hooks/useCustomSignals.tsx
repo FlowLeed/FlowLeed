@@ -144,8 +144,9 @@ export function useCustomSignals() {
       return signal;
     },
     onSuccess: () => {
-      toast.success("Signal created");
+      toast.success("Signal created — finding matching people…");
       qc.invalidateQueries({ queryKey: ["custom-signals", orgId] });
+      evaluate.mutate();
     },
     onError: (e: any) => toast.error(e.message),
   });
