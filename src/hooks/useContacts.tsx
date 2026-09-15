@@ -160,87 +160,101 @@ export const useContacts = (filters: ContactFilters) => {
         }
       }
 
-      // Build base query
-      let query = supabase
-        .from("contacts")
-        .select(`
-          contact_engagement_scores(score, engagement_level, signal, weeks_attended_last_12, streak_weeks, last_checkin_at, volunteer_checkins_90d),
-          *,
-          campuses(id, name),
-          contact_tags(tag),
-          pipeline_contacts(
-            pipeline_id,
-            assigned_to_user_id,
-            pipelines(id, name, icon)
-          )
-        `)
-        .eq("organization_id", organizationId)
-        .order("created_at", { ascending: false });
-
-      // Apply flow filter at query level
-      if (contactIdsInFlow !== null) {
-        query = query.in("id", contactIdsInFlow);
+      // Combine all id-restricting filters into one list so we can chunk requests
+      const idLists = [contactIdsInFlow, contactIdsWithMarker, contactIdsAssignedToUser].filter(
+        (l): l is string[] => l !== null
+      );
+      let restrictIds: string[] | null = null;
+      if (idLists.length > 0) {
+        restrictIds = idLists.reduce((acc, list) => {
+          const set = new Set(list);
+          return acc.filter((id) => set.has(id));
+        }, [...new Set(idLists[0])]);
+        if (restrictIds.length === 0) return [];
       }
 
-      // Apply marker filter
-      if (contactIdsWithMarker !== null) {
-        query = query.in("id", contactIdsWithMarker);
-      }
+      const buildQuery = (idsChunk: string[] | null) => {
+        let query = supabase
+          .from("contacts")
+          .select(`
+            contact_engagement_scores(score, engagement_level, signal, weeks_attended_last_12, streak_weeks, last_checkin_at, volunteer_checkins_90d),
+            *,
+            campuses(id, name),
+            contact_tags(tag),
+            pipeline_contacts(
+              pipeline_id,
+              assigned_to_user_id,
+              pipelines(id, name, icon)
+            )
+          `)
+          .eq("organization_id", organizationId)
+          .order("created_at", { ascending: false });
 
-      // Apply assigned-to filter at query level (for specific users)
-      if (contactIdsAssignedToUser !== null) {
-        // Intersect with flow filter if both are applied
-        if (contactIdsInFlow !== null) {
-          const intersection = contactIdsAssignedToUser.filter(id => contactIdsInFlow!.includes(id));
-          if (intersection.length === 0) {
-            console.log('✅ No contacts match both flow and assigned-to filters');
-            return [];
+        if (idsChunk) query = query.in("id", idsChunk);
+
+        // Apply search filter — sanitize to avoid PostgREST syntax issues with parens/commas
+        if (filters.searchTerm) {
+          const sanitized = filters.searchTerm.replace(/[(),]/g, '').trim();
+          const phoneFilter = buildPhoneOrFilter(filters.searchTerm);
+          const phonePart = phoneFilter ? `,${phoneFilter}` : '';
+          query = query.or(
+            `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`
+          );
+        }
+
+        // Apply unassigned filter (contact-level only)
+        if (filters.assignedToUserId === "unassigned") {
+          query = query.is("assigned_to_user_id", null);
+        }
+
+        // Apply campus filter
+        if (filters.campusId && filters.campusId !== "all") {
+          if (filters.campusId === "no-campus") {
+            query = query.is("campus_id", null);
+          } else {
+            query = query.eq("campus_id", filters.campusId);
           }
-          query = query.in("id", intersection);
-        } else {
-          query = query.in("id", contactIdsAssignedToUser);
+        }
+
+        return query;
+      };
+
+      // A long list of ids makes the request URL too large, so read it in chunks
+      const ID_CHUNK = 150;
+      const rows: any[] = [];
+      if (restrictIds === null) {
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await buildQuery(null).range(from, from + PAGE - 1);
+          if (error) {
+            console.error('❌ Query error:', error);
+            throw error;
+          }
+          const page = data || [];
+          rows.push(...page);
+          if (page.length < PAGE) break;
+        }
+      } else {
+        const chunks: string[][] = [];
+        for (let i = 0; i < restrictIds.length; i += ID_CHUNK) {
+          chunks.push(restrictIds.slice(i, i + ID_CHUNK));
+        }
+        // Run a few chunks at a time so large signals load quickly
+        const CONCURRENCY = 4;
+        for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+          const results = await Promise.all(
+            chunks.slice(i, i + CONCURRENCY).map((chunk) => buildQuery(chunk))
+          );
+          for (const { data, error } of results as any[]) {
+            if (error) {
+              console.error('❌ Query error:', error);
+              throw error;
+            }
+            rows.push(...(data || []));
+          }
         }
       }
 
-
-      // Apply search filter — sanitize to avoid PostgREST syntax issues with parens/commas
-      if (filters.searchTerm) {
-        const sanitized = filters.searchTerm.replace(/[(),]/g, '').trim();
-        const phoneFilter = buildPhoneOrFilter(filters.searchTerm);
-        const phonePart = phoneFilter ? `,${phoneFilter}` : '';
-        query = query.or(
-          `name.ilike.%${sanitized}%,email.ilike.%${sanitized}%${phonePart}`
-        );
-      }
-
-      // Apply unassigned filter (contact-level only)
-      if (filters.assignedToUserId === "unassigned") {
-        query = query.is("assigned_to_user_id", null);
-      }
-
-      // Apply campus filter
-      if (filters.campusId && filters.campusId !== "all") {
-        if (filters.campusId === "no-campus") {
-          query = query.is("campus_id", null);
-        } else {
-          query = query.eq("campus_id", filters.campusId);
-        }
-      }
-
-      const { data, error } = await query;
-      
-      console.log('📊 Query result:', { 
-        dataCount: data?.length, 
-        error: error?.message,
-        sampleData: data?.[0]
-      });
-      
-      if (error) {
-        console.error('❌ Query error:', error);
-        throw error;
-      }
-
-      let filteredData = data || [];
+      let filteredData = rows;
       console.log('Initial data count:', filteredData.length);
 
       // Apply engagement level filter
