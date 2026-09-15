@@ -201,5 +201,5 @@ export function useCustomSignals() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  return { list, create, update, remove };
+  return { list, create, update, remove, evaluate, isEvaluating };
 }
