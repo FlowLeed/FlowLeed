@@ -1640,6 +1640,7 @@ export type Database = {
           polarity: string
           severity: string
           updated_at: string
+          visibility: string
         }
         Insert: {
           category?: string
@@ -1654,6 +1655,7 @@ export type Database = {
           polarity?: string
           severity?: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
           category?: string
@@ -1668,6 +1670,7 @@ export type Database = {
           polarity?: string
           severity?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
