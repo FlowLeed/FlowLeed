@@ -361,7 +361,6 @@ export const useContacts = (filters: ContactFilters) => {
       console.log('✅ Final contacts to return:', filteredData.length);
       return filteredData;
     },
-    enabled: !!user,
   });
 
   console.log('useContacts hook result:', { 
