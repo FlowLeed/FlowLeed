@@ -77,7 +77,7 @@ const SignalsPage = () => {
 
   const filtered = useMemo(() => {
     if (!catalog) return [];
-    if (filter === "phase2") return catalog.filter((m) => m.is_phase_two);
+    if (filter === "personal") return [];
     if (filter === "off")
       return catalog.filter(
         (m) => !m.is_phase_two && m.enabled === false
@@ -221,11 +221,66 @@ const SignalsPage = () => {
             <TabsTrigger value="positive">Positive</TabsTrigger>
             <TabsTrigger value="negative">Risk</TabsTrigger>
             {offCount > 0 && <TabsTrigger value="off">Turned off ({offCount})</TabsTrigger>}
-            <TabsTrigger value="phase2">Coming soon</TabsTrigger>
+            <TabsTrigger value="personal">
+              Personal{personalSignals.length > 0 ? ` (${personalSignals.length})` : ""}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        {isLoading ? (
+        {filter === "personal" ? (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                Personal signals are yours alone — build the rules you care about without changing what the rest of your team sees.
+              </p>
+              <Button size="sm" className="gap-2" onClick={() => setNewPersonal(true)}>
+                <Plus className="h-4 w-4" /> New personal signal
+              </Button>
+            </div>
+
+            {customSignals.isLoading ? (
+              <div className="space-y-3">
+                {[1, 2].map((i) => <Skeleton key={i} className="h-24 w-full" />)}
+              </div>
+            ) : personalSignals.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center space-y-3">
+                  <User className="h-8 w-8 mx-auto text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">You don't have any personal signals yet.</p>
+                  <Button size="sm" className="gap-2" onClick={() => setNewPersonal(true)}>
+                    <Plus className="h-4 w-4" /> Create your first one
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {personalSignals.map((s) => (
+                  <Card key={s.id} className={!s.enabled ? "opacity-60" : ""}>
+                    <CardContent className="p-4 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <Badge variant="outline" className={`text-xs ${polarityClass[s.polarity]}`}>
+                            {s.polarity}
+                          </Badge>
+                          <p className="font-medium text-sm truncate">{s.label}</p>
+                        </div>
+                        {s.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{s.description}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {s.rule?.conditions.length || 0} condition{(s.rule?.conditions.length || 0) !== 1 ? "s" : ""} · {s.contact_count || 0} {(s.contact_count || 0) === 1 ? "person" : "people"}
+                        </p>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0" onClick={() => setEditingPersonal(s)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : isLoading ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full" />)}
           </div>
