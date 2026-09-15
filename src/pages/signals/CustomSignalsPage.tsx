@@ -32,7 +32,7 @@ const polarityClass: Record<string, string> = {
 };
 
 const CustomSignalsPage = () => {
-  const { list, update, remove } = useCustomSignals();
+  const { list, update, remove, isEvaluating } = useCustomSignals();
   const { organization } = useProfile();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<CustomSignal | null>(null);
