@@ -87,7 +87,7 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedI
   if (contacts === undefined) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        Initializing...
+        Loading people...
       </div>
     );
   }

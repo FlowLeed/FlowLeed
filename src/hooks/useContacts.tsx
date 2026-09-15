@@ -1,43 +1,57 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import type { ContactFilters } from "@/pages/ContactsPage";
 import { buildPhoneOrFilter } from "@/lib/phoneSearch";
 
+const PAGE = 1000;
+
+/** Reads every matching row instead of the first page PostgREST returns. */
+const fetchAllIds = async (
+  build: () => any,
+  column = "contact_id"
+): Promise<string[]> => {
+  const ids: string[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build()
+      .order(column, { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw error;
+    const rows = (data || []) as any[];
+    ids.push(...rows.map((r) => r[column]));
+    if (rows.length < PAGE) break;
+  }
+  return ids;
+};
+
 export const useContacts = (filters: ContactFilters) => {
   const { user } = useAuth();
 
-  console.log('🔍 useContacts hook called', { user: user?.id, filters });
-
-  const { data: contacts, isLoading, error } = useQuery({
-    queryKey: ["all-contacts", user?.id, filters],
-    retry: false,
+  // Cached separately so switching filters doesn't re-resolve the org every time
+  const { data: organizationId } = useQuery({
+    queryKey: ["contacts-org-id", user?.id],
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      console.log('📊 useContacts queryFn executing', { userId: user?.id });
-      
-      if (!user) {
-        console.log('❌ No user found in useContacts');
-        return [];
-      }
-
-      // SECURITY FIX: Always get organization from server-validated membership
-      console.log('🔍 Fetching organization for user:', user.id);
-      
-      const { data: orgMembers, error: orgError } = await supabase
+      const { data } = await supabase
         .from("organization_members")
         .select("organization_id")
-        .eq("user_id", user.id)
+        .eq("user_id", user!.id)
         .limit(1);
+      return data?.[0]?.organization_id ?? null;
+    },
+  });
 
-      console.log('Organization member data:', orgMembers, 'error:', orgError);
+  const { data: contacts, isLoading, error } = useQuery({
+    queryKey: ["all-contacts", organizationId, filters],
+    retry: false,
+    enabled: !!user && !!organizationId,
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      if (!user || !organizationId) return [];
 
-      if (!orgMembers || orgMembers.length === 0) {
-        console.log('❌ No organization found for user');
-        return [];
-      }
-
-      const organizationId = orgMembers[0].organization_id;
-      console.log('✅ [SECURITY] Server-validated organization ID:', organizationId);
 
       // Handle flow filtering server-side for accurate results
       let contactIdsInFlow: string[] | null = null;
@@ -125,19 +139,22 @@ export const useContacts = (filters: ContactFilters) => {
               .maybeSingle();
         const promotedSignalId =
           directSignalId ?? ((markerSetting as any)?.promoted_signal_id as string | undefined);
-        const { data: markerRows } = promotedSignalId
-          ? await supabase
-              .from("custom_signal_contacts" as any)
-              .select("contact_id")
-              .eq("organization_id", organizationId)
-              .eq("signal_id", promotedSignalId)
-              .is("cleared_at", null)
-          : await supabase
-              .from("contact_markers")
-              .select("contact_id")
-              .eq("organization_id", organizationId)
-              .eq("marker_key", filters.markerKey);
-        contactIdsWithMarker = (markerRows || []).map((r: any) => r.contact_id);
+        contactIdsWithMarker = promotedSignalId
+          ? await fetchAllIds(() =>
+              supabase
+                .from("custom_signal_contacts" as any)
+                .select("contact_id")
+                .eq("organization_id", organizationId)
+                .eq("signal_id", promotedSignalId)
+                .is("cleared_at", null)
+            )
+          : await fetchAllIds(() =>
+              supabase
+                .from("contact_markers")
+                .select("contact_id")
+                .eq("organization_id", organizationId)
+                .eq("marker_key", filters.markerKey)
+            );
         if (contactIdsWithMarker.length === 0) {
           return [];
         }
@@ -340,32 +357,10 @@ export const useContacts = (filters: ContactFilters) => {
         });
       }
 
-      // Get last interaction for each contact
-      const contactIds = filteredData.map((c) => c.id);
-      if (contactIds.length > 0) {
-        const { data: interactions } = await supabase
-          .from("contact_interactions")
-          .select("contact_id, created_at")
-          .in("contact_id", contactIds)
-          .order("created_at", { ascending: false });
-
-        const lastInteractionMap = new Map();
-        interactions?.forEach((interaction) => {
-          if (!lastInteractionMap.has(interaction.contact_id)) {
-            lastInteractionMap.set(interaction.contact_id, interaction.created_at);
-          }
-        });
-
-        filteredData = filteredData.map((contact) => ({
-          ...contact,
-          lastInteraction: lastInteractionMap.get(contact.id),
-        }));
-      }
 
       console.log('✅ Final contacts to return:', filteredData.length);
       return filteredData;
     },
-    enabled: !!user,
   });
 
   console.log('useContacts hook result:', { 
