@@ -13,6 +13,7 @@ import { User, ArrowUpDown, ArrowUp, ArrowDown, MapPin } from "lucide-react";
 import { useState } from "react";
 import { SignalChip, SIGNAL_RISK_ORDER } from "@/components/contact/SignalChip";
 import type { SignalLevel } from "@/hooks/useContactSignal";
+import { LoadingStatus } from "@/components/contacts/LoadingStatus";
 
 interface ContactsTableProps {
   contacts: any[];
