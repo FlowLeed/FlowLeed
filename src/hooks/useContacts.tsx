@@ -27,7 +27,7 @@ const fetchAllIds = async (
 export const useContacts = (filters: ContactFilters) => {
   const { user } = useAuth();
 
-  // Cached separately so switching filters doesn't re-resolve the org每 time
+  // Cached separately so switching filters doesn't re-resolve the org every time
   const { data: organizationId } = useQuery({
     queryKey: ["contacts-org-id", user?.id],
     enabled: !!user,
