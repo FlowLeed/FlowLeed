@@ -86,6 +86,23 @@ export function useCustomSignals() {
     },
   });
 
+  /** Pulls matching people for this org's signals right after a change. */
+  const evaluate = useMutation({
+    mutationKey: ["evaluate-custom-signals", orgId],
+    mutationFn: async () => {
+      if (!orgId) return;
+      const { error } = await supabase.functions.invoke("evaluate-custom-signals", {
+        body: { organization_id: orgId },
+      });
+      if (error) throw error;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["custom-signals", orgId] });
+    },
+  });
+
+  const isEvaluating = useIsMutating({ mutationKey: ["evaluate-custom-signals"] }) > 0;
+
   const create = useMutation({
     mutationFn: async (input: {
       label: string;
