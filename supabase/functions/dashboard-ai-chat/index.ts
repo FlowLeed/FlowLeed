@@ -678,13 +678,13 @@ async function executeFindContactsByCriteria(
         const att = await pageAll((f, t) =>
           adminClient
             .from("group_attendance")
-            .select("contact_id, present")
-            .in("meeting_id", slice)
+            .select("contact_id, status")
+            .in("group_meeting_id", slice)
             .order("contact_id", { ascending: true })
             .range(f, t)
         );
         for (const a of att as any[]) {
-          if (a.contact_id && a.present !== false) historical.add(a.contact_id);
+          if (a.contact_id && String(a.status || "present").toLowerCase() === "present") historical.add(a.contact_id);
         }
       }
     }
