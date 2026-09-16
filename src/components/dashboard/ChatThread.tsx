@@ -59,6 +59,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
     p: ({ children }: any) => <p className="font-sans font-thin text-sm">{children}</p>,
     a: ({ href, children, ...props }: any) => {
       const isInternal = href?.startsWith("/");
+      // Only link to a person when the id looks like a real record id; the
+      // assistant must never send us to a made-up profile.
+      const isPersonLink = /^\/contacts\/[0-9a-fA-F-]{36}$/.test(href || "");
+      const isBrokenPerson = href?.startsWith("/contacts/") && !isPersonLink;
+      if (isBrokenPerson) {
+        return <span className="font-medium">{children}</span>;
+      }
       if (isInternal) {
         return (
           <button
@@ -73,6 +80,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
           </button>
         );
       }
+
       return (
         <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline" {...props}>
           {children}

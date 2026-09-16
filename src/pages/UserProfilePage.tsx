@@ -670,9 +670,17 @@ const UserProfilePage = () => {
 
   if (error) {
     console.error("Error fetching contact:", error);
-    navigate(-1);
-    return null;
+    return (
+      <div className="p-6 space-y-4">
+        <h1 className="text-lg font-semibold">We couldn't find this person</h1>
+        <p className="text-sm text-muted-foreground">
+          This profile doesn't exist or is no longer in your church's records.
+        </p>
+        <Button variant="outline" onClick={() => navigate(-1)}>Go back</Button>
+      </div>
+    );
   }
+
 
   if (isLoading) {
     return (
