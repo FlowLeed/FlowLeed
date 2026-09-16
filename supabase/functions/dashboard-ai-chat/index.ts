@@ -91,12 +91,30 @@ const tools = [
           },
           campus_name: {
             type: "string",
-            description: "Restrict to a specific campus by (partial) name.",
+            description: "Restrict to a specific campus by (partial) name, e.g. 'Fairfield'.",
+          },
+          gender: {
+            type: "string",
+            enum: ["male", "female"],
+            description: "Restrict by gender (from Planning Center demographics). Use for 'women'/'men' questions.",
+          },
+          in_group_between: {
+            type: "object",
+            description: "Group participation HISTORY window: people who were an active group member or attended a group meeting between these dates. Use for 'were in a small group earlier this year' (from = Jan 1 of this year, to = today).",
+            properties: {
+              from: { type: "string", description: "Start date, YYYY-MM-DD." },
+              to: { type: "string", description: "End date, YYYY-MM-DD. Defaults to today." },
+            },
+          },
+          not_in_active_group: {
+            type: "boolean",
+            description: "If true, exclude anyone who is currently an active member of any active group. Combine with in_group_between for 'used to be in a group but isn't now'.",
           },
           limit: {
             type: "number",
             description: "Max number of contacts to return (default 50, max 200).",
           },
+
         },
       },
     },
