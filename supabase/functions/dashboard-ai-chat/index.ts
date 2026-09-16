@@ -1354,8 +1354,10 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
         let out = text.trim();
         // The model sometimes returns no words after a tool call. Never leave the
-        // user with a bare action button - show the finder's own answer instead.
-        if (!out && lastFinderResult) out = lastFinderResult;
+        // user with a bare action button - show the finder's own answer, rewritten
+        // into plain language (the raw tool text contains internal instructions).
+        if (!out && lastFinderResult) out = humanizeFinderResult(lastFinderResult);
+
         const { text: safe, removed } = sanitizePeopleMentions(out, allowedPeople);
         out = safe;
         if (removed > 0) {
