@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,15 +11,19 @@ export type ChatMessage = {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dashboard-ai-chat`;
 const TITLE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-chat-title`;
+const ACTIVE_CONV_KEY = "flowleed:active-conversation-id";
 
 export const useDashboardChat = () => {
   const { user } = useAuth();
   const { organization } = useProfile();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(
+    typeof window !== "undefined" ? sessionStorage.getItem(ACTIVE_CONV_KEY) : null
+  );
   const abortRef = useRef<AbortController | null>(null);
   const titleGeneratedRef = useRef(false);
+
 
   const saveConversation = useCallback(async (msgs: ChatMessage[], convId: string | null) => {
     if (!user?.id || !organization?.id) return convId;
