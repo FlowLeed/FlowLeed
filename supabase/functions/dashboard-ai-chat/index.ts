@@ -110,6 +110,12 @@ const tools = [
             type: "boolean",
             description: "If true, exclude anyone who is currently an active member of any active group. Combine with in_group_between for 'used to be in a group but isn't now'.",
           },
+          exclude_group_names: {
+            type: "array",
+            items: { type: "string" },
+            description: "Group names (partial match) that must NOT count as 'an active group' — e.g. ['PC Youth | Middle and High School Students'] when the user says 'don't count the youth group as an active group'. Applies to not_in_active_group.",
+          },
+
           limit: {
             type: "number",
             description: "Max number of contacts to return (default 50, max 200).",
@@ -426,10 +432,13 @@ async function executeFindContactsByCriteria(
   const KNOWN_ARGS = [
     "flow_moment_names", "pc_membership", "in_any_group", "group_name", "serving_min_days",
     "marker_codes", "engagement_level", "campus_name", "gender", "in_group_between",
-    "not_in_active_group", "limit",
+    "not_in_active_group", "exclude_group_names", "limit",
+
   ];
   const unsupported = Object.keys(args || {}).filter((k) => !KNOWN_ARGS.includes(k));
   const appliedNotes: string[] = [];
+  const lines_unmatchedGroups: string[] = [];
+
 
   // Start with org contacts
   let candidateIds: Set<string> | null = null;
@@ -700,10 +709,32 @@ async function executeFindContactsByCriteria(
   if (args?.not_in_active_group === true) {
     const { data: activeGroups } = await adminClient
       .from("groups")
-      .select("id")
+      .select("id, name")
       .eq("organization_id", orgId)
       .eq("status", "active");
-    const activeIds = (activeGroups || []).map((g: any) => g.id);
+    let groupRows = (activeGroups || []) as any[];
+    const excludeNames: string[] = Array.isArray(args?.exclude_group_names)
+      ? args.exclude_group_names.filter((n: any) => typeof n === "string" && n.trim())
+      : [];
+    if (excludeNames.length > 0) {
+      const matched: string[] = [];
+      const unmatched: string[] = [];
+      for (const raw of excludeNames) {
+        const needle = raw.toLowerCase().trim();
+        const hits = groupRows.filter((g) => String(g.name || "").toLowerCase().includes(needle));
+        if (hits.length > 0) matched.push(...hits.map((g) => g.name)); else unmatched.push(raw);
+      }
+      const matchedSet = new Set(matched);
+      groupRows = groupRows.filter((g) => !matchedSet.has(g.name));
+      if (matched.length > 0) appliedNotes.push(`Not counting these groups as active: ${[...matchedSet].join(", ")}`);
+      if (unmatched.length > 0) {
+        lines_unmatchedGroups.push(
+          `CRITERIA NOT APPLIED: no active group matched these names to exclude: ${unmatched.join(", ")}`
+        );
+      }
+    }
+    const activeIds = groupRows.map((g: any) => g.id);
+
     const current = new Set<string>();
     for (let i = 0; i < activeIds.length; i += 100) {
       const slice = activeIds.slice(i, i + 100);
@@ -759,6 +790,11 @@ async function executeFindContactsByCriteria(
     lines.push(`CRITERIA NOT SUPPORTED (tell the user these were NOT applied): ${unsupported.join(", ")}`);
     lines.push("");
   }
+  if (lines_unmatchedGroups.length > 0) {
+    lines.push(...lines_unmatchedGroups);
+    lines.push("");
+  }
+
   lines.push(`Criteria applied: ${appliedNotes.length ? appliedNotes.join(" · ") : "none"}`);
   lines.push("");
   lines.push(`Found **${totalMatched}** contact${totalMatched === 1 ? "" : "s"} matching the criteria${totalMatched > shown ? ` (showing first ${shown})` : ""}:`);
@@ -1048,6 +1084,15 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     let toolRound = 0;
     let collectedContactIds: string[] | null = null;
     let lastFinderResult: string | null = null;
+    // Every person id/name the tools actually returned. Anything else the model
+    // writes is a fabrication and gets stripped before the user sees it.
+    const allowedPeople = new Map<string, string>();
+    const registerPeople = (toolResult: string) => {
+      const re = /\[([^\]\n]+)\]\(\/contacts\/([0-9a-fA-F-]{36})\)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(toolResult)) !== null) allowedPeople.set(m[2].toLowerCase(), m[1]);
+    };
+
 
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
@@ -1144,6 +1189,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           result = `Error executing ${fnName}: ${e instanceof Error ? e.message : "Unknown error"}`;
         }
 
+        registerPeople(result);
+
+
         aiMessages.push({
           role: "tool",
           tool_call_id: tc.id,
@@ -1190,76 +1238,64 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       });
     }
 
-    // Wrap the upstream SSE stream so we can inject a hidden contact-ids marker
-    // right before [DONE], guaranteeing the UI sees it even if the model paraphrases.
+    // Buffer the model's answer so we can strip any person it invented, then
+    // emit the sanitized text plus the hidden contact-ids marker.
     const upstream = streamResponse.body!;
     const injected = new ReadableStream({
       async start(controller) {
         const reader = upstream.getReader();
         const decoder = new TextDecoder();
         const encoder = new TextEncoder();
-        let buffer = "";
-        let injectedMarker = false;
-        let sawContent = false;
-
         const send = (content: string) => {
-          const chunk = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
-          controller.enqueue(encoder.encode(chunk));
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`)
+          );
         };
 
-        const injectMarker = () => {
-          if (injectedMarker) return;
-          injectedMarker = true;
-          // The model sometimes returns no words after a tool call. Never leave the
-          // user with a bare action button - show the finder's own answer instead.
-          if (!sawContent && lastFinderResult) send(lastFinderResult);
-          if (!collectedContactIds || collectedContactIds.length === 0) return;
-          send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
-        };
-
+        let raw = "";
+        let text = "";
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-
-            // Look for [DONE] marker; inject our marker just before it
-            if (!sawContent && /"content"\s*:\s*"[^"]/.test(buffer)) sawContent = true;
-
-            const doneIdx = buffer.indexOf("data: [DONE]");
-            if (doneIdx !== -1) {
-              const before = buffer.slice(0, doneIdx);
-              const after = buffer.slice(doneIdx);
-              if (before) controller.enqueue(encoder.encode(before));
-              injectMarker();
-              controller.enqueue(encoder.encode(after));
-              buffer = "";
-              // forward any remaining bytes as they arrive
-              while (true) {
-                const r = await reader.read();
-                if (r.done) break;
-                controller.enqueue(r.value);
-              }
-              break;
-            }
-
-            // Flush complete events while keeping a small tail in buffer
-            const lastBreak = buffer.lastIndexOf("\n\n");
-            if (lastBreak !== -1) {
-              controller.enqueue(encoder.encode(buffer.slice(0, lastBreak + 2)));
-              buffer = buffer.slice(lastBreak + 2);
+            raw += decoder.decode(value, { stream: true });
+            let nl: number;
+            while ((nl = raw.indexOf("\n")) !== -1) {
+              const line = raw.slice(0, nl).trim();
+              raw = raw.slice(nl + 1);
+              if (!line.startsWith("data: ")) continue;
+              const payload = line.slice(6).trim();
+              if (payload === "[DONE]") continue;
+              try {
+                const parsed = JSON.parse(payload);
+                const c = parsed.choices?.[0]?.delta?.content;
+                if (typeof c === "string") text += c;
+              } catch { /* ignore partial */ }
             }
           }
-          if (buffer) controller.enqueue(encoder.encode(buffer));
-          // If stream ended without seeing [DONE], still inject
-          injectMarker();
         } catch (e) {
           controller.error(e);
           return;
         }
+
+        let out = text.trim();
+        // The model sometimes returns no words after a tool call. Never leave the
+        // user with a bare action button - show the finder's own answer instead.
+        if (!out && lastFinderResult) out = lastFinderResult;
+        const { text: safe, removed } = sanitizePeopleMentions(out, allowedPeople);
+        out = safe;
+        if (removed > 0) {
+          out += `\n\n_Note: ${removed} name${removed === 1 ? "" : "s"} that don't match anyone in your records ${removed === 1 ? "was" : "were"} removed from this answer._`;
+        }
+        if (out) send(out);
+        if (collectedContactIds && collectedContactIds.length > 0) {
+          send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
+        }
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },
     });
+
 
     return new Response(injected, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
