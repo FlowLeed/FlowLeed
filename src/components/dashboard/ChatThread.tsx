@@ -186,10 +186,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
             </div>
           </div>
           <div className="rounded-2xl rounded-bl-md px-5 py-4">
-            <div className="flex gap-1">
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+              <ThinkingStatus />
             </div>
           </div>
         </div>
