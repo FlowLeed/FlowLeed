@@ -983,7 +983,13 @@ TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 You have access to tools to look up detailed information about specific people and flows. USE THEM PROACTIVELY:
 - **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, etc.)
 - **search_people_in_flow**: When the user asks who is in a specific flow or wants details about a flow's people, call this tool.
-- **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "people who were baptized and are members", "members serving 3+ months who aren't in a group", "guests from last month"), call this tool. Flow moments are the church's canonical "next steps" language (Baptism, Salvation Decision, Welcome Party, etc.). "Member" maps to pc_membership=["Member"]. "Served at least N months" maps to serving_min_days = N*30. After returning results, ALWAYS finish with a short sentence like "Want to add these people to a Flow?" — the UI will render an action button automatically.
+- **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "Fairfield women who were in a small group earlier this year but aren't in one now"), call this tool. Map EVERY part of the request to an argument: campus -> campus_name, women/men -> gender, "was in a group earlier this year" -> in_group_between {from: Jan 1 of this year, to: today}, "not in a group now" -> not_in_active_group: true, "Member" -> pc_membership, "served N months" -> serving_min_days = N*30. Set limit to 200 so counts are accurate.
+
+CRITICAL RULES FOR PEOPLE LISTS (never break these):
+1. ALWAYS write a real answer in text. Start by restating the criteria you applied ("Fairfield - women - in a group since Jan 1 - not in a group now"), give the count, then LIST THE PEOPLE as markdown links exactly as returned by the tool.
+2. If the tool result contains "CRITERIA NOT SUPPORTED" or "CRITERIA NOT APPLIED", say so plainly, explain which part of the question you could NOT filter on, and ask the user how they'd like to narrow it. Do NOT present a broader list as if it answered the question.
+3. If a request needs data you have no filter for, ASK a clarifying question instead of answering a different question.
+4. Only after the written answer, add one short line like "Want to review these people and add them to a Flow?" - the UI renders a review button automatically.
 
 Do NOT guess or make up information about specific people. Always use the tools to look up real data.
 
@@ -1041,6 +1047,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     const MAX_TOOL_ROUNDS = 5;
     let toolRound = 0;
     let collectedContactIds: string[] | null = null;
+    let lastFinderResult: string | null = null;
 
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
@@ -1120,6 +1127,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             result = await executeSearchPeopleInFlow(adminClient, orgId, args.flow_name || "", team);
           } else if (fnName === "find_contacts_by_criteria") {
             result = await executeFindContactsByCriteria(adminClient, orgId, args);
+            lastFinderResult = result.replace(/<!--flowleed:contact_ids=\[[^\]]*\]-->/g, "").trim();
             // Extract contact ids from the marker so we can append it after the model's stream
             const m = result.match(/<!--flowleed:contact_ids=(\[[^\]]*\])-->/);
             if (m) {
@@ -1192,13 +1200,21 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         const encoder = new TextEncoder();
         let buffer = "";
         let injectedMarker = false;
+        let sawContent = false;
 
-        const injectMarker = () => {
-          if (injectedMarker || !collectedContactIds || collectedContactIds.length === 0) return;
-          injectedMarker = true;
-          const content = `\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`;
+        const send = (content: string) => {
           const chunk = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
           controller.enqueue(encoder.encode(chunk));
+        };
+
+        const injectMarker = () => {
+          if (injectedMarker) return;
+          injectedMarker = true;
+          // The model sometimes returns no words after a tool call. Never leave the
+          // user with a bare action button - show the finder's own answer instead.
+          if (!sawContent && lastFinderResult) send(lastFinderResult);
+          if (!collectedContactIds || collectedContactIds.length === 0) return;
+          send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         };
 
         try {
@@ -1208,6 +1224,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             buffer += decoder.decode(value, { stream: true });
 
             // Look for [DONE] marker; inject our marker just before it
+            if (!sawContent && /"content"\s*:\s*"[^"]/.test(buffer)) sawContent = true;
+
             const doneIdx = buffer.indexOf("data: [DONE]");
             if (doneIdx !== -1) {
               const before = buffer.slice(0, doneIdx);
