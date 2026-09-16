@@ -460,6 +460,7 @@ async function executeFindContactsByCriteria(
       .select("contact_id")
       .in("flow_moment_type_id", matchedTypeIds);
     intersect((moments || []).map((m: any) => m.contact_id).filter(Boolean));
+    appliedNotes.push(`Flow moment: ${names.join(", ")}`);
     if (!candidateIds || candidateIds.size === 0) return "No contacts found matching the flow-moment criteria.";
   }
 
@@ -471,6 +472,7 @@ async function executeFindContactsByCriteria(
       .eq("organization_id", orgId)
       .in("pc_membership", args.pc_membership);
     intersect((data || []).map((c: any) => c.id));
+    appliedNotes.push(`Membership: ${args.pc_membership.join(", ")}`);
     if (!candidateIds || candidateIds.size === 0) return "No contacts found with that PCO membership status (it may not be synced yet).";
   }
 
@@ -504,6 +506,7 @@ async function executeFindContactsByCriteria(
     } else if (args?.in_any_group === true || args?.group_name) {
       return "No matching groups found.";
     }
+    appliedNotes.push(args?.group_name ? `Group: ${args.group_name}` : (args?.in_any_group === false ? "Not in any active group" : "In an active group"));
     if (!candidateIds || candidateIds.size === 0) return "No contacts matched the group criteria.";
   }
 
@@ -532,6 +535,7 @@ async function executeFindContactsByCriteria(
       (servingMoments || []).forEach((m: any) => m.contact_id && servedIds.add(m.contact_id));
     }
     intersect([...servedIds] as string[]);
+    appliedNotes.push(`Serving ${args.serving_min_days}+ days`);
     if (!candidateIds || candidateIds.size === 0) return `No contacts have been serving for ${args.serving_min_days}+ days.`;
   }
 
@@ -553,6 +557,7 @@ async function executeFindContactsByCriteria(
         .range(from, to)
     );
     intersect(cm.map((m: any) => m.contact_id).filter(Boolean));
+    appliedNotes.push(`Signals: ${keys.join(", ")}`);
     if (!candidateIds || candidateIds.size === 0) return "No contacts have those signals.";
   }
 
@@ -568,6 +573,7 @@ async function executeFindContactsByCriteria(
         .range(from, to)
     );
     intersect(rows.map((c: any) => c.contact_id).filter(Boolean));
+    appliedNotes.push(`Engagement: ${args.engagement_level.join(", ")}`);
     if (!candidateIds || candidateIds.size === 0) return "No contacts at that engagement level.";
   }
 
