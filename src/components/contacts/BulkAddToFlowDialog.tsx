@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { FlowSelectionStep } from '../contact/FlowSelectionStep';
 import { StageSelectionStep } from '../contact/StageSelectionStep';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 
 interface Pipeline {
   id: string;
@@ -23,11 +25,20 @@ interface Stage {
   default_assignee_user_id?: string | null;
 }
 
+interface PersonRow {
+  id: string;
+  name: string;
+  email: string | null;
+  campusName: string | null;
+}
+
 interface BulkAddToFlowDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contactIds: string[];
   onSuccess?: () => void;
+  /** Show a review-and-deselect step before choosing the Flow (used by the AI chat). */
+  reviewFirst?: boolean;
 }
 
 export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
@@ -35,10 +46,53 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
   onOpenChange,
   contactIds,
   onSuccess,
+  reviewFirst = false,
 }) => {
-  const [step, setStep] = useState<'pipeline' | 'stage'>('pipeline');
+  const [step, setStep] = useState<'review' | 'pipeline' | 'stage'>(reviewFirst ? 'review' : 'pipeline');
   const [selectedPipeline, setSelectedPipeline] = useState<Pipeline | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>(contactIds);
+  const [search, setSearch] = useState('');
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setSelectedIds(contactIds);
+    setStep(reviewFirst ? 'review' : 'pipeline');
+  }, [contactIds, reviewFirst, open]);
+
+  const { data: people, isLoading: loadingPeople } = useQuery({
+    queryKey: ['bulk-add-review-people', contactIds],
+    queryFn: async (): Promise<PersonRow[]> => {
+      const chunks: string[][] = [];
+      for (let i = 0; i < contactIds.length; i += 150) chunks.push(contactIds.slice(i, i + 150));
+      const rows: any[] = [];
+      for (const chunk of chunks) {
+        const { data, error } = await supabase
+          .from('contacts')
+          .select('id, name, email, campuses(name)')
+          .in('id', chunk);
+        if (error) throw error;
+        rows.push(...(data ?? []));
+      }
+      return rows
+        .map((r) => ({
+          id: r.id,
+          name: r.name,
+          email: r.email ?? null,
+          campusName: (r.campuses as any)?.name ?? null,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    enabled: open && reviewFirst && contactIds.length > 0,
+  });
+
+  const filteredPeople = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = people ?? [];
+    if (!q) return list;
+    return list.filter(
+      (p) => p.name.toLowerCase().includes(q) || (p.email ?? '').toLowerCase().includes(q) || (p.campusName ?? '').toLowerCase().includes(q),
+    );
+  }, [people, search]);
 
   const { data: pipelines, isLoading: loadingPipelines } = useQuery({
     queryKey: ['bulk-add-pipelines'],
@@ -71,18 +125,19 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
   const addMutation = useMutation({
     mutationFn: async (stage: Stage) => {
       if (!selectedPipeline) throw new Error('No flow selected');
+      const ids = selectedIds;
 
       // Skip contacts already in this flow
       const { data: existing, error: existErr } = await supabase
         .from('pipeline_contacts')
         .select('contact_id')
         .eq('pipeline_id', selectedPipeline.id)
-        .in('contact_id', contactIds);
+        .in('contact_id', ids);
       if (existErr) throw existErr;
 
       const existingSet = new Set((existing ?? []).map(r => r.contact_id));
-      const toInsert = contactIds.filter(id => !existingSet.has(id));
-      const skipped = contactIds.length - toInsert.length;
+      const toInsert = ids.filter(id => !existingSet.has(id));
+      const skipped = ids.length - toInsert.length;
 
       if (toInsert.length === 0) {
         return { added: 0, skipped };
@@ -125,9 +180,14 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
   });
 
   const handleClose = () => {
-    setStep('pipeline');
+    setStep(reviewFirst ? 'review' : 'pipeline');
     setSelectedPipeline(null);
+    setSearch('');
     onOpenChange(false);
+  };
+
+  const toggle = (id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
   return (
@@ -135,25 +195,78 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            {step === 'stage' && (
+            {(step === 'stage' || (step === 'pipeline' && reviewFirst)) && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  setStep('pipeline');
-                  setSelectedPipeline(null);
+                  if (step === 'stage') {
+                    setStep('pipeline');
+                    setSelectedPipeline(null);
+                  } else {
+                    setStep('review');
+                  }
                 }}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
             <DialogTitle>
-              {step === 'pipeline'
-                ? `Add ${contactIds.length} ${contactIds.length === 1 ? 'person' : 'people'} to Flow`
+              {step === 'review'
+                ? `Review ${contactIds.length} ${contactIds.length === 1 ? 'person' : 'people'}`
+                : step === 'pipeline'
+                ? `Add ${selectedIds.length} ${selectedIds.length === 1 ? 'person' : 'people'} to Flow`
                 : `Select Step in ${selectedPipeline?.name}`}
             </DialogTitle>
           </div>
         </DialogHeader>
+
+        {step === 'review' && (
+          <>
+            <p className="text-sm text-muted-foreground">
+              Uncheck anyone who shouldn't be added. Nothing changes until you pick a Flow.
+            </p>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search these people..."
+                className="pl-9"
+              />
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{selectedIds.length} selected</span>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds(contactIds)}>
+                  Select all
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds([])}>
+                  Select none
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-[180px] rounded-md border divide-y">
+              {loadingPeople && (
+                <p className="p-4 text-sm text-muted-foreground">Bringing up the people...</p>
+              )}
+              {!loadingPeople && filteredPeople.length === 0 && (
+                <p className="p-4 text-sm text-muted-foreground">No one matches that search.</p>
+              )}
+              {filteredPeople.map((p) => (
+                <label key={p.id} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50">
+                  <Checkbox checked={selectedIds.includes(p.id)} onCheckedChange={() => toggle(p.id)} />
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-medium truncate">{p.name}</span>
+                    <span className="block text-xs text-muted-foreground truncate">
+                      {[p.campusName, p.email].filter(Boolean).join(' · ') || '—'}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
 
         {step === 'pipeline' && (
           <FlowSelectionStep
@@ -179,6 +292,11 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
+          {step === 'review' && (
+            <Button disabled={selectedIds.length === 0} onClick={() => setStep('pipeline')}>
+              Continue with {selectedIds.length} {selectedIds.length === 1 ? 'person' : 'people'}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

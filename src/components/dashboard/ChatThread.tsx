@@ -111,7 +111,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                       <div className="not-prose mt-4 flex flex-wrap gap-2">
                         <Button size="sm" onClick={() => setBulkIds(contactIds)} className="gap-2">
                           <ListPlus className="h-4 w-4" />
-                          Add {contactIds.length} {contactIds.length === 1 ? "person" : "people"} to a Flow
+                          Review {contactIds.length} {contactIds.length === 1 ? "person" : "people"}
                         </Button>
                       </div>
                     )}
@@ -169,6 +169,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
           open={!!bulkIds}
           onOpenChange={(o) => { if (!o) setBulkIds(null); }}
           contactIds={bulkIds}
+          reviewFirst
           onSuccess={() => setBulkIds(null)}
         />
       )}

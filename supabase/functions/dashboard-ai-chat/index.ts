@@ -53,7 +53,7 @@ const tools = [
     function: {
       name: "find_contacts_by_criteria",
       description:
-        "Build a smart list of contacts using ANY combination of filters: flow moments (e.g. baptized, salvation, joined the church), PCO membership status (e.g. Member, Regular Attender, Guest), group membership, serving history (e.g. served 3+ months), engagement markers, engagement level, or campus. Use this whenever the user wants a list of people who meet multiple criteria — e.g. 'people who were baptized, are members, and serve' or 'members who aren't in a group'. After calling, ALWAYS offer to add the results to a Flow.",
+        "Build a smart list of contacts using ANY combination of filters: flow moments, PCO membership status, current group membership, past group participation in a date window (in_group_between), not currently in an active group, gender, serving history, signals, engagement level, or campus. Use this whenever the user wants a list of people who meet multiple criteria — e.g. 'Fairfield women who were in a group earlier this year but are not in a group now'. Pass EVERY criterion the user named; never silently drop one. The result states which criteria were applied — repeat that to the user, list the names, and only then offer to add them to a Flow.",
       parameters: {
         type: "object",
         properties: {
@@ -91,12 +91,30 @@ const tools = [
           },
           campus_name: {
             type: "string",
-            description: "Restrict to a specific campus by (partial) name.",
+            description: "Restrict to a specific campus by (partial) name, e.g. 'Fairfield'.",
+          },
+          gender: {
+            type: "string",
+            enum: ["male", "female"],
+            description: "Restrict by gender (from Planning Center demographics). Use for 'women'/'men' questions.",
+          },
+          in_group_between: {
+            type: "object",
+            description: "Group participation HISTORY window: people who were an active group member or attended a group meeting between these dates. Use for 'were in a small group earlier this year' (from = Jan 1 of this year, to = today).",
+            properties: {
+              from: { type: "string", description: "Start date, YYYY-MM-DD." },
+              to: { type: "string", description: "End date, YYYY-MM-DD. Defaults to today." },
+            },
+          },
+          not_in_active_group: {
+            type: "boolean",
+            description: "If true, exclude anyone who is currently an active member of any active group. Combine with in_group_between for 'used to be in a group but isn't now'.",
           },
           limit: {
             type: "number",
             description: "Max number of contacts to return (default 50, max 200).",
           },
+
         },
       },
     },
@@ -391,6 +409,28 @@ async function executeFindContactsByCriteria(
 ): Promise<string> {
   const limit = Math.min(Math.max(Number(args?.limit) || 50, 1), 200);
 
+  // PostgREST caps each response at ~1000 rows, so every id set must be paged.
+  const PAGE = 1000;
+  const pageAll = async (build: (from: number, to: number) => any): Promise<any[]> => {
+    const all: any[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await build(from, from + PAGE - 1);
+      if (error) throw error;
+      const rows = data || [];
+      all.push(...rows);
+      if (rows.length < PAGE) break;
+    }
+    return all;
+  };
+
+  const KNOWN_ARGS = [
+    "flow_moment_names", "pc_membership", "in_any_group", "group_name", "serving_min_days",
+    "marker_codes", "engagement_level", "campus_name", "gender", "in_group_between",
+    "not_in_active_group", "limit",
+  ];
+  const unsupported = Object.keys(args || {}).filter((k) => !KNOWN_ARGS.includes(k));
+  const appliedNotes: string[] = [];
+
   // Start with org contacts
   let candidateIds: Set<string> | null = null;
 
@@ -402,6 +442,7 @@ async function executeFindContactsByCriteria(
       candidateIds = new Set([...candidateIds].filter((id) => next.has(id)));
     }
   };
+
 
   // Flow moments filter
   if (Array.isArray(args?.flow_moment_names) && args.flow_moment_names.length > 0) {
@@ -419,6 +460,7 @@ async function executeFindContactsByCriteria(
       .select("contact_id")
       .in("flow_moment_type_id", matchedTypeIds);
     intersect((moments || []).map((m: any) => m.contact_id).filter(Boolean));
+    appliedNotes.push(`Flow moment: ${names.join(", ")}`);
     if (!candidateIds || candidateIds.size === 0) return "No contacts found matching the flow-moment criteria.";
   }
 
@@ -430,6 +472,7 @@ async function executeFindContactsByCriteria(
       .eq("organization_id", orgId)
       .in("pc_membership", args.pc_membership);
     intersect((data || []).map((c: any) => c.id));
+    appliedNotes.push(`Membership: ${args.pc_membership.join(", ")}`);
     if (!candidateIds || candidateIds.size === 0) return "No contacts found with that PCO membership status (it may not be synced yet).";
   }
 
@@ -463,6 +506,7 @@ async function executeFindContactsByCriteria(
     } else if (args?.in_any_group === true || args?.group_name) {
       return "No matching groups found.";
     }
+    appliedNotes.push(args?.group_name ? `Group: ${args.group_name}` : (args?.in_any_group === false ? "Not in any active group" : "In an active group"));
     if (!candidateIds || candidateIds.size === 0) return "No contacts matched the group criteria.";
   }
 
@@ -491,33 +535,45 @@ async function executeFindContactsByCriteria(
       (servingMoments || []).forEach((m: any) => m.contact_id && servedIds.add(m.contact_id));
     }
     intersect([...servedIds] as string[]);
+    appliedNotes.push(`Serving ${args.serving_min_days}+ days`);
     if (!candidateIds || candidateIds.size === 0) return `No contacts have been serving for ${args.serving_min_days}+ days.`;
   }
 
-  // Markers
+  // Markers (marker_definitions uses `key`; contact_markers stores marker_key)
   if (Array.isArray(args?.marker_codes) && args.marker_codes.length > 0) {
     const { data: defs } = await adminClient
       .from("marker_definitions")
-      .select("id, code")
-      .in("code", args.marker_codes);
-    const defIds = (defs || []).map((d: any) => d.id);
-    if (defIds.length === 0) return `No markers found for codes: ${args.marker_codes.join(", ")}`;
-    const { data: cm } = await adminClient
-      .from("contact_markers")
-      .select("contact_id")
-      .in("marker_definition_id", defIds);
-    intersect((cm || []).map((m: any) => m.contact_id).filter(Boolean));
-    if (!candidateIds || candidateIds.size === 0) return "No contacts have those markers.";
+      .select("key")
+      .in("key", args.marker_codes);
+    const keys = (defs || []).map((d: any) => d.key);
+    if (keys.length === 0) return `No signals found for: ${args.marker_codes.join(", ")}`;
+    const cm = await pageAll((from, to) =>
+      adminClient
+        .from("contact_markers")
+        .select("contact_id")
+        .eq("organization_id", orgId)
+        .in("marker_key", keys)
+        .order("contact_id", { ascending: true })
+        .range(from, to)
+    );
+    intersect(cm.map((m: any) => m.contact_id).filter(Boolean));
+    appliedNotes.push(`Signals: ${keys.join(", ")}`);
+    if (!candidateIds || candidateIds.size === 0) return "No contacts have those signals.";
   }
 
   // Engagement level
   if (Array.isArray(args?.engagement_level) && args.engagement_level.length > 0) {
-    const { data } = await adminClient
-      .from("contact_engagement_scores")
-      .select("contact_id")
-      .eq("organization_id", orgId)
-      .in("engagement_level", args.engagement_level);
-    intersect((data || []).map((c: any) => c.contact_id).filter(Boolean));
+    const rows = await pageAll((from, to) =>
+      adminClient
+        .from("contact_engagement_scores")
+        .select("contact_id")
+        .eq("organization_id", orgId)
+        .in("engagement_level", args.engagement_level)
+        .order("contact_id", { ascending: true })
+        .range(from, to)
+    );
+    intersect(rows.map((c: any) => c.contact_id).filter(Boolean));
+    appliedNotes.push(`Engagement: ${args.engagement_level.join(", ")}`);
     if (!candidateIds || candidateIds.size === 0) return "No contacts at that engagement level.";
   }
 
@@ -525,23 +581,163 @@ async function executeFindContactsByCriteria(
   if (args?.campus_name) {
     const { data: campuses } = await adminClient
       .from("campuses")
-      .select("id")
+      .select("id, name")
       .eq("organization_id", orgId)
       .ilike("name", `%${args.campus_name}%`);
     const campusIds = (campuses || []).map((c: any) => c.id);
-    if (campusIds.length === 0) return `No campus matching "${args.campus_name}".`;
-    const { data } = await adminClient
-      .from("contacts")
+    if (campusIds.length === 0) {
+      const { data: all } = await adminClient
+        .from("campuses")
+        .select("name")
+        .eq("organization_id", orgId);
+      const names = (all || []).map((c: any) => c.name).join(", ");
+      return `CRITERIA NOT APPLIED: no campus matches "${args.campus_name}". Available campuses: ${names || "none"}. Ask the user which campus they mean instead of answering without a campus filter.`;
+    }
+    const rows = await pageAll((from, to) =>
+      adminClient
+        .from("contacts")
+        .select("id")
+        .eq("organization_id", orgId)
+        .in("campus_id", campusIds)
+        .order("id", { ascending: true })
+        .range(from, to)
+    );
+    intersect(rows.map((c: any) => c.id));
+    appliedNotes.push(`Campus: ${(campuses || []).map((c: any) => c.name).join(", ")}`);
+    if (!candidateIds || candidateIds.size === 0) return "No contacts at that campus.";
+  }
+
+  // Gender (Planning Center demographics)
+  if (typeof args?.gender === "string" && args.gender.trim()) {
+    const g = args.gender.trim().toLowerCase();
+    const wanted = g.startsWith("f") ? ["female", "f"] : ["male", "m"];
+    const rows = await pageAll((from, to) =>
+      adminClient
+        .from("contact_demographics")
+        .select("contact_id, gender")
+        .order("contact_id", { ascending: true })
+        .range(from, to)
+    );
+    const ids = rows
+      .filter((r: any) => wanted.includes(String(r.gender || "").trim().toLowerCase()))
+      .map((r: any) => r.contact_id)
+      .filter(Boolean);
+    intersect(ids as string[]);
+    appliedNotes.push(`Gender: ${g.startsWith("f") ? "female" : "male"}`);
+    if (!candidateIds || candidateIds.size === 0) {
+      return `CRITERIA NOT APPLIED FULLY: nobody matched gender "${args.gender}" — gender may not be synced from Planning Center for these people. Tell the user plainly instead of dropping the filter.`;
+    }
+  }
+
+  // Group participation history window
+  if (args?.in_group_between && (args.in_group_between.from || args.in_group_between.to)) {
+    const from = String(args.in_group_between.from || "").slice(0, 10) || "1970-01-01";
+    const to = String(args.in_group_between.to || "").slice(0, 10) || new Date().toISOString().slice(0, 10);
+    const fromIso = `${from}T00:00:00.000Z`;
+    const toIso = `${to}T23:59:59.999Z`;
+
+    const { data: orgGroups } = await adminClient
+      .from("groups")
+      .select("id")
+      .eq("organization_id", orgId);
+    const orgGroupIds = (orgGroups || []).map((g: any) => g.id);
+    const historical = new Set<string>();
+
+    if (orgGroupIds.length > 0) {
+      // Members whose membership or last attendance falls in the window
+      for (let i = 0; i < orgGroupIds.length; i += 100) {
+        const slice = orgGroupIds.slice(i, i + 100);
+        const members = await pageAll((f, t) =>
+          adminClient
+            .from("group_members")
+            .select("contact_id, joined_at, last_attended_at")
+            .in("group_id", slice)
+            .order("contact_id", { ascending: true })
+            .range(f, t)
+        );
+        for (const m of members as any[]) {
+          const dates = [m.joined_at, m.last_attended_at].filter(Boolean) as string[];
+          if (m.contact_id && dates.some((d) => d >= fromIso && d <= toIso)) historical.add(m.contact_id);
+        }
+      }
+
+      // Actual meeting attendance in the window
+      const meetings = await pageAll((f, t) =>
+        adminClient
+          .from("group_meetings")
+          .select("id")
+          .in("group_id", orgGroupIds)
+          .gte("meeting_date", from)
+          .lte("meeting_date", to)
+          .order("id", { ascending: true })
+          .range(f, t)
+      );
+      const meetingIds = meetings.map((m: any) => m.id);
+      for (let i = 0; i < meetingIds.length; i += 100) {
+        const slice = meetingIds.slice(i, i + 100);
+        const att = await pageAll((f, t) =>
+          adminClient
+            .from("group_attendance")
+            .select("contact_id, status")
+            .in("group_meeting_id", slice)
+            .order("contact_id", { ascending: true })
+            .range(f, t)
+        );
+        for (const a of att as any[]) {
+          if (a.contact_id && String(a.status || "present").toLowerCase() === "present") historical.add(a.contact_id);
+        }
+      }
+    }
+
+    intersect([...historical]);
+    appliedNotes.push(`Was in a group between ${from} and ${to}`);
+    if (!candidateIds || candidateIds.size === 0) {
+      return `No contacts were in a group between ${from} and ${to}.`;
+    }
+  }
+
+  // Not currently in any active group
+  if (args?.not_in_active_group === true) {
+    const { data: activeGroups } = await adminClient
+      .from("groups")
       .select("id")
       .eq("organization_id", orgId)
-      .in("campus_id", campusIds);
-    intersect((data || []).map((c: any) => c.id));
-    if (!candidateIds || candidateIds.size === 0) return "No contacts at that campus.";
+      .eq("status", "active");
+    const activeIds = (activeGroups || []).map((g: any) => g.id);
+    const current = new Set<string>();
+    for (let i = 0; i < activeIds.length; i += 100) {
+      const slice = activeIds.slice(i, i + 100);
+      const members = await pageAll((f, t) =>
+        adminClient
+          .from("group_members")
+          .select("contact_id")
+          .in("group_id", slice)
+          .eq("status", "active")
+          .order("contact_id", { ascending: true })
+          .range(f, t)
+      );
+      for (const m of members as any[]) if (m.contact_id) current.add(m.contact_id);
+    }
+    if (candidateIds === null) {
+      const rows = await pageAll((f, t) =>
+        adminClient
+          .from("contacts")
+          .select("id")
+          .eq("organization_id", orgId)
+          .order("id", { ascending: true })
+          .range(f, t)
+      );
+      intersect(rows.map((c: any) => c.id).filter((id: string) => !current.has(id)));
+    } else {
+      candidateIds = new Set([...(candidateIds as Set<string>)].filter((id) => !current.has(id)));
+    }
+    appliedNotes.push("Not in an active group right now");
+    if (!candidateIds || candidateIds.size === 0) return "Everyone matching the other criteria is already in an active group.";
   }
 
   // If no filters at all
   if (candidateIds === null) {
-    return "No criteria were provided. Please specify at least one filter (flow moment, membership, group, serving, marker, engagement level, or campus).";
+    return "No criteria were provided. Please specify at least one filter (flow moment, membership, group, group history, serving, signal, engagement level, campus, or gender).";
   }
 
   const finalIds = [...candidateIds].slice(0, limit);
@@ -559,7 +755,14 @@ async function executeFindContactsByCriteria(
   const shown = (contacts || []).length;
 
   const lines: string[] = [];
+  if (unsupported.length > 0) {
+    lines.push(`CRITERIA NOT SUPPORTED (tell the user these were NOT applied): ${unsupported.join(", ")}`);
+    lines.push("");
+  }
+  lines.push(`Criteria applied: ${appliedNotes.length ? appliedNotes.join(" · ") : "none"}`);
+  lines.push("");
   lines.push(`Found **${totalMatched}** contact${totalMatched === 1 ? "" : "s"} matching the criteria${totalMatched > shown ? ` (showing first ${shown})` : ""}:`);
+
   lines.push("");
   for (const c of contacts || []) {
     const membership = c.pc_membership ? ` _(${c.pc_membership})_` : "";
@@ -780,7 +983,13 @@ TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 You have access to tools to look up detailed information about specific people and flows. USE THEM PROACTIVELY:
 - **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, etc.)
 - **search_people_in_flow**: When the user asks who is in a specific flow or wants details about a flow's people, call this tool.
-- **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "people who were baptized and are members", "members serving 3+ months who aren't in a group", "guests from last month"), call this tool. Flow moments are the church's canonical "next steps" language (Baptism, Salvation Decision, Welcome Party, etc.). "Member" maps to pc_membership=["Member"]. "Served at least N months" maps to serving_min_days = N*30. After returning results, ALWAYS finish with a short sentence like "Want to add these people to a Flow?" — the UI will render an action button automatically.
+- **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "Fairfield women who were in a small group earlier this year but aren't in one now"), call this tool. Map EVERY part of the request to an argument: campus -> campus_name, women/men -> gender, "was in a group earlier this year" -> in_group_between {from: Jan 1 of this year, to: today}, "not in a group now" -> not_in_active_group: true, "Member" -> pc_membership, "served N months" -> serving_min_days = N*30. Set limit to 200 so counts are accurate.
+
+CRITICAL RULES FOR PEOPLE LISTS (never break these):
+1. ALWAYS write a real answer in text. Start by restating the criteria you applied ("Fairfield - women - in a group since Jan 1 - not in a group now"), give the count, then LIST THE PEOPLE as markdown links exactly as returned by the tool.
+2. If the tool result contains "CRITERIA NOT SUPPORTED" or "CRITERIA NOT APPLIED", say so plainly, explain which part of the question you could NOT filter on, and ask the user how they'd like to narrow it. Do NOT present a broader list as if it answered the question.
+3. If a request needs data you have no filter for, ASK a clarifying question instead of answering a different question.
+4. Only after the written answer, add one short line like "Want to review these people and add them to a Flow?" - the UI renders a review button automatically.
 
 Do NOT guess or make up information about specific people. Always use the tools to look up real data.
 
@@ -838,6 +1047,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     const MAX_TOOL_ROUNDS = 5;
     let toolRound = 0;
     let collectedContactIds: string[] | null = null;
+    let lastFinderResult: string | null = null;
 
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
@@ -917,6 +1127,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             result = await executeSearchPeopleInFlow(adminClient, orgId, args.flow_name || "", team);
           } else if (fnName === "find_contacts_by_criteria") {
             result = await executeFindContactsByCriteria(adminClient, orgId, args);
+            lastFinderResult = result.replace(/<!--flowleed:contact_ids=\[[^\]]*\]-->/g, "").trim();
             // Extract contact ids from the marker so we can append it after the model's stream
             const m = result.match(/<!--flowleed:contact_ids=(\[[^\]]*\])-->/);
             if (m) {
@@ -989,13 +1200,21 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         const encoder = new TextEncoder();
         let buffer = "";
         let injectedMarker = false;
+        let sawContent = false;
 
-        const injectMarker = () => {
-          if (injectedMarker || !collectedContactIds || collectedContactIds.length === 0) return;
-          injectedMarker = true;
-          const content = `\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`;
+        const send = (content: string) => {
           const chunk = `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
           controller.enqueue(encoder.encode(chunk));
+        };
+
+        const injectMarker = () => {
+          if (injectedMarker) return;
+          injectedMarker = true;
+          // The model sometimes returns no words after a tool call. Never leave the
+          // user with a bare action button - show the finder's own answer instead.
+          if (!sawContent && lastFinderResult) send(lastFinderResult);
+          if (!collectedContactIds || collectedContactIds.length === 0) return;
+          send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         };
 
         try {
@@ -1005,6 +1224,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             buffer += decoder.decode(value, { stream: true });
 
             // Look for [DONE] marker; inject our marker just before it
+            if (!sawContent && /"content"\s*:\s*"[^"]/.test(buffer)) sawContent = true;
+
             const doneIdx = buffer.indexOf("data: [DONE]");
             if (doneIdx !== -1) {
               const before = buffer.slice(0, doneIdx);
