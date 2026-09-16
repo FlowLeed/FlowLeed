@@ -409,6 +409,28 @@ async function executeFindContactsByCriteria(
 ): Promise<string> {
   const limit = Math.min(Math.max(Number(args?.limit) || 50, 1), 200);
 
+  // PostgREST caps each response at ~1000 rows, so every id set must be paged.
+  const PAGE = 1000;
+  const pageAll = async (build: (from: number, to: number) => any): Promise<any[]> => {
+    const all: any[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await build(from, from + PAGE - 1);
+      if (error) throw error;
+      const rows = data || [];
+      all.push(...rows);
+      if (rows.length < PAGE) break;
+    }
+    return all;
+  };
+
+  const KNOWN_ARGS = [
+    "flow_moment_names", "pc_membership", "in_any_group", "group_name", "serving_min_days",
+    "marker_codes", "engagement_level", "campus_name", "gender", "in_group_between",
+    "not_in_active_group", "limit",
+  ];
+  const unsupported = Object.keys(args || {}).filter((k) => !KNOWN_ARGS.includes(k));
+  const appliedNotes: string[] = [];
+
   // Start with org contacts
   let candidateIds: Set<string> | null = null;
 
@@ -420,6 +442,7 @@ async function executeFindContactsByCriteria(
       candidateIds = new Set([...candidateIds].filter((id) => next.has(id)));
     }
   };
+
 
   // Flow moments filter
   if (Array.isArray(args?.flow_moment_names) && args.flow_moment_names.length > 0) {
