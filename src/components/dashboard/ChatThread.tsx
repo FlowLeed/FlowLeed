@@ -6,6 +6,37 @@ import { User, Sparkles, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
 
+const THINKING_MESSAGES = [
+  "Looking at the whole picture...",
+  "Connecting what we know...",
+  "Looking for what matters most...",
+  "Checking the details...",
+  "Thinking about what might need attention...",
+  "Making sure nothing important gets missed...",
+  "Turning signals into something useful...",
+  "Considering the next best step...",
+  "Keeping people at the center...",
+  "Almost there...",
+];
+
+/** Rotating, human-centered status lines shown while FlowLeed AI thinks. */
+const ThinkingStatus = () => {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % THINKING_MESSAGES.length);
+    }, 1800);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <p key={THINKING_MESSAGES[index]} className="animate-fade-in text-sm font-light text-muted-foreground tracking-wide">
+      {THINKING_MESSAGES[index]}
+    </p>
+  );
+};
+
 
 interface ChatThreadProps {
   messages: ChatMessage[];
@@ -155,10 +186,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
             </div>
           </div>
           <div className="rounded-2xl rounded-bl-md px-5 py-4">
-            <div className="flex gap-1">
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
-              <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1">
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+              <ThinkingStatus />
             </div>
           </div>
         </div>
