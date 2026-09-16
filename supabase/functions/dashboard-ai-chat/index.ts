@@ -836,6 +836,33 @@ async function executeFindContactsByCriteria(
 }
 
 /**
+ * The people-finder result is written for the model and carries internal
+ * instruction text. When we have to show it to the user directly (the model
+ * returned no words), rewrite those markers into plain pastor-facing language.
+ */
+function humanizeFinderResult(raw: string): string {
+  return raw
+    .split("\n")
+    .map((line) => {
+      let l = line;
+      l = l.replace(
+        /^CRITERIA NOT SUPPORTED[^:]*:\s*/i,
+        "I couldn't filter on part of your question: "
+      );
+      l = l.replace(/^CRITERIA NOT APPLIED FULLY:\s*/i, "");
+      l = l.replace(/^CRITERIA NOT APPLIED:\s*/i, "");
+      l = l.replace(/^Criteria applied:/i, "**What I used:**");
+      // Drop sentences addressed to the model rather than the user.
+      l = l.replace(/\s*(Ask the user|Tell the user)[^.]*\.\s*/gi, " ");
+      return l.trimEnd();
+    })
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+
+/**
  * Remove any person the model invented. Only person links whose contact id was
  * actually returned by a tool survive; a list line naming an unknown person is
  * dropped entirely, and stray person links elsewhere become plain text.
