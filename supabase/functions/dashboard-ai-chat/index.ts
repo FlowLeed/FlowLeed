@@ -53,7 +53,7 @@ const tools = [
     function: {
       name: "find_contacts_by_criteria",
       description:
-        "Build a smart list of contacts using ANY combination of filters: flow moments (e.g. baptized, salvation, joined the church), PCO membership status (e.g. Member, Regular Attender, Guest), group membership, serving history (e.g. served 3+ months), engagement markers, engagement level, or campus. Use this whenever the user wants a list of people who meet multiple criteria — e.g. 'people who were baptized, are members, and serve' or 'members who aren't in a group'. After calling, ALWAYS offer to add the results to a Flow.",
+        "Build a smart list of contacts using ANY combination of filters: flow moments, PCO membership status, current group membership, past group participation in a date window (in_group_between), not currently in an active group, gender, serving history, signals, engagement level, or campus. Use this whenever the user wants a list of people who meet multiple criteria — e.g. 'Fairfield women who were in a group earlier this year but are not in a group now'. Pass EVERY criterion the user named; never silently drop one. The result states which criteria were applied — repeat that to the user, list the names, and only then offer to add them to a Flow.",
       parameters: {
         type: "object",
         properties: {
