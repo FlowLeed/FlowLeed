@@ -616,27 +616,52 @@ async function executeFindContactsByCriteria(
     if (!candidateIds || candidateIds.size === 0) return "No contacts at that campus.";
   }
 
-  // Gender (Planning Center demographics)
+  // Gender (Planning Center demographics) - always scoped to this org's people
   if (typeof args?.gender === "string" && args.gender.trim()) {
     const g = args.gender.trim().toLowerCase();
     const wanted = g.startsWith("f") ? ["female", "f"] : ["male", "m"];
-    const rows = await pageAll((from, to) =>
-      adminClient
-        .from("contact_demographics")
-        .select("contact_id, gender")
-        .order("contact_id", { ascending: true })
-        .range(from, to)
-    );
-    const ids = rows
-      .filter((r: any) => wanted.includes(String(r.gender || "").trim().toLowerCase()))
-      .map((r: any) => r.contact_id)
-      .filter(Boolean);
-    intersect(ids as string[]);
+
+    // contact_demographics has no organization_id, so restrict to this org's contacts.
+    let scopeIds: string[];
+    if (candidateIds) {
+      scopeIds = [...candidateIds];
+    } else {
+      const orgContacts = await pageAll((from, to) =>
+        adminClient
+          .from("contacts")
+          .select("id")
+          .eq("organization_id", orgId)
+          .order("id", { ascending: true })
+          .range(from, to)
+      );
+      scopeIds = orgContacts.map((c: any) => c.id);
+    }
+
+    const ids: string[] = [];
+    for (let i = 0; i < scopeIds.length; i += 200) {
+      const slice = scopeIds.slice(i, i + 200);
+      const rows = await pageAll((from, to) =>
+        adminClient
+          .from("contact_demographics")
+          .select("contact_id, gender")
+          .in("contact_id", slice)
+          .order("contact_id", { ascending: true })
+          .range(from, to)
+      );
+      for (const r of rows as any[]) {
+        if (r.contact_id && wanted.includes(String(r.gender || "").trim().toLowerCase())) {
+          ids.push(r.contact_id);
+        }
+      }
+    }
+
+    intersect(ids);
     appliedNotes.push(`Gender: ${g.startsWith("f") ? "female" : "male"}`);
     if (!candidateIds || candidateIds.size === 0) {
       return `CRITERIA NOT APPLIED FULLY: nobody matched gender "${args.gender}" — gender may not be synced from Planning Center for these people. Tell the user plainly instead of dropping the filter.`;
     }
   }
+
 
   // Group participation history window
   if (args?.in_group_between && (args.in_group_between.from || args.in_group_between.to)) {
@@ -809,6 +834,33 @@ async function executeFindContactsByCriteria(
   lines.push(`<!--flowleed:contact_ids=${JSON.stringify(finalIds)}-->`);
   return lines.join("\n");
 }
+
+/**
+ * The people-finder result is written for the model and carries internal
+ * instruction text. When we have to show it to the user directly (the model
+ * returned no words), rewrite those markers into plain pastor-facing language.
+ */
+function humanizeFinderResult(raw: string): string {
+  return raw
+    .split("\n")
+    .map((line) => {
+      let l = line;
+      l = l.replace(
+        /^CRITERIA NOT SUPPORTED[^:]*:\s*/i,
+        "I couldn't filter on part of your question: "
+      );
+      l = l.replace(/^CRITERIA NOT APPLIED FULLY:\s*/i, "");
+      l = l.replace(/^CRITERIA NOT APPLIED:\s*/i, "");
+      l = l.replace(/^Criteria applied:/i, "**What I used:**");
+      // Drop sentences addressed to the model rather than the user.
+      l = l.replace(/\s*(Ask the user|Tell the user)[^.]*\.\s*/gi, " ");
+      return l.trimEnd();
+    })
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 
 /**
  * Remove any person the model invented. Only person links whose contact id was
@@ -1329,8 +1381,10 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
         let out = text.trim();
         // The model sometimes returns no words after a tool call. Never leave the
-        // user with a bare action button - show the finder's own answer instead.
-        if (!out && lastFinderResult) out = lastFinderResult;
+        // user with a bare action button - show the finder's own answer, rewritten
+        // into plain language (the raw tool text contains internal instructions).
+        if (!out && lastFinderResult) out = humanizeFinderResult(lastFinderResult);
+
         const { text: safe, removed } = sanitizePeopleMentions(out, allowedPeople);
         out = safe;
         if (removed > 0) {
