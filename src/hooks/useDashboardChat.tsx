@@ -217,6 +217,7 @@ export const useDashboardChat = () => {
   const clearChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
+    sessionStorage.removeItem(ACTIVE_CONV_KEY);
     titleGeneratedRef.current = false;
   }, []);
 
@@ -235,5 +236,20 @@ export const useDashboardChat = () => {
     }
   }, []);
 
+  // Keep the active conversation across navigation (e.g. opening a person's profile)
+  useEffect(() => {
+    if (conversationId) sessionStorage.setItem(ACTIVE_CONV_KEY, conversationId);
+  }, [conversationId]);
+
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current || !user?.id) return;
+    const saved = sessionStorage.getItem(ACTIVE_CONV_KEY);
+    if (!saved || messages.length > 0) return;
+    restoredRef.current = true;
+    loadConversation(saved);
+  }, [user?.id, messages.length, loadConversation]);
+
   return { messages, isLoading, sendMessage, cancelStream, clearChat, conversationId, loadConversation };
 };
+
