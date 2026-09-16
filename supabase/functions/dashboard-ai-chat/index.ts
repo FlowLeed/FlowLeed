@@ -810,6 +810,52 @@ async function executeFindContactsByCriteria(
   return lines.join("\n");
 }
 
+/**
+ * Remove any person the model invented. Only person links whose contact id was
+ * actually returned by a tool survive; a list line naming an unknown person is
+ * dropped entirely, and stray person links elsewhere become plain text.
+ */
+function sanitizePeopleMentions(
+  text: string,
+  allowed: Map<string, string>
+): { text: string; removed: number } {
+  if (!text) return { text, removed: 0 };
+  const linkRe = /\[([^\]\n]+)\]\(\/contacts\/([^)\s]+)\)/g;
+  let removed = 0;
+  const outLines: string[] = [];
+
+  for (const line of text.split("\n")) {
+    const links = [...line.matchAll(linkRe)];
+    if (links.length === 0) {
+      outLines.push(line);
+      continue;
+    }
+    const badLinks = links.filter((m) => !allowed.has(String(m[2]).toLowerCase()));
+    if (badLinks.length === 0) {
+      // Keep the link, but always use the real stored name.
+      outLines.push(
+        line.replace(linkRe, (_all, _name, id) => `[${allowed.get(String(id).toLowerCase())}](/contacts/${id})`)
+      );
+      continue;
+    }
+    const isListLine = /^\s*(?:[-*+]|\d+\.)\s/.test(line) || links.length === 1;
+    if (isListLine && badLinks.length === links.length) {
+      // The whole line is about a person who doesn't exist - drop it.
+      removed += badLinks.length;
+      continue;
+    }
+    removed += badLinks.length;
+    outLines.push(
+      line.replace(linkRe, (all, name, id) =>
+        allowed.has(String(id).toLowerCase()) ? all : ""
+      ).replace(/\s{2,}/g, " ").trimEnd()
+    );
+  }
+
+  const cleaned = outLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return { text: cleaned, removed };
+}
+
 
 function getUserIdFromJwt(authHeader: string): string | null {
   try {
