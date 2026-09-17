@@ -743,7 +743,7 @@ export const Sidebar = () => {
           onPin={togglePin}
           filterControl={flowsFilterControl}
         />
-        <SidebarSection title="Connect" items={connectItems} />
+        {connectItems.length > 0 && <SidebarSection title="Connect" items={connectItems} />}
         <SidebarSection title="Settings" items={settingsItems} />
       </div>
     </>

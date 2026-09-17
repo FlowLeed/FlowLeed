@@ -136,7 +136,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 }
                 const cleanContent = msg.content.replace(/<!--flowleed:contact_ids=\[[^\]]*\]-->\s*/g, "").trimEnd();
                 const actionMatch = cleanContent.match(/<!--flowleed:action=({.*?})-->/);
-                let action: { id: string; summary: string; expires_at: string } | null = null;
+                let action: { id: string; type?: string; summary: string; expires_at: string } | null = null;
                 if (actionMatch) {
                   try { action = JSON.parse(actionMatch[1]); } catch { /* ignore */ }
                 }
@@ -165,10 +165,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     )}
                     {action && !handledActions.has(action.id) && (
                       <div className="not-prose mt-4 rounded-md border bg-muted/30 p-4">
-                        <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">Confirm Flow change</p><p className="mt-1 text-sm text-muted-foreground">{action.summary}</p></div></div>
+                         <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">{action.type === "create_contact_note" ? "Confirm new note" : "Confirm Flow change"}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{action.summary}</p></div></div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Button size="sm" disabled={confirmingId === action.id || new Date(action.expires_at).getTime() <= Date.now()} onClick={async () => { if (!onConfirmAction || !action) return; setConfirmingId(action.id); const result = await onConfirmAction(action.id); setConfirmingId(null); if (result.ok) setHandledActions((current) => new Set(current).add(action.id)); }}>
-                            {confirmingId === action.id ? "Confirming..." : "Confirm add"}
+                             {confirmingId === action.id ? "Confirming..." : action.type === "create_contact_note" ? "Save note" : "Confirm add"}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setHandledActions((current) => new Set(current).add(action.id))}>Cancel</Button>
                         </div>
