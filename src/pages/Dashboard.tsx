@@ -8,11 +8,11 @@ import { ChatThread } from "@/components/dashboard/ChatThread";
 import { useDashboardChat } from "@/hooks/useDashboardChat";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { ChatHistoryDrawer } from "@/components/dashboard/ChatHistoryDrawer";
-import { Sparkles, History } from "lucide-react";
+import { History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PcoPersonalConnectPrompt } from "@/components/dashboard/PcoPersonalConnectPrompt";
 import { DemoHighlights } from "@/components/demo/DemoHighlights";
-import flowleedAiAvatar from "@/assets/flowleed-ai-avatar.png";
+import flowleedAiAvatar from "@/assets/flowleed-ai-avatar-previous.png";
 
 const Dashboard = () => {
   const { profile } = useProfile();
@@ -65,7 +65,7 @@ const Dashboard = () => {
                 History
               </Button>
               <div className="flex flex-col items-center gap-3">
-                <img src={flowleedAiAvatar} alt="FlowLeed AI" width={48} height={48} className="h-12 w-12 rounded-2xl object-contain shadow-sm" />
+                <img src={flowleedAiAvatar} alt="FlowLeed AI" width={64} height={64} className="h-16 w-16 object-contain" />
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
                   How can I help you today?
                 </h2>
