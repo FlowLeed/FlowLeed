@@ -9,6 +9,6 @@
 
 - [x] Stabilize shared phone frame, navigation, safe areas, and dialogs
 - [x] Improve FlowLeed AI long answers, composer, and review flow
-- [ ] Add phone-native lists for People and Flows (People complete)
-- [ ] Optimize Tasks, Signals, Groups, Analytics, and profiles (Tasks and Signals started)
+- [x] Add phone-native lists for People and Flows
+- [x] Optimize Tasks, Signals, Groups, Analytics, and profiles
 - [ ] Verify major workflows at 320, 360, 390, and 430px
