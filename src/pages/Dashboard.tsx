@@ -12,6 +12,7 @@ import { Sparkles, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PcoPersonalConnectPrompt } from "@/components/dashboard/PcoPersonalConnectPrompt";
 import { DemoHighlights } from "@/components/demo/DemoHighlights";
+import flowleedAiAvatar from "@/assets/flowleed-ai-avatar.png";
 
 const Dashboard = () => {
   const { profile } = useProfile();
@@ -44,13 +45,13 @@ const Dashboard = () => {
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
 
       <PcoPersonalConnectPrompt />
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden hide-scrollbar">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-4 md:py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain hide-scrollbar">
+        <div className="max-w-4xl mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
           {/* AI Hero Section - shown when no messages */}
           {!hasMessages && (
             <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6 relative">
@@ -64,9 +65,7 @@ const Dashboard = () => {
                 History
               </Button>
               <div className="flex flex-col items-center gap-3">
-                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </div>
+                <img src={flowleedAiAvatar} alt="FlowLeed AI" width={48} height={48} className="h-12 w-12 rounded-2xl object-contain shadow-sm" />
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
                   How can I help you today?
                 </h2>
@@ -111,7 +110,7 @@ const Dashboard = () => {
 
       {/* Sticky bottom input - shown during active conversation */}
       {hasMessages && (
-        <div className="border-t bg-background px-3 md:px-6 py-3 md:py-4">
+        <div className="border-t bg-background px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:px-6 md:py-4">
           <AIChatInput
             onSubmit={sendMessage}
             isLoading={isLoading}

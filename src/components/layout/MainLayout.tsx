@@ -8,7 +8,7 @@ import { MobileSidebarProvider } from "@/contexts/MobileSidebarContext";
 export const MainLayout = () => {
   return (
     <MobileSidebarProvider>
-      <div className="flex h-screen w-full flex-col overflow-hidden">
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
         <ImpersonationBanner />
         <DemoModeBanner />
         <div className="flex flex-1 overflow-hidden">

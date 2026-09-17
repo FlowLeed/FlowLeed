@@ -48,30 +48,30 @@ export const MyContactsFilters = ({
           className="pl-9"
         />
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex snap-x gap-2 overflow-x-auto pb-1 scrollbar-hide">
         <Select value={flow} onValueChange={onFlowChange}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Flow" /></SelectTrigger>
+          <SelectTrigger className="w-[145px] shrink-0 sm:w-[160px]"><SelectValue placeholder="Flow" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All flows</SelectItem>
             {flowOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={stage} onValueChange={onStageChange}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Stage" /></SelectTrigger>
+          <SelectTrigger className="w-[145px] shrink-0 sm:w-[160px]"><SelectValue placeholder="Stage" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All stages</SelectItem>
             {stageOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={campus} onValueChange={onCampusChange}>
-          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Campus" /></SelectTrigger>
+          <SelectTrigger className="w-[145px] shrink-0 sm:w-[160px]"><SelectValue placeholder="Campus" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All campuses</SelectItem>
             {campusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(v) => onSortChange(v as SortKey)}>
-          <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[190px] shrink-0 sm:w-[200px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="last_contact">Last contact (oldest first)</SelectItem>
             <SelectItem value="name">Name (A–Z)</SelectItem>
@@ -79,7 +79,7 @@ export const MyContactsFilters = ({
           </SelectContent>
         </Select>
         {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={onClear} className="gap-1">
+          <Button variant="ghost" size="sm" onClick={onClear} className="h-10 shrink-0 gap-1">
             <X className="h-3.5 w-3.5" /> Clear
           </Button>
         )}

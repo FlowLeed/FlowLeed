@@ -24,6 +24,7 @@ import { Edit2, Trash2, ArrowUpDown, ChevronDown, Plus, MoreVertical, Check, Che
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
+import { MobilePersonRow } from "@/components/contacts/MobilePersonRow";
 
 interface FlowTableViewProps {
   flow: Flow;
@@ -258,7 +259,33 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
 
           {/* Table for this stage */}
           {expandedStages.has(stage.id) && (
-            <div className="overflow-auto">
+            <>
+            <div className="divide-y md:hidden">
+              {contacts.length === 0 ? (
+                <p className="px-4 py-6 text-center text-sm text-muted-foreground">No contacts in this step</p>
+              ) : contacts.map((contact) => (
+                <MobilePersonRow
+                  key={contact.id}
+                  name={contact.name}
+                  avatar={contact.avatar}
+                  email={contact.email}
+                  phone={contact.phone}
+                  campus={contact.campusName}
+                  selected={selectedContacts.has(contact.id)}
+                  onSelect={isSelectMode ? () => onToggleContact?.(contact.id) : undefined}
+                  onOpen={() => isSelectMode ? onToggleContact?.(contact.id) : navigate(`/contacts/${contact.id}?pipelineId=${flow.id}`)}
+                  status={contact.completedEndAt ? <Badge variant="secondary" className="gap-1 text-xs"><CheckCircle2 className="h-3 w-3" />Done</Badge> : undefined}
+                  details={contact.assignedTo?.name ? <span>With {contact.assignedTo.name}</span> : undefined}
+                />
+              ))}
+              <button
+                className="flex min-h-12 w-full items-center gap-2 px-4 text-sm text-muted-foreground"
+                onClick={() => onEditContact({ id: '', name: '', email: '', phone: '', avatar: '', tags: [], status: 'active', date: new Date().toISOString(), stageId: stage.id } as Contact)}
+              >
+                <Plus className="h-4 w-4" /> Add Contact
+              </button>
+            </div>
+            <div className="hidden overflow-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -424,6 +451,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                 </TableBody>
               </Table>
             </div>
+            </>
           )}
         </div>
       ))}

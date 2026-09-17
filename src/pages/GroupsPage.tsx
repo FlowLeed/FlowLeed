@@ -149,16 +149,16 @@ const GroupsPage = () => {
               {filteredGroups.length !== groups.length && ` of ${groups.length}`}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 scrollbar-hide sm:w-auto">
             {organization?.slug && (
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" className="shrink-0" asChild>
                 <a href={`/${organization.slug}/groups`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Public Directory
                 </a>
               </Button>
             )}
-            <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
+            <Button size="sm" className="shrink-0" onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Group
             </Button>

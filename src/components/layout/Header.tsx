@@ -348,13 +348,13 @@ export const Header: React.FC<HeaderProps> = ({
             variant="ghost"
             size="icon"
             onClick={toggleMobileSidebar}
-            className="h-8 w-8 md:hidden flex-shrink-0"
+            className="h-11 w-11 md:hidden flex-shrink-0"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </Button>
           {showBackButton && onBackClick && (
-            <Button variant="ghost" size="icon" onClick={onBackClick} className="h-8 w-8 flex-shrink-0">
+            <Button variant="ghost" size="icon" onClick={onBackClick} className="h-11 w-11 flex-shrink-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
@@ -379,14 +379,14 @@ export const Header: React.FC<HeaderProps> = ({
               <FlowIcon className="h-5 w-5 text-sidebar-foreground flex-shrink-0" />
             )
           )}
-          <div className="text-lg font-extralight truncate min-w-0">{title}</div>
+          <div className="truncate text-base font-normal min-w-0 md:text-lg md:font-extralight">{title}</div>
           {titleBadge}
         </div>
 
 
         {/* Right content slot for page-specific controls */}
         {rightContent && (
-          <div className="flex justify-end">
+          <div className="hidden justify-end sm:flex">
             {rightContent}
           </div>
         )}
@@ -501,7 +501,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex md:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100 relative">
+                <Button variant="ghost" size="icon" className="h-11 w-11 rounded-md text-slate-600 hover:bg-slate-100 relative">
                   <MoreHorizontal className="h-4 w-4" />
                   {hasActiveFilter && (
                     <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
@@ -564,13 +564,13 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Persistent right cluster: notifications, search, avatar */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <TooltipProvider delayDuration={200}>
-            <NotificationBell />
+            <div className="hidden sm:block"><NotificationBell /></div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-md text-slate-600 hover:bg-slate-100"
+                  className="h-11 w-11 rounded-md text-slate-600 hover:bg-slate-100"
                   onClick={() => setShowGlobalSearch(true)}
                 >
                   <Search className="h-4 w-4" />
@@ -579,10 +579,10 @@ export const Header: React.FC<HeaderProps> = ({
               <TooltipContent>Search (Ctrl+K)</TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <div className="border-l border-gray-200 h-6 mx-1" />
+          <div className="hidden border-l border-border h-6 mx-1 sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 hover:bg-slate-100 rounded-lg p-1.5">
+              <button className="flex h-11 w-11 items-center justify-center gap-2 rounded-lg hover:bg-accent">
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={profile?.avatar_url || ""} alt={displayName} />
                   <AvatarFallback>

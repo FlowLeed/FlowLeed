@@ -14,6 +14,7 @@ import { useState } from "react";
 import { SignalChip, SIGNAL_RISK_ORDER } from "@/components/contact/SignalChip";
 import type { SignalLevel } from "@/hooks/useContactSignal";
 import { LoadingStatus } from "@/components/contacts/LoadingStatus";
+import { MobilePersonRow } from "@/components/contacts/MobilePersonRow";
 
 interface ContactsTableProps {
   contacts: any[];
@@ -94,7 +95,41 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedI
   }
 
   return (
-    <div className="rounded-md border">
+    <>
+      <div className="divide-y rounded-lg border bg-card md:hidden">
+        {selectionEnabled && (
+          <button
+            type="button"
+            className="flex min-h-11 w-full items-center gap-3 px-3 text-sm font-medium"
+            onClick={() => onToggleSelectAll?.(sortedContacts.map((contact: any) => contact.id))}
+          >
+            <Checkbox
+              checked={sortedContacts.length > 0 && sortedContacts.every((contact: any) => selectedIds?.has(contact.id))}
+              aria-label="Select all people"
+            />
+            Select all people
+          </button>
+        )}
+        {sortedContacts.map((contact: any) => {
+          const score = getScore(contact);
+          return (
+            <MobilePersonRow
+              key={contact.id}
+              name={contact.name}
+              avatar={contact.avatar}
+              email={contact.email}
+              phone={contact.phone}
+              campus={contact.campuses?.name}
+              selected={selectedIds?.has(contact.id)}
+              onSelect={selectionEnabled ? () => onToggleSelect?.(contact.id) : undefined}
+              onOpen={() => navigate(`/contacts/${contact.id}`)}
+              status={<SignalChip signal={(score?.signal as SignalLevel) ?? null} />}
+              details={contact.profiles?.full_name ? <span>With {contact.profiles.full_name}</span> : undefined}
+            />
+          );
+        })}
+      </div>
+      <div className="hidden rounded-md border md:block">
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/30">
@@ -224,6 +259,7 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedI
           })}
         </TableBody>
       </Table>
-    </div>
+      </div>
+    </>
   );
 };

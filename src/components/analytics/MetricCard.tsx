@@ -19,20 +19,20 @@ export const MetricCard = ({
 }: MetricCardProps) => {
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="relative p-4 sm:p-6 sm:pt-6">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             {loading ? (
               <Skeleton className="h-8 w-24" />
             ) : (
-              <p className="text-3xl font-semibold">{value}</p>
+               <p className="text-2xl font-semibold sm:text-3xl">{value}</p>
             )}
             {description && (
               <p className="text-xs text-muted-foreground">{description}</p>
             )}
           </div>
-          <div className="p-2 bg-primary/10 rounded-lg">
+           <div className="shrink-0 p-2 bg-primary/10 rounded-lg">
             <Icon className="h-5 w-5 text-sidebar-foreground" />
           </div>
         </div>

@@ -139,8 +139,8 @@
   @apply shadow-md;
 }
 
-.pipeline-column {
-  @apply bg-transparent rounded-md p-4 w-[300px] flex-shrink-0;
+  .pipeline-column {
+    @apply bg-transparent rounded-md p-4 w-[85vw] sm:w-[300px] flex-shrink-0;
 }
 
 .tag {
