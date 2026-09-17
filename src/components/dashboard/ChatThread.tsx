@@ -2,10 +2,9 @@ import React, { useRef, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
-import { User, RotateCcw, History, ListPlus } from "lucide-react";
+import { User, Sparkles, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
-import flowleedAiAvatar from "@/assets/flowleed-ai-avatar-previous.png";
 
 const THINKING_MESSAGES = [
   "Looking at the whole picture...",
@@ -110,7 +109,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
         <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           {msg.role === "assistant" && (
             <div className="flex-shrink-0 mt-1">
-              <img src={flowleedAiAvatar} alt="FlowLeed AI" width={32} height={32} className="h-8 w-8 object-contain" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
+                <Sparkles className="h-4 w-4 text-primary-foreground" />
+              </div>
             </div>
           )}
           <div
@@ -188,7 +189,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
       {isLoading && messages[messages.length - 1]?.role === "user" && (
         <div className="flex gap-3 justify-start">
           <div className="flex-shrink-0 mt-1">
-            <img src={flowleedAiAvatar} alt="FlowLeed AI" width={32} height={32} className="h-8 w-8 animate-pulse object-contain" />
+            <div className="flex h-7 w-7 animate-pulse items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
+              <Sparkles className="h-4 w-4 text-primary-foreground" />
+            </div>
           </div>
           <div className="rounded-2xl rounded-bl-md px-5 py-4">
             <div className="flex items-center gap-3">
