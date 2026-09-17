@@ -170,7 +170,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     part.startsWith("@") ? (
                       <strong key={idx} className="font-semibold">{part}</strong>
                     ) : (
-                      <React.Fragment key={idx}>{part}</React.Fragment>
+                      <span key={idx}>{part}</span>
                     )
                   );
                 })()}
