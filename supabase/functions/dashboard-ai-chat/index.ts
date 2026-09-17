@@ -1556,7 +1556,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           out = out.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
         }
         if (removed > 0) {
-          out += `\n\n_Note: ${removed} name${removed === 1 ? "" : "s"} that don't match anyone in your records ${removed === 1 ? "was" : "were"} removed from this answer._`;
+          console.log(`[chat] stripped ${removed} unverified person link(s) from the answer`);
         }
         if (out) send(out);
         if (collectedContactIds && collectedContactIds.length > 0) {
