@@ -68,8 +68,8 @@ const NavItem = ({
 }) => {
   if (item.comingSoon) {
     return (
-      <div className="flex min-h-11 w-full items-center gap-3 rounded-full px-4 py-2 text-sm font-medium opacity-50 cursor-not-allowed min-w-0">
-        <item.icon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+      <div className="flex min-h-11 w-full items-center gap-3 rounded-full px-4 py-2 text-sm font-medium opacity-50 cursor-not-allowed min-w-0 md:min-h-9 md:gap-2 md:px-2.5 md:py-1">
+        <item.icon className="h-5 w-5 flex-shrink-0 text-muted-foreground md:h-4 md:w-4" />
         <span className="font-extralight truncate whitespace-nowrap min-w-0">{item.title}</span>
         <Badge variant="secondary" className="ml-auto text-xs">Coming Soon</Badge>
       </div>
@@ -77,9 +77,9 @@ const NavItem = ({
   }
   
   return <div className="group flex items-center">
-    <Link to={item.path} className={`flex min-h-11 flex-1 items-center gap-3 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0 px-[10px]`}>
+    <Link to={item.path} className={`flex min-h-11 flex-1 items-center gap-3 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0 px-[10px] md:min-h-9 md:gap-2 md:py-1 md:text-[13px]`}>
       <div className="relative flex-shrink-0">
-        <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
+        <item.icon className={`h-5 w-5 md:h-4 md:w-4 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
           <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white rounded-full p-0.5">
             <RefreshCw className="h-2 w-2" />
@@ -345,7 +345,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   };
   const colorOptions = ["#3b82f6", "#f59e0b", "#10b981", "#6366f1", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
   return <div className="space-y-1">
-      <div className="px-4 py-2 flex items-center justify-between">
+      <div className="px-4 py-2 flex items-center justify-between md:px-2 md:py-1">
         <div className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
           {title}
         </div>
@@ -475,7 +475,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
     </div>;
 };
 import flowleedLogo from "@/assets/flowleed_logo_new.png";
-const Logo = () => <div className="px-8 py-6 flex items-center">
+const Logo = () => <div className="px-8 py-6 flex items-center md:px-5 md:py-4">
     <img src={flowleedLogo} alt="Flowleed" className="h-5 w-auto" />
   </div>;
 export const Sidebar = () => {
@@ -733,7 +733,7 @@ export const Sidebar = () => {
   const sidebarContent = (
     <>
       <Logo />
-      <div className="flex-1 overflow-auto py-2 px-4 space-y-6 sidebar-scroll">
+      <div className="flex-1 overflow-auto py-2 px-4 space-y-6 sidebar-scroll md:px-3 md:space-y-4">
         <SidebarSection title="HUB" items={pageItems} />
         <SidebarSection
           title="Flows"

@@ -19,3 +19,8 @@
 - [x] Add action audit history and safeguards
 - [x] Place AI tool controls inside My Organization
 - [ ] Verify chat, settings, desktop, and mobile behavior
+
+## Compact tablet and desktop layout
+- [x] Tighten shared sidebar and header above phone sizes
+- [x] Tighten FlowLeed AI and Flow screen spacing
+- [ ] Verify tablet, desktop, and unchanged phone layouts

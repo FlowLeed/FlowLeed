@@ -197,12 +197,12 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
   );
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-3">
       {sortedContactsByStage.map(({ stage, contacts }) => (
         <div key={stage.id} className="space-y-0 border rounded-lg overflow-hidden">
           {/* Stage Header */}
           <div 
-            className="flex items-center gap-3 px-4 py-3 border-l-4 bg-background"
+            className="flex items-center gap-3 border-l-4 bg-background px-4 py-3 md:gap-2 md:px-3 md:py-2"
             style={{ borderLeftColor: stage.color || '#3b82f6' }}
           >
             <button
@@ -215,7 +215,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                 }`}
               />
               <span 
-                className="font-semibold text-base"
+                className="text-base font-semibold md:text-sm"
                 style={{ color: stage.color || '#3b82f6' }}
               >
                 {stage.name}
@@ -290,7 +290,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                 <TableHeader>
                   <TableRow>
                     {isSelectMode && (
-                      <TableHead className="w-12">
+                      <TableHead className="h-10 w-10 px-3">
                         <Checkbox 
                           checked={contacts.length > 0 && contacts.every(c => selectedContacts.has(c.id))}
                           indeterminate={
@@ -349,14 +349,14 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                         }}
                       >
                         {isSelectMode && (
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                             <Checkbox 
                               checked={selectedContacts.has(contact.id)}
                               onCheckedChange={() => onToggleContact?.(contact.id)}
                             />
                           </TableCell>
                         )}
-                        <TableCell>
+                        <TableCell className="px-3 py-2">
                           <div className="flex items-center gap-2">
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={contact.avatar} alt={contact.name} />
@@ -373,13 +373,13 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="px-3 py-2 text-muted-foreground">
                           {contact.email || '—'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="px-3 py-2 text-muted-foreground">
                           {contact.phone || '—'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-3 py-2">
                           {contact.assignedTo ? (
                             <Avatar className="h-6 w-6">
                               <AvatarImage src={contact.assignedTo.avatar} alt={contact.assignedTo.name} />
@@ -391,7 +391,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-3 py-2">
                           {contact.campusName ? (
                             <div className="flex items-center gap-1 text-muted-foreground text-sm">
                               <Building2 className="h-3 w-3" />
@@ -401,7 +401,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                             <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-3 py-2">
                           <div className="flex gap-1 flex-wrap max-w-[200px]">
                             {contact.tags.length > 0 ? (
                               contact.tags.slice(0, 3).map((tag, idx) => (
@@ -425,7 +425,7 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                   
                   {/* Add Item Row */}
                   <TableRow className="hover:bg-muted/30 border-t">
-                    <TableCell colSpan={isSelectMode ? 7 : 6}>
+                    <TableCell className="px-3 py-2" colSpan={isSelectMode ? 7 : 6}>
                       <button 
                         className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 w-full py-1"
                         onClick={() => {

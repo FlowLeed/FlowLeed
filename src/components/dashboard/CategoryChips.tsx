@@ -17,7 +17,7 @@ const categories: { id: Category; label: string; icon: React.ElementType; color:
 
 export const CategoryChips: React.FC<CategoryChipsProps> = ({ selected, onSelect }) => {
   return (
-    <div className="flex flex-wrap justify-center gap-2">
+    <div className="flex flex-wrap justify-center gap-2 md:gap-1.5">
       {categories.map(({ id, label, icon: Icon, color }) => {
         const isActive = selected === id;
         return (
@@ -25,11 +25,11 @@ export const CategoryChips: React.FC<CategoryChipsProps> = ({ selected, onSelect
             key={id}
             onClick={() => onSelect(isActive ? null : id)}
             className={`
-              inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border transition-all
+              inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border transition-all md:px-3 md:py-1.5 md:text-xs
               ${isActive ? color + " ring-2 ring-offset-1 ring-current/20" : color}
             `}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-4 w-4 md:h-3.5 md:w-3.5" />
             {label}
           </button>
         );

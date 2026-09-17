@@ -199,9 +199,9 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
   const dropdownOpen = mentionQuery !== null && mentionResults.length > 0;
 
   return (
-    <div className={`relative w-full ${hasMessages ? "max-w-3xl" : "max-w-2xl"} mx-auto`}>
-      <div className="relative rounded-2xl border-2 border-border bg-card shadow-lg transition-all focus-within:border-primary/50 focus-within:shadow-xl focus-within:shadow-primary/5">
-        <div className="flex items-center gap-2 px-4 pt-3 pb-1 text-muted-foreground">
+    <div className={`relative mx-auto w-full ${hasMessages ? "max-w-2xl" : "max-w-[40rem]"}`}>
+      <div className="relative rounded-2xl border-2 border-border bg-card shadow-lg transition-all focus-within:border-primary/50 focus-within:shadow-xl focus-within:shadow-primary/5 md:rounded-xl">
+        <div className="flex items-center gap-2 px-4 pb-1 pt-3 text-muted-foreground md:px-3 md:pt-2.5">
           <Sparkles className="h-4 w-4 text-primary" />
           <span className="text-xs font-medium">FlowLeed AI</span>
           <span className="hidden text-[10px] text-muted-foreground/60 ml-1 sm:inline">· type @ to mention a person</span>
@@ -215,10 +215,10 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
           onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
           placeholder="Ask about your people, tasks, church health..."
           rows={1}
-          className="min-h-12 max-h-32 w-full resize-none bg-transparent px-4 py-2 text-base leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none md:text-sm"
+          className="min-h-12 max-h-32 w-full resize-none bg-transparent px-4 py-2 text-base leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none md:min-h-10 md:px-3 md:py-1.5 md:text-sm"
           disabled={isLoading}
         />
-        <div className="flex items-center justify-end px-3 pb-3">
+        <div className="flex items-center justify-end px-3 pb-3 md:pb-2.5">
           {isLoading ? (
             <Button
               size="sm"
