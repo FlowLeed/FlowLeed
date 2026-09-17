@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, X, Tag, Search, Pencil, Trash2, GitMerge, Phone, ImageIcon, Upload, Loader2 } from "lucide-react";
+import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, X, Tag, Search, Pencil, Trash2, GitMerge, Phone, ImageIcon, Upload, Loader2, Bot } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InviteTeamMemberDialog } from "@/components/team/InviteTeamMemberDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +26,7 @@ import { OrganizationPhoneNumbers } from "@/components/admin/OrganizationPhoneNu
 import { useFlowTeamMemberships } from "@/hooks/useFlowTeamMemberships";
 import { useOrgFlowsMeta } from "@/hooks/useOrgFlowsMeta";
 import { FlowIconBadge } from "@/components/search/FlowIconBadge";
+import { AiToolsSettingsContent } from "@/pages/settings/AiToolsSettingsPage";
 
 interface TeamMember {
   id: string;
@@ -452,13 +453,14 @@ const TeamPage = () => {
   return <div className="flex flex-col h-full">
       <Header title="My Organization" showFlowIcon={false} showAddButton={false} />
       
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto p-4 md:p-6">
         <Tabs
           value={activeTab}
           onValueChange={(v) => setSearchParams(v === "settings" ? {} : { tab: v }, { replace: true })}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-4">
+          <div className="w-full overflow-x-auto pb-1">
+          <TabsList className="grid min-w-[720px] w-full grid-cols-5">
             <TabsTrigger value="settings">
               <Shield className="h-4 w-4 mr-2" />
               Org Settings
@@ -475,7 +477,12 @@ const TeamPage = () => {
               <Tag className="h-4 w-4 mr-2" />
               Tag Management
             </TabsTrigger>
+            <TabsTrigger value="ai-tools">
+              <Bot className="h-4 w-4 mr-2" />
+              FlowLeed AI
+            </TabsTrigger>
           </TabsList>
+          </div>
 
           <TabsContent value="settings" className="space-y-6 mt-6">
             <Card>
@@ -591,6 +598,10 @@ const TeamPage = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="ai-tools" className="mt-6">
+            <AiToolsSettingsContent />
           </TabsContent>
 
           <TabsContent value="members" className="space-y-6 mt-6">

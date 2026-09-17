@@ -652,10 +652,6 @@ export const Sidebar = () => {
     title: "Integrations",
     icon: Puzzle,
     path: "/integrations"
-  }, {
-    title: "FlowLeed AI Tools",
-    icon: Settings2,
-    path: "/settings/ai-tools"
   }];
 
   const isMobile = useIsMobile();
