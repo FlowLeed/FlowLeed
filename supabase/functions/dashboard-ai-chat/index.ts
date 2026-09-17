@@ -200,7 +200,7 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
   if (!contact || !flow || !step) return { ok: false, message: "The person, Flow, or step is no longer available." };
   const { data: existing } = await userClient.from("pipeline_contacts").select("id").eq("pipeline_id", flow.id).eq("contact_id", contact.id).maybeSingle();
   if (!existing) {
-    const { error } = await userClient.from("pipeline_contacts").insert({ contact_id: contact.id, pipeline_id: flow.id, stage_id: step.id, stage_order: step.stage_order, assigned_to_user_id: step.default_assignee_user_id || null, source_type: "ai_confirmed" });
+    const { error } = await userClient.from("pipeline_contacts").insert({ contact_id: contact.id, pipeline_id: flow.id, stage_id: step.id, stage_order: step.stage_order, assigned_to_user_id: step.default_assignee_user_id || null, source_type: "manual" });
     if (error) {
       await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: error.message } }).eq("id", request.id).eq("status", "pending");
       await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "failed", affected_records: [], error_message: error.message });
@@ -1308,6 +1308,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     let toolRound = 0;
     let collectedContactIds: string[] | null = null;
     let lastFinderResult: string | null = null;
+    let pendingActionMarker: string | null = null;
     // Every person id/name the tools actually returned. Anything else the model
     // writes is a fabrication and gets stripped before the user sees it.
     const allowedPeople = new Map<string, string>();
@@ -1407,6 +1408,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             }
           } else if (fnName === "add_people_to_flow") {
             result = await prepareAddToFlow(adminClient, orgId, userId, args);
+            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
           } else {
             result = `Unknown tool: ${fnName}`;
           }
@@ -1512,8 +1514,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
         const { text: safe, removed } = sanitizePeopleMentions(out, allowedPeople);
         out = safe;
-        const actionMatch = aiMessages.slice().reverse().map((message: any) => String(message?.content || "").match(/<!--flowleed:action=({.*?})-->/)?.[0]).find(Boolean);
-        if (!actionMatch) {
+        if (!pendingActionMarker) {
           out = out.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
         }
         if (removed > 0) {
@@ -1523,7 +1524,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         if (collectedContactIds && collectedContactIds.length > 0) {
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
-        if (actionMatch) send(`\n\n${actionMatch}`);
+        if (pendingActionMarker) send(`\n\n${pendingActionMarker}`);
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },
