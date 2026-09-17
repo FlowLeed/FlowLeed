@@ -1047,7 +1047,8 @@ serve(async (req) => {
       });
     }
 
-    const { messages } = await req.json();
+    const body = await req.json();
+    const { messages } = body;
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "messages required" }), {
         status: 400,
@@ -1080,6 +1081,38 @@ serve(async (req) => {
     const orgId = membership.organization_id;
     const orgName = (membership.organizations as any)?.name || "Your Church";
     const userRole = membership.role;
+
+    if (body.action === "confirm" && typeof body.action_request_id === "string") {
+      const result = await executePendingAction(adminClient, userClient, orgId, userId, body.action_request_id);
+      return new Response(JSON.stringify(result), { status: result.ok ? 200 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { data: toolSettings } = await adminClient
+      .from("ai_tool_settings")
+      .select("tool_key, enabled")
+      .eq("organization_id", orgId);
+    const settingMap = new Map((toolSettings || []).map((row: any) => [row.tool_key, row.enabled]));
+    const masterEnabled = settingMap.get("flowleed_ai_tools") ?? true;
+    const isEnabled = (key: string) => masterEnabled && (settingMap.get(key) ?? TOOL_DEFAULTS[key] ?? false);
+    const tools = TOOL_REGISTRY.filter((tool) => isEnabled(tool.function.name));
+
+    const latestUserText = String(messages[messages.length - 1]?.content || "").trim();
+    if (/^(yes|confirm|do it|go ahead|add (him|her|them))\W*$/i.test(latestUserText)) {
+      for (let i = messages.length - 2; i >= 0; i--) {
+        const marker = String(messages[i]?.content || "").match(/<!--flowleed:action=({.*?})-->/);
+        if (!marker) continue;
+        try {
+          const pending = JSON.parse(marker[1]);
+          if (pending?.type === "add_people_to_flow" && typeof pending.id === "string") {
+            const result = await executePendingAction(adminClient, userClient, orgId, userId, pending.id);
+            const encoder = new TextEncoder();
+            const response = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: result.message } }] })}\n\ndata: [DONE]\n\n`)); controller.close(); } });
+            return new Response(response, { status: result.ok ? 200 : 400, headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+          }
+        } catch { /* ignore malformed historical marker */ }
+        break;
+      }
+    }
 
     // Get user profile
     const { data: profile } = await adminClient
@@ -1207,6 +1240,7 @@ You have access to tools to look up detailed information about specific people a
 - **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, etc.)
 - **search_people_in_flow**: When the user asks who is in a specific flow or wants details about a flow's people, call this tool.
 - **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "Fairfield women who were in a small group earlier this year but aren't in one now"), call this tool. Map EVERY part of the request to an argument: campus -> campus_name, women/men -> gender, "was in a group earlier this year" -> in_group_between {from: Jan 1 of this year, to: today}, "not in a group now" -> not_in_active_group: true, "Member" -> pc_membership, "served N months" -> serving_min_days = N*30. Set limit to 200 so counts are accurate.
+${isEnabled("add_people_to_flow") ? '- **add_people_to_flow**: When the user clearly names one person, one Flow, and one step, prepare the exact action for confirmation. Never say it happened until the structured execution result confirms it.' : '- Adding people to a Flow is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
 1. ALWAYS write a real answer in text. Start by restating the criteria you applied ("Fairfield - women - in a group since Jan 1 - not in a group now"), give the count, then LIST THE PEOPLE as markdown links exactly as returned by the tool.
@@ -1371,6 +1405,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
                 if (Array.isArray(ids) && ids.length > 0) collectedContactIds = ids;
               } catch { /* ignore */ }
             }
+          } else if (fnName === "add_people_to_flow") {
+            result = await prepareAddToFlow(adminClient, orgId, userId, args);
           } else {
             result = `Unknown tool: ${fnName}`;
           }
@@ -1476,6 +1512,10 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
         const { text: safe, removed } = sanitizePeopleMentions(out, allowedPeople);
         out = safe;
+        const actionMatch = aiMessages.slice().reverse().map((message: any) => String(message?.content || "").match(/<!--flowleed:action=({.*?})-->/)?.[0]).find(Boolean);
+        if (!actionMatch) {
+          out = out.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
+        }
         if (removed > 0) {
           out += `\n\n_Note: ${removed} name${removed === 1 ? "" : "s"} that don't match anyone in your records ${removed === 1 ? "was" : "were"} removed from this answer._`;
         }
@@ -1483,6 +1523,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         if (collectedContactIds && collectedContactIds.length > 0) {
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
+        if (actionMatch) send(`\n\n${actionMatch}`);
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },
