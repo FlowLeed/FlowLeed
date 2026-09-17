@@ -1,0 +1,1 @@
+UPDATE public.pipeline_contacts SET stage_order = 6, updated_at = now() WHERE id = 'c290b21c-c838-45fc-88d7-086ce270ff88';
