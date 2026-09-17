@@ -988,16 +988,17 @@ function sanitizePeopleMentions(
       );
       continue;
     }
-    const isListLine = /^\s*(?:[-*+]|\d+\.)\s/.test(line) || links.length === 1;
+    const isListLine = /^\s*(?:[-*+]|\d+\.)\s/.test(line);
     if (isListLine && badLinks.length === links.length) {
-      // The whole line is about a person who doesn't exist - drop it.
+      // A list entry that is entirely about an unknown person - drop it.
       removed += badLinks.length;
       continue;
     }
     removed += badLinks.length;
+    // Keep the sentence readable: an unverified link degrades to plain text.
     outLines.push(
       line.replace(linkRe, (all, name, id) =>
-        allowed.has(String(id).toLowerCase()) ? all : ""
+        allowed.has(String(id).toLowerCase()) ? all : String(name)
       ).replace(/\s{2,}/g, " ").trimEnd()
     );
   }
@@ -1327,6 +1328,34 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       while ((m = re.exec(toolResult)) !== null) allowedPeople.set(m[2].toLowerCase(), m[1]);
     };
 
+    // People named earlier in this conversation stay valid, but only after the
+    // ids are re-checked against this organization's contacts (history comes
+    // from the browser and cannot be trusted on its own).
+    try {
+      const historyIds = new Set<string>();
+      const histRe = /\[([^\]\n]+)\]\(\/contacts\/([0-9a-fA-F-]{36})\)/g;
+      for (const msg of messages as Array<{ role?: string; content?: string }>) {
+        if (msg?.role !== "assistant" || typeof msg.content !== "string") continue;
+        let m: RegExpExecArray | null;
+        while ((m = histRe.exec(msg.content)) !== null) historyIds.add(m[2].toLowerCase());
+      }
+      if (historyIds.size > 0) {
+        const ids = [...historyIds].slice(0, 500);
+        const { data: knownContacts } = await adminClient
+          .from("contacts")
+          .select("id, name")
+          .eq("organization_id", orgId)
+          .in("id", ids);
+        for (const c of knownContacts || []) {
+          allowedPeople.set(String(c.id).toLowerCase(), String(c.name));
+        }
+      }
+    } catch (historyError) {
+      console.error("[chat] could not verify people from history:", historyError);
+    }
+
+
+
 
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
@@ -1527,7 +1556,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           out = out.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
         }
         if (removed > 0) {
-          out += `\n\n_Note: ${removed} name${removed === 1 ? "" : "s"} that don't match anyone in your records ${removed === 1 ? "was" : "were"} removed from this answer._`;
+          console.log(`[chat] stripped ${removed} unverified person link(s) from the answer`);
         }
         if (out) send(out);
         if (collectedContactIds && collectedContactIds.length > 0) {
