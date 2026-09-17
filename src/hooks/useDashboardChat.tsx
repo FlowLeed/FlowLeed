@@ -9,6 +9,8 @@ export type ChatMessage = {
   content: string;
 };
 
+export type ConfirmActionResult = { ok: boolean; message: string };
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dashboard-ai-chat`;
 const TITLE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-chat-title`;
 const ACTIVE_CONV_KEY = "flowleed:active-conversation-id";
@@ -214,6 +216,23 @@ export const useDashboardChat = () => {
     abortRef.current?.abort();
   }, []);
 
+  const confirmAction = useCallback(async (actionRequestId: string): Promise<ConfirmActionResult> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return { ok: false, message: "Please sign in again." };
+    const response = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}`, apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY },
+      body: JSON.stringify({ action: "confirm", action_request_id: actionRequestId, messages: [] }),
+    });
+    const result = await response.json().catch(() => ({ ok: false, message: "The action could not be completed." }));
+    const assistantMessage: ChatMessage = { role: "assistant", content: result.message };
+    const nextMessages = [...messages, assistantMessage];
+    setMessages(nextMessages);
+    await saveConversation(nextMessages, conversationId);
+    if (!response.ok) toast.error(result.message);
+    return result;
+  }, [messages, conversationId, saveConversation]);
+
   const clearChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
@@ -250,6 +269,6 @@ export const useDashboardChat = () => {
     loadConversation(saved);
   }, [user?.id, messages.length, loadConversation]);
 
-  return { messages, isLoading, sendMessage, cancelStream, clearChat, conversationId, loadConversation };
+  return { messages, isLoading, sendMessage, confirmAction, cancelStream, clearChat, conversationId, loadConversation };
 };
 

@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
-import { User, Sparkles, RotateCcw, History, ListPlus } from "lucide-react";
+import { User, Sparkles, RotateCcw, History, ListPlus, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
 
@@ -43,12 +43,15 @@ interface ChatThreadProps {
   isLoading: boolean;
   onClear: () => void;
   onOpenHistory?: () => void;
+  onConfirmAction?: (actionRequestId: string) => Promise<{ ok: boolean; message: string }>;
 }
 
-export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory }) => {
+export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory, onConfirmAction }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [bulkIds, setBulkIds] = useState<string[] | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [handledActions, setHandledActions] = useState<Set<string>>(new Set());
 
 
   useEffect(() => {
@@ -132,6 +135,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                   try { contactIds = JSON.parse(match[1]); } catch { /* ignore */ }
                 }
                 const cleanContent = msg.content.replace(/<!--flowleed:contact_ids=\[[^\]]*\]-->\s*/g, "").trimEnd();
+                const actionMatch = cleanContent.match(/<!--flowleed:action=({.*?})-->/);
+                let action: { id: string; summary: string; expires_at: string } | null = null;
+                if (actionMatch) {
+                  try { action = JSON.parse(actionMatch[1]); } catch { /* ignore */ }
+                }
+                const visibleContent = cleanContent.replace(/<!--flowleed:action={.*?}-->\s*/g, "").trimEnd();
                 return (
                   <div className="prose prose-base dark:prose-invert max-w-none
                     [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
@@ -145,13 +154,24 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     prose-strong:text-foreground
                     [&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2
                   ">
-                    <ReactMarkdown components={markdownComponents}>{cleanContent}</ReactMarkdown>
+                    <ReactMarkdown components={markdownComponents}>{visibleContent}</ReactMarkdown>
                     {contactIds.length > 0 && (
                       <div className="not-prose mt-4 flex flex-wrap gap-2">
                         <Button size="sm" onClick={() => setBulkIds(contactIds)} className="gap-2">
                           <ListPlus className="h-4 w-4" />
                           Review {contactIds.length} {contactIds.length === 1 ? "person" : "people"}
                         </Button>
+                      </div>
+                    )}
+                    {action && !handledActions.has(action.id) && (
+                      <div className="not-prose mt-4 rounded-md border bg-muted/30 p-4">
+                        <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">Confirm Flow change</p><p className="mt-1 text-sm text-muted-foreground">{action.summary}</p></div></div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Button size="sm" disabled={confirmingId === action.id || new Date(action.expires_at).getTime() <= Date.now()} onClick={async () => { if (!onConfirmAction || !action) return; setConfirmingId(action.id); const result = await onConfirmAction(action.id); setConfirmingId(null); if (result.ok) setHandledActions((current) => new Set(current).add(action.id)); }}>
+                            {confirmingId === action.id ? "Confirming..." : "Confirm add"}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setHandledActions((current) => new Set(current).add(action.id))}>Cancel</Button>
+                        </div>
                       </div>
                     )}
                   </div>

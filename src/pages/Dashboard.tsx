@@ -15,7 +15,7 @@ import { DemoHighlights } from "@/components/demo/DemoHighlights";
 
 const Dashboard = () => {
   const { profile } = useProfile();
-  const { messages, isLoading, sendMessage, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
+  const { messages, isLoading, sendMessage, confirmAction, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
   const chatHistory = useChatHistory();
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -105,7 +105,7 @@ const Dashboard = () => {
           )}
 
           {/* Chat Thread */}
-          <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} />
+          <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} onConfirmAction={confirmAction} />
         </div>
       </div>
 

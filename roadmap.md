@@ -13,6 +13,6 @@
 - [x] Optimize Tasks, Signals, Groups, Analytics, and profiles
 - [ ] Verify major workflows at 320, 360, 390, and 430px## FlowLeed AI tools
 - [x] Add organization tool controls and permissions
-- [ ] Add reliable confirmed add-to-Flow action
-- [ ] Add action audit history and safeguards
+- [x] Add reliable confirmed add-to-Flow action
+- [x] Add action audit history and safeguards
 - [ ] Verify chat, settings, desktop, and mobile behavior
