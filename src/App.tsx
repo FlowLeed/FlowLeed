@@ -28,6 +28,7 @@ const GroupsPage = lazy(() => import("./pages/GroupsPage"));
 const GroupDetailPage = lazy(() => import("./pages/GroupDetailPage"));
 const GroupSettingsPage = lazy(() => import("./pages/settings/GroupSettingsPage"));
 const IntegrationsPage = lazy(() => import("./pages/IntegrationsPage"));
+const AiToolsSettingsPage = lazy(() => import("./pages/settings/AiToolsSettingsPage"));
 const IntegrationAdvancedSettingsPage = lazy(() => import("./pages/IntegrationAdvancedSettingsPage"));
 const ChurchOnlineAdvancedPage = lazy(() => import("./pages/ChurchOnlineAdvancedPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
@@ -138,6 +139,7 @@ const App = () => (
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/team" element={<TeamPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/settings/ai-tools" element={<AiToolsSettingsPage />} />
               <Route path="/integrations/:integrationName/advanced" element={<IntegrationAdvancedSettingsPage />} />
               <Route path="/integrations/church-online/advanced" element={<FeatureGate feature="church_online"><ChurchOnlineAdvancedPage /></FeatureGate>} />
               <Route path="/analytics" element={<AnalyticsPage />} />

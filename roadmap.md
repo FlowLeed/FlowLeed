@@ -11,8 +11,10 @@
 - [x] Improve FlowLeed AI long answers, composer, and review flow
 - [x] Add phone-native lists for People and Flows
 - [x] Optimize Tasks, Signals, Groups, Analytics, and profiles
-- [ ] Verify major workflows at 320, 360, 390, and 430px## FlowLeed AI tools
-- [ ] Add organization tool controls and permissions
-- [ ] Add reliable confirmed add-to-Flow action
-- [ ] Add action audit history and safeguards
+- [ ] Verify major workflows at 320, 360, 390, and 430px
+
+## FlowLeed AI tools
+- [x] Add organization tool controls and permissions
+- [x] Add reliable confirmed add-to-Flow action
+- [x] Add action audit history and safeguards
 - [ ] Verify chat, settings, desktop, and mobile behavior

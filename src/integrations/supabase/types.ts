@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_action_requests: {
+        Row: {
+          action_payload: Json
+          completed_at: string | null
+          confirmed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          requested_by_user_id: string
+          result_payload: Json | null
+          status: string
+          summary: string
+          tool_key: string
+          updated_at: string
+        }
+        Insert: {
+          action_payload?: Json
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          organization_id: string
+          requested_by_user_id: string
+          result_payload?: Json | null
+          status?: string
+          summary: string
+          tool_key: string
+          updated_at?: string
+        }
+        Update: {
+          action_payload?: Json
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          requested_by_user_id?: string
+          result_payload?: Json | null
+          status?: string
+          summary?: string
+          tool_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_action_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_action_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_suggestion_feedback: {
         Row: {
           action_taken: string | null
@@ -77,6 +140,112 @@ export type Database = {
           },
           {
             foreignKeyName: "ai_suggestion_feedback_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_tool_audit_logs: {
+        Row: {
+          action_request_id: string | null
+          affected_records: Json
+          created_at: string
+          error_message: string | null
+          id: string
+          organization_id: string
+          outcome: string
+          requested_by_user_id: string
+          tool_key: string
+        }
+        Insert: {
+          action_request_id?: string | null
+          affected_records?: Json
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organization_id: string
+          outcome: string
+          requested_by_user_id: string
+          tool_key: string
+        }
+        Update: {
+          action_request_id?: string | null
+          affected_records?: Json
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          organization_id?: string
+          outcome?: string
+          requested_by_user_id?: string
+          tool_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_tool_audit_logs_action_request_id_fkey"
+            columns: ["action_request_id"]
+            isOneToOne: false
+            referencedRelation: "ai_action_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_tool_audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_tool_audit_logs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_tool_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          organization_id: string
+          safety_level: string
+          tool_key: string
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organization_id: string
+          safety_level?: string
+          tool_key: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          organization_id?: string
+          safety_level?: string
+          tool_key?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_tool_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_tool_settings_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"

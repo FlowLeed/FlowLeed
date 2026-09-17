@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { FlowSelectionStep } from '../contact/FlowSelectionStep';
 import { StageSelectionStep } from '../contact/StageSelectionStep';
 import { ArrowLeft, Search } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
 
 interface Pipeline {
   id: string;
@@ -53,6 +54,7 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>(contactIds);
   const [search, setSearch] = useState('');
   const queryClient = useQueryClient();
+  const { organization } = useProfile();
 
   useEffect(() => {
     setSelectedIds(contactIds);
@@ -69,6 +71,7 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
         const { data, error } = await supabase
           .from('contacts')
           .select('id, name, email, campuses(name)')
+          .eq('organization_id', organization?.id ?? '')
           .in('id', chunk);
         if (error) throw error;
         rows.push(...(data ?? []));
@@ -82,7 +85,7 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
     },
-    enabled: open && reviewFirst && contactIds.length > 0,
+    enabled: open && reviewFirst && contactIds.length > 0 && !!organization?.id,
   });
 
   const filteredPeople = useMemo(() => {
@@ -127,17 +130,26 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
       if (!selectedPipeline) throw new Error('No flow selected');
       const ids = selectedIds;
 
+      const { data: verifiedContacts, error: verifyError } = await supabase
+        .from('contacts')
+        .select('id')
+        .eq('organization_id', organization?.id ?? '')
+        .in('id', ids);
+      if (verifyError) throw verifyError;
+      const verifiedIds = (verifiedContacts ?? []).map((contact) => contact.id);
+      if (verifiedIds.length !== ids.length) throw new Error('Some people are no longer available in this organization.');
+
       // Skip contacts already in this flow
       const { data: existing, error: existErr } = await supabase
         .from('pipeline_contacts')
         .select('contact_id')
         .eq('pipeline_id', selectedPipeline.id)
-        .in('contact_id', ids);
+        .in('contact_id', verifiedIds);
       if (existErr) throw existErr;
 
       const existingSet = new Set((existing ?? []).map(r => r.contact_id));
-      const toInsert = ids.filter(id => !existingSet.has(id));
-      const skipped = ids.length - toInsert.length;
+      const toInsert = verifiedIds.filter(id => !existingSet.has(id));
+      const skipped = verifiedIds.length - toInsert.length;
 
       if (toInsert.length === 0) {
         return { added: 0, skipped };
@@ -175,7 +187,7 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
     },
     onError: (error: any) => {
       console.error(error);
-      toast.error('Failed to add people to flow');
+      toast.error('Could not add people to this Flow', { description: error?.message || 'Check that you are a Flow Owner or Contributor.' });
     },
   });
 

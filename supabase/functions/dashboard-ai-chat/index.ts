@@ -11,7 +11,7 @@ const corsHeaders = {
 const AI_GATEWAY = "https://platform.ai.gloo.com/ai/v2/chat/completions";
 
 // Tool definitions for on-demand person lookup
-const tools = [
+const TOOL_REGISTRY = [
   {
     type: "function" as const,
     function: {
@@ -125,7 +125,96 @@ const tools = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "add_people_to_flow",
+      description: "Prepare an action to add one verified person to a Flow and step. This never changes records immediately; it creates a confirmation for the user.",
+      parameters: {
+        type: "object",
+        properties: {
+          person_name: { type: "string", description: "Exact person name." },
+          flow_name: { type: "string", description: "Exact Flow name." },
+          step_name: { type: "string", description: "Exact Flow step name." },
+        },
+        required: ["person_name", "flow_name", "step_name"],
+      },
+    },
+  },
 ];
+
+const TOOL_DEFAULTS: Record<string, boolean> = {
+  search_person: true,
+  search_people_in_flow: true,
+  find_contacts_by_criteria: true,
+  add_people_to_flow: false,
+};
+
+const actionMarker = (payload: Record<string, unknown>) =>
+  `<!--flowleed:action=${JSON.stringify(payload).replace(/-->/g, "--\\u003e")}-->`;
+
+async function prepareAddToFlow(
+  adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
+): Promise<string> {
+  const personName = String(args?.person_name || "").trim();
+  const flowName = String(args?.flow_name || "").trim();
+  const stepName = String(args?.step_name || "").trim();
+  const [{ data: contacts }, { data: flows }] = await Promise.all([
+    adminClient.from("contacts").select("id, name").eq("organization_id", orgId).ilike("name", personName).limit(2),
+    adminClient.from("pipelines").select("id, name, pipeline_stages(id, name, stage_order)").eq("organization_id", orgId).ilike("name", flowName).limit(2),
+  ]);
+  if (!contacts || contacts.length !== 1) return contacts?.length ? `I found more than one person matching "${personName}". Please use their full name.` : `I couldn't find ${personName} in your church records.`;
+  if (!flows || flows.length !== 1) return flows?.length ? `I found more than one Flow matching "${flowName}". Please use the exact Flow name.` : `I couldn't find a Flow named ${flowName}.`;
+  const flow = flows[0] as any;
+  const matchingSteps = (flow.pipeline_stages || []).filter((step: any) => step.name.toLowerCase() === stepName.toLowerCase());
+  if (matchingSteps.length !== 1) return `I couldn't find the step "${stepName}" in ${flow.name}.`;
+  const contact = contacts[0];
+  const step = matchingSteps[0];
+  const summary = `${contact.name} → ${flow.name} → ${step.name}`;
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const { data: request, error } = await adminClient.from("ai_action_requests").insert({
+    organization_id: orgId, requested_by_user_id: userId, tool_key: "add_people_to_flow",
+    summary, expires_at: expiresAt,
+    action_payload: { contact_id: contact.id, contact_name: contact.name, pipeline_id: flow.id, pipeline_name: flow.name, stage_id: step.id, stage_name: step.name, stage_order: step.stage_order },
+  }).select("id").single();
+  if (error || !request) throw error || new Error("Could not prepare action");
+  await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "add_people_to_flow", action_request_id: request.id, outcome: "prepared", affected_records: [{ type: "contact", id: contact.id }, { type: "flow", id: flow.id }, { type: "step", id: step.id }] });
+  return `Ready for review: **${summary}**. Nothing has changed yet.\n\n${actionMarker({ id: request.id, type: "add_people_to_flow", summary, expires_at: expiresAt })}`;
+}
+
+async function executePendingAction(adminClient: ReturnType<typeof createClient>, userClient: ReturnType<typeof createClient>, orgId: string, userId: string, requestId: string) {
+  const { data: request } = await adminClient.from("ai_action_requests").select("*").eq("id", requestId).eq("organization_id", orgId).eq("requested_by_user_id", userId).maybeSingle();
+  if (!request || request.status !== "pending") return { ok: false, message: "This confirmation is no longer available." };
+  if (new Date(request.expires_at).getTime() <= Date.now()) {
+    await adminClient.from("ai_action_requests").update({ status: "expired" }).eq("id", request.id).eq("status", "pending");
+    return { ok: false, message: "That confirmation expired. Ask FlowLeed AI to prepare it again." };
+  }
+  const { data: setting } = await adminClient.from("ai_tool_settings").select("enabled").eq("organization_id", orgId).eq("tool_key", request.tool_key).maybeSingle();
+  if (!setting?.enabled) return { ok: false, message: "This AI action is disabled in Organization Settings." };
+  const payload = request.action_payload as any;
+  const [{ data: contact }, { data: flow }, { data: step }] = await Promise.all([
+    adminClient.from("contacts").select("id, name").eq("id", payload.contact_id).eq("organization_id", orgId).maybeSingle(),
+    adminClient.from("pipelines").select("id, name").eq("id", payload.pipeline_id).eq("organization_id", orgId).maybeSingle(),
+    adminClient.from("pipeline_stages").select("id, name, pipeline_id, stage_order, default_assignee_user_id").eq("id", payload.stage_id).eq("pipeline_id", payload.pipeline_id).maybeSingle(),
+  ]);
+  if (!contact || !flow || !step) return { ok: false, message: "The person, Flow, or step is no longer available." };
+  const { data: existing } = await userClient.from("pipeline_contacts").select("id").eq("pipeline_id", flow.id).eq("contact_id", contact.id).maybeSingle();
+  if (!existing) {
+    const { error } = await userClient.from("pipeline_contacts").insert({ contact_id: contact.id, pipeline_id: flow.id, stage_id: step.id, stage_order: step.stage_order, assigned_to_user_id: step.default_assignee_user_id || null, source_type: "manual" });
+    if (error) {
+      await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: error.message } }).eq("id", request.id).eq("status", "pending");
+      await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "failed", affected_records: [], error_message: error.message });
+      return { ok: false, message: "I couldn't add this person. You may not have permission for that Flow." };
+    }
+  }
+  const { data: verified } = await userClient.from("pipeline_contacts").select("id").eq("pipeline_id", flow.id).eq("contact_id", contact.id).maybeSingle();
+  if (!verified) return { ok: false, message: "The change could not be verified, so I won't report it as completed." };
+  const now = new Date().toISOString();
+  const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { pipeline_contact_id: verified.id, already_present: !!existing } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
+  if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
+  await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "pipeline_contact", id: verified.id }] });
+  return { ok: true, message: existing ? `${contact.name} is already in ${flow.name}.` : `Added ${contact.name} to ${flow.name} at ${step.name}.` };
+}
 
 
 // Execute search_person tool
@@ -958,7 +1047,8 @@ serve(async (req) => {
       });
     }
 
-    const { messages } = await req.json();
+    const body = await req.json();
+    const { messages } = body;
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "messages required" }), {
         status: 400,
@@ -991,6 +1081,38 @@ serve(async (req) => {
     const orgId = membership.organization_id;
     const orgName = (membership.organizations as any)?.name || "Your Church";
     const userRole = membership.role;
+
+    if (body.action === "confirm" && typeof body.action_request_id === "string") {
+      const result = await executePendingAction(adminClient, userClient, orgId, userId, body.action_request_id);
+      return new Response(JSON.stringify(result), { status: result.ok ? 200 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const { data: toolSettings } = await adminClient
+      .from("ai_tool_settings")
+      .select("tool_key, enabled")
+      .eq("organization_id", orgId);
+    const settingMap = new Map((toolSettings || []).map((row: any) => [row.tool_key, row.enabled]));
+    const masterEnabled = settingMap.get("flowleed_ai_tools") ?? true;
+    const isEnabled = (key: string) => masterEnabled && (settingMap.get(key) ?? TOOL_DEFAULTS[key] ?? false);
+    const tools = TOOL_REGISTRY.filter((tool) => isEnabled(tool.function.name));
+
+    const latestUserText = String(messages[messages.length - 1]?.content || "").trim();
+    if (/^(yes|confirm|do it|go ahead|add (him|her|them))\W*$/i.test(latestUserText)) {
+      for (let i = messages.length - 2; i >= 0; i--) {
+        const marker = String(messages[i]?.content || "").match(/<!--flowleed:action=({.*?})-->/);
+        if (!marker) continue;
+        try {
+          const pending = JSON.parse(marker[1]);
+          if (pending?.type === "add_people_to_flow" && typeof pending.id === "string") {
+            const result = await executePendingAction(adminClient, userClient, orgId, userId, pending.id);
+            const encoder = new TextEncoder();
+            const response = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: result.message } }] })}\n\ndata: [DONE]\n\n`)); controller.close(); } });
+            return new Response(response, { status: result.ok ? 200 : 400, headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+          }
+        } catch { /* ignore malformed historical marker */ }
+        break;
+      }
+    }
 
     // Get user profile
     const { data: profile } = await adminClient
@@ -1118,6 +1240,7 @@ You have access to tools to look up detailed information about specific people a
 - **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, etc.)
 - **search_people_in_flow**: When the user asks who is in a specific flow or wants details about a flow's people, call this tool.
 - **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "Fairfield women who were in a small group earlier this year but aren't in one now"), call this tool. Map EVERY part of the request to an argument: campus -> campus_name, women/men -> gender, "was in a group earlier this year" -> in_group_between {from: Jan 1 of this year, to: today}, "not in a group now" -> not_in_active_group: true, "Member" -> pc_membership, "served N months" -> serving_min_days = N*30. Set limit to 200 so counts are accurate.
+${isEnabled("add_people_to_flow") ? '- **add_people_to_flow**: When the user clearly names one person, one Flow, and one step, prepare the exact action for confirmation. Never say it happened until the structured execution result confirms it.' : '- Adding people to a Flow is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
 1. ALWAYS write a real answer in text. Start by restating the criteria you applied ("Fairfield - women - in a group since Jan 1 - not in a group now"), give the count, then LIST THE PEOPLE as markdown links exactly as returned by the tool.
@@ -1185,6 +1308,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     let toolRound = 0;
     let collectedContactIds: string[] | null = null;
     let lastFinderResult: string | null = null;
+    let pendingActionMarker: string | null = null;
     // Every person id/name the tools actually returned. Anything else the model
     // writes is a fabrication and gets stripped before the user sees it.
     const allowedPeople = new Map<string, string>();
@@ -1282,6 +1406,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
                 if (Array.isArray(ids) && ids.length > 0) collectedContactIds = ids;
               } catch { /* ignore */ }
             }
+          } else if (fnName === "add_people_to_flow") {
+            result = await prepareAddToFlow(adminClient, orgId, userId, args);
+            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
           } else {
             result = `Unknown tool: ${fnName}`;
           }
@@ -1387,6 +1514,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
         const { text: safe, removed } = sanitizePeopleMentions(out, allowedPeople);
         out = safe;
+        if (!pendingActionMarker) {
+          out = out.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
+        }
         if (removed > 0) {
           out += `\n\n_Note: ${removed} name${removed === 1 ? "" : "s"} that don't match anyone in your records ${removed === 1 ? "was" : "were"} removed from this answer._`;
         }
@@ -1394,6 +1524,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         if (collectedContactIds && collectedContactIds.length > 0) {
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
+        if (pendingActionMarker) send(`\n\n${pendingActionMarker}`);
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },
