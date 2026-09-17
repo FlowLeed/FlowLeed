@@ -44,14 +44,14 @@ export default function GroupDirectoryPage() {
     queryKey: ["public-org-by-slug", slug],
     enabled: !!slug,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("id, name, logo_url, slug")
-        .eq("slug", slug!)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_public_organization" as any, {
+        p_slug: slug!,
+      });
       if (error) throw error;
-      return data;
+      const row = Array.isArray(data) ? data[0] : data;
+      return (row as { id: string; name: string; slug: string; logo_url: string | null } | undefined) ?? null;
     },
+
   });
 
   const { types: typeDefs, isHiddenType } = useGroupTypes(org?.id, { includeInactive: true });
