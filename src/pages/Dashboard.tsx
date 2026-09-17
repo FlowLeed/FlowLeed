@@ -50,10 +50,10 @@ const Dashboard = () => {
       <PcoPersonalConnectPrompt />
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain hide-scrollbar">
-        <div className="mx-auto max-w-4xl space-y-6 px-3 py-4 md:space-y-4 md:px-5 md:py-4">
+        <div className="max-w-4xl mx-auto px-3 md:px-6 py-4 md:py-6 space-y-6">
           {/* AI Hero Section - shown when no messages */}
           {!hasMessages && (
-            <div className="relative flex flex-col items-center justify-center space-y-6 pb-4 pt-8 md:space-y-4 md:pb-2 md:pt-5">
+            <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6 relative">
               <Button
                 variant="ghost"
                 size="sm"
@@ -63,11 +63,11 @@ const Dashboard = () => {
                 <History className="h-3.5 w-3.5" />
                 History
               </Button>
-              <div className="flex flex-col items-center gap-3 md:gap-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-sm md:h-10 md:w-10" aria-label="FlowLeed AI">
-                  <Sparkles className="h-7 w-7 text-primary-foreground md:h-6 md:w-6" />
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-sm" aria-label="FlowLeed AI">
+                  <Sparkles className="h-7 w-7 text-primary-foreground" />
                 </div>
-                <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-xl">
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">
                   How can I help you today?
                 </h2>
                 <p className="text-muted-foreground text-sm max-w-md text-center">
@@ -111,7 +111,7 @@ const Dashboard = () => {
 
       {/* Sticky bottom input - shown during active conversation */}
       {hasMessages && (
-        <div className="border-t bg-background px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:px-5 md:py-3">
+        <div className="border-t bg-background px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:px-6 md:py-4">
           <AIChatInput
             onSubmit={sendMessage}
             isLoading={isLoading}

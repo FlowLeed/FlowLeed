@@ -679,10 +679,10 @@ export const FlowView: React.FC<FlowViewProps> = ({
         }}
         defaultStageId={flow.stages[0]?.id}
       />
-      <div className="flex-1 overflow-auto p-3 md:p-4 xl:p-5" style={{ backgroundColor: '#FAFAFA' }}>
+      <div className="flex-1 overflow-auto p-6" style={{ backgroundColor: '#FAFAFA' }}>
         {viewMode === 'kanban' ? (
           <DragDropContext onDragEnd={handleDragEnd}>
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               {filteredFlow.stages.map((stage) => (
                 <FlowStage
                   key={stage.id}

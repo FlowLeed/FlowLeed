@@ -341,7 +341,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <div className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#FAFAFA', paddingTop: 'env(safe-area-inset-top)' }}>
-      <div className="flex h-14 items-center gap-2 px-2 md:h-12 md:px-3">
+      <div className="flex items-center gap-2 h-14 px-2 md:px-4">
         {/* Left: hamburger + flow icon + title */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button
@@ -379,7 +379,7 @@ export const Header: React.FC<HeaderProps> = ({
               <FlowIcon className="h-5 w-5 text-sidebar-foreground flex-shrink-0" />
             )
           )}
-          <div className="min-w-0 truncate text-base font-normal md:font-extralight">{title}</div>
+          <div className="truncate text-base font-normal min-w-0 md:text-lg md:font-extralight">{title}</div>
           {titleBadge}
         </div>
 
@@ -570,7 +570,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-11 w-11 rounded-md text-slate-600 hover:bg-slate-100 md:h-9 md:w-9"
+                  className="h-11 w-11 rounded-md text-slate-600 hover:bg-slate-100"
                   onClick={() => setShowGlobalSearch(true)}
                 >
                   <Search className="h-4 w-4" />
@@ -582,7 +582,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden border-l border-border h-6 mx-1 sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex h-11 w-11 items-center justify-center gap-2 rounded-lg hover:bg-accent md:h-9 md:w-9">
+              <button className="flex h-11 w-11 items-center justify-center gap-2 rounded-lg hover:bg-accent">
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={profile?.avatar_url || ""} alt={displayName} />
                   <AvatarFallback>

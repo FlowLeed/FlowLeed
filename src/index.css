@@ -45,7 +45,7 @@
     --sidebar-ring: 235 69% 61%;
 
     /* Layout tokens */
-    --sidebar-width: 15rem;
+    --sidebar-width: 18rem; /* 72 * 0.25rem */
   }
 
   .dark {
@@ -87,14 +87,7 @@
     --sidebar-ring: 235 69% 61%;
 
     /* Layout tokens */
-    --sidebar-width: 15rem;
-  }
-}
-
-@media (min-width: 1440px) {
-  :root,
-  .dark {
-    --sidebar-width: 16rem;
+    --sidebar-width: 18rem;
   }
 }
 
