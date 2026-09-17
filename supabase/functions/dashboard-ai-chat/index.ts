@@ -200,7 +200,16 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
   if (!contact || !flow || !step) return { ok: false, message: "The person, Flow, or step is no longer available." };
   const { data: existing } = await userClient.from("pipeline_contacts").select("id").eq("pipeline_id", flow.id).eq("contact_id", contact.id).maybeSingle();
   if (!existing) {
-    const { error } = await userClient.from("pipeline_contacts").insert({ contact_id: contact.id, pipeline_id: flow.id, stage_id: step.id, stage_order: step.stage_order, assigned_to_user_id: step.default_assignee_user_id || null, source_type: "manual" });
+    const { data: lastInStep } = await adminClient
+      .from("pipeline_contacts")
+      .select("stage_order")
+      .eq("pipeline_id", flow.id)
+      .eq("stage_id", step.id)
+      .order("stage_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextOrder = ((lastInStep?.stage_order as number | null) ?? -1) + 1;
+    const { error } = await userClient.from("pipeline_contacts").insert({ contact_id: contact.id, pipeline_id: flow.id, stage_id: step.id, stage_order: nextOrder, assigned_to_user_id: step.default_assignee_user_id || null, source_type: "manual" });
     if (error) {
       await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: error.message } }).eq("id", request.id).eq("status", "pending");
       await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "failed", affected_records: [], error_message: error.message });
