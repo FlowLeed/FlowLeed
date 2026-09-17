@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 type SettingRow = { tool_key: string; enabled: boolean };
 
-const AiToolsSettingsPage = () => {
+export const AiToolsSettingsContent = () => {
   const { user } = useAuth();
   const { organization } = useProfile();
   const { isOrgAdmin, isLoading: adminLoading } = useIsOrgAdmin(user?.id);
@@ -55,9 +55,7 @@ const AiToolsSettingsPage = () => {
   const setTool = (key: string, enabled: boolean, safety: string) => updateSetting.mutate({ key, enabled, safety });
 
   return (
-    <div className="min-h-full bg-background">
-      <Header title="FlowLeed AI Tools" />
-      <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="w-full space-y-6">
         <section className="flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></div>
@@ -111,9 +109,17 @@ const AiToolsSettingsPage = () => {
             </section>
           );
         })}
-      </main>
-    </div>
+      </div>
   );
 };
+
+const AiToolsSettingsPage = () => (
+  <div className="min-h-full bg-background">
+    <Header title="FlowLeed AI Tools" />
+    <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+      <AiToolsSettingsContent />
+    </main>
+  </div>
+);
 
 export default AiToolsSettingsPage;

@@ -17,4 +17,5 @@
 - [x] Add organization tool controls and permissions
 - [x] Add reliable confirmed add-to-Flow action
 - [x] Add action audit history and safeguards
+- [x] Place AI tool controls inside My Organization
 - [ ] Verify chat, settings, desktop, and mobile behavior
