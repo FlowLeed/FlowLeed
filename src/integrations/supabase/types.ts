@@ -5326,6 +5326,15 @@ export type Database = {
         Args: { p_slug: string; p_video_id: string }
         Returns: Json
       }
+      get_public_organization: {
+        Args: { p_slug: string }
+        Returns: {
+          id: string
+          logo_url: string
+          name: string
+          slug: string
+        }[]
+      }
       get_user_organization_role: {
         Args: { _organization_id: string; _user_id: string }
         Returns: string
