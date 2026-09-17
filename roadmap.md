@@ -18,8 +18,8 @@
 - [x] Add reliable confirmed add-to-Flow action
 - [x] Add action audit history and safeguards
 - [x] Place AI tool controls inside My Organization
-- [ ] Add confirmed AI note creation on person profiles
+- [x] Add confirmed AI note creation on person profiles
 - [ ] Verify chat, settings, desktop, and mobile behavior
 
 ## Navigation visibility
-- [ ] Hide Connect when Messages and Calls are unavailable
+- [x] Hide Connect when Messages and Calls are unavailable
