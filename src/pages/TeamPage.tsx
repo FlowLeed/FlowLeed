@@ -478,7 +478,7 @@ const TeamPage = () => {
               Tag Management
             </TabsTrigger>
             <TabsTrigger value="ai-tools">
-              <Bot className="h-4 w-4 mr-2" />
+              <Sparkles className="h-4 w-4 mr-2 text-primary" />
               FlowLeed AI
             </TabsTrigger>
           </TabsList>
