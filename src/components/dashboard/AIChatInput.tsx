@@ -204,7 +204,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
         <div className="flex items-center gap-2 px-4 pt-3 pb-1 text-muted-foreground">
           <Sparkles className="h-4 w-4 text-primary" />
           <span className="text-xs font-medium">FlowLeed AI</span>
-          <span className="text-[10px] text-muted-foreground/60 ml-1">· type @ to mention a person</span>
+          <span className="hidden text-[10px] text-muted-foreground/60 ml-1 sm:inline">· type @ to mention a person</span>
         </div>
         <textarea
           ref={textareaRef}
@@ -214,8 +214,8 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
           onInput={handleInput}
           onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
           placeholder="Ask about your people, tasks, church health..."
-          rows={2}
-          className="w-full resize-none bg-transparent px-4 py-2 text-base md:text-sm leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none"
+          rows={1}
+          className="min-h-12 max-h-32 w-full resize-none bg-transparent px-4 py-2 text-base leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none md:text-sm"
           disabled={isLoading}
         />
         <div className="flex items-center justify-end px-3 pb-3">
@@ -244,8 +244,8 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
 
         {dropdownOpen && textareaRef.current && (() => {
           const rect = textareaRef.current.getBoundingClientRect();
-          const dropdownWidth = 288;
-          const maxHeight = Math.min(320, rect.top - 16);
+          const dropdownWidth = Math.min(288, window.innerWidth - 24);
+          const maxHeight = Math.min(240, Math.max(120, rect.top - 16));
           const left = Math.min(rect.left, window.innerWidth - dropdownWidth - 8);
           return createPortal(
             <div
@@ -277,7 +277,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                         insertMention(c);
                       }}
                       onMouseEnter={() => setActiveIndex(idx)}
-                      className={`w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                        className={`w-full min-h-11 flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
                         idx === activeIndex ? "bg-accent" : "hover:bg-accent/50"
                       }`}
                     >

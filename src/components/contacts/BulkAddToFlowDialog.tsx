@@ -192,8 +192,8 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-h-[calc(100dvh-1rem)] max-w-2xl flex flex-col overflow-hidden p-0">
+        <DialogHeader className="shrink-0 border-b px-4 pb-3 pt-4 sm:px-6 sm:pt-6">
           <div className="flex items-center gap-3">
             {(step === 'stage' || (step === 'pipeline' && reviewFirst)) && (
               <Button
@@ -223,10 +223,10 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
 
         {step === 'review' && (
           <>
-            <p className="text-sm text-muted-foreground">
+            <p className="px-4 text-sm text-muted-foreground sm:px-6">
               Uncheck anyone who shouldn't be added. Nothing changes until you pick a Flow.
             </p>
-            <div className="relative">
+            <div className="relative mx-4 sm:mx-6">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 value={search}
@@ -235,7 +235,7 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
                 className="pl-9"
               />
             </div>
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between px-4 text-sm sm:px-6">
               <span className="text-muted-foreground">{selectedIds.length} selected</span>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setSelectedIds(contactIds)}>
@@ -246,7 +246,7 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
                 </Button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto min-h-[180px] rounded-md border divide-y">
+            <div className="mx-4 min-h-[180px] flex-1 divide-y overflow-y-auto rounded-md border sm:mx-6">
               {loadingPeople && (
                 <p className="p-4 text-sm text-muted-foreground">Bringing up the people...</p>
               )}
@@ -254,7 +254,7 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
                 <p className="p-4 text-sm text-muted-foreground">No one matches that search.</p>
               )}
               {filteredPeople.map((p) => (
-                <label key={p.id} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50">
+                <label key={p.id} className="flex min-h-12 items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50">
                   <Checkbox checked={selectedIds.includes(p.id)} onCheckedChange={() => toggle(p.id)} />
                   <span className="flex-1 min-w-0">
                     <span className="block text-sm font-medium truncate">{p.name}</span>
@@ -288,7 +288,7 @@ export const BulkAddToFlowDialog: React.FC<BulkAddToFlowDialogProps> = ({
           />
         )}
 
-        <div className="flex justify-end gap-2 pt-4">
+        <div className="flex shrink-0 flex-col-reverse gap-2 border-t px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 sm:flex-row sm:justify-end sm:px-6">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>

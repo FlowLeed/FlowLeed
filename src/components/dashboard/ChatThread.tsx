@@ -56,7 +56,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
   }, [messages]);
 
   const markdownComponents = useMemo(() => ({
-    p: ({ children }: any) => <p className="font-sans font-thin text-sm">{children}</p>,
+    p: ({ children }: any) => <p className="font-sans text-sm font-normal">{children}</p>,
     a: ({ href, children, ...props }: any) => {
       const isInternal = href?.startsWith("/");
       // Only link to a person when the id looks like a real record id; the
@@ -106,7 +106,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
         </Button>
       </div>
       {messages.map((msg, i) => (
-        <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+        <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           {msg.role === "assistant" && (
             <div className="flex-shrink-0 mt-1">
               <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
@@ -116,7 +116,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
           )}
           <div
             className={`
-              rounded-2xl px-5 py-4 max-w-[85%] text-base leading-relaxed
+              rounded-2xl px-3.5 py-3 sm:px-5 sm:py-4 max-w-[92%] sm:max-w-[85%] text-base leading-relaxed min-w-0
               ${msg.role === "user"
                 ? "bg-primary text-primary-foreground rounded-br-md"
                 : "bg-transparent rounded-bl-md"
@@ -135,13 +135,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 return (
                   <div className="prose prose-base dark:prose-invert max-w-none
                     [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-                    [&_p+p]:mt-6
+                    [&_p+p]:mt-3
                     prose-headings:font-semibold prose-headings:text-foreground
-                    prose-h2:text-lg prose-h2:mt-8 prose-h2:mb-4
-                    prose-h3:text-base prose-h3:mt-7 prose-h3:mb-3
-                    prose-p:mb-6 prose-p:leading-8
-                    prose-ul:my-4 prose-ol:my-4
-                    prose-li:my-1.5
+                    prose-h2:text-lg prose-h2:mt-6 prose-h2:mb-3
+                    prose-h3:text-base prose-h3:mt-5 prose-h3:mb-2
+                    prose-p:mb-3 prose-p:leading-6
+                    prose-ul:my-3 prose-ol:my-3
+                    prose-li:my-1 prose-li:leading-6
                     prose-strong:text-foreground
                     [&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2
                   ">
