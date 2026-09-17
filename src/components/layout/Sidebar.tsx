@@ -68,7 +68,7 @@ const NavItem = ({
 }) => {
   if (item.comingSoon) {
     return (
-      <div className="flex w-full items-center gap-3 px-4 py-2 rounded-full text-sm font-medium opacity-50 cursor-not-allowed min-w-0">
+      <div className="flex min-h-11 w-full items-center gap-3 rounded-full px-4 py-2 text-sm font-medium opacity-50 cursor-not-allowed min-w-0">
         <item.icon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
         <span className="font-extralight truncate whitespace-nowrap min-w-0">{item.title}</span>
         <Badge variant="secondary" className="ml-auto text-xs">Coming Soon</Badge>
@@ -77,7 +77,7 @@ const NavItem = ({
   }
   
   return <div className="group flex items-center">
-    <Link to={item.path} className={`flex flex-1 items-center gap-3 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-purple-500 text-white" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0 px-[10px]`}>
+    <Link to={item.path} className={`flex min-h-11 flex-1 items-center gap-3 py-2 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0 px-[10px]`}>
       <div className="relative flex-shrink-0">
         <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
@@ -753,7 +753,7 @@ export const Sidebar = () => {
     return (
       <>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="p-0 w-[280px] flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
+          <SheetContent side="left" className="flex w-[min(280px,84vw)] flex-col bg-sidebar p-0">
             {sidebarContent}
           </SheetContent>
         </Sheet>
