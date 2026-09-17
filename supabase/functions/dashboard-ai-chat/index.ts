@@ -988,16 +988,17 @@ function sanitizePeopleMentions(
       );
       continue;
     }
-    const isListLine = /^\s*(?:[-*+]|\d+\.)\s/.test(line) || links.length === 1;
+    const isListLine = /^\s*(?:[-*+]|\d+\.)\s/.test(line);
     if (isListLine && badLinks.length === links.length) {
-      // The whole line is about a person who doesn't exist - drop it.
+      // A list entry that is entirely about an unknown person - drop it.
       removed += badLinks.length;
       continue;
     }
     removed += badLinks.length;
+    // Keep the sentence readable: an unverified link degrades to plain text.
     outLines.push(
       line.replace(linkRe, (all, name, id) =>
-        allowed.has(String(id).toLowerCase()) ? all : ""
+        allowed.has(String(id).toLowerCase()) ? all : String(name)
       ).replace(/\s{2,}/g, " ").trimEnd()
     );
   }
