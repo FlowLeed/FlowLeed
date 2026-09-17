@@ -158,6 +158,22 @@ const TOOL_REGISTRY = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "create_prayer_request",
+      description: "Prepare a prayer request for one verified person's profile. This never saves immediately; it creates a confirmation for the user.",
+      parameters: {
+        type: "object",
+        properties: {
+          person_name: { type: "string", description: "Exact person name." },
+          title: { type: "string", description: "A concise title for the prayer request." },
+          description: { type: "string", description: "The exact prayer request details to save." },
+        },
+        required: ["person_name", "title", "description"],
+      },
+    },
+  },
 ];
 
 const TOOL_DEFAULTS: Record<string, boolean> = {
@@ -166,6 +182,7 @@ const TOOL_DEFAULTS: Record<string, boolean> = {
   find_contacts_by_criteria: true,
   add_people_to_flow: false,
   create_contact_note: false,
+  create_prayer_request: false,
 };
 
 const actionMarker = (payload: Record<string, unknown>) =>
@@ -227,6 +244,32 @@ async function prepareContactNote(
   return `Ready for review. Nothing has been saved yet.\n\n${actionMarker({ id: request.id, type: "create_contact_note", summary, expires_at: expiresAt })}`;
 }
 
+async function preparePrayerRequest(
+  adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
+): Promise<string> {
+  const personName = String(args?.person_name || "").trim();
+  const title = String(args?.title || "").trim();
+  const description = String(args?.description || "").trim();
+  if (!personName) return "Please tell me whose profile should receive the prayer request.";
+  if (!title) return "Please provide a short title for the prayer request.";
+  if (!description) return "Please tell me the prayer request details.";
+  if (title.length > 200) return "That prayer request title is too long. Please keep it under 200 characters.";
+  if (description.length > 5000) return "That prayer request is too long. Please keep it under 5,000 characters.";
+  const { data: contacts } = await adminClient.from("contacts").select("id, name").eq("organization_id", orgId).ilike("name", personName).limit(2);
+  if (!contacts || contacts.length !== 1) return contacts?.length ? `I found more than one person matching "${personName}". Please use their full name.` : `I couldn't find ${personName} in your church records.`;
+  const contact = contacts[0];
+  const summary = `${contact.name} • ${title}\n\n${description}`;
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const { data: request, error } = await adminClient.from("ai_action_requests").insert({
+    organization_id: orgId, requested_by_user_id: userId, tool_key: "create_prayer_request",
+    summary, expires_at: expiresAt,
+    action_payload: { contact_id: contact.id, contact_name: contact.name, title, description },
+  }).select("id").single();
+  if (error || !request) throw error || new Error("Could not prepare prayer request");
+  await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "create_prayer_request", action_request_id: request.id, outcome: "prepared", affected_records: [{ type: "contact", id: contact.id }] });
+  return `Ready for review. Nothing has been saved yet.\n\n${actionMarker({ id: request.id, type: "create_prayer_request", summary, expires_at: expiresAt })}`;
+}
+
 async function executePendingAction(adminClient: ReturnType<typeof createClient>, userClient: ReturnType<typeof createClient>, orgId: string, userId: string, requestId: string) {
   const { data: request } = await adminClient.from("ai_action_requests").select("*").eq("id", requestId).eq("organization_id", orgId).eq("requested_by_user_id", userId).maybeSingle();
   if (!request || request.status !== "pending") return { ok: false, message: "This confirmation is no longer available." };
@@ -257,6 +300,27 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
     await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "contact_note", id: verified.id }, { type: "contact", id: contact.id }] });
     return { ok: true, message: `Added the note to [${contact.name}](/contacts/${contact.id}).` };
+  }
+  if (request.tool_key === "create_prayer_request") {
+    const title = String(payload?.title || "").trim();
+    const description = String(payload?.description || "").trim();
+    if (!title || title.length > 200 || !description || description.length > 5000) return { ok: false, message: "This prayer request is no longer valid. Ask FlowLeed AI to prepare it again." };
+    const { data: contact } = await adminClient.from("contacts").select("id, name").eq("id", payload.contact_id).eq("organization_id", orgId).maybeSingle();
+    if (!contact) return { ok: false, message: "This person is no longer available." };
+    const { data: prayerRequest, error } = await userClient.from("contact_prayer_requests").insert({ contact_id: contact.id, title, description, status: "active", created_by_user_id: userId }).select("id").single();
+    if (error || !prayerRequest) {
+      const errorMessage = error?.message || "The prayer request could not be saved.";
+      await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: errorMessage } }).eq("id", request.id).eq("status", "pending");
+      await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "failed", affected_records: [], error_message: errorMessage });
+      return { ok: false, message: "I couldn't save this prayer request. You may not have permission to update this person." };
+    }
+    const { data: verified } = await userClient.from("contact_prayer_requests").select("id").eq("id", prayerRequest.id).eq("contact_id", contact.id).maybeSingle();
+    if (!verified) return { ok: false, message: "The prayer request could not be verified, so I won't report it as saved." };
+    const now = new Date().toISOString();
+    const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { prayer_request_id: verified.id } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
+    if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
+    await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "contact_prayer_request", id: verified.id }, { type: "contact", id: contact.id }] });
+    return { ok: true, message: `Added the prayer request to [${contact.name}](/contacts/${contact.id}).` };
   }
   const [{ data: contact }, { data: flow }, { data: step }] = await Promise.all([
     adminClient.from("contacts").select("id, name").eq("id", payload.contact_id).eq("organization_id", orgId).maybeSingle(),
@@ -1173,13 +1237,13 @@ serve(async (req) => {
     const tools = TOOL_REGISTRY.filter((tool) => isEnabled(tool.function.name));
 
     const latestUserText = String(messages[messages.length - 1]?.content || "").trim();
-    if (/^(yes|confirm|do it|go ahead|add (him|her|them)|save (it|the note))\W*$/i.test(latestUserText)) {
+    if (/^(yes|confirm|do it|go ahead|add (him|her|them)|save (it|the note|the prayer request))\W*$/i.test(latestUserText)) {
       for (let i = messages.length - 2; i >= 0; i--) {
         const marker = String(messages[i]?.content || "").match(/<!--flowleed:action=({.*?})-->/);
         if (!marker) continue;
         try {
           const pending = JSON.parse(marker[1]);
-          if (["add_people_to_flow", "create_contact_note"].includes(pending?.type) && typeof pending.id === "string") {
+          if (["add_people_to_flow", "create_contact_note", "create_prayer_request"].includes(pending?.type) && typeof pending.id === "string") {
             const result = await executePendingAction(adminClient, userClient, orgId, userId, pending.id);
             const encoder = new TextEncoder();
             const response = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: result.message } }] })}\n\ndata: [DONE]\n\n`)); controller.close(); } });
@@ -1318,6 +1382,7 @@ You have access to tools to look up detailed information about specific people a
 - **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "Fairfield women who were in a small group earlier this year but aren't in one now"), call this tool. Map EVERY part of the request to an argument: campus -> campus_name, women/men -> gender, "was in a group earlier this year" -> in_group_between {from: Jan 1 of this year, to: today}, "not in a group now" -> not_in_active_group: true, "Member" -> pc_membership, "served N months" -> serving_min_days = N*30. Set limit to 200 so counts are accurate.
 ${isEnabled("add_people_to_flow") ? '- **add_people_to_flow**: When the user clearly names one person, one Flow, and one step, prepare the exact action for confirmation. Never say it happened until the structured execution result confirms it.' : '- Adding people to a Flow is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_contact_note") ? '- **create_contact_note**: When the user asks to add or save a note about one person, prepare the exact note for confirmation. Preserve the user’s wording, default to a shared general note unless they request another type or privacy, and never say it was saved until execution confirms it.' : '- Adding profile notes is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
+${isEnabled("create_prayer_request") ? '- **create_prayer_request**: When the user asks to create or save a prayer request for one person, prepare the person, title, and exact request details for confirmation. Never say it was saved until execution confirms it.' : '- Creating prayer requests is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
 1. ALWAYS write a real answer in text. Start by restating the criteria you applied ("Fairfield - women - in a group since Jan 1 - not in a group now"), give the count, then LIST THE PEOPLE as markdown links exactly as returned by the tool.
@@ -1516,6 +1581,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
           } else if (fnName === "create_contact_note") {
             result = await prepareContactNote(adminClient, orgId, userId, args);
+            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+          } else if (fnName === "create_prayer_request") {
+            result = await preparePrayerRequest(adminClient, orgId, userId, args);
             pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
           } else {
             result = `Unknown tool: ${fnName}`;

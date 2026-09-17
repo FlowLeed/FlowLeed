@@ -17,6 +17,7 @@ export const AI_TOOLS: AiToolDefinition[] = [
   { key: "find_contacts_by_criteria", label: "Find people by criteria", description: "Build an organization-scoped list using campus, group, attendance, serving, and other filters.", safety: "read", defaultEnabled: true, confirmation: "Runs immediately" },
   { key: "add_people_to_flow", label: "Add people to a Flow", description: "Prepare and complete a verified Flow placement.", safety: "act", defaultEnabled: false, confirmation: "Always asks for confirmation" },
   { key: "create_contact_note", label: "Add a note to a person", description: "Add a reviewed note to a verified person's profile.", safety: "act", defaultEnabled: false, confirmation: "Always asks for confirmation" },
+  { key: "create_prayer_request", label: "Create a prayer request", description: "Add a reviewed prayer request to a verified person's profile.", safety: "act", defaultEnabled: false, confirmation: "Always asks for confirmation" },
 ];
 
 export const AI_TOOL_GROUPS: Array<{ safety: AiToolSafety; label: string; description: string }> = [
