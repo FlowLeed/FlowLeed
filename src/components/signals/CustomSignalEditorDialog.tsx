@@ -93,11 +93,11 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange, defaultVi
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+        <DialogHeader className="px-4 pt-5 pb-4 border-b shrink-0 sm:px-6 sm:pt-6">
           <DialogTitle>{signal ? "Edit signal" : "New custom signal"}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 py-4 overflow-y-auto flex-1 min-h-0">
+        <div className="space-y-4 px-4 py-4 overflow-y-auto flex-1 min-h-0 sm:px-6">
           <div className="space-y-2">
             <Label>Label</Label>
             <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Missed 3 Sundays in a row" />
@@ -113,7 +113,7 @@ export function CustomSignalEditorDialog({ signal, open, onOpenChange, defaultVi
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Polarity</Label>
               <Select value={polarity} onValueChange={(v) => setPolarity(v as SignalPolarity)}>
