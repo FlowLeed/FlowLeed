@@ -29,14 +29,13 @@ export const ContactNotes: React.FC<ContactNotesProps> = ({
   const [isAddingNote, setIsAddingNote] = useState(true);
   const [newNoteContent, setNewNoteContent] = useState('');
   const [noteType, setNoteType] = useState('general');
-  const [isPrivate, setIsPrivate] = useState(false);
 
   const handleAddNote = () => {
     if (newNoteContent.trim()) {
-      onAddNote(newNoteContent.trim(), noteType, isPrivate);
+      const isPrivate = noteType === 'private';
+      onAddNote(newNoteContent.trim(), isPrivate ? 'general' : noteType, isPrivate);
       setNewNoteContent('');
       setNoteType('general');
-      setIsPrivate(false);
     }
   };
 
@@ -86,15 +85,8 @@ export const ContactNotes: React.FC<ContactNotesProps> = ({
                 <option value="prayer">Prayer</option>
                 <option value="pastoral">Pastoral</option>
                 <option value="follow-up">Follow-up</option>
+                <option value="private">Private</option>
               </select>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
-                />
-                Private note
-              </label>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleAddNote} size="sm">
@@ -105,7 +97,6 @@ export const ContactNotes: React.FC<ContactNotesProps> = ({
                   setIsAddingNote(false);
                   setNewNoteContent('');
                   setNoteType('general');
-                  setIsPrivate(false);
                 }} 
                 size="sm" 
                 variant="outline"
