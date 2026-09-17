@@ -29,13 +29,6 @@ Enabled by default.
 
 ### Prepare — creates a reviewable draft, but does not act
 Enabled by default where the supporting feature is available.
-- Draft an email
-- Draft a text message
-- Draft a contact note
-- Build a saved people list
-- Propose a follow-up plan or task list
-- Draft a Form, Flow, or Signal rule
-- Suggest Flow placement, assignment, and next step
 
 ### Act — changes data only after explicit confirmation
 Individually controlled; sensitive actions default off.
