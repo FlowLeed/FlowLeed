@@ -1,0 +1,25 @@
+export type AiToolSafety = "read" | "prepare" | "act";
+
+export type AiToolDefinition = {
+  key: string;
+  label: string;
+  description: string;
+  safety: AiToolSafety;
+  defaultEnabled: boolean;
+  confirmation: string;
+};
+
+export const AI_MASTER_TOOL_KEY = "flowleed_ai_tools";
+
+export const AI_TOOLS: AiToolDefinition[] = [
+  { key: "search_person", label: "Look up a person", description: "Review a person's profile, journey, household, and recent activity.", safety: "read", defaultEnabled: true, confirmation: "Runs immediately" },
+  { key: "search_people_in_flow", label: "List people in a Flow", description: "See who is in a Flow and their current step.", safety: "read", defaultEnabled: true, confirmation: "Runs immediately" },
+  { key: "find_contacts_by_criteria", label: "Find people by criteria", description: "Build an organization-scoped list using campus, group, attendance, serving, and other filters.", safety: "read", defaultEnabled: true, confirmation: "Runs immediately" },
+  { key: "add_people_to_flow", label: "Add people to a Flow", description: "Prepare and complete a verified Flow placement.", safety: "act", defaultEnabled: false, confirmation: "Always asks for confirmation" },
+];
+
+export const AI_TOOL_GROUPS: Array<{ safety: AiToolSafety; label: string; description: string }> = [
+  { safety: "read", label: "Read", description: "Helps FlowLeed understand your church data. These tools never change records." },
+  { safety: "prepare", label: "Prepare", description: "Creates drafts for a person to review before anything is used." },
+  { safety: "act", label: "Act", description: "Changes records only after showing the exact change and receiving confirmation." },
+];
