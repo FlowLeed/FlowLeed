@@ -11,7 +11,7 @@ const corsHeaders = {
 const AI_GATEWAY = "https://platform.ai.gloo.com/ai/v2/chat/completions";
 
 // Tool definitions for on-demand person lookup
-const tools = [
+const TOOL_REGISTRY = [
   {
     type: "function" as const,
     function: {
@@ -125,7 +125,96 @@ const tools = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "add_people_to_flow",
+      description: "Prepare an action to add one verified person to a Flow and step. This never changes records immediately; it creates a confirmation for the user.",
+      parameters: {
+        type: "object",
+        properties: {
+          person_name: { type: "string", description: "Exact person name." },
+          flow_name: { type: "string", description: "Exact Flow name." },
+          step_name: { type: "string", description: "Exact Flow step name." },
+        },
+        required: ["person_name", "flow_name", "step_name"],
+      },
+    },
+  },
 ];
+
+const TOOL_DEFAULTS: Record<string, boolean> = {
+  search_person: true,
+  search_people_in_flow: true,
+  find_contacts_by_criteria: true,
+  add_people_to_flow: false,
+};
+
+const actionMarker = (payload: Record<string, unknown>) =>
+  `<!--flowleed:action=${JSON.stringify(payload).replace(/-->/g, "--\\u003e")}-->`;
+
+async function prepareAddToFlow(
+  adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
+): Promise<string> {
+  const personName = String(args?.person_name || "").trim();
+  const flowName = String(args?.flow_name || "").trim();
+  const stepName = String(args?.step_name || "").trim();
+  const [{ data: contacts }, { data: flows }] = await Promise.all([
+    adminClient.from("contacts").select("id, name").eq("organization_id", orgId).ilike("name", personName).limit(2),
+    adminClient.from("pipelines").select("id, name, pipeline_stages(id, name, stage_order)").eq("organization_id", orgId).ilike("name", flowName).limit(2),
+  ]);
+  if (!contacts || contacts.length !== 1) return contacts?.length ? `I found more than one person matching "${personName}". Please use their full name.` : `I couldn't find ${personName} in your church records.`;
+  if (!flows || flows.length !== 1) return flows?.length ? `I found more than one Flow matching "${flowName}". Please use the exact Flow name.` : `I couldn't find a Flow named ${flowName}.`;
+  const flow = flows[0] as any;
+  const matchingSteps = (flow.pipeline_stages || []).filter((step: any) => step.name.toLowerCase() === stepName.toLowerCase());
+  if (matchingSteps.length !== 1) return `I couldn't find the step "${stepName}" in ${flow.name}.`;
+  const contact = contacts[0];
+  const step = matchingSteps[0];
+  const summary = `${contact.name} → ${flow.name} → ${step.name}`;
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const { data: request, error } = await adminClient.from("ai_action_requests").insert({
+    organization_id: orgId, requested_by_user_id: userId, tool_key: "add_people_to_flow",
+    summary, expires_at: expiresAt,
+    action_payload: { contact_id: contact.id, contact_name: contact.name, pipeline_id: flow.id, pipeline_name: flow.name, stage_id: step.id, stage_name: step.name, stage_order: step.stage_order },
+  }).select("id").single();
+  if (error || !request) throw error || new Error("Could not prepare action");
+  await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "add_people_to_flow", action_request_id: request.id, outcome: "prepared", affected_records: [{ type: "contact", id: contact.id }, { type: "flow", id: flow.id }, { type: "step", id: step.id }] });
+  return `Ready for review: **${summary}**. Nothing has changed yet.\n\n${actionMarker({ id: request.id, type: "add_people_to_flow", summary, expires_at: expiresAt })}`;
+}
+
+async function executePendingAction(adminClient: ReturnType<typeof createClient>, userClient: ReturnType<typeof createClient>, orgId: string, userId: string, requestId: string) {
+  const { data: request } = await adminClient.from("ai_action_requests").select("*").eq("id", requestId).eq("organization_id", orgId).eq("requested_by_user_id", userId).maybeSingle();
+  if (!request || request.status !== "pending") return { ok: false, message: "This confirmation is no longer available." };
+  if (new Date(request.expires_at).getTime() <= Date.now()) {
+    await adminClient.from("ai_action_requests").update({ status: "expired" }).eq("id", request.id).eq("status", "pending");
+    return { ok: false, message: "That confirmation expired. Ask FlowLeed AI to prepare it again." };
+  }
+  const { data: setting } = await adminClient.from("ai_tool_settings").select("enabled").eq("organization_id", orgId).eq("tool_key", request.tool_key).maybeSingle();
+  if (!setting?.enabled) return { ok: false, message: "This AI action is disabled in Organization Settings." };
+  const payload = request.action_payload as any;
+  const [{ data: contact }, { data: flow }, { data: step }] = await Promise.all([
+    adminClient.from("contacts").select("id, name").eq("id", payload.contact_id).eq("organization_id", orgId).maybeSingle(),
+    adminClient.from("pipelines").select("id, name").eq("id", payload.pipeline_id).eq("organization_id", orgId).maybeSingle(),
+    adminClient.from("pipeline_stages").select("id, name, pipeline_id, stage_order, default_assignee_user_id").eq("id", payload.stage_id).eq("pipeline_id", payload.pipeline_id).maybeSingle(),
+  ]);
+  if (!contact || !flow || !step) return { ok: false, message: "The person, Flow, or step is no longer available." };
+  const { data: existing } = await userClient.from("pipeline_contacts").select("id").eq("pipeline_id", flow.id).eq("contact_id", contact.id).maybeSingle();
+  if (!existing) {
+    const { error } = await userClient.from("pipeline_contacts").insert({ contact_id: contact.id, pipeline_id: flow.id, stage_id: step.id, stage_order: step.stage_order, assigned_to_user_id: step.default_assignee_user_id || null, source_type: "ai_confirmed" });
+    if (error) {
+      await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: error.message } }).eq("id", request.id).eq("status", "pending");
+      await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "failed", affected_records: [], error_message: error.message });
+      return { ok: false, message: "I couldn't add this person. You may not have permission for that Flow." };
+    }
+  }
+  const { data: verified } = await userClient.from("pipeline_contacts").select("id").eq("pipeline_id", flow.id).eq("contact_id", contact.id).maybeSingle();
+  if (!verified) return { ok: false, message: "The change could not be verified, so I won't report it as completed." };
+  const now = new Date().toISOString();
+  const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { pipeline_contact_id: verified.id, already_present: !!existing } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
+  if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
+  await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "pipeline_contact", id: verified.id }] });
+  return { ok: true, message: existing ? `${contact.name} is already in ${flow.name}.` : `Added ${contact.name} to ${flow.name} at ${step.name}.` };
+}
 
 
 // Execute search_person tool
