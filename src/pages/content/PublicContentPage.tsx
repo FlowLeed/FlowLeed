@@ -90,11 +90,9 @@ export default function PublicContentPage() {
     const load = async () => {
       if (!slug) return;
       setLoading(true);
-      const { data: org } = await supabase
-        .from("organizations")
-        .select("id, name")
-        .eq("slug", slug)
-        .maybeSingle();
+      const { data: orgRows } = await supabase.rpc("get_public_organization" as any, { p_slug: slug });
+      const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { id: string; name: string } | undefined;
+
       if (org) {
         setOrgName(org.name);
         const { data: vids } = await supabase

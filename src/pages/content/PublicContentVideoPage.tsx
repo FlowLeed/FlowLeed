@@ -52,12 +52,10 @@ export default function PublicContentVideoPage() {
       setVideo(d.video);
       setAnalysis(d.analysis);
       setChunks(d.chunks ?? []);
-      const { data: org } = await supabase
-        .from("organizations")
-        .select("name")
-        .eq("slug", slug)
-        .maybeSingle();
+      const { data: orgRows } = await supabase.rpc("get_public_organization" as any, { p_slug: slug });
+      const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { name: string } | undefined;
       if (org) setOrgName(org.name);
+
       setLoading(false);
     };
     load();
