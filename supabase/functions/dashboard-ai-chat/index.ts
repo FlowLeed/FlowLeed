@@ -1173,13 +1173,13 @@ serve(async (req) => {
     const tools = TOOL_REGISTRY.filter((tool) => isEnabled(tool.function.name));
 
     const latestUserText = String(messages[messages.length - 1]?.content || "").trim();
-    if (/^(yes|confirm|do it|go ahead|add (him|her|them))\W*$/i.test(latestUserText)) {
+    if (/^(yes|confirm|do it|go ahead|add (him|her|them)|save (it|the note))\W*$/i.test(latestUserText)) {
       for (let i = messages.length - 2; i >= 0; i--) {
         const marker = String(messages[i]?.content || "").match(/<!--flowleed:action=({.*?})-->/);
         if (!marker) continue;
         try {
           const pending = JSON.parse(marker[1]);
-          if (pending?.type === "add_people_to_flow" && typeof pending.id === "string") {
+          if (["add_people_to_flow", "create_contact_note"].includes(pending?.type) && typeof pending.id === "string") {
             const result = await executePendingAction(adminClient, userClient, orgId, userId, pending.id);
             const encoder = new TextEncoder();
             const response = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: result.message } }] })}\n\ndata: [DONE]\n\n`)); controller.close(); } });
