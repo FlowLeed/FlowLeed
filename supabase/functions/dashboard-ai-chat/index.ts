@@ -1328,6 +1328,34 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       while ((m = re.exec(toolResult)) !== null) allowedPeople.set(m[2].toLowerCase(), m[1]);
     };
 
+    // People named earlier in this conversation stay valid, but only after the
+    // ids are re-checked against this organization's contacts (history comes
+    // from the browser and cannot be trusted on its own).
+    try {
+      const historyIds = new Set<string>();
+      const histRe = /\[([^\]\n]+)\]\(\/contacts\/([0-9a-fA-F-]{36})\)/g;
+      for (const msg of messages as Array<{ role?: string; content?: string }>) {
+        if (msg?.role !== "assistant" || typeof msg.content !== "string") continue;
+        let m: RegExpExecArray | null;
+        while ((m = histRe.exec(msg.content)) !== null) historyIds.add(m[2].toLowerCase());
+      }
+      if (historyIds.size > 0) {
+        const ids = [...historyIds].slice(0, 500);
+        const { data: knownContacts } = await adminClient
+          .from("contacts")
+          .select("id, name")
+          .eq("organization_id", orgId)
+          .in("id", ids);
+        for (const c of knownContacts || []) {
+          allowedPeople.set(String(c.id).toLowerCase(), String(c.name));
+        }
+      }
+    } catch (historyError) {
+      console.error("[chat] could not verify people from history:", historyError);
+    }
+
+
+
 
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
