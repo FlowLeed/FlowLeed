@@ -111,7 +111,7 @@ const Dashboard = () => {
 
       {/* Sticky bottom input - shown during active conversation */}
       {hasMessages && (
-        <div className="border-t bg-background px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:px-6 md:py-4">
+        <div className="bg-crm-background px-3 pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] md:px-6 md:py-4">
           <AIChatInput
             onSubmit={sendMessage}
             isLoading={isLoading}
