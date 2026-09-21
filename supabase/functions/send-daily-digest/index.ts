@@ -198,6 +198,15 @@ const handler = async (req: Request): Promise<Response> => {
     let usersSkipped = 0;
     const errors: string[] = [];
 
+    // People in an active life season (sick, new baby, deployed, ...) are left out of digests.
+    const { data: activeSeasons } = await supabase
+      .from("contact_life_seasons")
+      .select("contact_id")
+      .is("ended_on", null);
+    const pausedContactIds = new Set((activeSeasons ?? []).map((s: { contact_id: string }) => s.contact_id));
+    console.log(`${pausedContactIds.size} people are paused and will be skipped`);
+
+
     for (const user of eligibleUsers) {
       try {
         // Get user's email from auth.users
