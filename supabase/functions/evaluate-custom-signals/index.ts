@@ -333,6 +333,17 @@ async function loadFacts(
   const now = Date.now();
   const facts = new Map<string, ContactFacts>();
 
+  // People in an active life season are excluded from signal evaluation
+  const pausedSeasons = await fetchAll("contact_life_seasons", (from, to) =>
+    sb
+      .from("contact_life_seasons")
+      .select("contact_id")
+      .eq("organization_id", orgId)
+      .is("ended_on", null)
+      .order("contact_id", { ascending: true })
+      .range(from, to));
+  const pausedContactIds = new Set(((pausedSeasons || []) as any[]).map((s) => s.contact_id));
+
   // Contacts
   const contacts = await fetchAll("contacts", (from, to) =>
     sb
@@ -342,6 +353,7 @@ async function loadFacts(
       .order("id", { ascending: true })
       .range(from, to));
   for (const c of contacts || []) {
+    if (pausedContactIds.has((c as any).id)) continue;
     facts.set((c as any).id, {
       contact_id: (c as any).id,
       campus_id: (c as any).campus_id || null,
