@@ -5406,6 +5406,29 @@ export type Database = {
         Returns: boolean
       }
       clear_demo_data_for_org: { Args: { _org_id: string }; Returns: undefined }
+      compute_engagement_rows: {
+        Args: { p_org_id: string; p_settings: Json }
+        Returns: {
+          breakdown: Json
+          consecutive_weeks: number
+          contact_id: string
+          engagement_level: string
+          events_count: number
+          forms_count: number
+          in_group: boolean
+          is_leader: boolean
+          last_attended: string
+          moments_count: number
+          notes_count: number
+          score: number
+          serving_count: number
+          total_30d: number
+          total_90d: number
+          total_ever: number
+          vol_90d: number
+          weeks_window: number
+        }[]
+      }
       create_assignment_notification: {
         Args: {
           _contact_id: string
@@ -5433,6 +5456,7 @@ export type Database = {
         Args: { _session_id: string }
         Returns: boolean
       }
+      engagement_settings_for_org: { Args: { p_org_id: string }; Returns: Json }
       get_contact_signal: {
         Args: { p_contact_id: string }
         Returns: {
@@ -5650,6 +5674,10 @@ export type Database = {
           p_target_tag: string
         }
         Returns: number
+      }
+      preview_engagement_settings: {
+        Args: { p_org_id: string; p_settings: Json }
+        Returns: Json
       }
       recompute_contact_markers: {
         Args: { p_org_id: string }
