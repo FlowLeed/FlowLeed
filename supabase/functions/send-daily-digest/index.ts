@@ -289,14 +289,13 @@ const handler = async (req: Request): Promise<Response> => {
         console.log(`Email sent to ${userEmail}:`, emailResponse);
 
         // Mark notifications as sent
-        const notificationIds = notifications.map((n) => n.id);
         const { error: updateError } = await supabase
           .from("notifications")
           .update({
             email_digest_sent: true,
             email_digest_sent_at: new Date().toISOString(),
           })
-          .in("id", notificationIds);
+          .in("id", notificationIdsToMark);
 
         if (updateError) {
           console.error(`Error marking notifications as sent:`, updateError);
