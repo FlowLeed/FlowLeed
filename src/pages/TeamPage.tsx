@@ -605,6 +605,10 @@ const TeamPage = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="engagement" className="mt-6">
+            <EngagementSettingsContent />
+          </TabsContent>
+
           <TabsContent value="ai-tools" className="mt-6">
             <AiToolsSettingsContent />
           </TabsContent>
