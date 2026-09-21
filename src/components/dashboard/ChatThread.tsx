@@ -1,9 +1,11 @@
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
-import { User, Sparkles, RotateCcw, History, ListPlus, ShieldCheck } from "lucide-react";
+import { User, Sparkles, RotateCcw, History, ListPlus, ShieldCheck, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
 
 const THINKING_MESSAGES = [
@@ -52,6 +54,36 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
   const [bulkIds, setBulkIds] = useState<string[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [handledActions, setHandledActions] = useState<Set<string>>(new Set());
+
+  // Confirmation cards live inside saved messages, so a reopened conversation would show
+  // them again. Look up what actually happened to each request instead of trusting the text.
+  const actionIds = useMemo(() => {
+    const ids: string[] = [];
+    for (const msg of messages) {
+      if (msg.role !== "assistant") continue;
+      for (const found of msg.content.matchAll(/<!--flowleed:action=({.*?})-->/g)) {
+        try {
+          const parsed = JSON.parse(found[1]);
+          if (parsed?.id) ids.push(parsed.id as string);
+        } catch { /* ignore */ }
+      }
+    }
+    return ids;
+  }, [messages]);
+
+  const { data: actionStates } = useQuery({
+    queryKey: ["ai-action-requests", actionIds],
+    enabled: actionIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_action_requests")
+        .select("id, status, expires_at")
+        .in("id", actionIds);
+      if (error) throw error;
+      return new Map((data ?? []).map((row: any) => [row.id as string, row]));
+    },
+  });
+
 
 
   useEffect(() => {
