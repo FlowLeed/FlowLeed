@@ -1,13 +1,17 @@
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Activity } from 'lucide-react';
+import { Activity, PauseCircle } from 'lucide-react';
 import type { EngagementScore } from '@/hooks/useCheckinData';
 import { useEngagementSettings } from '@/hooks/useEngagementSettings';
 import { breakdownParts, DEFAULT_LABELS, type EngagementLevelKey } from '@/lib/engagementSettings';
+import { useActiveLifeSeasons } from '@/hooks/useLifeSeason';
+import { lifeSeasonLabel } from '@/lib/lifeSeasons';
 
 interface EngagementBadgeProps {
   score: (EngagementScore & { score_breakdown?: any; consecutive_streak_weeks?: number }) | null | undefined;
   compact?: boolean;
+  /** When provided, a pause mark shows if this person is in a life season. */
+  contactId?: string;
 }
 
 const levelClassName: Record<string, string> = {
@@ -19,8 +23,10 @@ const levelClassName: Record<string, string> = {
   new: 'bg-muted text-muted-foreground border-border',
 };
 
-export function EngagementBadge({ score, compact = false }: EngagementBadgeProps) {
+export function EngagementBadge({ score, compact = false, contactId }: EngagementBadgeProps) {
   const { settings } = useEngagementSettings();
+  const { data: seasons } = useActiveLifeSeasons();
+  const season = contactId ? (seasons ?? []).find((s) => s.contact_id === contactId) : undefined;
 
   if (!score) return null;
 
