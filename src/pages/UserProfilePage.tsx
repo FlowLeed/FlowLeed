@@ -829,8 +829,19 @@ const UserProfilePage = () => {
                 <div className="hidden sm:block pr-10">
                   <h1 className="text-3xl font-bold break-words">{contact.name}</h1>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <EngagementBadge score={engagementScore} />
+                    <EngagementBadge score={engagementScore} contactId={contactId} />
                     {(contact as any).is_demo && <Badge variant="secondary">Sample</Badge>}
+                    {!lifeSeason && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-muted-foreground"
+                        onClick={() => setShowPauseDialog(true)}
+                      >
+                        <PauseCircle className="mr-1 h-3.5 w-3.5" />
+                        Pause engagement
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
