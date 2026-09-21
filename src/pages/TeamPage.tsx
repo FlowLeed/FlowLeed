@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, X, Tag, Search, Pencil, Trash2, GitMerge, Phone, ImageIcon, Upload, Loader2, Sparkles } from "lucide-react";
+import { UserPlus, MoreHorizontal, Shield, Crown, User, Mail, Clock, X, Tag, Search, Pencil, Trash2, GitMerge, Phone, ImageIcon, Upload, Loader2, Sparkles, Activity } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InviteTeamMemberDialog } from "@/components/team/InviteTeamMemberDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,7 @@ import { useFlowTeamMemberships } from "@/hooks/useFlowTeamMemberships";
 import { useOrgFlowsMeta } from "@/hooks/useOrgFlowsMeta";
 import { FlowIconBadge } from "@/components/search/FlowIconBadge";
 import { AiToolsSettingsContent } from "@/pages/settings/AiToolsSettingsPage";
+import { EngagementSettingsContent } from "@/pages/settings/EngagementSettingsPage";
 
 interface TeamMember {
   id: string;
@@ -460,7 +461,7 @@ const TeamPage = () => {
           className="w-full"
         >
           <div className="w-full overflow-x-auto pb-1">
-          <TabsList className="grid min-w-[720px] w-full grid-cols-5">
+          <TabsList className="grid min-w-[860px] w-full grid-cols-6">
             <TabsTrigger value="settings">
               <Shield className="h-4 w-4 mr-2" />
               Org Settings
@@ -476,6 +477,10 @@ const TeamPage = () => {
             <TabsTrigger value="tags">
               <Tag className="h-4 w-4 mr-2" />
               Tag Management
+            </TabsTrigger>
+            <TabsTrigger value="engagement">
+              <Activity className="h-4 w-4 mr-2" />
+              Engagement
             </TabsTrigger>
             <TabsTrigger value="ai-tools">
               <Sparkles className="h-4 w-4 mr-2 text-primary" />
@@ -598,6 +603,10 @@ const TeamPage = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="engagement" className="mt-6">
+            <EngagementSettingsContent />
           </TabsContent>
 
           <TabsContent value="ai-tools" className="mt-6">

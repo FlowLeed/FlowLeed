@@ -7,6 +7,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Filter, UserX, X, CheckCircle2, Activity, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCampuses } from "@/hooks/useCampuses";
+import { useEngagementLabels } from "@/hooks/useEngagementSettings";
+import { LEVEL_ORDER } from "@/lib/engagementSettings";
 
 interface TeamMember {
   id: string;
@@ -17,13 +19,13 @@ interface TeamMember {
 
 type EngagementLevel = 'highly_engaged' | 'active' | 'at_risk' | 'inactive' | 'new';
 
-const ENGAGEMENT_LEVELS: { value: EngagementLevel; label: string; color: string }[] = [
-  { value: 'highly_engaged', label: 'Highly Engaged', color: 'text-emerald-600' },
-  { value: 'active', label: 'Active', color: 'text-blue-600' },
-  { value: 'at_risk', label: 'At Risk', color: 'text-amber-600' },
-  { value: 'inactive', label: 'Inactive', color: 'text-red-600' },
-  { value: 'new', label: 'New', color: 'text-purple-600' },
-];
+const ENGAGEMENT_LEVEL_COLORS: Record<EngagementLevel, string> = {
+  highly_engaged: 'text-emerald-600',
+  active: 'text-blue-600',
+  at_risk: 'text-amber-600',
+  inactive: 'text-red-600',
+  new: 'text-purple-600',
+};
 
 interface FlowHeaderFiltersProps {
   teamMembers: TeamMember[];
@@ -57,6 +59,12 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
   onCampusFilterChange
 }) => {
   const { data: campuses } = useCampuses();
+  const { labels: engagementLabelNames } = useEngagementLabels();
+  const engagementLevels = LEVEL_ORDER.map((value) => ({
+    value: value as EngagementLevel,
+    label: engagementLabelNames[value],
+    color: ENGAGEMENT_LEVEL_COLORS[value as EngagementLevel],
+  }));
   
   const activeFilterCount = [
     selectedFilter !== null,
@@ -156,7 +164,7 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
                 Engagement Level
               </label>
               <div className="space-y-1">
-                {ENGAGEMENT_LEVELS.map((level) => (
+                {engagementLevels.map((level) => (
                   <Button
                     key={level.value}
                     variant={selectedEngagementFilter === level.value ? "secondary" : "ghost"}

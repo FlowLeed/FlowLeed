@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrgCheckinStats } from "@/hooks/useCheckinData";
 import { useProfile } from "@/hooks/useProfile";
+import { useEngagementLabels } from "@/hooks/useEngagementSettings";
 import { Users, UserCheck, Activity, TrendingUp } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
@@ -12,7 +13,7 @@ const LEVEL_COLORS: Record<string, string> = {
   new: '#94a3b8',
 };
 
-const LEVEL_LABELS: Record<string, string> = {
+const DEFAULT_LEVEL_LABELS: Record<string, string> = {
   highly_engaged: 'Highly Engaged',
   active: 'Active',
   at_risk: 'At Risk',
@@ -28,6 +29,7 @@ export function AttendanceSection({ campusId }: AttendanceSectionProps) {
   const { organization } = useProfile();
   const orgId = organization?.id;
   const { data: stats, isLoading } = useOrgCheckinStats(orgId, campusId);
+  const { labels: engagementLabels } = useEngagementLabels();
 
   if (isLoading) {
     return (
@@ -54,7 +56,7 @@ export function AttendanceSection({ campusId }: AttendanceSectionProps) {
   }
 
   const pieData = Object.entries(stats.engagementDistribution).map(([level, count]) => ({
-    name: LEVEL_LABELS[level] || level,
+    name: engagementLabels[level as keyof typeof engagementLabels] || DEFAULT_LEVEL_LABELS[level] || level,
     value: count,
     color: LEVEL_COLORS[level] || '#94a3b8',
   }));

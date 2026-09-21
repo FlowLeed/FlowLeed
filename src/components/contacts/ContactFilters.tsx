@@ -24,6 +24,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useOrgTags } from "@/hooks/useOrgTags";
 import { Link } from "react-router-dom";
 import type { ContactFilters as Filters } from "@/pages/ContactsPage";
+import { useEngagementLabels } from "@/hooks/useEngagementSettings";
+import { LEVEL_ORDER } from "@/lib/engagementSettings";
 
 interface ContactFiltersProps {
   filters: Filters;
@@ -43,6 +45,7 @@ export const ContactFilters = ({
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
   const { data: campuses } = useCampuses();
   const { data: markerCatalog } = useMarkerCatalog();
+  const { labels: engagementLabels } = useEngagementLabels();
 
   // Debounce search
   useEffect(() => {
@@ -304,11 +307,11 @@ export const ContactFilters = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Levels</SelectItem>
-                  <SelectItem value="highly_engaged">Highly Engaged</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="at_risk">At Risk</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
+                  {LEVEL_ORDER.map((level) => (
+                    <SelectItem key={level} value={level}>
+                      {engagementLabels[level]}
+                    </SelectItem>
+                  ))}
                   <SelectItem value="none">Unscored (no check-ins)</SelectItem>
                 </SelectContent>
               </Select>
