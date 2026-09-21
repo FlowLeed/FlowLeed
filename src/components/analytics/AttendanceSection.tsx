@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOrgCheckinStats } from "@/hooks/useCheckinData";
 import { useProfile } from "@/hooks/useProfile";
+import { useEngagementLabels } from "@/hooks/useEngagementSettings";
 import { Users, UserCheck, Activity, TrendingUp } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
@@ -28,6 +29,7 @@ export function AttendanceSection({ campusId }: AttendanceSectionProps) {
   const { organization } = useProfile();
   const orgId = organization?.id;
   const { data: stats, isLoading } = useOrgCheckinStats(orgId, campusId);
+  const { labels: engagementLabels } = useEngagementLabels();
 
   if (isLoading) {
     return (

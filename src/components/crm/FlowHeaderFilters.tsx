@@ -7,6 +7,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Filter, UserX, X, CheckCircle2, Activity, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCampuses } from "@/hooks/useCampuses";
+import { useEngagementLabels } from "@/hooks/useEngagementSettings";
+import { LEVEL_ORDER } from "@/lib/engagementSettings";
 
 interface TeamMember {
   id: string;
@@ -57,6 +59,12 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
   onCampusFilterChange
 }) => {
   const { data: campuses } = useCampuses();
+  const { labels: engagementLabelNames } = useEngagementLabels();
+  const engagementLevels = LEVEL_ORDER.map((value) => ({
+    value: value as EngagementLevel,
+    label: engagementLabelNames[value],
+    color: ENGAGEMENT_LEVEL_COLORS[value as EngagementLevel],
+  }));
   
   const activeFilterCount = [
     selectedFilter !== null,
