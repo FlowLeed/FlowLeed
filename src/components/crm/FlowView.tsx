@@ -27,6 +27,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
 import { useBulkActions } from "@/hooks/useBulkActions";
 import { toCsv, downloadCsv, sanitizeFilename } from "@/lib/csvExport";
+import { usePausedContactIds } from "@/hooks/useLifeSeason";
 
 interface TeamMember {
   id: string;
@@ -55,6 +56,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [selectedEngagementFilter, setSelectedEngagementFilter] = useState<string | null>(null);
   const [selectedCampusFilter, setSelectedCampusFilter] = useState<string | null>(null);
+  const pausedContactIds = usePausedContactIds();
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
     const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
     if (saved === 'table' || saved === 'kanban') return saved;
@@ -126,7 +128,9 @@ export const FlowView: React.FC<FlowViewProps> = ({
         }
 
         // Apply engagement level filter
-        if (selectedEngagementFilter && engagementScores) {
+        if (selectedEngagementFilter === 'paused') {
+          if (!pausedContactIds.has(contact.id)) return false;
+        } else if (selectedEngagementFilter && engagementScores) {
           const level = engagementScores[contact.id];
           if (level !== selectedEngagementFilter) return false;
         }

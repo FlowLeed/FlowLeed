@@ -313,6 +313,7 @@ export const ContactFilters = ({
                     </SelectItem>
                   ))}
                   <SelectItem value="none">Unscored (no check-ins)</SelectItem>
+                  <SelectItem value="paused">Paused (life season)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

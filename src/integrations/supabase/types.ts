@@ -5766,6 +5766,7 @@ export type Database = {
         Args: { p_org_id: string }
         Returns: undefined
       }
+      remind_open_life_seasons: { Args: never; Returns: number }
       rename_org_tag: {
         Args: { p_new_tag: string; p_old_tag: string; p_org_id: string }
         Returns: number

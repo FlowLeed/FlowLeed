@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useEngagementSettings, type EngagementPreview } from "@/hooks/useEngagementSettings";
+import { useActiveLifeSeasons } from "@/hooks/useLifeSeason";
+import { PauseCircle } from "lucide-react";
 import {
   activeWeightTotal,
   DEFAULT_LABELS,
@@ -46,6 +48,8 @@ export const EngagementSettingsContent = () => {
   const [draft, setDraft] = useState<EngagementSettings>(settings);
   const [dirty, setDirty] = useState(false);
   const [previewData, setPreviewData] = useState<EngagementPreview | null>(null);
+  const { data: activeSeasons } = useActiveLifeSeasons();
+  const pausedSeasons = activeSeasons ?? [];
 
   useEffect(() => {
     if (!dirty) setDraft(settings);
@@ -112,6 +116,19 @@ export const EngagementSettingsContent = () => {
           </Button>
         </div>
       </section>
+
+      {pausedSeasons.length > 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <PauseCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            {pausedSeasons.length} {pausedSeasons.length === 1 ? "person is" : "people are"} in a life season right now
+            (sick, new baby, deployed and similar). Their scores stay frozen and they're left out of attention lists until
+            the season ends.
+          </p>
+        </div>
+      )}
+
+
 
       {readOnly && !adminLoading && (
         <div className="flex items-start gap-3 rounded-md border bg-muted/40 p-4 text-sm">

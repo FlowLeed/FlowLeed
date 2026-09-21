@@ -180,6 +180,17 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
                     {level.label}
                   </Button>
                 ))}
+                <Button
+                  variant={selectedEngagementFilter === "paused" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() =>
+                    onEngagementFilterChange(selectedEngagementFilter === "paused" ? null : "paused")
+                  }
+                  className="w-full justify-start gap-2"
+                >
+                  <span className="text-xs font-bold text-amber-600">●</span>
+                  Paused (life season)
+                </Button>
               </div>
             </div>
           )}

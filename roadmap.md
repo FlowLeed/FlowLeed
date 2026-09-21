@@ -24,3 +24,10 @@
 
 ## Navigation visibility
 - [x] Hide Connect when Messages and Calls are unavailable
+
+## Life Seasons (engagement pause)
+- [x] Database table, RLS, frozen scores
+- [x] Profile banner, pause dialog, badge pause mark
+- [x] Signal, attention-list and digest exclusions
+- [x] Paused filters in People and Flows
+- [x] 30-day reminders and auto-end on renewed attendance

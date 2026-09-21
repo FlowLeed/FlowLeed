@@ -258,7 +258,15 @@ export const useContacts = (filters: ContactFilters) => {
       console.log('Initial data count:', filteredData.length);
 
       // Apply engagement level filter
-      if (filters.engagementLevel && filters.engagementLevel !== "all") {
+      if (filters.engagementLevel === "paused") {
+        const { data: seasons } = await supabase
+          .from("contact_life_seasons")
+          .select("contact_id")
+          .eq("organization_id", organizationId)
+          .is("ended_on", null);
+        const pausedIds = new Set((seasons ?? []).map((s) => s.contact_id));
+        filteredData = filteredData.filter((contact) => pausedIds.has(contact.id));
+      } else if (filters.engagementLevel && filters.engagementLevel !== "all") {
         filteredData = filteredData.filter(contact => {
           const scores = contact.contact_engagement_scores;
           const score = Array.isArray(scores) ? scores[0] : scores;
