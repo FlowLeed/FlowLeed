@@ -406,7 +406,9 @@ export const EngagementSettingsContent = () => {
               <h2 className="text-lg font-semibold">Preview</h2>
               <p className="text-sm text-muted-foreground">
                 {previewData.people_scored.toLocaleString()} people, average score {Math.round(previewData.average_score)}.
-                Nothing changes until you save.
+                {previewData.sampled
+                  ? " Estimated from a sample of your people so it stays fast. Nothing changes until you save."
+                  : " Nothing changes until you save."}
               </p>
             </div>
             <Button variant="ghost" onClick={() => setPreviewData(null)} className="min-h-11">

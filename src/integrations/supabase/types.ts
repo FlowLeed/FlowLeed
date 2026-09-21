@@ -5486,7 +5486,7 @@ export type Database = {
       }
       clear_demo_data_for_org: { Args: { _org_id: string }; Returns: undefined }
       compute_engagement_rows: {
-        Args: { p_org_id: string; p_settings: Json }
+        Args: { p_org_id: string; p_sample_limit?: number; p_settings: Json }
         Returns: {
           breakdown: Json
           consecutive_weeks: number
@@ -5754,10 +5754,16 @@ export type Database = {
         }
         Returns: number
       }
-      preview_engagement_settings: {
-        Args: { p_org_id: string; p_settings: Json }
-        Returns: Json
-      }
+      preview_engagement_settings:
+        | { Args: { p_org_id: string; p_settings: Json }; Returns: Json }
+        | {
+            Args: {
+              p_org_id: string
+              p_sample_limit?: number
+              p_settings: Json
+            }
+            Returns: Json
+          }
       recompute_contact_markers: {
         Args: { p_org_id: string }
         Returns: undefined

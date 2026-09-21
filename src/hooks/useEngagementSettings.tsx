@@ -11,6 +11,10 @@ export type EngagementPreview = {
   distribution: Record<string, number>;
   average_score: number;
   people_scored: number;
+  paused_count?: number;
+  total_contacts?: number;
+  sample_limit?: number | null;
+  sampled?: boolean;
   samples: {
     contact_id: string;
     full_name: string | null;
@@ -84,6 +88,7 @@ export function useEngagementSettings() {
           ingredients: settings.ingredients,
           safeguards: settings.safeguards,
         },
+        p_sample_limit: 2500,
       });
       if (error) throw error;
       return data as unknown as EngagementPreview;
