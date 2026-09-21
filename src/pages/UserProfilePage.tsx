@@ -750,6 +750,17 @@ const UserProfilePage = () => {
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <EngagementBadge score={engagementScore} contactId={contactId} />
                   {(contact as any).is_demo && <Badge variant="secondary">Sample</Badge>}
+                  {!lifeSeason && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={() => setShowPauseDialog(true)}
+                    >
+                      <PauseCircle className="mr-1 h-3.5 w-3.5" />
+                      Pause
+                    </Button>
+                  )}
                 </div>
               </div>
               <Button
