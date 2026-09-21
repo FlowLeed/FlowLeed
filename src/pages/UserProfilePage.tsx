@@ -32,6 +32,10 @@ import { Header } from "@/components/layout/Header";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 import { ActiveMarkersCard } from "@/components/contact/ActiveMarkersCard";
 import { useEngagementScore } from "@/hooks/useCheckinData";
+import { LifeSeasonBanner } from "@/components/contact/LifeSeasonBanner";
+import { PauseEngagementDialog } from "@/components/contact/PauseEngagementDialog";
+import { useLifeSeason } from "@/hooks/useLifeSeason";
+import { PauseCircle } from "lucide-react";
 
 import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
