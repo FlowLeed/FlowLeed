@@ -1325,6 +1325,15 @@ const UserProfilePage = () => {
         </DialogContent>
       </Dialog>
 
+      <PauseEngagementDialog
+        open={showPauseDialog}
+        onOpenChange={setShowPauseDialog}
+        contactId={contactId!}
+        contactName={contact?.name}
+      />
+
+
+
       </div>
     </div>
   );
