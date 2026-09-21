@@ -126,7 +126,9 @@ export const FlowView: React.FC<FlowViewProps> = ({
         }
 
         // Apply engagement level filter
-        if (selectedEngagementFilter && engagementScores) {
+        if (selectedEngagementFilter === 'paused') {
+          if (!pausedContactIds.has(contact.id)) return false;
+        } else if (selectedEngagementFilter && engagementScores) {
           const level = engagementScores[contact.id];
           if (level !== selectedEngagementFilter) return false;
         }
