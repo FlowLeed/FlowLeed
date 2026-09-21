@@ -106,8 +106,14 @@ export const useDashboardChat = () => {
       });
 
       if (!resp.ok) {
-        const errorData = await resp.json().catch(() => ({}));
-        const errorMsg = errorData.error || `Error ${resp.status}`;
+        const raw = await resp.text().catch(() => "");
+        let errorMsg = "";
+        try { errorMsg = (JSON.parse(raw) as { error?: string }).error ?? ""; } catch { /* not JSON */ }
+        if (!errorMsg) {
+          errorMsg = raw.trim().startsWith("data:")
+            ? "FlowLeed AI could not finish that. Please try again."
+            : raw.trim().slice(0, 200) || "FlowLeed AI could not finish that. Please try again.";
+        }
         toast.error(errorMsg);
         setIsLoading(false);
         return;
