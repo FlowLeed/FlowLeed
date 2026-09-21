@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useEngagementSettings, type EngagementPreview } from "@/hooks/useEngagementSettings";
+import { useActiveLifeSeasons } from "@/hooks/useLifeSeason";
+import { PauseCircle } from "lucide-react";
 import {
   activeWeightTotal,
   DEFAULT_LABELS,
