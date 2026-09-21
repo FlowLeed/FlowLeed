@@ -726,7 +726,8 @@ const UserProfilePage = () => {
         {/* Enhanced Header */}
         <div className="space-y-4">
 
-        
+        <LifeSeasonBanner contactId={contactId!} contactName={contact.name} />
+
         <Card>
           <CardContent className="p-4 md:p-6">
             {/* Mobile-only top row: avatar + name + edit */}
