@@ -148,5 +148,5 @@ export function useActiveLifeSeasons() {
 /** Set of paused contact ids, for hiding people from attention lists. */
 export function usePausedContactIds() {
   const { data } = useActiveLifeSeasons();
-  return new Set((data ?? []).map((s) => s.contact_id));
+  return useMemo(() => new Set((data ?? []).map((s) => s.contact_id)), [data]);
 }
