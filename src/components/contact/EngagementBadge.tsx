@@ -54,11 +54,16 @@ export function EngagementBadge({ score, compact = false, contactId }: Engagemen
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant="outline" className={`${className} gap-1 text-xs cursor-default`}>
-            <Activity className="h-3 w-3" />
+            {season ? <PauseCircle className="h-3 w-3" /> : <Activity className="h-3 w-3" />}
             {compact ? score.score : label}
           </Badge>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs space-y-1">
+          {season && (
+            <p className="text-xs font-medium">
+              Score held since {new Date(season.started_on).toLocaleDateString()} ({lifeSeasonLabel(season.reason)})
+            </p>
+          )}
           <p className="text-xs">{summary}</p>
           {parts.length > 0 && (
             <ul className="space-y-0.5 text-xs">
