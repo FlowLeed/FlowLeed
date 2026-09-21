@@ -748,7 +748,7 @@ const UserProfilePage = () => {
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-bold break-words leading-tight">{contact.name}</h1>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <EngagementBadge score={engagementScore} />
+                  <EngagementBadge score={engagementScore} contactId={contactId} />
                   {(contact as any).is_demo && <Badge variant="secondary">Sample</Badge>}
                 </div>
               </div>
