@@ -864,11 +864,13 @@ export type Database = {
       }
       contact_engagement_scores: {
         Row: {
+          consecutive_streak_weeks: number
           contact_id: string
           engagement_level: string | null
           last_checkin_at: string | null
           organization_id: string
           score: number | null
+          score_breakdown: Json | null
           signal: string | null
           streak_weeks: number | null
           total_checkins_30d: number | null
@@ -878,11 +880,13 @@ export type Database = {
           weeks_attended_last_12: number | null
         }
         Insert: {
+          consecutive_streak_weeks?: number
           contact_id: string
           engagement_level?: string | null
           last_checkin_at?: string | null
           organization_id: string
           score?: number | null
+          score_breakdown?: Json | null
           signal?: string | null
           streak_weeks?: number | null
           total_checkins_30d?: number | null
@@ -892,11 +896,13 @@ export type Database = {
           weeks_attended_last_12?: number | null
         }
         Update: {
+          consecutive_streak_weeks?: number
           contact_id?: string
           engagement_level?: string | null
           last_checkin_at?: string | null
           organization_id?: string
           score?: number | null
+          score_breakdown?: Json | null
           signal?: string | null
           streak_weeks?: number | null
           total_checkins_30d?: number | null
@@ -3369,6 +3375,63 @@ export type Database = {
             columns: ["pipeline_id"]
             isOneToOne: false
             referencedRelation: "pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_engagement_settings: {
+        Row: {
+          created_at: string
+          ingredients: Json
+          labels: Json
+          organization_id: string
+          preset_key: string
+          safeguards: Json
+          thresholds: Json
+          updated_at: string
+          updated_by: string | null
+          weights: Json
+          windows: Json
+        }
+        Insert: {
+          created_at?: string
+          ingredients?: Json
+          labels?: Json
+          organization_id: string
+          preset_key?: string
+          safeguards?: Json
+          thresholds?: Json
+          updated_at?: string
+          updated_by?: string | null
+          weights?: Json
+          windows?: Json
+        }
+        Update: {
+          created_at?: string
+          ingredients?: Json
+          labels?: Json
+          organization_id?: string
+          preset_key?: string
+          safeguards?: Json
+          thresholds?: Json
+          updated_at?: string
+          updated_by?: string | null
+          weights?: Json
+          windows?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_engagement_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_engagement_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
