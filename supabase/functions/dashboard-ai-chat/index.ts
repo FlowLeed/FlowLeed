@@ -1247,7 +1247,9 @@ serve(async (req) => {
             const result = await executePendingAction(adminClient, userClient, orgId, userId, pending.id);
             const encoder = new TextEncoder();
             const response = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: result.message } }] })}\n\ndata: [DONE]\n\n`)); controller.close(); } });
-            return new Response(response, { status: result.ok ? 200 : 400, headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+            // Always 200: the explanation (expired, already used, tool disabled) is the
+            // streamed answer. A 4xx here would make the client discard it and show a bare code.
+            return new Response(response, { status: 200, headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
           }
         } catch { /* ignore malformed historical marker */ }
         break;
@@ -1642,8 +1644,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       });
     }
 
-    // Buffer the model's answer so we can strip any person it invented, then
-    // emit the sanitized text plus the hidden contact-ids marker.
+    // Stream the model's answer as it arrives, sanitizing each completed segment so
+    // invented people are still stripped without holding back the whole reply.
     const upstream = streamResponse.body!;
     const injected = new ReadableStream({
       async start(controller) {
@@ -1656,8 +1658,18 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           );
         };
 
+        let removedTotal = 0;
+        let sentAnything = false;
+        const clean = (chunk: string) => {
+          const { text: safe, removed } = sanitizePeopleMentions(chunk, allowedPeople);
+          removedTotal += removed;
+          if (pendingActionMarker) return safe;
+          return safe.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
+        };
+
         let raw = "";
-        let text = "";
+        let pending = "";
+        let fullText = "";
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -1673,8 +1685,26 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
               try {
                 const parsed = JSON.parse(payload);
                 const c = parsed.choices?.[0]?.delta?.content;
-                if (typeof c === "string") text += c;
+                if (typeof c === "string") {
+                  pending += c;
+                  fullText += c;
+                }
               } catch { /* ignore partial */ }
+            }
+
+            // Flush only up to the last safe boundary so links and sentences stay whole.
+            const boundary = Math.max(pending.lastIndexOf("\n"), pending.lastIndexOf(". "));
+            if (boundary > 0) {
+              const chunk = pending.slice(0, boundary + 1);
+              pending = pending.slice(boundary + 1);
+              const safeChunk = clean(chunk);
+              if (safeChunk) {
+                const toSend = sentAnything ? safeChunk : safeChunk.replace(/^\s+/, "");
+                if (toSend) {
+                  send(toSend);
+                  sentAnything = true;
+                }
+              }
             }
           }
         } catch (e) {
@@ -1682,21 +1712,26 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           return;
         }
 
-        let out = text.trim();
+        const tail = clean(pending).trimEnd();
+        if (tail) {
+          const toSend = sentAnything ? tail : tail.replace(/^\s+/, "");
+          if (toSend) {
+            send(toSend);
+            sentAnything = true;
+          }
+        }
+
         // The model sometimes returns no words after a tool call. Never leave the
         // user with a bare action button - show the finder's own answer, rewritten
         // into plain language (the raw tool text contains internal instructions).
-        if (!out && lastFinderResult) out = humanizeFinderResult(lastFinderResult);
+        if (!fullText.trim() && !sentAnything && lastFinderResult) {
+          const fallback = clean(humanizeFinderResult(lastFinderResult)).trim();
+          if (fallback) send(fallback);
+        }
 
-        const { text: safe, removed } = sanitizePeopleMentions(out, allowedPeople);
-        out = safe;
-        if (!pendingActionMarker) {
-          out = out.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
+        if (removedTotal > 0) {
+          console.log(`[chat] stripped ${removedTotal} unverified person link(s) from the answer`);
         }
-        if (removed > 0) {
-          console.log(`[chat] stripped ${removed} unverified person link(s) from the answer`);
-        }
-        if (out) send(out);
         if (collectedContactIds && collectedContactIds.length > 0) {
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
