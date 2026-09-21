@@ -27,6 +27,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
 import { useBulkActions } from "@/hooks/useBulkActions";
 import { toCsv, downloadCsv, sanitizeFilename } from "@/lib/csvExport";
+import { usePausedContactIds } from "@/hooks/useLifeSeason";
 
 interface TeamMember {
   id: string;
