@@ -418,7 +418,7 @@ export const EngagementSettingsContent = () => {
                 {previewData.samples.map((sample) => (
                   <div key={sample.contact_id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="truncate">
-                      {[sample.first_name, sample.last_name].filter(Boolean).join(" ") || "Unnamed"}
+                      {sample.full_name || "Unnamed"}
                     </span>
                     <span className="flex shrink-0 items-center gap-2">
                       <span className={levelTone[(sample.engagement_level as EngagementLevelKey) ?? "new"]}>

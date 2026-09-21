@@ -13,8 +13,7 @@ export type EngagementPreview = {
   people_scored: number;
   samples: {
     contact_id: string;
-    first_name: string | null;
-    last_name: string | null;
+    full_name: string | null;
     score: number;
     engagement_level: string;
     consecutive_weeks: number;
