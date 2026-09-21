@@ -24,6 +24,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useOrgTags } from "@/hooks/useOrgTags";
 import { Link } from "react-router-dom";
 import type { ContactFilters as Filters } from "@/pages/ContactsPage";
+import { useEngagementLabels } from "@/hooks/useEngagementSettings";
+import { LEVEL_ORDER } from "@/lib/engagementSettings";
 
 interface ContactFiltersProps {
   filters: Filters;

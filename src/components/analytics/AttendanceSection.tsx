@@ -12,7 +12,7 @@ const LEVEL_COLORS: Record<string, string> = {
   new: '#94a3b8',
 };
 
-const LEVEL_LABELS: Record<string, string> = {
+const DEFAULT_LEVEL_LABELS: Record<string, string> = {
   highly_engaged: 'Highly Engaged',
   active: 'Active',
   at_risk: 'At Risk',
