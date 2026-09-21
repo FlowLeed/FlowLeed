@@ -198,6 +198,15 @@ const handler = async (req: Request): Promise<Response> => {
     let usersSkipped = 0;
     const errors: string[] = [];
 
+    // People in an active life season (sick, new baby, deployed, ...) are left out of digests.
+    const { data: activeSeasons } = await supabase
+      .from("contact_life_seasons")
+      .select("contact_id")
+      .is("ended_on", null);
+    const pausedContactIds = new Set((activeSeasons ?? []).map((s: { contact_id: string }) => s.contact_id));
+    console.log(`${pausedContactIds.size} people are paused and will be skipped`);
+
+
     for (const user of eligibleUsers) {
       try {
         // Get user's email from auth.users
@@ -242,11 +251,30 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        console.log(`Sending digest with ${notifications.length} notifications to ${userEmail}`);
+        // Leave out people whose engagement is paused for a life season
+        const visibleNotifications = notifications.filter(
+          (n) => !n.contact_id || !pausedContactIds.has(n.contact_id)
+        );
+        const notificationIdsToMark = notifications.map((n) => n.id);
+
+        if (visibleNotifications.length === 0) {
+          console.log(`All notifications for user ${user.user_id} belong to paused people`);
+          await supabase
+            .from("notifications")
+            .update({
+              email_digest_sent: true,
+              email_digest_sent_at: new Date().toISOString(),
+            })
+            .in("id", notificationIdsToMark);
+          usersSkipped++;
+          continue;
+        }
+
+        console.log(`Sending digest with ${visibleNotifications.length} notifications to ${userEmail}`);
 
         // Generate and send email
         const html = generateDigestHTML(
-          notifications as NotificationWithDetails[],
+          visibleNotifications as NotificationWithDetails[],
           user.full_name || "",
           appUrl
         );
@@ -254,21 +282,20 @@ const handler = async (req: Request): Promise<Response> => {
         const emailResponse = await resend.emails.send({
           from: "Flowleed <noreply@flowleed.com>",
           to: [userEmail],
-          subject: `Daily Assignment Digest: ${notifications.length} new ${notifications.length === 1 ? "assignment" : "assignments"}`,
+          subject: `Daily Assignment Digest: ${visibleNotifications.length} new ${visibleNotifications.length === 1 ? "assignment" : "assignments"}`,
           html,
         });
 
         console.log(`Email sent to ${userEmail}:`, emailResponse);
 
         // Mark notifications as sent
-        const notificationIds = notifications.map((n) => n.id);
         const { error: updateError } = await supabase
           .from("notifications")
           .update({
             email_digest_sent: true,
             email_digest_sent_at: new Date().toISOString(),
           })
-          .in("id", notificationIds);
+          .in("id", notificationIdsToMark);
 
         if (updateError) {
           console.error(`Error marking notifications as sent:`, updateError);

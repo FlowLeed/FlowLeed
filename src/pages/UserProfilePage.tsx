@@ -32,6 +32,10 @@ import { Header } from "@/components/layout/Header";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 import { ActiveMarkersCard } from "@/components/contact/ActiveMarkersCard";
 import { useEngagementScore } from "@/hooks/useCheckinData";
+import { LifeSeasonBanner } from "@/components/contact/LifeSeasonBanner";
+import { PauseEngagementDialog } from "@/components/contact/PauseEngagementDialog";
+import { useLifeSeason } from "@/hooks/useLifeSeason";
+import { PauseCircle } from "lucide-react";
 
 import { ContactStatus } from "@/types/crm";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +73,8 @@ const UserProfilePage = () => {
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [activeCall, setActiveCall] = useState<CallRecord | null>(null);
   const [showAvatarPreview, setShowAvatarPreview] = useState(false);
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
+  const { season: lifeSeason } = useLifeSeason(contactId);
   
   // Onboarding: mark "first_interaction" when a contact profile is viewed
   const { updateProgress, progress, isLoading: onboardingLoading } = useMemberOnboarding(user?.id);
@@ -720,7 +726,8 @@ const UserProfilePage = () => {
         {/* Enhanced Header */}
         <div className="space-y-4">
 
-        
+        <LifeSeasonBanner contactId={contactId!} contactName={contact.name} />
+
         <Card>
           <CardContent className="p-4 md:p-6">
             {/* Mobile-only top row: avatar + name + edit */}
@@ -741,8 +748,19 @@ const UserProfilePage = () => {
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-bold break-words leading-tight">{contact.name}</h1>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <EngagementBadge score={engagementScore} />
+                  <EngagementBadge score={engagementScore} contactId={contactId} />
                   {(contact as any).is_demo && <Badge variant="secondary">Sample</Badge>}
+                  {!lifeSeason && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground"
+                      onClick={() => setShowPauseDialog(true)}
+                    >
+                      <PauseCircle className="mr-1 h-3.5 w-3.5" />
+                      Pause
+                    </Button>
+                  )}
                 </div>
               </div>
               <Button
@@ -822,8 +840,19 @@ const UserProfilePage = () => {
                 <div className="hidden sm:block pr-10">
                   <h1 className="text-3xl font-bold break-words">{contact.name}</h1>
                   <div className="flex flex-wrap items-center gap-2 mt-1">
-                    <EngagementBadge score={engagementScore} />
+                    <EngagementBadge score={engagementScore} contactId={contactId} />
                     {(contact as any).is_demo && <Badge variant="secondary">Sample</Badge>}
+                    {!lifeSeason && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-muted-foreground"
+                        onClick={() => setShowPauseDialog(true)}
+                      >
+                        <PauseCircle className="mr-1 h-3.5 w-3.5" />
+                        Pause engagement
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -1295,6 +1324,15 @@ const UserProfilePage = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <PauseEngagementDialog
+        open={showPauseDialog}
+        onOpenChange={setShowPauseDialog}
+        contactId={contactId!}
+        contactName={contact?.name}
+      />
+
+
 
       </div>
     </div>
