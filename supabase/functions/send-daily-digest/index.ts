@@ -251,11 +251,30 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        console.log(`Sending digest with ${notifications.length} notifications to ${userEmail}`);
+        // Leave out people whose engagement is paused for a life season
+        const visibleNotifications = notifications.filter(
+          (n) => !n.contact_id || !pausedContactIds.has(n.contact_id)
+        );
+        const notificationIdsToMark = notifications.map((n) => n.id);
+
+        if (visibleNotifications.length === 0) {
+          console.log(`All notifications for user ${user.user_id} belong to paused people`);
+          await supabase
+            .from("notifications")
+            .update({
+              email_digest_sent: true,
+              email_digest_sent_at: new Date().toISOString(),
+            })
+            .in("id", notificationIdsToMark);
+          usersSkipped++;
+          continue;
+        }
+
+        console.log(`Sending digest with ${visibleNotifications.length} notifications to ${userEmail}`);
 
         // Generate and send email
         const html = generateDigestHTML(
-          notifications as NotificationWithDetails[],
+          visibleNotifications as NotificationWithDetails[],
           user.full_name || "",
           appUrl
         );
@@ -263,7 +282,7 @@ const handler = async (req: Request): Promise<Response> => {
         const emailResponse = await resend.emails.send({
           from: "Flowleed <noreply@flowleed.com>",
           to: [userEmail],
-          subject: `Daily Assignment Digest: ${notifications.length} new ${notifications.length === 1 ? "assignment" : "assignments"}`,
+          subject: `Daily Assignment Digest: ${visibleNotifications.length} new ${visibleNotifications.length === 1 ? "assignment" : "assignments"}`,
           html,
         });
 
