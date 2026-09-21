@@ -56,6 +56,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const [selectedEngagementFilter, setSelectedEngagementFilter] = useState<string | null>(null);
   const [selectedCampusFilter, setSelectedCampusFilter] = useState<string | null>(null);
+  const pausedContactIds = usePausedContactIds();
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
     const saved = localStorage.getItem(`flow-view-mode-${flow.id}`);
     if (saved === 'table' || saved === 'kanban') return saved;
