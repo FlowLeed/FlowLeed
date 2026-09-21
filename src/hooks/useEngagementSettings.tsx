@@ -88,6 +88,7 @@ export function useEngagementSettings() {
           ingredients: settings.ingredients,
           safeguards: settings.safeguards,
         },
+        p_sample_limit: 2500,
       });
       if (error) throw error;
       return data as unknown as EngagementPreview;
