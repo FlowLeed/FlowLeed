@@ -1177,6 +1177,85 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_life_seasons: {
+        Row: {
+          contact_id: string
+          created_at: string
+          created_by_user_id: string | null
+          end_reason: string | null
+          ended_by_user_id: string | null
+          ended_on: string | null
+          frozen_breakdown: Json | null
+          frozen_level: string | null
+          frozen_score: number | null
+          id: string
+          last_reminded_at: string | null
+          note: string | null
+          organization_id: string
+          reason: string
+          started_on: string
+          updated_at: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          end_reason?: string | null
+          ended_by_user_id?: string | null
+          ended_on?: string | null
+          frozen_breakdown?: Json | null
+          frozen_level?: string | null
+          frozen_score?: number | null
+          id?: string
+          last_reminded_at?: string | null
+          note?: string | null
+          organization_id: string
+          reason?: string
+          started_on?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          end_reason?: string | null
+          ended_by_user_id?: string | null
+          ended_on?: string | null
+          frozen_breakdown?: Json | null
+          frozen_level?: string | null
+          frozen_score?: number | null
+          id?: string
+          last_reminded_at?: string | null
+          note?: string | null
+          organization_id?: string
+          reason?: string
+          started_on?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_life_seasons_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_life_seasons_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_life_seasons_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_markers: {
         Row: {
           computed_at: string
