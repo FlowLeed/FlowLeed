@@ -156,7 +156,7 @@ export const FlowHeaderFilters: React.FC<FlowHeaderFiltersProps> = ({
                 Engagement Level
               </label>
               <div className="space-y-1">
-                {ENGAGEMENT_LEVELS.map((level) => (
+                {engagementLevels.map((level) => (
                   <Button
                     key={level.value}
                     variant={selectedEngagementFilter === level.value ? "secondary" : "ghost"}

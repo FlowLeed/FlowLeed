@@ -45,6 +45,7 @@ export const ContactFilters = ({
   const [searchInput, setSearchInput] = useState(filters.searchTerm);
   const { data: campuses } = useCampuses();
   const { data: markerCatalog } = useMarkerCatalog();
+  const { labels: engagementLabels } = useEngagementLabels();
 
   // Debounce search
   useEffect(() => {

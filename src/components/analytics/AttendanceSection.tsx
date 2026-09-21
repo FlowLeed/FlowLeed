@@ -54,7 +54,7 @@ export function AttendanceSection({ campusId }: AttendanceSectionProps) {
   }
 
   const pieData = Object.entries(stats.engagementDistribution).map(([level, count]) => ({
-    name: LEVEL_LABELS[level] || level,
+    name: engagementLabels[level as keyof typeof engagementLabels] || DEFAULT_LEVEL_LABELS[level] || level,
     value: count,
     color: LEVEL_COLORS[level] || '#94a3b8',
   }));
