@@ -48,6 +48,8 @@ export const EngagementSettingsContent = () => {
   const [draft, setDraft] = useState<EngagementSettings>(settings);
   const [dirty, setDirty] = useState(false);
   const [previewData, setPreviewData] = useState<EngagementPreview | null>(null);
+  const { data: activeSeasons } = useActiveLifeSeasons();
+  const pausedSeasons = activeSeasons ?? [];
 
   useEffect(() => {
     if (!dirty) setDraft(settings);
