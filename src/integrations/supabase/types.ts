@@ -5762,6 +5762,10 @@ export type Database = {
         Args: { p_org_id: string }
         Returns: undefined
       }
+      recompute_contact_markers_core: {
+        Args: { p_org_id: string }
+        Returns: undefined
+      }
       rename_org_tag: {
         Args: { p_new_tag: string; p_old_tag: string; p_org_id: string }
         Returns: number
