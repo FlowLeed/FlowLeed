@@ -28,7 +28,7 @@ export function useLifeSeason(contactId: string | undefined) {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['life-season', contactId] });
     queryClient.invalidateQueries({ queryKey: ['life-seasons', orgId] });
-    queryClient.invalidateQueries({ queryKey: ['contact-detail', contactId] });
+    queryClient.invalidateQueries({ queryKey: ['contact-comprehensive', contactId] });
   };
 
   const start = useMutation({
