@@ -142,7 +142,7 @@ export const ENGAGEMENT_PRESETS: EngagementPreset[] = [
     label: "Attendance-focused",
     description: "Showing up consistently and recently carries most of the score.",
     settings: {
-      weights: { consistency: 45, recency: 30, streak: 15, serving: 7, leadership: 3, ...ZERO_EXTRAS },
+      weights: { consistency: 45, recency: 30, streak: 15, group_attendance: 15, serving: 7, leadership: 3, ...ZERO_EXTRAS },
       windows: base.windows,
       thresholds: base.thresholds,
       ingredients: base.ingredients,
@@ -154,7 +154,7 @@ export const ENGAGEMENT_PRESETS: EngagementPreset[] = [
     label: "Serving-focused",
     description: "Serving on a team and leading others carry the most weight.",
     settings: {
-      weights: { consistency: 20, recency: 15, streak: 10, serving: 35, leadership: 20, ...ZERO_EXTRAS },
+      weights: { consistency: 20, recency: 15, streak: 10, group_attendance: 12, serving: 35, leadership: 20, ...ZERO_EXTRAS },
       windows: base.windows,
       thresholds: base.thresholds,
       ingredients: base.ingredients,
