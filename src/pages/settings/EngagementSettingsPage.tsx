@@ -125,11 +125,11 @@ export const EngagementSettingsContent = () => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={runPreview} disabled={preview.isPending || isLoading} className="min-h-11">
-            {preview.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+          <Button variant="outline" size="sm" onClick={runPreview} disabled={preview.isPending || isLoading}>
+            {preview.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
             Preview
           </Button>
-          <Button onClick={() => handleSave(true)} disabled={readOnly || !dirty || save.isPending} className="min-h-11">
+          <Button size="sm" onClick={() => handleSave(true)} disabled={readOnly || !dirty || save.isPending}>
             {save.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
             Save and update scores
           </Button>
