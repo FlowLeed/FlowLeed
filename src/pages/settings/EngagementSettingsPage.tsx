@@ -124,16 +124,28 @@ export const EngagementSettingsContent = () => {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={runPreview} disabled={preview.isPending || isLoading}>
-            {preview.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
+        <div className="flex shrink-0 items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-xs"
+            onClick={runPreview}
+            disabled={preview.isPending || isLoading}
+          >
+            {preview.isPending ? <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             Preview
           </Button>
-          <Button size="sm" onClick={() => handleSave(true)} disabled={readOnly || !dirty || save.isPending}>
-            {save.isPending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Save and update scores
+          <Button
+            size="sm"
+            className="h-8 px-3 text-xs"
+            onClick={() => handleSave(true)}
+            disabled={readOnly || !dirty || save.isPending}
+          >
+            {save.isPending ? <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+            Save &amp; update
           </Button>
         </div>
+
       </section>
 
       {pausedSeasons.length > 0 && (
