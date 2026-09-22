@@ -31,3 +31,6 @@
 - [x] Signal, attention-list and digest exclusions
 - [x] Paused filters in People and Flows
 - [x] 30-day reminders and auto-end on renewed attendance
+
+## Engagement scoring
+- [x] Add separately weighted recent group attendance without double-counting service attendance
