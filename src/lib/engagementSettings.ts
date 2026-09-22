@@ -159,13 +159,13 @@ export const ENGAGEMENT_PRESETS: EngagementPreset[] = [
     description: "Group attendance and being in an active group carry the most weight.",
     settings: {
       weights: {
+        ...ZERO_EXTRAS,
         consistency: 15,
         recency: 10,
         group_attendance: 20,
         streak: 5,
         serving: 10,
         leadership: 10,
-        ...ZERO_EXTRAS,
         group_membership: 30,
       },
       windows: base.windows,
