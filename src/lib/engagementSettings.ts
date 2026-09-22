@@ -71,7 +71,6 @@ export const DEFAULT_LABELS: EngagementLabels = {
 };
 
 const ZERO_EXTRAS = {
-  group_attendance: 0,
   group_membership: 0,
   flow_moments: 0,
   notes_interactions: 0,
@@ -82,7 +81,16 @@ const ZERO_EXTRAS = {
 
 export const DEFAULT_ENGAGEMENT_SETTINGS: EngagementSettings = {
   preset_key: "balanced",
-  weights: { consistency: 35, recency: 20, streak: 15, serving: 20, leadership: 10, ...ZERO_EXTRAS },
+  weights: {
+    consistency: 35,
+    recency: 20,
+    streak: 15,
+    group_attendance: 15,
+    serving: 20,
+    leadership: 10,
+    ...ZERO_EXTRAS,
+  },
+
   windows: { consistency_weeks: 12, recency_days: 90, serving_days: 90, activity_days: 90 },
   thresholds: { highly_engaged: 75, active: 50, at_risk: 25, new_max_checkins: 3 },
   ingredients: {
@@ -134,7 +142,7 @@ export const ENGAGEMENT_PRESETS: EngagementPreset[] = [
     label: "Attendance-focused",
     description: "Showing up consistently and recently carries most of the score.",
     settings: {
-      weights: { consistency: 45, recency: 30, streak: 15, serving: 7, leadership: 3, ...ZERO_EXTRAS },
+      weights: { consistency: 45, recency: 30, streak: 15, group_attendance: 15, serving: 7, leadership: 3, ...ZERO_EXTRAS },
       windows: base.windows,
       thresholds: base.thresholds,
       ingredients: base.ingredients,
@@ -146,7 +154,7 @@ export const ENGAGEMENT_PRESETS: EngagementPreset[] = [
     label: "Serving-focused",
     description: "Serving on a team and leading others carry the most weight.",
     settings: {
-      weights: { consistency: 20, recency: 15, streak: 10, serving: 35, leadership: 20, ...ZERO_EXTRAS },
+      weights: { consistency: 20, recency: 15, streak: 10, group_attendance: 12, serving: 35, leadership: 20, ...ZERO_EXTRAS },
       windows: base.windows,
       thresholds: base.thresholds,
       ingredients: base.ingredients,
