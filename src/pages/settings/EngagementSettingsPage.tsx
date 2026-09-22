@@ -14,6 +14,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
@@ -57,6 +64,18 @@ export const EngagementSettingsContent = () => {
 
   const readOnly = !isOrgAdmin;
   const weightTotal = useMemo(() => activeWeightTotal(draft), [draft]);
+  const previewSamplesByLevel = useMemo(() => {
+    const grouped = Object.fromEntries(LEVEL_ORDER.map((level) => [level, []])) as Record<
+      EngagementLevelKey,
+      EngagementPreview["samples"]
+    >;
+    for (const sample of previewData?.samples ?? []) {
+      if (LEVEL_ORDER.includes(sample.engagement_level as EngagementLevelKey)) {
+        grouped[sample.engagement_level as EngagementLevelKey].push(sample);
+      }
+    }
+    return grouped;
+  }, [previewData]);
 
   const update = (patch: Partial<EngagementSettings>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -399,59 +418,74 @@ export const EngagementSettingsContent = () => {
         </AccordionItem>
       </Accordion>
 
-      {previewData && (
-        <section className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h2 className="text-lg font-semibold">Preview</h2>
-              <p className="text-sm text-muted-foreground">
-                {previewData.people_scored.toLocaleString()} people, average score {Math.round(previewData.average_score)}.
+      <Dialog open={!!previewData} onOpenChange={(open) => !open && setPreviewData(null)}>
+        <DialogContent className="flex max-h-[calc(100dvh-1rem)] max-w-4xl flex-col gap-0 p-0">
+          <DialogHeader className="shrink-0 border-b px-5 py-4 pr-12 sm:px-6">
+            <DialogTitle>Engagement preview</DialogTitle>
+            {previewData && (
+              <DialogDescription>
+                {previewData.people_scored.toLocaleString()} people reviewed, with an average score of{" "}
+                {Math.round(previewData.average_score)}.
                 {previewData.sampled
-                  ? " Estimated from a sample of your people so it stays fast. Nothing changes until you save."
-                  : " Nothing changes until you save."}
-              </p>
-            </div>
-            <Button variant="ghost" onClick={() => setPreviewData(null)} className="min-h-11">
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Hide
-            </Button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-5">
-            {LEVEL_ORDER.map((level) => (
-              <Card key={level} className="rounded-md">
-                <CardContent className="p-4">
-                  <p className={`text-sm font-medium ${levelTone[level]}`}>{draft.labels[level]}</p>
-                  <p className="mt-1 text-2xl font-semibold">
-                    {(previewData.distribution?.[level] ?? 0).toLocaleString()}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          {previewData.samples?.length > 0 && (
-            <Card className="rounded-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">A few people, scored this way</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {previewData.samples.map((sample) => (
-                  <div key={sample.contact_id} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="truncate">
-                      {sample.full_name || "Unnamed"}
-                    </span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <span className={levelTone[(sample.engagement_level as EngagementLevelKey) ?? "new"]}>
-                        {draft.labels[(sample.engagement_level as EngagementLevelKey) ?? "new"]}
-                      </span>
-                      <Badge variant="outline">{sample.score}</Badge>
-                    </span>
+                  ? " Results are estimated from a sample so the preview stays fast."
+                  : " These results include everyone."}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {previewData && (
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                {LEVEL_ORDER.map((level) => (
+                  <div key={level} className="rounded-md border p-3">
+                    <p className={`text-xs font-medium sm:text-sm ${levelTone[level]}`}>{draft.labels[level]}</p>
+                    <p className="mt-1 text-xl font-semibold">
+                      {(previewData.distribution?.[level] ?? 0).toLocaleString()}
+                    </p>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+
+              <div>
+                <h3 className="font-semibold">A few people from each level</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Use these examples to check how the draft settings score different kinds of engagement.
+                </p>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {LEVEL_ORDER.map((level) => {
+                  const levelSamples = previewSamplesByLevel[level];
+                  return (
+                    <section key={level} className="rounded-md border">
+                      <div className="flex items-center justify-between border-b px-4 py-3">
+                        <h4 className={`text-sm font-semibold ${levelTone[level]}`}>{draft.labels[level]}</h4>
+                        <span className="text-xs text-muted-foreground">
+                          {(previewData.distribution?.[level] ?? 0).toLocaleString()} people
+                        </span>
+                      </div>
+                      <div className="divide-y">
+                        {levelSamples.length > 0 ? (
+                          levelSamples.map((sample) => (
+                            <div key={sample.contact_id} className="flex min-h-11 items-center justify-between gap-3 px-4 py-2 text-sm">
+                              <span className="truncate">{sample.full_name || "Unnamed"}</span>
+                              <Badge variant="outline" className="shrink-0">{sample.score}</Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="px-4 py-3 text-sm text-muted-foreground">No one in this level.</p>
+                        )}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+
+              <p className="text-xs text-muted-foreground">Nothing changes until you save and update scores.</p>
+            </div>
           )}
-        </section>
-      )}
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-wrap items-center gap-2 border-t pt-4">
         <Button
