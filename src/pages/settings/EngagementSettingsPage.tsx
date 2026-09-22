@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Activity, LockKeyhole, RefreshCw, RotateCcw, Sparkles } from "lucide-react";
+import { Activity, LockKeyhole, RefreshCw, RotateCcw } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
