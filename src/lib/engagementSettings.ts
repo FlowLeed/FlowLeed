@@ -3,6 +3,7 @@ export type EngagementLevelKey = "highly_engaged" | "active" | "at_risk" | "inac
 export type EngagementWeights = {
   consistency: number;
   recency: number;
+  group_attendance: number;
   streak: number;
   serving: number;
   leadership: number;
@@ -70,6 +71,7 @@ export const DEFAULT_LABELS: EngagementLabels = {
 };
 
 const ZERO_EXTRAS = {
+  group_attendance: 0,
   group_membership: 0,
   flow_moments: 0,
   notes_interactions: 0,
@@ -157,12 +159,13 @@ export const ENGAGEMENT_PRESETS: EngagementPreset[] = [
     description: "Group attendance and being in an active group carry the most weight.",
     settings: {
       weights: {
-        consistency: 25,
-        recency: 15,
-        streak: 10,
+        ...ZERO_EXTRAS,
+        consistency: 15,
+        recency: 10,
+        group_attendance: 20,
+        streak: 5,
         serving: 10,
         leadership: 10,
-        ...ZERO_EXTRAS,
         group_membership: 30,
       },
       windows: base.windows,
@@ -192,9 +195,9 @@ export const ENGAGEMENT_INGREDIENTS: IngredientMeta[] = [
   },
   {
     key: "group_attendance",
-    weightKey: null,
+    weightKey: "group_attendance",
     label: "Group attendance",
-    description: "Attendance recorded at group meetings, counted alongside service check-ins.",
+    description: "Recent attendance recorded at group meetings, separate from service check-ins.",
   },
   {
     key: "serving",
@@ -280,9 +283,10 @@ export function presetSettings(key: string): EngagementSettings {
 export function activeWeightTotal(settings: EngagementSettings): number {
   const { weights, ingredients } = settings;
   let total = 0;
-  if (ingredients.service_checkins || ingredients.group_attendance) {
+  if (ingredients.service_checkins) {
     total += weights.consistency + weights.recency + weights.streak;
   }
+  if (ingredients.group_attendance) total += weights.group_attendance;
   if (ingredients.serving) total += weights.serving;
   if (ingredients.leadership) total += weights.leadership;
   if (ingredients.group_membership) total += weights.group_membership;
@@ -298,6 +302,7 @@ export const BREAKDOWN_LABELS: Record<string, string> = {
   consistency: "Consistency",
   recency: "Recency",
   streak: "Streak",
+  group_attendance: "Group attendance",
   serving: "Serving",
   leadership: "Leadership",
   group_membership: "Group membership",

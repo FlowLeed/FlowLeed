@@ -225,7 +225,9 @@ export const EngagementSettingsContent = () => {
                       max={60}
                       step={1}
                       disabled={readOnly}
-                      onValueChange={([value]) => setWeight(ingredient.weightKey!, value)}
+                      onValueChange={([value]) => {
+                        if (ingredient.weightKey) setWeight(ingredient.weightKey, value);
+                      }}
                     />
                   </CardContent>
                 )}
