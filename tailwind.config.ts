@@ -56,6 +56,16 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				story: {
+					background: 'hsl(var(--story-background))',
+					paper: 'hsl(var(--story-paper))',
+					media: 'hsl(var(--story-media))',
+					border: 'hsl(var(--story-border))',
+					overlay: 'hsl(var(--story-overlay))',
+					'overlay-foreground': 'hsl(var(--story-overlay-foreground))',
+					'overlay-muted': 'hsl(var(--story-overlay-muted))',
+					'overlay-border': 'hsl(var(--story-overlay-border))',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -110,6 +120,10 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			}
+			,backgroundImage: {
+				'story-scrim': 'var(--story-scrim)',
+				'story-scrim-soft': 'var(--story-scrim-soft)'
 			}
 		}
 	},
