@@ -1,31 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, Loader2, Play, Search, X } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { Loader2, Play, Sparkles, Zap, X, ArrowLeft } from "lucide-react";
-import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
-import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 
-import { Input } from "@/components/ui/input";
+import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
+import { PublicStoryVideo, StoryMosaic } from "@/components/content/StoryMosaic";
+import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
-import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
 import { cn } from "@/lib/utils";
-
-// Toggle to re-enable the one-sentence story highlight on public pages
-// (hero subtitle + video card subtitles). Set to `true` to show.
-const SHOW_PUBLIC_DESCRIPTIONS = false;
-
-interface PublicVideo {
-  id: string;
-  title: string | null;
-  thumbnail_url: string | null;
-  channel_name: string | null;
-  short_description: string | null;
-  youtube_id: string;
-  duration_seconds: number | null;
-  is_featured?: boolean;
-}
+import { handleYoutubeThumbError, resolveThumb } from "@/lib/youtubeThumbnail";
 
 interface VideoTheme {
   video_id: string;
@@ -49,40 +34,38 @@ interface AskResponse {
   sources: AskSource[];
 }
 
+const parseStoredSearch = (key: string) => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? JSON.parse(raw) as { query: string; activeQuery: string; answer: AskResponse | null } : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function PublicContentPage() {
   const { slug } = useParams<{ slug: string }>();
   const storageKey = `public-content-search:${slug ?? ""}`;
-  const initialState = (() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const raw = sessionStorage.getItem(storageKey);
-      return raw ? (JSON.parse(raw) as { query: string; activeQuery: string; answer: AskResponse | null }) : null;
-    } catch {
-      return null;
-    }
-  })();
+  const initialState = useMemo(() => parseStoredSearch(storageKey), [storageKey]);
   const [query, setQuery] = useState(initialState?.query ?? "");
-  const [videos, setVideos] = useState<PublicVideo[]>([]);
+  const [videos, setVideos] = useState<PublicStoryVideo[]>([]);
   const [videoThemes, setVideoThemes] = useState<Record<string, string[]>>({});
-  const [activeTheme, setActiveTheme] = useState<string>("__all__");
-  const [orgName, setOrgName] = useState<string>("");
+  const [activeTheme, setActiveTheme] = useState("__all__");
+  const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(true);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [heroPlaying, setHeroPlaying] = useState(false);
   const [searching, setSearching] = useState(false);
   const [answer, setAnswer] = useState<AskResponse | null>(initialState?.answer ?? null);
-  const [activeQuery, setActiveQuery] = useState<string>(initialState?.activeQuery ?? "");
+  const [activeQuery, setActiveQuery] = useState(initialState?.activeQuery ?? "");
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      if (answer && !searching) {
-        sessionStorage.setItem(storageKey, JSON.stringify({ query, activeQuery, answer }));
-      } else if (!answer) {
-        sessionStorage.removeItem(storageKey);
-      }
-    } catch {
-      // ignore
+    if (answer && !searching) {
+      sessionStorage.setItem(storageKey, JSON.stringify({ query, activeQuery, answer }));
+    } else if (!answer) {
+      sessionStorage.removeItem(storageKey);
     }
   }, [storageKey, query, activeQuery, answer, searching]);
 
@@ -90,82 +73,67 @@ export default function PublicContentPage() {
     const load = async () => {
       if (!slug) return;
       setLoading(true);
-      const { data: orgRows } = await supabase.rpc("get_public_organization" as any, { p_slug: slug });
+      const { data: orgRows } = await supabase.rpc("get_public_organization" as never, { p_slug: slug } as never);
       const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { id: string; name: string } | undefined;
 
       if (org) {
         setOrgName(org.name);
-        const { data: vids } = await supabase
-          .from("content_videos" as any)
+        const { data: videoRows } = await supabase
+          .from("content_videos" as never)
           .select("id, title, thumbnail_url, channel_name, short_description, youtube_id, duration_seconds, is_featured")
           .eq("organization_id", org.id)
           .eq("consent_level", "public_search")
           .order("created_at", { ascending: false });
-        const list = (vids as unknown as PublicVideo[]) ?? [];
+        const list = (videoRows as unknown as PublicStoryVideo[]) ?? [];
         setVideos(list);
 
-        if (list.length) {
+        if (list.length > 0) {
           const { data: analyses } = await supabase
-            .from("content_analyses" as any)
+            .from("content_analyses" as never)
             .select("video_id, themes")
-            .in("video_id", list.map((v) => v.id));
-          const map: Record<string, string[]> = {};
-          ((analyses as unknown as VideoTheme[]) ?? []).forEach((a) => {
-            map[a.video_id] = a.themes ?? [];
+            .in("video_id", list.map((video) => video.id));
+          const themes: Record<string, string[]> = {};
+          ((analyses as unknown as VideoTheme[]) ?? []).forEach((analysis) => {
+            themes[analysis.video_id] = analysis.themes ?? [];
           });
-          setVideoThemes(map);
+          setVideoThemes(themes);
         }
       }
       setLoading(false);
     };
-    load();
+    void load();
   }, [slug]);
 
   const themeChips = useMemo(() => {
     const counts = new Map<string, number>();
-    Object.values(videoThemes).forEach((themes) => {
-      themes.forEach((t) => {
-        const key = t.trim().toLowerCase();
-        if (!key) return;
-        counts.set(key, (counts.get(key) ?? 0) + 1);
-      });
-    });
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map(([t]) => t);
+    Object.values(videoThemes).forEach((themes) => themes.forEach((theme) => {
+      const key = theme.trim().toLowerCase();
+      if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+    }));
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([theme]) => theme);
   }, [videoThemes]);
 
-  const heroVideo = useMemo(() => videos.find((v) => v.is_featured) ?? videos[0] ?? null, [videos]);
-  const gridVideos = useMemo(() => {
-    const rest = heroVideo ? videos.filter((v) => v.id !== heroVideo.id) : videos;
-    return rest.filter((v) => {
-      if (activeTheme !== "__all__") {
-        const themes = (videoThemes[v.id] ?? []).map((t) => t.trim().toLowerCase());
-        if (!themes.includes(activeTheme)) return false;
-      }
-      return true;
-    });
-  }, [videos, videoThemes, activeTheme, heroVideo]);
+  const heroVideo = useMemo(() => videos.find((video) => video.is_featured) ?? videos[0] ?? null, [videos]);
+  const visibleVideos = useMemo(() => {
+    const withoutHero = heroVideo ? videos.filter((video) => video.id !== heroVideo.id) : videos;
+    if (activeTheme === "__all__") return withoutHero;
+    return withoutHero.filter((video) => (videoThemes[video.id] ?? []).some((theme) => theme.trim().toLowerCase() === activeTheme));
+  }, [activeTheme, heroVideo, videoThemes, videos]);
 
-  const runAISearch = async (q: string) => {
-    if (!q.trim() || !slug) return;
-    setActiveQuery(q);
-    setQuery(q);
+  const runAISearch = async (searchQuery: string) => {
+    if (!searchQuery.trim() || !slug) return;
+    setActiveQuery(searchQuery);
+    setQuery(searchQuery);
     setSearching(true);
     setAnswer({ answer: "", sources: [] });
     try {
       const { data, error } = await supabase.functions.invoke("content-ask", {
-        body: { query: q, orgSlug: slug, public: true },
+        body: { query: searchQuery, orgSlug: slug, public: true },
       });
       if (error) throw error;
-      const payload = (data as AskResponse) ?? { answer: "", sources: [] };
-      setAnswer(payload);
+      setAnswer((data as AskResponse) ?? { answer: "", sources: [] });
     } catch {
-      setAnswer({
-        answer: "Something went wrong while searching. Please try again.",
-        sources: [],
-      });
+      setAnswer({ answer: "Something went wrong while searching. Please try again.", sources: [] });
     } finally {
       setSearching(false);
     }
@@ -180,451 +148,199 @@ export default function PublicContentPage() {
     setMobileSearchOpen(false);
   };
 
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const heroThumbnail = heroVideo ? resolveThumb(heroVideo.thumbnail_url, heroVideo.youtube_id) : null;
 
   return (
-    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[#0a0a0f] text-white">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-md border-b border-white/5" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 md:gap-6 md:px-6 md:py-4">
+    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-story-background text-foreground">
+      <header className="sticky top-0 z-50 border-b border-story-border bg-story-background/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 md:h-20 md:px-6">
           {slug && (
-            <button
-              type="button"
-              onClick={clearSearch}
-              className="flex min-w-0 flex-1 items-center rounded-md transition hover:opacity-80 md:flex-none"
-              aria-label="Back to library home"
-            >
+            <Button variant="ghost" onClick={clearSearch} className="h-11 min-w-0 justify-start px-0 hover:bg-transparent hover:opacity-75" aria-label="Back to library home">
               <img
                 src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
-                alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="h-8 w-auto max-w-full object-contain md:h-10 md:max-w-[12rem]"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                alt={orgName ? `${orgName} logo` : "Church logo"}
+                className="h-8 w-auto max-w-[10rem] object-contain md:h-9 md:max-w-[13rem]"
+                onError={(event) => { event.currentTarget.style.display = "none"; }}
               />
-            </button>
+            </Button>
           )}
-          {/* Desktop search */}
-          <form
-            onSubmit={(e) => { e.preventDefault(); runAISearch(query); }}
-            className="hidden md:block flex-1 max-w-2xl ml-auto"
-          >
-            <div className="group relative rounded-full p-[1.5px] bg-gradient-to-r from-fuchsia-500/60 via-violet-500/60 to-sky-400/60 hover:from-fuchsia-400 hover:via-violet-400 hover:to-sky-300 transition-all shadow-[0_0_30px_-8px_rgba(168,85,247,0.45)] hover:shadow-[0_0_40px_-6px_rgba(168,85,247,0.7)]">
-              <div className="flex items-center gap-2 rounded-full bg-[#0b0b12]/90 backdrop-blur-xl pl-5 pr-2 py-1.5">
-                <AiSparkleIcon className="h-5 w-5 text-fuchsia-300 shrink-0 drop-shadow-[0_0_6px_rgba(232,121,249,0.6)]" />
-                <Input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Ask anything — 'stories about transformation'…"
-                  style={{ fontSize: "16px" }}
-                  className="border-0 bg-transparent h-9 focus-visible:ring-0 px-1 text-base text-white placeholder:text-white/40"
-                />
-                <Button
-                  type="submit"
-                  disabled={searching || !query.trim()}
-                  size="sm"
-                  className="rounded-full h-8 px-4 bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:from-fuchsia-400 hover:to-violet-400 text-white border-0 disabled:opacity-40 disabled:from-white/10 disabled:to-white/10"
-                >
-                  {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AiSparkleIcon className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-          </form>
-          {/* Mobile search icon */}
-          <button
-            type="button"
-            onClick={() => setMobileSearchOpen((v) => !v)}
-            className="ml-auto inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/80 hover:bg-white/10 md:hidden"
-            aria-label="Search"
-          >
-            <AiSparkleIcon className="h-5 w-5 text-fuchsia-300 drop-shadow-[0_0_6px_rgba(232,121,249,0.6)]" />
-          </button>
+          <nav className="ml-auto hidden items-center gap-6 text-sm text-muted-foreground md:flex" aria-label="Story Library">
+            <a href="#stories" className="transition-colors hover:text-foreground">Stories</a>
+            <a href="#discover" className="transition-colors hover:text-foreground">Discover</a>
+          </nav>
+          <Button variant="ghost" size="icon" onClick={() => setMobileSearchOpen((open) => !open)} className="ml-auto h-11 w-11 md:hidden" aria-label="Search stories">
+            <Search className="h-5 w-5" />
+          </Button>
         </div>
-        {/* Mobile expandable search */}
         {mobileSearchOpen && (
-          <form
-            onSubmit={(e) => { e.preventDefault(); runAISearch(query); setMobileSearchOpen(false); }}
-            className="md:hidden w-full px-4 pb-3"
-          >
-            <div className="rounded-full p-[1.5px] bg-gradient-to-r from-fuchsia-500/70 via-violet-500/70 to-sky-400/70 shadow-[0_0_24px_-8px_rgba(168,85,247,0.55)]">
-              <div className="flex min-w-0 items-center gap-2 rounded-full bg-[#0b0b12]/90 py-1 pl-4 pr-1 backdrop-blur-xl">
-                <AiSparkleIcon className="h-4 w-4 text-fuchsia-300 shrink-0" />
-                <Input
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Ask anything…"
-                  style={{ fontSize: "16px" }}
-                  className="h-9 min-w-0 border-0 bg-transparent px-1 text-base text-white placeholder:text-white/40 focus-visible:ring-0"
-                />
-                {query && (
-                  <Button type="submit" disabled={searching} size="sm" className="rounded-full h-8 px-3 bg-gradient-to-r from-fuchsia-500 to-violet-500 hover:from-fuchsia-400 hover:to-violet-400 text-white border-0">
-                    {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <AiSparkleIcon className="h-3.5 w-3.5" />}
-                  </Button>
-                )}
-              </div>
+          <form onSubmit={(event) => { event.preventDefault(); void runAISearch(query); setMobileSearchOpen(false); }} className="border-t border-story-border px-4 py-3 md:hidden">
+            <div className="mx-auto flex max-w-7xl items-center gap-2">
+              <AiSparkleIcon className="h-5 w-5 shrink-0 text-primary" />
+              <Input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="What kind of story do you need?" className="h-11 border-0 bg-transparent px-1 text-base shadow-none focus-visible:ring-0" />
+              <Button type="submit" size="sm" disabled={searching || !query.trim()} className="h-10 px-4">Search</Button>
             </div>
           </form>
         )}
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 pb-20 md:px-6">
-        {/* AI Answer takes over */}
+      <main>
         {answer !== null ? (
-          <section className="space-y-5 pt-6 md:pt-8">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1 truncate text-sm text-white/50">
-                Asked: <span className="text-white font-medium">"{activeQuery}"</span>
-              </div>
-              <Button variant="ghost" size="sm" onClick={clearSearch} className="shrink-0 text-white/70 hover:text-white hover:bg-white/10">
-                <X className="h-4 w-4 mr-1" /> Clear
-              </Button>
-            </div>
-
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="hidden sm:flex h-9 w-9 rounded-full bg-violet-500/20 text-violet-300 items-center justify-center shrink-0">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1 space-y-5">
-                {searching && !answer.answer ? (
-                  <div className="flex items-center gap-2 text-sm text-white/50 py-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Listening to your library…
-                  </div>
-                ) : (
-                  (() => {
-                    const sourceMap = new Map(answer.sources.map((s) => [s.index, s]));
-                    const paragraphs = answer.answer.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
-                    return paragraphs.map((para, pIdx) => {
-                      const cited: number[] = [];
-                      const seen = new Set<number>();
-                      const re = /\[#(\d+)\]/g;
-                      let m;
-                      while ((m = re.exec(para)) !== null) {
-                        const idx = Number(m[1]);
-                        if (!seen.has(idx) && sourceMap.has(idx)) {
-                          cited.push(idx);
-                          seen.add(idx);
-                        }
-                      }
-                      const cleaned = para.replace(/\s*\[#\d+\]/g, "");
-                      return (
-                        <div key={pIdx} className="space-y-3">
-                          <p className="text-[15px] leading-relaxed text-white/90">{cleaned}</p>
-                          {cited.map((idx) => {
-                            const s = sourceMap.get(idx)!;
-                            return (
-                              <Link
-                                key={s.chunk_id}
-                                to={`/org/${slug}/content/videos/${s.video_id}?t=${Math.floor(s.start_seconds)}`}
-                className="group block max-w-full overflow-hidden rounded-xl border border-white/10 bg-white/5 p-3 transition-all hover:border-violet-400/40 hover:bg-white/10 sm:flex sm:gap-3"
-                              >
-                                <div className="relative mx-auto mb-3 aspect-[9/16] max-h-72 w-full max-w-[180px] shrink-0 overflow-hidden rounded-lg bg-black sm:mb-0 sm:aspect-video sm:w-32 sm:max-w-none">
-                                  {s.thumbnail_url ? (
-                                    <img src={s.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-contain" />
-                                  ) : null}
-                                  <div className="absolute top-1.5 left-1.5 px-1.5 h-5 inline-flex items-center rounded-md bg-black/70 text-white text-[10px] font-semibold gap-1">
-                                    <Play className="h-2.5 w-2.5 fill-current" />
-                                    {formatTimestamp(s.start_seconds)}
-                                  </div>
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="mb-1.5">
-                                    <div className="font-semibold text-sm text-white leading-snug break-words">
-                                      {s.title ?? "Untitled"}
-                                    </div>
-                                    {s.channel_name && (
-                                      <div className="text-[11px] text-white/40 truncate mt-0.5">{s.channel_name}</div>
-                                    )}
-                                  </div>
-                                  <blockquote className="border-l-2 border-violet-400/60 pl-3 text-[13px] italic text-white/60 line-clamp-3 leading-relaxed">
-                                    "{s.snippet.trim()}"
-                                  </blockquote>
-                                </div>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      );
-                    });
-                  })()
-                )}
-              </div>
-            </div>
-          </section>
+          <SearchResults answer={answer} activeQuery={activeQuery} searching={searching} slug={slug ?? ""} onClear={clearSearch} />
         ) : (
           <>
-            {/* Immersive Hero */}
-            {heroVideo && (
-              <>
-                {heroPlaying ? (
-                  <section className="mt-4 flex flex-col items-center gap-3 md:mt-6">
-                    <div className="w-full max-w-[420px] flex justify-start">
-                      <button
-                        onClick={() => setHeroPlaying(false)}
-                        className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-full px-4 py-2 transition"
-                      >
-                        <ArrowLeft className="h-4 w-4" />
-                        Back
-                      </button>
+            <section className="mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-10 md:min-h-[calc(100svh-8rem)] md:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)] md:gap-14 md:px-6 md:py-12 lg:gap-20">
+              <div className="order-2 max-w-2xl md:order-1">
+                <p className="mb-4 text-xs font-semibold uppercase text-primary">Featured story</p>
+                <h1 className="text-5xl font-semibold leading-[0.98] text-foreground md:text-7xl lg:text-8xl">Stories of<br />life change.</h1>
+                {heroVideo && (
+                  <div className="mt-8 border-l-2 border-primary pl-5 md:mt-10 md:pl-7">
+                    <h2 className="text-2xl font-semibold text-foreground md:text-3xl">{heroVideo.title ?? "Featured story"}</h2>
+                    {heroVideo.channel_name && <p className="mt-2 text-sm text-muted-foreground">{heroVideo.channel_name}</p>}
+                    {heroVideo.short_description && <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">{heroVideo.short_description}</p>}
+                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                      <Button onClick={() => setHeroPlaying(true)} className="h-11 gap-2 px-5">
+                        <Play className="h-4 w-4 fill-current" /> Watch story
+                      </Button>
+                      <Button asChild variant="outline" className="h-11 px-5">
+                        <Link to={`/${slug}/content/videos/${heroVideo.id}`}>More info</Link>
+                      </Button>
                     </div>
-                    <div className="relative aspect-[9/16] w-full max-w-[420px] overflow-hidden rounded-2xl bg-black md:rounded-3xl">
-                      <YouTubePlayer
-                        youtubeId={heroVideo.youtube_id}
-                        title={heroVideo.title ?? "Featured video"}
-                        autoplay
-                        className="absolute inset-0"
-                      />
-                    </div>
-                  </section>
-                ) : (
-                <section className="relative mt-4 flex min-h-[500px] overflow-hidden rounded-2xl md:mt-6 md:min-h-[560px] md:rounded-3xl">
-                  {(() => {
-                    const heroThumb = resolveThumb(heroVideo.thumbnail_url, heroVideo.youtube_id);
-                    return (
-                      <>
-                        {/* Blurred ambient backdrop (uses the same thumb, heavily blurred) */}
-                        <div className="absolute inset-0">
-                          {heroThumb ? (
-                            <img
-                              src={heroThumb}
-                              alt=""
-                              onError={handleYoutubeThumbError}
-                              aria-hidden
-                              className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-60"
-                            />
-                          ) : (
-                            <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
-                          )}
-                          <div className="absolute inset-0 bg-[#0a0a0f]/55" />
-                          {/* Desktop: left-side darken for text */}
-                          <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/70 to-transparent" />
-                          {/* Mobile: bottom darken for text */}
-                          <div className="absolute inset-x-0 bottom-0 h-2/3 md:hidden bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/80 to-transparent" />
-                        </div>
-
-                        {/* Portrait poster — desktop right, mobile centered */}
-                        {heroThumb && (
-                          <>
-                            {/* Desktop poster */}
-                            <div className="hidden md:block absolute right-10 lg:right-16 top-1/2 -translate-y-1/2 w-[260px] lg:w-[300px] aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10 z-20">
-                              <img
-                                src={heroThumb}
-                                alt={heroVideo.title ?? ""}
-                                onError={handleYoutubeThumbError}
-                                className="w-full h-full object-cover"
-                              />
-                              {!heroPlaying && (
-                                <button
-                                  onClick={() => setHeroPlaying(true)}
-                                  aria-label="Play featured story"
-                                  className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition"
-                                >
-                                  <span className="h-14 w-14 rounded-full border border-white/60 bg-black/40 backdrop-blur flex items-center justify-center">
-                                    <Play className="h-5 w-5 fill-current text-white ml-0.5" />
-                                  </span>
-                                </button>
-                              )}
-                            </div>
-                            {/* Mobile poster */}
-                            <div className="absolute left-1/2 top-5 z-20 aspect-[9/16] w-[52%] max-w-[205px] -translate-x-1/2 overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10 md:hidden">
-                              <img
-                                src={heroThumb}
-                                alt={heroVideo.title ?? ""}
-                                onError={handleYoutubeThumbError}
-                                className="w-full h-full object-cover"
-                              />
-                              {!heroPlaying && (
-                                <button
-                                  onClick={() => setHeroPlaying(true)}
-                                  aria-label="Play featured story"
-                                  className="absolute inset-0 flex items-center justify-center bg-black/20"
-                                >
-                                  <span className="h-12 w-12 rounded-full border border-white/60 bg-black/40 backdrop-blur flex items-center justify-center">
-                                    <Play className="h-4 w-4 fill-current text-white ml-0.5" />
-                                  </span>
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </>
-                    );
-                  })()}
-
-                  {/* Mobile overlay content (bottom) */}
-                  {!heroPlaying && (
-                    <div className="pointer-events-none relative z-10 flex w-full flex-col justify-end gap-3 p-5 pb-6 md:hidden">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/15 backdrop-blur w-fit text-[10px] font-bold tracking-wider uppercase">
-                        <Zap className="h-3 w-3 fill-current" />
-                        Featured
-                      </div>
-                      <h1 className="break-words text-2xl font-bold leading-[1.1] tracking-tight">
-                        {heroVideo.title ?? "Discover Stories That Matter"}
-                      </h1>
-                      {SHOW_PUBLIC_DESCRIPTIONS && heroVideo.short_description && (
-                        <p className="text-sm text-white/75 leading-relaxed">
-                          {heroVideo.short_description}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Desktop overlay content */}
-                  {!heroPlaying && (
-                    <div className="relative z-10 hidden md:flex flex-col justify-center max-w-xl p-10 md:p-14 gap-6">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/10 backdrop-blur w-fit text-[11px] font-bold tracking-wider uppercase">
-                        <Zap className="h-3 w-3 fill-current" />
-                        Featured
-                      </div>
-                      <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.05]">
-                        {heroVideo.title ?? "Discover Stories That Matter"}
-                      </h1>
-                      {SHOW_PUBLIC_DESCRIPTIONS && (
-                        <p className="text-base text-white/80 max-w-lg leading-relaxed">
-                          {heroVideo.short_description ??
-                            `Experience powerful narratives of transformation, faith, and hope${orgName ? ` from ${orgName}` : ""}.`}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-3 pt-2">
-                        <Button
-                          onClick={() => setHeroPlaying(true)}
-                          className="rounded-full h-12 px-6 bg-white text-black hover:bg-white/90 font-semibold gap-2"
-                        >
-                          <Play className="h-4 w-4 fill-current" />
-                          Watch Now
-                        </Button>
-                        <Link
-                          to={`/org/${slug}/content/videos/${heroVideo.id}`}
-                          className="text-sm text-white/70 hover:text-white px-4 py-3"
-                        >
-                          More info
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </section>
+                  </div>
                 )}
-
-
-              </>
-            )}
-
-            {/* Theme Chips */}
-            {themeChips.length > 0 && (
-              <div className="mt-6 w-full max-w-full overflow-hidden md:mt-10">
-                <div className="flex max-w-full items-center gap-2 overflow-x-auto overscroll-x-contain pb-1 scrollbar-none md:flex-wrap md:overflow-visible md:pb-0">
-                  <button
-                    onClick={() => setActiveTheme("__all__")}
-                    className={cn(
-                      "h-10 shrink-0 rounded-full border px-5 text-sm font-medium transition-colors",
-                      activeTheme === "__all__"
-                        ? "bg-white text-black border-white"
-                        : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
-                    )}
-                  >
-                    All Stories
-                  </button>
-                  {themeChips.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setActiveTheme(t)}
-                    className={cn(
-                      "h-10 shrink-0 rounded-full border px-5 text-sm font-medium capitalize transition-colors",
-                      activeTheme === t
-                        ? "bg-white text-black border-white"
-                        : "bg-transparent text-white/70 border-white/15 hover:border-white/40 hover:text-white",
-                    )}
-                  >
-                    {t}
-                  </button>
-                  ))}
-                </div>
               </div>
-            )}
 
-            {/* Grid */}
-            <div className="mt-6">
+              <div className="order-1 mx-auto w-full max-w-[390px] md:order-2">
+                {heroVideo ? (
+                  <div className="relative aspect-[9/16] overflow-hidden border-[6px] border-story-paper bg-story-media shadow-2xl">
+                    {heroPlaying ? (
+                      <>
+                        <Button variant="secondary" size="sm" onClick={() => setHeroPlaying(false)} className="absolute left-3 top-3 z-20 h-9 gap-1.5 bg-story-overlay text-story-overlay-foreground hover:bg-story-overlay">
+                          <ArrowLeft className="h-3.5 w-3.5" /> Back
+                        </Button>
+                        <YouTubePlayer youtubeId={heroVideo.youtube_id} title={heroVideo.title ?? "Featured story"} autoplay className="absolute inset-0" />
+                      </>
+                    ) : (
+                      <Button variant="ghost" onClick={() => setHeroPlaying(true)} className="group absolute inset-0 h-full w-full rounded-none p-0" aria-label={`Play ${heroVideo.title ?? "featured story"}`}>
+                        {heroThumbnail && <img src={heroThumbnail} alt="" onError={handleYoutubeThumbError} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025] motion-reduce:transition-none" />}
+                        <div className="absolute inset-0 bg-story-scrim" />
+                        <span className="absolute left-1/2 top-1/2 inline-flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-story-overlay-border bg-story-overlay text-story-overlay-foreground backdrop-blur-sm">
+                          <Play className="ml-1 h-5 w-5 fill-current" />
+                        </span>
+                        <span className="absolute inset-x-0 bottom-0 p-6 text-left text-story-overlay-foreground">
+                          <span className="text-[11px] font-semibold uppercase text-story-overlay-muted">Featured · {heroVideo.duration_seconds != null ? formatTimestamp(heroVideo.duration_seconds) : "Story"}</span>
+                          <span className="mt-2 block text-xl font-semibold">{heroVideo.title ?? "Featured story"}</span>
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="aspect-[9/16] bg-story-media" />
+                )}
+              </div>
+            </section>
+
+            <section id="discover" className="border-y border-story-border bg-story-paper px-4 py-12 md:px-6 md:py-16">
+              <div className="mx-auto max-w-3xl text-center">
+                <AiSparkleIcon className="mx-auto h-6 w-6 text-primary" />
+                <h2 className="mt-4 text-3xl font-semibold text-foreground md:text-4xl">What story do you need today?</h2>
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Search by a season of life, a question, or something you are walking through.</p>
+                <form onSubmit={(event) => { event.preventDefault(); void runAISearch(query); }} className="mx-auto mt-7 flex max-w-2xl items-center gap-2 border border-story-border bg-story-background p-2 shadow-sm">
+                  <AiSparkleIcon className="ml-2 h-5 w-5 shrink-0 text-primary" />
+                  <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="I'm looking for stories about…" className="h-11 min-w-0 border-0 bg-transparent px-2 text-base shadow-none focus-visible:ring-0" />
+                  <Button type="submit" disabled={searching || !query.trim()} className="h-10 shrink-0 px-5">
+                    {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
+                  </Button>
+                </form>
+                {themeChips.length > 0 && (
+                  <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-2 md:flex-wrap md:justify-center md:overflow-visible">
+                    <Button variant={activeTheme === "__all__" ? "default" : "outline"} size="sm" onClick={() => setActiveTheme("__all__")} className="h-9 shrink-0 rounded-full px-4 text-xs">All stories</Button>
+                    {themeChips.map((theme) => (
+                      <Button key={theme} variant={activeTheme === theme ? "default" : "outline"} size="sm" onClick={() => setActiveTheme(theme)} className="h-9 shrink-0 rounded-full px-4 text-xs capitalize">{theme}</Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section id="stories" className="mx-auto w-full max-w-7xl px-4 py-14 md:px-6 md:py-20">
               {loading ? (
-                <div className="flex items-center gap-2 text-sm text-white/50 py-10">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-                </div>
-              ) : gridVideos.length === 0 ? (
-                <Card className="p-12 text-center text-sm text-white/50 bg-white/5 border-white/10">
-                  {videos.length === 0
-                    ? "This organization hasn't shared any videos publicly yet."
-                    : "No stories match your filters."}
-                </Card>
+                <div className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading stories…</div>
+              ) : visibleVideos.length === 0 ? (
+                <div className="border border-story-border bg-story-paper px-6 py-16 text-center text-sm text-muted-foreground">{videos.length === 0 ? "This church hasn't shared any stories publicly yet." : "No stories match this topic."}</div>
               ) : (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                  {gridVideos.map((v) => {
-                    const isPlaying = playingId === v.id;
-                    return (
-                      <div key={v.id} className="space-y-3 group">
-                        <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-white/5">
-                          {isPlaying ? (
-                            <YouTubePlayer
-                              youtubeId={v.youtube_id}
-                              title={v.title ?? "Video"}
-                              autoplay
-                              className="absolute inset-0"
-                            />
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setPlayingId(v.id)}
-                              className="absolute inset-0 w-full h-full text-left"
-                              aria-label={`Play ${v.title ?? "video"}`}
-                            >
-                              {(() => {
-                                const tileThumb = resolveThumb(v.thumbnail_url, v.youtube_id);
-                                return tileThumb ? (
-                                  <img
-                                    src={tileThumb}
-                                    alt={v.title ?? ""}
-                                    onError={handleYoutubeThumbError}
-                                    className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
-                                  />
-                                ) : (
-                                  <div className="absolute inset-0 flex items-center justify-center text-xs text-white/40">
-                                    VIDEO
-                                  </div>
-                                );
-                              })()}
-                              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition-colors">
-                                <div className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Play className="h-6 w-6 fill-current text-black ml-0.5" />
-                                </div>
-                              </div>
-                              {v.duration_seconds != null && (
-                                <div className="absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
-                                  <Play className="h-3 w-3 fill-current" />
-                                  {formatTimestamp(v.duration_seconds)}
-                                </div>
-                              )}
-                              <div className="absolute inset-x-0 bottom-0 p-4 space-y-1">
-                                <div className="font-semibold text-sm text-white line-clamp-2 leading-snug">
-                                  {v.title ?? "Untitled"}
-                                </div>
-                                {SHOW_PUBLIC_DESCRIPTIONS && v.short_description && (
-                                  <div className="text-[11px] text-white/60 line-clamp-2 leading-relaxed">
-                                    {v.short_description}
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          )}
-                        </div>
-                        <Link to={`/org/${slug}/content/videos/${v.id}`} className="sr-only">
-                          {v.title ?? "Untitled"}
-                        </Link>
-                      </div>
-                    );
-                  })}
-                </div>
+                <StoryMosaic videos={visibleVideos} slug={slug ?? ""} playingId={playingId} onPlay={setPlayingId} />
               )}
-            </div>
+            </section>
           </>
         )}
       </main>
     </div>
+  );
+}
+
+function SearchResults({ answer, activeQuery, searching, slug, onClear }: {
+  answer: AskResponse;
+  activeQuery: string;
+  searching: boolean;
+  slug: string;
+  onClear: () => void;
+}) {
+  const sourceMap = new Map(answer.sources.map((source) => [source.index, source]));
+  const paragraphs = answer.answer.split(/\n{2,}/).map((paragraph) => paragraph.trim()).filter(Boolean);
+
+  return (
+    <section className="mx-auto min-h-[calc(100svh-5rem)] w-full max-w-4xl px-4 py-8 md:px-6 md:py-12">
+      <div className="mb-8 flex items-start justify-between gap-4 border-b border-story-border pb-6">
+        <div>
+          <p className="text-xs font-semibold uppercase text-primary">Story search</p>
+          <h1 className="mt-2 text-2xl font-semibold text-foreground md:text-3xl">“{activeQuery}”</h1>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClear} className="h-10 shrink-0 gap-1.5"><X className="h-4 w-4" /> Clear</Button>
+      </div>
+
+      {searching && !answer.answer ? (
+        <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Listening to the Story Library…</div>
+      ) : (
+        <div className="space-y-8">
+          {paragraphs.map((paragraph, paragraphIndex) => {
+            const cited: number[] = [];
+            const seen = new Set<number>();
+            const expression = /\[#(\d+)\]/g;
+            let match: RegExpExecArray | null;
+            while ((match = expression.exec(paragraph)) !== null) {
+              const index = Number(match[1]);
+              if (!seen.has(index) && sourceMap.has(index)) {
+                cited.push(index);
+                seen.add(index);
+              }
+            }
+            const cleaned = paragraph.replace(/\s*\[#\d+\]/g, "");
+            return (
+              <div key={`${paragraphIndex}-${cleaned.slice(0, 16)}`} className="space-y-4">
+                <p className="text-base leading-8 text-foreground">{cleaned}</p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {cited.map((index) => {
+                    const source = sourceMap.get(index);
+                    if (!source) return null;
+                    return (
+                      <Link key={source.chunk_id} to={`/${slug}/content/videos/${source.video_id}?t=${Math.floor(source.start_seconds)}`} className="group grid grid-cols-[112px_1fr] overflow-hidden border border-story-border bg-story-paper transition-colors hover:border-primary/40">
+                        <div className="relative aspect-video bg-story-media">
+                          {source.thumbnail_url && <img src={source.thumbnail_url} alt="" className="h-full w-full object-cover" />}
+                          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-story-overlay px-2 py-1 text-[10px] text-story-overlay-foreground"><Play className="h-2.5 w-2.5 fill-current" /> {formatTimestamp(source.start_seconds)}</span>
+                        </div>
+                        <div className="min-w-0 p-3">
+                          <h2 className="truncate text-sm font-semibold text-foreground">{source.title ?? "Untitled story"}</h2>
+                          <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">“{source.snippet.trim()}”</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
