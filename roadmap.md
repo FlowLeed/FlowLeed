@@ -34,3 +34,8 @@
 
 ## Engagement scoring
 - [x] Add separately weighted recent group attendance without double-counting service attendance
+
+## Public Story Library
+- [x] Rebuild the homepage as a mixed-media editorial mosaic
+- [x] Preserve public search, filters, playback, and story links
+- [x] Verify desktop and mobile Story Library layouts
