@@ -74,7 +74,7 @@ export default function PublicContentPage() {
       if (!slug) return;
       setLoading(true);
       const { data: orgRows } = await supabase.rpc("get_public_organization" as never, { p_slug: slug } as never);
-      const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { id: string; name: string } | undefined;
+      const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { id: string; name: string } | null | undefined;
 
       if (org) {
         setOrgName(org.name);
@@ -188,8 +188,8 @@ export default function PublicContentPage() {
           <SearchResults answer={answer} activeQuery={activeQuery} searching={searching} slug={slug ?? ""} onClear={clearSearch} />
         ) : (
           <>
-            <section className="mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-10 md:min-h-[calc(100svh-8rem)] md:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)] md:gap-14 md:px-6 md:py-12 lg:gap-20">
-              <div className="order-2 max-w-2xl md:order-1">
+            <section className="mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-10 md:min-h-[680px] md:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)] md:gap-14 md:px-6 md:py-12 lg:gap-20">
+              <div className="max-w-2xl">
                 <p className="mb-4 text-xs font-semibold uppercase text-primary">Featured story</p>
                 <h1 className="text-5xl font-semibold leading-[0.98] text-foreground md:text-7xl lg:text-8xl">Stories of<br />life change.</h1>
                 {heroVideo && (
@@ -209,7 +209,7 @@ export default function PublicContentPage() {
                 )}
               </div>
 
-              <div className="order-1 mx-auto w-full max-w-[390px] md:order-2">
+              <div className="mx-auto w-full max-w-[330px] md:max-w-[390px]">
                 {heroVideo ? (
                   <div className="relative aspect-[9/16] overflow-hidden border-[6px] border-story-paper bg-story-media shadow-2xl">
                     {heroPlaying ? (
