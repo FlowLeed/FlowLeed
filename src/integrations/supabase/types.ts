@@ -1644,6 +1644,233 @@ export type Database = {
           },
         ]
       }
+      content_stories: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          cta_button_label: string | null
+          cta_description: string | null
+          cta_headline: string | null
+          cta_mode: string
+          cta_url: string | null
+          id: string
+          lead_media_alt: string | null
+          lead_media_url: string | null
+          organization_id: string
+          person_name: string | null
+          published_at: string | null
+          reading_time_minutes: number | null
+          source_video_id: string | null
+          status: string
+          story_format: string
+          summary: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta_button_label?: string | null
+          cta_description?: string | null
+          cta_headline?: string | null
+          cta_mode?: string
+          cta_url?: string | null
+          id?: string
+          lead_media_alt?: string | null
+          lead_media_url?: string | null
+          organization_id: string
+          person_name?: string | null
+          published_at?: string | null
+          reading_time_minutes?: number | null
+          source_video_id?: string | null
+          status?: string
+          story_format?: string
+          summary?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta_button_label?: string | null
+          cta_description?: string | null
+          cta_headline?: string | null
+          cta_mode?: string
+          cta_url?: string | null
+          id?: string
+          lead_media_alt?: string | null
+          lead_media_url?: string | null
+          organization_id?: string
+          person_name?: string | null
+          published_at?: string | null
+          reading_time_minutes?: number | null
+          source_video_id?: string | null
+          status?: string
+          story_format?: string
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_stories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_stories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_stories_source_video_id_fkey"
+            columns: ["source_video_id"]
+            isOneToOne: true
+            referencedRelation: "content_videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_story_blocks: {
+        Row: {
+          block_type: string
+          body: string | null
+          caption: string | null
+          created_at: string
+          gallery_items: Json
+          heading: string | null
+          id: string
+          media_alt: string | null
+          media_url: string | null
+          organization_id: string
+          quote_attribution: string | null
+          sort_order: number
+          story_id: string
+          updated_at: string
+          video_id: string | null
+          video_orientation: string | null
+        }
+        Insert: {
+          block_type: string
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          gallery_items?: Json
+          heading?: string | null
+          id?: string
+          media_alt?: string | null
+          media_url?: string | null
+          organization_id: string
+          quote_attribution?: string | null
+          sort_order?: number
+          story_id: string
+          updated_at?: string
+          video_id?: string | null
+          video_orientation?: string | null
+        }
+        Update: {
+          block_type?: string
+          body?: string | null
+          caption?: string | null
+          created_at?: string
+          gallery_items?: Json
+          heading?: string | null
+          id?: string
+          media_alt?: string | null
+          media_url?: string | null
+          organization_id?: string
+          quote_attribution?: string | null
+          sort_order?: number
+          story_id?: string
+          updated_at?: string
+          video_id?: string | null
+          video_orientation?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_story_blocks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_story_blocks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_story_blocks_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "content_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_story_cta_defaults: {
+        Row: {
+          button_label: string
+          category: string
+          created_at: string
+          description: string
+          destination_url: string
+          headline: string
+          id: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          button_label: string
+          category: string
+          created_at?: string
+          description: string
+          destination_url: string
+          headline: string
+          id?: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          button_label?: string
+          category?: string
+          created_at?: string
+          description?: string
+          destination_url?: string
+          headline?: string
+          id?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_story_cta_defaults_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_story_cta_defaults_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_transcript_chunks: {
         Row: {
           chunk_index: number
@@ -5669,6 +5896,10 @@ export type Database = {
           name: string
           slug: string
         }[]
+      }
+      get_public_story: {
+        Args: { p_content_id: string; p_slug: string }
+        Returns: Json
       }
       get_user_organization_role: {
         Args: { _organization_id: string; _user_id: string }
