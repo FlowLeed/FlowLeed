@@ -38,4 +38,4 @@
 ## Public Story Library
 - [x] Rebuild the homepage as a mixed-media editorial mosaic
 - [x] Preserve public search, filters, playback, and story links
-- [ ] Verify desktop and mobile Story Library layouts
+- [x] Verify desktop and mobile Story Library layouts

@@ -74,7 +74,8 @@ export default function PublicContentPage() {
       if (!slug) return;
       setLoading(true);
       const { data: orgRows } = await supabase.rpc("get_public_organization" as never, { p_slug: slug } as never);
-      const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { id: string; name: string } | null | undefined;
+      const orgValue = orgRows as unknown;
+      const org = (Array.isArray(orgValue) ? orgValue[0] : orgValue) as { id: string; name: string } | null | undefined;
 
       if (org) {
         setOrgName(org.name);
@@ -188,16 +189,16 @@ export default function PublicContentPage() {
           <SearchResults answer={answer} activeQuery={activeQuery} searching={searching} slug={slug ?? ""} onClear={clearSearch} />
         ) : (
           <>
-            <section className="mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-10 md:min-h-[680px] md:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)] md:gap-14 md:px-6 md:py-12 lg:gap-20">
+            <section className="mx-auto grid w-full max-w-7xl items-center gap-6 px-4 py-8 md:min-h-[680px] md:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)] md:gap-14 md:px-6 md:py-12 lg:gap-20">
               <div className="max-w-2xl">
                 <p className="mb-4 text-xs font-semibold uppercase text-primary">Featured story</p>
-                <h1 className="text-5xl font-semibold leading-[0.98] text-foreground md:text-7xl lg:text-8xl">Stories of<br />life change.</h1>
+                <h1 className="text-4xl font-semibold leading-[1.02] text-foreground sm:text-5xl md:text-7xl md:leading-[0.98] lg:text-8xl">Stories of<br />life change.</h1>
                 {heroVideo && (
-                  <div className="mt-8 border-l-2 border-primary pl-5 md:mt-10 md:pl-7">
+                  <div className="mt-6 border-l-2 border-primary pl-5 md:mt-10 md:pl-7">
                     <h2 className="text-2xl font-semibold text-foreground md:text-3xl">{heroVideo.title ?? "Featured story"}</h2>
                     {heroVideo.channel_name && <p className="mt-2 text-sm text-muted-foreground">{heroVideo.channel_name}</p>}
-                    {heroVideo.short_description && <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">{heroVideo.short_description}</p>}
-                    <div className="mt-6 flex flex-wrap items-center gap-3">
+                    {heroVideo.short_description && <p className="mt-3 line-clamp-3 max-w-xl text-sm leading-6 text-muted-foreground md:mt-4 md:text-base md:leading-7">{heroVideo.short_description}</p>}
+                    <div className="mt-4 flex flex-wrap items-center gap-3 md:mt-6">
                       <Button onClick={() => setHeroPlaying(true)} className="h-11 gap-2 px-5">
                         <Play className="h-4 w-4 fill-current" /> Watch story
                       </Button>
@@ -209,7 +210,7 @@ export default function PublicContentPage() {
                 )}
               </div>
 
-              <div className="mx-auto w-full max-w-[330px] md:max-w-[390px]">
+              <div className="mx-auto w-full max-w-[205px] sm:max-w-[260px] md:max-w-[390px]">
                 {heroVideo ? (
                   <div className="relative aspect-[9/16] overflow-hidden border-[6px] border-story-paper bg-story-media shadow-2xl">
                     {heroPlaying ? (
