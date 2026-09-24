@@ -33,7 +33,7 @@ export default function PublicContentVideoPage() {
         supabase.rpc("get_public_organization" as never, { p_slug: slug } as never),
       ]);
       if (error || !data) setNotFound(true); else setPayload(data as unknown as Payload);
-      const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { name?: string } | undefined;
+      const org = (orgRows && Array.isArray(orgRows) ? orgRows[0] : orgRows) as { name?: string } | null | undefined;
       setOrgName(org?.name ?? ""); setLoading(false);
     };
     void load();
