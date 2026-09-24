@@ -39,3 +39,6 @@
 - [x] Rebuild the homepage as a mixed-media editorial mosaic
 - [x] Preserve public search, filters, playback, and story links
 - [x] Verify desktop and mobile Story Library layouts
+- [x] Add adaptive individual Story pages with one contextual next step
+- [x] Add staff Story authoring for written, video-led, and mixed-media stories
+- [ ] Verify published Story pages and staff authoring on desktop and mobile
