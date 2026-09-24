@@ -178,12 +178,11 @@ export function StoryMosaic({ videos, slug, playingId, onPlay }: StoryMosaicProp
             <p className="mt-1 text-sm text-muted-foreground">Short moments and longer journeys from our community.</p>
           </div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {more.map((video, index) => {
+            {more.map((video) => {
               const thumbnail = resolveThumb(video.thumbnail_url, video.youtube_id);
-              const portrait = index % 3 !== 2;
               return (
                 <Link key={video.id} to={`/${slug}/content/videos/${video.id}`} className="group block min-w-0">
-                  <div className={cn("relative overflow-hidden bg-story-media", portrait ? "aspect-[4/5]" : "aspect-square") }>
+                  <div className="relative aspect-[4/5] overflow-hidden bg-story-media">
                     {thumbnail && <img src={thumbnail} alt="" onError={handleYoutubeThumbError} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transition-none" />}
                     <div className="absolute inset-0 bg-story-scrim-soft" />
                     <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-story-overlay px-2 py-1 text-[10px] font-medium text-story-overlay-foreground backdrop-blur-sm">
