@@ -1,257 +1,87 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Film, Loader2, Play } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, ArrowRight, Clock3, Film, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PublicStoryBlocks } from "@/components/content/PublicStoryBlocks";
 import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
-import { resolveThumb, handleYoutubeThumbError } from "@/lib/youtubeThumbnail";
+import type { RelatedStory, StoryBlock, StoryCta, StoryRecord } from "@/lib/storyTypes";
+import { handleYoutubeThumbError, resolveThumb } from "@/lib/youtubeThumbnail";
+import { cn } from "@/lib/utils";
 
-// Toggle to re-enable the one-sentence story highlight under the title.
-const SHOW_PUBLIC_DESCRIPTIONS = false;
-
-
-interface Chunk { id: string; chunk_index: number; text: string; start_seconds: number; end_seconds: number; }
-interface Analysis {
-  summary: string | null;
-  themes: string[] | null;
-  story_patterns: Array<{ name: string; description: string }> | null;
-  key_quotes: Array<{ text: string; start_seconds: number; impact_score: number }> | null;
-  impact_score: number | null;
-}
-interface Video {
-  id: string; youtube_id: string; title: string | null; channel_name: string | null;
-  thumbnail_url: string | null; duration_seconds: number | null; description: string | null;
-  short_description: string | null;
-  published_at: string | null;
-}
+type PublicVideo = { id: string; youtube_id: string; title: string | null; channel_name: string | null; thumbnail_url: string | null; duration_seconds: number | null; description: string | null; short_description: string | null; published_at: string | null };
+type Analysis = { summary: string | null; themes: string[] | null; key_quotes: Array<{ text: string; start_seconds: number; impact_score: number }> | null };
+type Payload = { story: StoryRecord | null; video: PublicVideo | null; analysis: Analysis | null; blocks: StoryBlock[]; cta: StoryCta | null; related: RelatedStory[] };
 
 export default function PublicContentVideoPage() {
   const { slug, id } = useParams<{ slug: string; id: string }>();
   const [params, setParams] = useSearchParams();
+  const [payload, setPayload] = useState<Payload | null>(null);
+  const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [video, setVideo] = useState<Video | null>(null);
-  const [orgName, setOrgName] = useState<string>("");
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [, setChunks] = useState<Chunk[]>([]);
-  const initialT = Number(params.get("t") ?? 0) || 0;
-  const [currentSeek, setCurrentSeek] = useState(initialT);
   const [playing, setPlaying] = useState(false);
+  const [seek, setSeek] = useState(Number(params.get("t") ?? 0) || 0);
 
   useEffect(() => {
     const load = async () => {
       if (!slug || !id) return;
-      setLoading(true);
-      const { data, error } = await supabase.rpc("get_public_content_video" as any, {
-        p_slug: slug, p_video_id: id,
-      });
-      if (error || !data) { setNotFound(true); setLoading(false); return; }
-      const d = data as any;
-      setVideo(d.video);
-      setAnalysis(d.analysis);
-      setChunks(d.chunks ?? []);
-      const { data: orgRows } = await supabase.rpc("get_public_organization" as any, { p_slug: slug });
-      const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { name: string } | undefined;
-      if (org) setOrgName(org.name);
-
-      setLoading(false);
+      setLoading(true); setNotFound(false);
+      const [{ data, error }, { data: orgRows }] = await Promise.all([
+        supabase.rpc("get_public_story" as never, { p_slug: slug, p_content_id: id } as never),
+        supabase.rpc("get_public_organization" as never, { p_slug: slug } as never),
+      ]);
+      if (error || !data) setNotFound(true); else setPayload(data as unknown as Payload);
+      const org = (Array.isArray(orgRows) ? orgRows[0] : orgRows) as { name?: string } | undefined;
+      setOrgName(org?.name ?? ""); setLoading(false);
     };
-    load();
+    void load();
   }, [slug, id]);
 
-  const jumpTo = (sec: number) => {
-    setCurrentSeek(sec);
-    setPlaying(true);
-    const next = new URLSearchParams(params);
-    next.set("t", String(Math.floor(sec)));
-    setParams(next, { replace: true });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  if (loading) return <div className="flex h-[100dvh] items-center justify-center bg-story-background text-foreground"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (notFound || !payload) return <div className="flex h-[100dvh] items-center justify-center bg-story-background p-6"><div className="max-w-md space-y-4 text-center"><Film className="mx-auto h-8 w-8 text-muted-foreground" /><h1 className="text-2xl font-semibold">Story not available</h1><p className="text-sm text-muted-foreground">This story is not shared publicly.</p><Button asChild variant="outline"><Link to={`/${slug}/content`}><ArrowLeft className="mr-2 h-4 w-4" />Back to stories</Link></Button></div></div>;
 
-  if (loading) {
-    return (
-      <div className="flex h-[100dvh] items-center justify-center bg-[#0a0a0f] text-white">
-        <Loader2 className="h-6 w-6 animate-spin text-white/50" />
-      </div>
-    );
-  }
+  const { story, video, analysis, blocks, cta, related } = payload;
+  const title = story?.title ?? video?.title ?? "Untitled story";
+  const person = story?.person_name ?? video?.channel_name;
+  const summary = story?.summary ?? video?.short_description ?? analysis?.summary;
+  const category = story?.category ?? analysis?.themes?.[0];
+  const format = story?.story_format ?? "vertical_video";
+  const portrait = format === "vertical_video";
+  const written = format === "written";
+  const media = story?.lead_media_url ?? resolveThumb(video?.thumbnail_url, video?.youtube_id);
+  const published = story?.published_at ?? video?.published_at;
+  const publishedLabel = published ? new Date(published).toLocaleDateString(undefined, { year: "numeric", month: "long" }) : null;
+  const jumpTo = (seconds: number) => { setSeek(seconds); setPlaying(true); const next = new URLSearchParams(params); next.set("t", String(Math.floor(seconds))); setParams(next, { replace: true }); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
-  if (notFound || !video) {
-    return (
-      <div className="flex h-[100dvh] items-center justify-center bg-[#0a0a0f] p-6 text-white">
-        <div className="p-10 text-center max-w-md space-y-3 rounded-2xl border border-white/10 bg-white/5">
-          <Film className="h-8 w-8 mx-auto text-white/40" />
-          <h1 className="text-xl font-light">Video not available</h1>
-          <p className="text-sm text-white/60">This video isn't shared publicly.</p>
-          <Button asChild variant="outline" size="sm" className="border-white/20 bg-white/5 text-white hover:bg-white/10">
-            <Link to={`/org/${slug}/content`}><ArrowLeft className="h-4 w-4 mr-1" /> Back to library</Link>
-          </Button>
+  return <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-story-background text-foreground">
+    <header className="sticky top-0 z-50 border-b border-story-border bg-story-background/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}><div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 md:px-6 md:py-4"><Link to={`/${slug}/content`} className="min-w-0 flex-1"><img src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug ?? "")}`} alt={orgName ? `${orgName} logo` : "Organization logo"} className="h-8 w-auto max-w-[11rem] object-contain md:h-10" onError={(event) => { event.currentTarget.style.display = "none"; }} /></Link><Button asChild variant="ghost" size="sm"><Link to={`/${slug}/content`}><ArrowLeft className="mr-2 h-4 w-4" />All stories</Link></Button></div></header>
+
+    <main>
+      <section className="mx-auto grid w-full max-w-7xl gap-7 px-4 pb-10 pt-8 md:px-6 md:pb-16 md:pt-12 lg:grid-cols-12 lg:items-center lg:gap-12">
+        <div className="order-2 space-y-5 lg:order-1 lg:col-span-5">
+          {category && <p className="text-xs font-semibold uppercase text-primary">{category}</p>}
+          <h1 className="text-4xl font-semibold leading-[1.04] md:text-6xl lg:text-7xl">{title}</h1>
+          {person && <p className="text-base font-medium text-foreground/75">{person}</p>}
+          {summary && <p className="max-w-xl text-base leading-7 text-muted-foreground md:text-lg md:leading-8">{summary}</p>}
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">{publishedLabel && <span>{publishedLabel}</span>}{video?.duration_seconds != null && <span className="inline-flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />{formatTimestamp(video.duration_seconds)}</span>}</div>
         </div>
-      </div>
-    );
-  }
-
-  const publishedLabel = video.published_at
-    ? new Date(video.published_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
-    : null;
-
-  const heroThumb = resolveThumb(video.thumbnail_url, video.youtube_id);
-
-  return (
-    <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-[#0a0a0f] text-white">
-      {/* Top Bar — matches library */}
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-[#0a0a0f]/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 md:gap-6 md:px-6 md:py-4">
-          {slug && (
-            <Link to={`/org/${slug}/content`} className="flex min-w-0 flex-1 items-center md:flex-none">
-              <img
-                src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
-                alt={orgName ? `${orgName} logo` : "Organization logo"}
-                className="h-8 w-auto max-w-full object-contain md:h-10 md:max-w-[12rem]"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-            </Link>
-          )}
-          <Link
-            to={`/org/${slug}/content`}
-            className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white md:px-4"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
+        <div className={cn("order-1 lg:order-2 lg:col-span-7", portrait && "flex justify-center lg:justify-end")}>
+          <div className={cn("relative overflow-hidden bg-story-media", portrait ? "aspect-[9/16] w-full max-w-[430px]" : "aspect-video w-full")}>
+            {video?.youtube_id && playing ? <YouTubePlayer youtubeId={video.youtube_id} title={title} startSeconds={seek} autoplay className="absolute inset-0" /> : <>{media && <img src={media} alt={story?.lead_media_alt ?? ""} onError={video ? handleYoutubeThumbError : undefined} className="absolute inset-0 h-full w-full object-cover" />}{video?.youtube_id && <button type="button" onClick={() => setPlaying(true)} className="group absolute inset-0 flex items-center justify-center bg-story-overlay/20" aria-label={`Play ${title}`}><span className="inline-flex h-16 w-16 items-center justify-center rounded-full border border-story-overlay-border bg-story-overlay text-story-overlay-foreground backdrop-blur-sm transition-transform group-hover:scale-105"><Play className="ml-1 h-5 w-5 fill-current" /></span></button>}</>}
+          </div>
         </div>
-      </header>
+      </section>
 
-       <main className="mx-auto w-full max-w-5xl px-4 pb-20 md:px-6">
-        {/* Immersive Hero — portrait player with ambient backdrop */}
-         <section className="relative mt-4 flex min-h-[560px] flex-col overflow-hidden rounded-2xl md:mt-6 md:min-h-[640px] md:flex-row md:rounded-3xl">
-          {/* Blurred ambient backdrop */}
-          <div className="absolute inset-0">
-            {heroThumb ? (
-              <img
-                src={heroThumb}
-                alt=""
-                onError={handleYoutubeThumbError}
-                aria-hidden
-                 className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-60"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-[#0a0a0f] to-[#0a0a0f]" />
-            )}
-            <div className="absolute inset-0 bg-[#0a0a0f]/55" />
-            <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/70 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 h-2/3 md:hidden bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/80 to-transparent" />
-          </div>
+      <section className="border-y border-story-border bg-story-paper"><div className="mx-auto w-full max-w-3xl px-4 py-12 md:px-6 md:py-20">
+        {blocks.length > 0 ? <PublicStoryBlocks blocks={blocks} /> : <div className="space-y-10">{(analysis?.summary || video?.description) && <p className="whitespace-pre-line text-lg leading-9 text-foreground/85">{analysis?.summary || video?.description}</p>}{analysis?.key_quotes?.map((quote, index) => <button key={`${quote.start_seconds}-${index}`} type="button" onClick={() => jumpTo(quote.start_seconds)} className="group block w-full border-l-2 border-primary px-6 py-5 text-left"><span className="mb-3 inline-flex items-center gap-2 text-xs font-semibold text-primary"><Play className="h-3 w-3 fill-current" />{formatTimestamp(quote.start_seconds)}</span><span className="block text-xl font-medium leading-8 md:text-2xl md:leading-10">“{quote.text}”</span></button>)}</div>}
+        {written && blocks.length === 0 && !summary && <p className="text-center text-muted-foreground">This story is being prepared.</p>}
+      </div></section>
 
-          {/* Portrait player — desktop right, mobile centered top */}
-           <div className="relative z-20 order-1 flex w-full justify-center pt-5 md:absolute md:right-10 md:top-1/2 md:order-2 md:block md:w-auto md:-translate-y-1/2 md:justify-end md:pt-0 lg:right-16">
-             <div className="relative aspect-[9/16] w-full max-w-none overflow-hidden rounded-2xl bg-black shadow-2xl ring-1 ring-white/10 md:w-[280px] md:max-w-[280px] lg:w-[320px] lg:max-w-[320px]">
-              {playing ? (
-                <YouTubePlayer
-                  youtubeId={video.youtube_id}
-                  title={video.title ?? "Video"}
-                  startSeconds={currentSeek}
-                  autoplay
-                  className="absolute inset-0"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setPlaying(true)}
-                  aria-label={`Play ${video.title ?? "video"}`}
-                  className="absolute inset-0 w-full h-full group"
-                >
-                  {heroThumb && (
-                    <img
-                      src={heroThumb}
-                      alt={video.title ?? ""}
-                      onError={handleYoutubeThumbError}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition">
-                    <span className="h-14 w-14 rounded-full border border-white/60 bg-black/40 backdrop-blur flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Play className="h-5 w-5 fill-current text-white ml-0.5" />
-                    </span>
-                  </div>
-                </button>
-              )}
-            </div>
-          </div>
+      {cta && <section className="bg-primary text-primary-foreground"><div className="mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-14 md:flex-row md:items-center md:justify-between md:px-6 md:py-20"><div className="max-w-2xl"><h2 className="text-3xl font-semibold leading-tight md:text-4xl">{cta.headline}</h2>{cta.description && <p className="mt-3 text-base leading-7 text-primary-foreground/80">{cta.description}</p>}</div><Button asChild size="lg" variant="secondary" className="min-h-12 w-full shrink-0 md:w-auto"><a href={cta.destination_url}>{cta.button_label}<ArrowRight className="ml-2 h-4 w-4" /></a></Button></div></section>}
 
-          {/* Text content — desktop left, mobile bottom */}
-           <div className="relative z-10 order-2 flex w-full min-w-0 flex-col justify-end gap-3 p-5 md:order-1 md:max-w-xl md:justify-center md:gap-5 md:p-14">
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/60">
-              {publishedLabel && <span>{publishedLabel}</span>}
-              {publishedLabel && video.duration_seconds ? <span className="text-white/30">·</span> : null}
-              {video.duration_seconds ? <span>{formatTimestamp(video.duration_seconds)}</span> : null}
-            </div>
-             <h1 className="break-words text-3xl font-bold leading-[1.05] tracking-tight md:text-5xl">
-              {video.title}
-            </h1>
-            {SHOW_PUBLIC_DESCRIPTIONS && video.short_description && (
-              <p className="text-sm md:text-base text-white/75 leading-relaxed italic">
-                {video.short_description}
-              </p>
-            )}
-            {analysis?.themes && analysis.themes.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {analysis.themes.map((t) => (
-                  <Badge
-                    key={t}
-                    variant="secondary"
-                    className="font-normal capitalize bg-white/10 text-white/80 hover:bg-white/15 border-0"
-                  >
-                    {t}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* About */}
-        {(analysis?.summary || video.description) && (
-          <section className="mt-8 md:mt-10 p-6 md:p-8 rounded-2xl border border-white/10 bg-white/[0.03] space-y-3">
-            <div className="text-[11px] uppercase tracking-wider text-white/50 font-semibold">
-              About this video
-            </div>
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-white/85">
-              {analysis?.summary || video.description}
-            </p>
-          </section>
-        )}
-
-        {/* Key moments */}
-        {analysis?.key_quotes && analysis.key_quotes.length > 0 && (
-          <section className="mt-8 md:mt-10 space-y-3">
-            <div className="text-[11px] uppercase tracking-wider text-white/50 font-semibold px-1">
-              Key moments
-            </div>
-            <div className="space-y-2">
-              {analysis.key_quotes.map((q, i) => (
-                <button
-                  key={i}
-                  onClick={() => jumpTo(q.start_seconds)}
-                   className="group flex w-full flex-col items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left transition-all hover:border-violet-400/40 hover:bg-white/[0.06] sm:flex-row sm:gap-4"
-                >
-                  <div className="shrink-0 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-white text-black text-xs font-mono font-semibold">
-                    <Play className="h-3 w-3 fill-current" />
-                    {formatTimestamp(q.start_seconds)}
-                  </div>
-                   <p className="min-w-0 flex-1 text-[15px] leading-relaxed text-white/85 group-hover:text-white">
-                    "{q.text}"
-                  </p>
-                </button>
-              ))}
-            </div>
-          </section>
-        )}
-
-        <div className="h-8" />
-      </main>
-    </div>
-  );
+      {related.length > 0 && <section className="mx-auto w-full max-w-7xl px-4 py-14 md:px-6 md:py-20"><div className="mb-7"><p className="text-xs font-semibold uppercase text-primary">Keep exploring</p><h2 className="mt-2 text-3xl font-semibold">More stories like this</h2></div><div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">{related.map((item) => { const thumb = item.lead_media_url ?? resolveThumb(item.thumbnail_url, item.youtube_id); const itemId = item.source_video_id ?? item.id; return <Link key={item.id} to={`/${slug}/content/videos/${itemId}`} className="group w-[78vw] max-w-[310px] shrink-0 snap-start md:w-auto"><div className={cn("overflow-hidden bg-story-media", item.story_format === "vertical_video" ? "aspect-[4/5]" : "aspect-video")}>{thumb && <img src={thumb} alt="" onError={item.youtube_id ? handleYoutubeThumbError : undefined} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transition-none" />}</div>{item.category && <p className="mt-3 text-[11px] font-semibold uppercase text-primary">{item.category}</p>}<h3 className="mt-1 text-lg font-semibold leading-tight">{item.title}</h3>{item.person_name && <p className="mt-1 text-sm text-muted-foreground">{item.person_name}</p>}</Link>; })}</div></section>}
+    </main>
+  </div>;
 }
