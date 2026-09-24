@@ -384,7 +384,7 @@ export default function ContentVideoDetailPage() {
         </div>
       </header>
 
-      <div className="aspect-video rounded-lg overflow-hidden bg-black">
+      <div className="mx-auto aspect-video w-full max-w-3xl rounded-lg overflow-hidden bg-black">
         <YouTubePlayer
           ref={playerRef}
           youtubeId={video.youtube_id}
