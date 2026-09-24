@@ -30,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useContentVideo, useContentAnalysis, useContentChunks } from "@/hooks/useContent";
 import { formatTimestamp } from "@/lib/contentUtils";
 import { ContentChat } from "@/components/content/ContentChat";
+import { StoryAuthoringPanel } from "@/components/content/StoryAuthoringPanel";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -462,6 +463,7 @@ export default function ContentVideoDetailPage() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="transcript">Transcript</TabsTrigger>
             <TabsTrigger value="quotes">Quotes</TabsTrigger>
+            {isOrgAdmin && <TabsTrigger value="story">Story</TabsTrigger>}
             <TabsTrigger value="chat">Chat</TabsTrigger>
           </TabsList>
           </div>
@@ -570,6 +572,12 @@ export default function ContentVideoDetailPage() {
             </div>
           )}
         </TabsContent>
+
+        {isOrgAdmin && (
+          <TabsContent value="story" className="mt-6">
+            <StoryAuthoringPanel video={video} analysis={analysis} />
+          </TabsContent>
+        )}
 
         <TabsContent value="chat" className="mt-6">
           <ContentChat videoId={video.id} organizationId={video.organization_id} />
