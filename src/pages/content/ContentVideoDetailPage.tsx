@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useContentVideo, useContentAnalysis, useContentChunks } from "@/hooks/useContent";
 import { formatTimestamp } from "@/lib/contentUtils";
-import { ContentChat } from "@/components/content/ContentChat";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StoryAuthoringPanel } from "@/components/content/StoryAuthoringPanel";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useAuth } from "@/hooks/useAuth";
@@ -463,10 +463,7 @@ export default function ContentVideoDetailPage() {
           <div className="w-full max-w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
           <TabsList className="w-max">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="transcript">Transcript</TabsTrigger>
-            <TabsTrigger value="quotes">Quotes</TabsTrigger>
             {isOrgAdmin && <TabsTrigger value="story">Story</TabsTrigger>}
-            <TabsTrigger value="chat">Chat</TabsTrigger>
           </TabsList>
           </div>
           {isOrgAdmin && (
