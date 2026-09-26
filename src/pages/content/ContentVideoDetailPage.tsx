@@ -420,15 +420,6 @@ export default function ContentVideoDetailPage() {
         </div>
       </header>
 
-      <div className="mx-auto aspect-video w-full max-w-3xl rounded-lg overflow-hidden bg-black">
-        <YouTubePlayer
-          ref={playerRef}
-          youtubeId={video.youtube_id}
-          title={video.title}
-          startSeconds={startSeconds || undefined}
-        />
-      </div>
-
       {isOrgAdmin && (
         <Card className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
           <div className="aspect-video w-full overflow-hidden rounded-md bg-muted shrink-0 flex items-center justify-center sm:w-28">
@@ -493,6 +484,15 @@ export default function ContentVideoDetailPage() {
 
 
       <TabsContent value="overview" className="space-y-4 mt-6">
+
+          <div className="mx-auto aspect-video w-full max-w-3xl rounded-lg overflow-hidden bg-black">
+            <YouTubePlayer
+              ref={playerRef}
+              youtubeId={video.youtube_id}
+              title={video.title}
+              startSeconds={startSeconds || undefined}
+            />
+          </div>
 
           {!analysis ? (
             <Card className="p-6 text-sm text-muted-foreground">
