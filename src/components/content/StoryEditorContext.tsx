@@ -6,7 +6,7 @@ import { useStoryAuthoring } from "@/hooks/useStoryAuthoring";
 import { resolvePreset, useNextSteps } from "@/hooks/useNextSteps";
 import { newBlock, type EditableBlock } from "./StoryBlockCanvas";
 import { NextStepsManager } from "./NextStepsManager";
-import { CTA_SUGGESTIONS, type StoryFormat, type StoryRecord } from "@/lib/storyTypes";
+import { CTA_SUGGESTIONS, type StoryBlock, type StoryFormat, type StoryRecord } from "@/lib/storyTypes";
 
 type VideoSource = { id: string; organization_id: string; title: string | null; channel_name: string | null; short_description: string | null; thumbnail_url: string | null; youtube_id: string; video_orientation?: string | null };
 type AnalysisSource = { summary?: string | null; themes?: string[] | null; key_quotes?: Array<{ text: string }> | null } | null;
