@@ -54,7 +54,7 @@ export default function PublicContentVideoPage() {
             if (raw) {
               const draft = JSON.parse(raw) as StoryDraft;
               const savedAt = localStorage.getItem(storySavedKey(id));
-              const draftIsCurrent = !savedAt || !draft.created_at || new Date(draft.created_at).getTime() > new Date(savedAt).getTime();
+              const draftIsCurrent = !savedAt || (Boolean(draft.created_at) && new Date(draft.created_at).getTime() > new Date(savedAt).getTime());
               if (draftIsCurrent) {
                 merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;
                 merged.blocks = draft.blocks as unknown as StoryBlock[];
