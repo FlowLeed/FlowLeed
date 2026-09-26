@@ -14,7 +14,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { CTA_SUGGESTIONS, STORY_FORMATS, type StoryBlock, type StoryBlockType, type StoryFormat, type StoryRecord } from "@/lib/storyTypes";
 
-type VideoSource = { id: string; organization_id: string; title: string | null; channel_name: string | null; short_description: string | null; thumbnail_url: string | null; youtube_id: string };
+type VideoSource = { id: string; organization_id: string; title: string | null; channel_name: string | null; short_description: string | null; thumbnail_url: string | null; youtube_id: string; video_orientation?: string | null };
 type AnalysisSource = { summary?: string | null; themes?: string[] | null; key_quotes?: Array<{ text: string }> | null } | null;
 
 type EditableBlock = Partial<StoryBlock> & { clientId: string; block_type: StoryBlockType };
@@ -30,7 +30,8 @@ export function StoryAuthoringPanel({ video, analysis, isPublic }: { video: Vide
   const [personName, setPersonName] = useState(video.channel_name ?? "");
   const [summary, setSummary] = useState(video.short_description ?? analysis?.summary ?? "");
   const [category, setCategory] = useState(analysis?.themes?.[0] ?? "");
-  const [format, setFormat] = useState<StoryFormat>("horizontal_video");
+  // Layout follows the video itself: vertical video → vertical layout, otherwise horizontal.
+  const format: StoryFormat = video.video_orientation === "vertical" ? "vertical_video" : "horizontal_video";
   const [leadMediaUrl, setLeadMediaUrl] = useState(video.thumbnail_url ?? "");
   const status: "draft" | "published" = isPublic ? "published" : "draft";
   const [ctaMode, setCtaMode] = useState<"category_default" | "preset" | "custom">("category_default");
