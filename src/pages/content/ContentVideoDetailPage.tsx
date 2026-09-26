@@ -485,6 +485,15 @@ export default function ContentVideoDetailPage() {
 
       <TabsContent value="overview" className="space-y-4 mt-6">
 
+          <div className="mx-auto aspect-video w-full max-w-3xl rounded-lg overflow-hidden bg-black">
+            <YouTubePlayer
+              ref={playerRef}
+              youtubeId={video.youtube_id}
+              title={video.title}
+              startSeconds={startSeconds || undefined}
+            />
+          </div>
+
           {!analysis ? (
             <Card className="p-6 text-sm text-muted-foreground">
               {video.ingest_status === "ready" ? "No analysis yet." : "Analysis will appear once processing completes."}
