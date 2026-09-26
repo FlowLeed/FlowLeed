@@ -1,15 +1,17 @@
-import { useRef } from "react";
-import { ExternalLink, ImagePlus, Loader2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Eye, ImagePlus, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import PublicContentVideoPage from "@/pages/content/PublicContentVideoPage";
 import { StoryBlockCanvas } from "./StoryBlockCanvas";
-import { storyDraftKey, useStoryEditor } from "./StoryEditorContext";
+import { useStoryEditor, type StoryDraft } from "./StoryEditorContext";
 
 export function StoryAuthoringPanel() {
   const editor = useStoryEditor();
   const uploadRef = useRef<HTMLInputElement>(null);
+  const [previewDraft, setPreviewDraft] = useState<StoryDraft | null>(null);
   const { format, leadMediaUrl, uploading, uploadLead, title, setTitle, personName, setPersonName, summary, setSummary, blocks, setBlocks, organizationId, videoId } = editor;
 
   if (editor.isLoading) return <Card className="flex min-h-48 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></Card>;
@@ -46,25 +48,18 @@ export function StoryAuthoringPanel() {
       <Card className="space-y-3 p-5">
         <p className="text-xs text-muted-foreground">{editor.isPublic ? "This story is public — saving updates the live page." : "Turn on Public at the top to show this story in the Story Library."}</p>
         <Button className="w-full" disabled={editor.savePending || !editor.hasTitle} onClick={() => void editor.saveStory()}>{editor.savePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save story</Button>
-        {editor.organizationSlug && <Button variant="outline" className="w-full" onClick={() => {
-          const previewId = crypto.randomUUID();
-          const currentDraft = editor.buildDraft();
-          const draft = JSON.stringify(currentDraft);
-          // Keep both a unique snapshot and a latest snapshot. The latter makes
-          // preview reliable in browsers that strip or delay popup query state.
-          localStorage.setItem(storyDraftKey(editor.videoId, previewId), draft);
-          localStorage.setItem(storyDraftKey(editor.videoId), draft);
-          const previewWindow = window.open(`/${editor.organizationSlug}/content/videos/${editor.videoId}?preview=${encodeURIComponent(previewId)}&v=${Date.now()}`, "_blank");
-          // Send the live React state directly as well. This avoids browser
-          // storage isolation in preview tabs and guarantees unsaved edits win.
-          if (previewWindow) {
-            const sendDraft = () => previewWindow.postMessage({ type: "flowleed-story-preview", videoId: editor.videoId, draft: currentDraft }, window.location.origin);
-            window.setTimeout(sendDraft, 250);
-            window.setTimeout(sendDraft, 1000);
-            window.setTimeout(sendDraft, 2500);
-          }
-        }}><ExternalLink className="mr-2 h-4 w-4" />Preview story page</Button>}
+        {editor.organizationSlug && <Button variant="outline" className="w-full" onClick={() => setPreviewDraft(editor.buildDraft())}><Eye className="mr-2 h-4 w-4" />Preview story page</Button>}
       </Card>
     </aside>
+
+    {previewDraft && editor.organizationSlug && <div className="fixed inset-0 z-[100] flex flex-col bg-background">
+      <div className="flex items-center justify-between gap-3 border-b px-4 py-2">
+        <p className="text-sm font-medium">Preview — exactly what visitors will see (unsaved changes included)</p>
+        <Button size="sm" variant="outline" onClick={() => setPreviewDraft(null)}><X className="mr-2 h-4 w-4" />Back to editor</Button>
+      </div>
+      <div className="min-h-0 flex-1">
+        <PublicContentVideoPage previewSlug={editor.organizationSlug} previewVideoId={videoId} previewDraft={previewDraft} />
+      </div>
+    </div>}
   </div>;
 }

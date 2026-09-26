@@ -96,7 +96,7 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
       setOrgName(org?.name ?? ""); setLoading(false);
     };
     void load();
-  }, [slug, id]);
+  }, [slug, id, previewDraft]);
 
   useEffect(() => {
     if (!id || !params.get("preview")) return;
