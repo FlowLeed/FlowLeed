@@ -1653,6 +1653,7 @@ export type Database = {
           cta_description: string | null
           cta_headline: string | null
           cta_mode: string
+          cta_preset_id: string | null
           cta_url: string | null
           id: string
           lead_media_alt: string | null
@@ -1677,6 +1678,7 @@ export type Database = {
           cta_description?: string | null
           cta_headline?: string | null
           cta_mode?: string
+          cta_preset_id?: string | null
           cta_url?: string | null
           id?: string
           lead_media_alt?: string | null
@@ -1701,6 +1703,7 @@ export type Database = {
           cta_description?: string | null
           cta_headline?: string | null
           cta_mode?: string
+          cta_preset_id?: string | null
           cta_url?: string | null
           id?: string
           lead_media_alt?: string | null
@@ -1718,6 +1721,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "content_stories_cta_preset_id_fkey"
+            columns: ["cta_preset_id"]
+            isOneToOne: false
+            referencedRelation: "content_story_cta_defaults"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_stories_organization_id_fkey"
             columns: ["organization_id"]
@@ -1825,10 +1835,13 @@ export type Database = {
           button_label: string
           category: string
           created_at: string
-          description: string
-          destination_url: string
+          description: string | null
+          destination_type: string
+          destination_url: string | null
+          form_id: string | null
           headline: string
           id: string
+          is_global: boolean
           organization_id: string
           updated_at: string
         }
@@ -1836,10 +1849,13 @@ export type Database = {
           button_label: string
           category: string
           created_at?: string
-          description: string
-          destination_url: string
+          description?: string | null
+          destination_type?: string
+          destination_url?: string | null
+          form_id?: string | null
           headline: string
           id?: string
+          is_global?: boolean
           organization_id: string
           updated_at?: string
         }
@@ -1847,14 +1863,24 @@ export type Database = {
           button_label?: string
           category?: string
           created_at?: string
-          description?: string
-          destination_url?: string
+          description?: string | null
+          destination_type?: string
+          destination_url?: string | null
+          form_id?: string | null
           headline?: string
           id?: string
+          is_global?: boolean
           organization_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "content_story_cta_defaults_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "forms"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "content_story_cta_defaults_organization_id_fkey"
             columns: ["organization_id"]
