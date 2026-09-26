@@ -331,7 +331,7 @@ function SortableBlock({
   remove: () => void;
   upload: (file: File, clientId: string) => Promise<string | null>;
   uploadingId: string | null;
-  onInsert: (type: StoryBlockType) => void;
+  onInsert: (type: StoryBlockType, body?: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: block.clientId,
