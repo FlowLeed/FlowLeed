@@ -281,7 +281,7 @@ export default function ContentVideoDetailPage() {
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full max-w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
           <TabsList className="w-max">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="overview">Settings</TabsTrigger>
             {isOrgAdmin && <TabsTrigger value="story">Story</TabsTrigger>}
           </TabsList>
         </div>
@@ -420,70 +420,68 @@ export default function ContentVideoDetailPage() {
         </div>
       </header>
 
-      {isOrgAdmin && (
-        <Card className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
-          <div className="aspect-video w-full overflow-hidden rounded-md bg-muted shrink-0 flex items-center justify-center sm:w-28">
-            {resolveThumb(video.thumbnail_url, video.youtube_id) ? (
-              <img
-                src={resolveThumb(video.thumbnail_url, video.youtube_id)!}
-                onError={handleYoutubeThumbError}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <ImageIcon className="h-5 w-5 text-muted-foreground" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium">Thumbnail</div>
-            <div className="text-xs text-muted-foreground">
-              {video.thumbnail_url
-                ? "Custom thumbnail uploaded. Shown on the public library."
-                : "Using YouTube's auto-poster. Upload a custom image to override."}
-            </div>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) uploadThumbnail(f);
-              e.target.value = "";
-            }}
-          />
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingThumb}
-          >
-            {uploadingThumb ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4 mr-1" />
-            )}
-            {video.thumbnail_url ? "Replace" : "Upload"}
-          </Button>
-          {video.thumbnail_url && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="w-full sm:w-auto"
-              onClick={() => clearThumbnail.mutate()}
-              disabled={clearThumbnail.isPending}
-            >
-              Clear
-            </Button>
-          )}
-        </Card>
-      )}
-
-
-
       <TabsContent value="overview" className="space-y-4 mt-6">
+
+          {isOrgAdmin && (
+            <Card className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+              <div className="aspect-video w-full overflow-hidden rounded-md bg-muted shrink-0 flex items-center justify-center sm:w-28">
+                {resolveThumb(video.thumbnail_url, video.youtube_id) ? (
+                  <img
+                    src={resolveThumb(video.thumbnail_url, video.youtube_id)!}
+                    onError={handleYoutubeThumbError}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium">Thumbnail</div>
+                <div className="text-xs text-muted-foreground">
+                  {video.thumbnail_url
+                    ? "Custom thumbnail uploaded. Shown on the public library."
+                    : "Using YouTube's auto-poster. Upload a custom image to override."}
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadThumbnail(f);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingThumb}
+              >
+                {uploadingThumb ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-1" />
+                )}
+                {video.thumbnail_url ? "Replace" : "Upload"}
+              </Button>
+              {video.thumbnail_url && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="w-full sm:w-auto"
+                  onClick={() => clearThumbnail.mutate()}
+                  disabled={clearThumbnail.isPending}
+                >
+                  Clear
+                </Button>
+              )}
+            </Card>
+          )}
 
           <div className="mx-auto aspect-video w-full max-w-3xl rounded-lg overflow-hidden bg-black">
             <YouTubePlayer
