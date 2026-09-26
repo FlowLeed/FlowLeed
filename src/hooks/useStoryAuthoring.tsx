@@ -26,6 +26,7 @@ export function useStoryAuthoring(videoId?: string) {
       const saved = data as unknown as StoryRecord;
       const { error: deleteError } = await supabase.from("content_story_blocks" as never).delete().eq("story_id", saved.id);
       if (deleteError) throw deleteError;
+      let savedBlocks: StoryBlock[] = [];
       if (blocks.length) {
         const rows = blocks.map((block, index) => ({
           story_id: saved.id,
@@ -42,12 +43,15 @@ export function useStoryAuthoring(videoId?: string) {
           video_orientation: block.video_orientation ?? null,
           gallery_items: block.gallery_items ?? [],
         }));
-        const { error: insertError } = await supabase.from("content_story_blocks" as never).insert(rows as never);
+        const { data: inserted, error: insertError } = await supabase.from("content_story_blocks" as never).insert(rows as never).select("*");
         if (insertError) throw insertError;
+        savedBlocks = (inserted ?? []) as unknown as StoryBlock[];
       }
-      return saved;
+      return { story: saved, blocks: savedBlocks };
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["content-story", videoId] }),
+    onSuccess: (savedData) => {
+      queryClient.setQueryData(["content-story", videoId], savedData);
+    },
   });
 
   return { ...query, save };

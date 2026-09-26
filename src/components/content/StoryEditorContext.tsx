@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,10 +90,15 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
   const [ctaLabel, setCtaLabel] = useState("");
   const [ctaUrl, setCtaUrl] = useState("");
   const [blocks, setBlocks] = useState<EditableBlock[]>([newBlock("next_step")]);
+  const hydratedStoryId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!data?.story) return;
     const story = data.story;
+    // Hydrate once when the story opens. Saving updates the query cache, but must
+    // not replace the live canvas state or make the editor appear to reset.
+    if (hydratedStoryId.current === story.id) return;
+    hydratedStoryId.current = story.id;
     setTitle(story.title); setPersonName(story.person_name ?? ""); setSummary(story.summary ?? ""); setCategory(story.category ?? "");
     setLeadMediaUrl(story.lead_media_url ?? ""); setCtaMode(story.cta_mode); setCtaPresetId(story.cta_preset_id ?? null);
     setCtaHeadline(story.cta_headline ?? ""); setCtaDescription(story.cta_description ?? ""); setCtaLabel(story.cta_button_label ?? ""); setCtaUrl(story.cta_url ?? "");
