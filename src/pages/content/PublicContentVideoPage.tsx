@@ -50,7 +50,8 @@ export default function PublicContentVideoPage() {
         const previewId = new URLSearchParams(window.location.search).get("preview");
         if (previewId) {
           try {
-            const raw = localStorage.getItem(storyDraftKey(id, previewId === "1" ? "latest" : previewId));
+            const requestedKey = storyDraftKey(id, previewId === "1" ? "latest" : previewId);
+            const raw = localStorage.getItem(requestedKey) ?? localStorage.getItem(storyDraftKey(id));
             if (raw) {
               const draft = JSON.parse(raw) as StoryDraft;
               const savedAt = localStorage.getItem(storySavedKey(id));
