@@ -14,7 +14,7 @@ export interface NextStepPreset {
   form_id: string | null;
 }
 
-export interface PublishedForm { id: string; name: string; slug: string }
+export interface PublishedForm { id: string; name: string; slug: string; is_published: boolean }
 
 export function useNextSteps(orgId?: string) {
   const qc = useQueryClient();
@@ -32,7 +32,7 @@ export function useNextSteps(orgId?: string) {
     queryKey: ["story-next-step-forms", orgId],
     enabled: Boolean(orgId),
     queryFn: async () => {
-      const { data, error } = await supabase.from("forms").select("id,name,slug").eq("organization_id", orgId ?? "").eq("is_published", true).order("name");
+      const { data, error } = await supabase.from("forms").select("id,name,slug,is_published").eq("organization_id", orgId ?? "").order("name");
       if (error) throw error;
       return (data ?? []) as PublishedForm[];
     },
