@@ -29,7 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useContentVideo, useContentAnalysis, useContentChunks } from "@/hooks/useContent";
 import { formatTimestamp } from "@/lib/contentUtils";
-import { ContentChat } from "@/components/content/ContentChat";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StoryAuthoringPanel } from "@/components/content/StoryAuthoringPanel";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useAuth } from "@/hooks/useAuth";
@@ -463,10 +463,7 @@ export default function ContentVideoDetailPage() {
           <div className="w-full max-w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
           <TabsList className="w-max">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="transcript">Transcript</TabsTrigger>
-            <TabsTrigger value="quotes">Quotes</TabsTrigger>
             {isOrgAdmin && <TabsTrigger value="story">Story</TabsTrigger>}
-            <TabsTrigger value="chat">Chat</TabsTrigger>
           </TabsList>
           </div>
           {isOrgAdmin && (
@@ -533,45 +530,49 @@ export default function ContentVideoDetailPage() {
                   </div>
                 </Card>
               )}
+              {analysis.key_quotes?.length > 0 && (
+                <Card className="p-6 space-y-3">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Quotes</div>
+                  <div className="space-y-3">
+                    {analysis.key_quotes.map((q, i) => (
+                      <div key={i} className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+                        <button
+                          onClick={() => seekTo(q.start_seconds)}
+                          className="text-xs font-mono text-muted-foreground hover:text-primary whitespace-nowrap"
+                        >
+                          {formatTimestamp(q.start_seconds)}
+                        </button>
+                        <p className="min-w-0 flex-1 italic text-sm">"{q.text}"</p>
+                        <Badge variant="outline" className="w-fit">{q.impact_score}/10</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
             </>
           )}
-        </TabsContent>
 
-        <TabsContent value="transcript" className="mt-6">
-          <Card className="p-6 max-h-[600px] overflow-y-auto space-y-3">
-            {chunks.length === 0 && <div className="text-sm text-muted-foreground">No transcript yet.</div>}
-            {chunks.map((c) => (
-              <div key={c.id} className="flex gap-3 text-sm">
-                <button
-                  onClick={() => seekTo(c.start_seconds)}
-                  className="text-muted-foreground hover:text-primary font-mono text-xs whitespace-nowrap pt-0.5"
-                >
-                  {formatTimestamp(c.start_seconds)}
-                </button>
-                <p className="flex-1 leading-relaxed">{c.text}</p>
-              </div>
-            ))}
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="quotes" className="mt-6">
-          {!analysis?.key_quotes?.length ? (
-            <Card className="p-6 text-sm text-muted-foreground">No quotes extracted yet.</Card>
-          ) : (
-            <div className="space-y-3">
-              {analysis.key_quotes.map((q, i) => (
-              <Card key={i} className="flex flex-col gap-3 p-4 sm:flex-row">
-                  <button
-                    onClick={() => seekTo(q.start_seconds)}
-                    className="text-xs font-mono text-muted-foreground hover:text-primary whitespace-nowrap"
-                  >
-                    {formatTimestamp(q.start_seconds)}
-                  </button>
-                  <p className="min-w-0 flex-1 italic">"{q.text}"</p>
-                  <Badge variant="outline" className="w-fit">{q.impact_score}/10</Badge>
-                </Card>
-              ))}
-            </div>
+          {chunks.length > 0 && (
+            <Accordion type="single" collapsible>
+              <AccordionItem value="transcript" className="rounded-lg border bg-card px-6">
+                <AccordionTrigger className="text-sm font-medium">Transcript</AccordionTrigger>
+                <AccordionContent>
+                  <div className="max-h-[600px] overflow-y-auto space-y-3 pb-2">
+                    {chunks.map((c) => (
+                      <div key={c.id} className="flex gap-3 text-sm">
+                        <button
+                          onClick={() => seekTo(c.start_seconds)}
+                          className="text-muted-foreground hover:text-primary font-mono text-xs whitespace-nowrap pt-0.5"
+                        >
+                          {formatTimestamp(c.start_seconds)}
+                        </button>
+                        <p className="flex-1 leading-relaxed">{c.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           )}
         </TabsContent>
 
@@ -580,10 +581,6 @@ export default function ContentVideoDetailPage() {
             <StoryAuthoringPanel video={video} analysis={analysis} isPublic={video.consent_level === "public_search"} />
           </TabsContent>
         )}
-
-        <TabsContent value="chat" className="mt-6">
-          <ContentChat videoId={video.id} organizationId={video.organization_id} />
-        </TabsContent>
       </Tabs>
         </div>
       </div>
