@@ -11,6 +11,7 @@ import { useStoryAuthoring } from "@/hooks/useStoryAuthoring";
 import { describeDestination, resolvePreset, useNextSteps } from "@/hooks/useNextSteps";
 import { NextStepsManager } from "./NextStepsManager";
 import { useToast } from "@/hooks/use-toast";
+import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { CTA_SUGGESTIONS, STORY_FORMATS, type StoryBlock, type StoryBlockType, type StoryFormat, type StoryRecord } from "@/lib/storyTypes";
 
@@ -20,9 +21,10 @@ type AnalysisSource = { summary?: string | null; themes?: string[] | null; key_q
 type EditableBlock = Partial<StoryBlock> & { clientId: string; block_type: StoryBlockType };
 const newBlock = (block_type: StoryBlockType): EditableBlock => ({ clientId: crypto.randomUUID(), block_type, gallery_items: [] });
 
-export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; analysis: AnalysisSource }) {
+export function StoryAuthoringPanel({ video, analysis, isPublic }: { video: VideoSource; analysis: AnalysisSource; isPublic: boolean }) {
   const { data, isLoading, save } = useStoryAuthoring(video.id);
   const { toast } = useToast();
+  const { organization } = useProfile();
   const uploadRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [title, setTitle] = useState(video.title ?? "");
@@ -31,7 +33,7 @@ export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; a
   const [category, setCategory] = useState(analysis?.themes?.[0] ?? "");
   const [format, setFormat] = useState<StoryFormat>("horizontal_video");
   const [leadMediaUrl, setLeadMediaUrl] = useState(video.thumbnail_url ?? "");
-  const [status, setStatus] = useState<"draft" | "published">("draft");
+  const status: "draft" | "published" = isPublic ? "published" : "draft";
   const [ctaMode, setCtaMode] = useState<"category_default" | "preset" | "custom">("category_default");
   const [ctaPresetId, setCtaPresetId] = useState<string | null>(null);
   const [managerOpen, setManagerOpen] = useState(false);
@@ -46,7 +48,7 @@ export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; a
     if (!data?.story) return;
     const story = data.story;
     setTitle(story.title); setPersonName(story.person_name ?? ""); setSummary(story.summary ?? ""); setCategory(story.category ?? "");
-    setFormat(story.story_format); setLeadMediaUrl(story.lead_media_url ?? ""); setStatus(story.status); setCtaMode(story.cta_mode); setCtaPresetId(story.cta_preset_id ?? null);
+    setFormat(story.story_format); setLeadMediaUrl(story.lead_media_url ?? ""); setCtaMode(story.cta_mode); setCtaPresetId(story.cta_preset_id ?? null);
     setCtaHeadline(story.cta_headline ?? ""); setCtaDescription(story.cta_description ?? ""); setCtaLabel(story.cta_button_label ?? ""); setCtaUrl(story.cta_url ?? "");
     setBlocks(data.blocks.map((block) => ({ ...block, clientId: block.id })));
   }, [data]);
@@ -90,7 +92,7 @@ export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; a
       cta_button_label: ctaMode === "custom" ? ctaLabel.trim() || null : null,
       cta_url: ctaMode === "custom" ? ctaUrl.trim() || null : null,
     };
-    try { await save.mutateAsync({ story, blocks }); toast({ title: status === "published" ? "Story published" : "Draft saved" }); }
+    try { await save.mutateAsync({ story, blocks }); toast({ title: "Story saved" }); }
     catch (error) { toast({ title: "Story not saved", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }); }
   };
 
@@ -134,7 +136,7 @@ export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; a
 
     <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
       <Card className="overflow-hidden"><div className={format === "vertical_video" ? "aspect-[4/5] bg-story-media" : "aspect-video bg-story-media"}>{leadMediaUrl && <img src={leadMediaUrl} alt="" className="h-full w-full object-cover" />}</div><div className="space-y-3 p-5">{category && <p className="text-xs font-semibold uppercase text-primary">{category}</p>}<h3 className="text-2xl font-semibold leading-tight">{title || "Untitled story"}</h3>{personName && <p className="text-sm text-muted-foreground">{personName}</p>}<p className="line-clamp-4 text-sm leading-6 text-muted-foreground">{summary || "Your opening summary will appear here."}</p></div></Card>
-      <Card className="space-y-4 p-5"><div className="flex items-center justify-between"><div><Label htmlFor="publish-story">Published</Label><p className="text-xs text-muted-foreground">Visible in the public Story Library.</p></div><Switch id="publish-story" checked={status === "published"} onCheckedChange={(checked) => setStatus(checked ? "published" : "draft")} /></div><Button className="w-full" disabled={save.isPending || !title.trim()} onClick={() => void saveStory()}>{save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{status === "published" ? "Publish story" : "Save draft"}</Button>{status === "published" && data?.story && <Button asChild variant="outline" className="w-full"><a href={`/content/videos/${video.id}`} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Open video record</a></Button>}</Card>
+      <Card className="space-y-3 p-5"><p className="text-xs text-muted-foreground">{isPublic ? "This story is public — saving updates the live page." : "Turn on Public at the top to show this story in the Story Library."}</p><Button className="w-full" disabled={save.isPending || !title.trim()} onClick={() => void saveStory()}>{save.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save story</Button>{organization?.slug && <Button asChild variant="outline" className="w-full"><a href={`/${organization.slug}/content/videos/${video.id}`} target="_blank" rel="noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Preview story page</a></Button>}</Card>
     </aside>
   </div>;
 }
