@@ -56,7 +56,9 @@ interface StoryEditorValue {
 
 export interface StoryDraft {
   story: Partial<StoryRecord> & Pick<StoryRecord, "title" | "story_format" | "cta_mode">;
-  blocks: Array<{ id: string; block_type: string; body: string | null; sort_order: number }>;
+  // Full block content (heading, media, gallery, video, quote credit) so the
+  // preview renders exactly what the canvas shows, not just paragraph text.
+  blocks: Array<Partial<StoryBlock> & { id: string; block_type: string; sort_order: number }>;
 }
 
 export const storyDraftKey = (videoId: string, previewId = "latest") => `story-preview:${videoId}:${previewId}`;
@@ -169,7 +171,7 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
         cta_button_label: mode === "custom" ? ctaLabel.trim() || null : null,
         cta_url: mode === "custom" ? ctaUrl.trim() || null : null,
       },
-      blocks: blocks.map((b, i) => ({ id: b.clientId, block_type: b.block_type, body: b.body ?? null, sort_order: i })),
+      blocks: blocks.map((b, i) => ({ ...b, id: b.clientId, body: b.body ?? null, sort_order: i })),
     };
   };
 
