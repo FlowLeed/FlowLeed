@@ -55,6 +55,7 @@ interface StoryEditorValue {
 }
 
 export interface StoryDraft {
+  created_at: string;
   story: Partial<StoryRecord> & Pick<StoryRecord, "title" | "story_format" | "cta_mode">;
   // Full block content (heading, media, gallery, video, quote credit) so the
   // preview renders exactly what the canvas shows, not just paragraph text.
@@ -62,6 +63,7 @@ export interface StoryDraft {
 }
 
 export const storyDraftKey = (videoId: string, previewId = "latest") => `story-preview:${videoId}:${previewId}`;
+export const storySavedKey = (videoId: string) => `story-saved:${videoId}`;
 
 const StoryEditorContext = createContext<StoryEditorValue | null>(null);
 
@@ -150,7 +152,11 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
       cta_button_label: ctaMode === "custom" ? ctaLabel.trim() || null : null,
       cta_url: ctaMode === "custom" ? ctaUrl.trim() || null : null,
     };
-    try { await save.mutateAsync({ story, blocks }); toast({ title: "Story saved" }); }
+    try {
+      const saved = await save.mutateAsync({ story, blocks });
+      localStorage.setItem(storySavedKey(video.id), new Date().toISOString());
+      toast({ title: "Story saved", description: `${saved.blocks.length} section${saved.blocks.length === 1 ? "" : "s"} updated on the public page.` });
+    }
     catch (error) { toast({ title: "Story not saved", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }); }
   };
 
@@ -161,6 +167,7 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
     const first = blocks.find((b) => b.block_type === "next_step")?.body || null;
     const mode: StoryRecord["cta_mode"] = !first ? "none" : first === "custom" ? "custom" : first.startsWith("preset:") ? "preset" : "category_default";
     return {
+      created_at: new Date().toISOString(),
       story: {
         title: title.trim() || "Untitled story", person_name: personName.trim() || null, summary: summary.trim() || null,
         category: category.trim() || null, story_format: format, lead_media_url: leadMediaUrl || null,

@@ -7,7 +7,7 @@ import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
 import { resolvePreset, type NextStepPreset } from "@/hooks/useNextSteps";
-import { storyDraftKey, type StoryDraft } from "@/components/content/StoryEditorContext";
+import { storyDraftKey, storySavedKey, type StoryDraft } from "@/components/content/StoryEditorContext";
 import type { RelatedStory, StoryBlock, StoryCta, StoryRecord } from "@/lib/storyTypes";
 import { handleYoutubeThumbError, resolveThumb } from "@/lib/youtubeThumbnail";
 import { cn } from "@/lib/utils";
@@ -53,14 +53,18 @@ export default function PublicContentVideoPage() {
             const raw = localStorage.getItem(storyDraftKey(id, previewId === "1" ? "latest" : previewId));
             if (raw) {
               const draft = JSON.parse(raw) as StoryDraft;
-              merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;
-              merged.blocks = draft.blocks as unknown as StoryBlock[];
-              if (draft.story.cta_mode === "custom") {
-                merged.cta = draft.story.cta_url
-                  ? { headline: draft.story.cta_headline ?? "", description: draft.story.cta_description ?? null, button_label: draft.story.cta_button_label ?? "Learn more", destination_url: draft.story.cta_url } as StoryCta
-                  : null;
+              const savedAt = localStorage.getItem(storySavedKey(id));
+              const draftIsCurrent = !savedAt || (Boolean(draft.created_at) && new Date(draft.created_at).getTime() > new Date(savedAt).getTime());
+              if (draftIsCurrent) {
+                merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;
+                merged.blocks = draft.blocks as unknown as StoryBlock[];
+                if (draft.story.cta_mode === "custom") {
+                  merged.cta = draft.story.cta_url
+                    ? { headline: draft.story.cta_headline ?? "", description: draft.story.cta_description ?? null, button_label: draft.story.cta_button_label ?? "Learn more", destination_url: draft.story.cta_url } as StoryCta
+                    : null;
+                }
+                setIsPreview(true);
               }
-              setIsPreview(true);
             }
           } catch { /* ignore malformed drafts */ }
         }
@@ -79,6 +83,15 @@ export default function PublicContentVideoPage() {
     };
     void load();
   }, [slug, id]);
+
+  useEffect(() => {
+    if (!id || !params.get("preview")) return;
+    const handleSaved = (event: StorageEvent) => {
+      if (event.key === storySavedKey(id)) window.location.reload();
+    };
+    window.addEventListener("storage", handleSaved);
+    return () => window.removeEventListener("storage", handleSaved);
+  }, [id, params]);
 
   if (loading) return <div className="flex h-[100dvh] items-center justify-center bg-story-background text-foreground"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   if (notFound || !payload) return <div className="flex h-[100dvh] items-center justify-center bg-story-background p-6"><div className="max-w-md space-y-4 text-center"><Film className="mx-auto h-8 w-8 text-muted-foreground" /><h1 className="text-2xl font-semibold">Story not available</h1><p className="text-sm text-muted-foreground">This story is not shared publicly.</p><Button asChild variant="outline"><Link to={`/${slug}/content`}><ArrowLeft className="mr-2 h-4 w-4" />Back to stories</Link></Button></div></div>;
