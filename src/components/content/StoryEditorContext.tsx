@@ -30,8 +30,8 @@ interface StoryEditorValue {
   setBlocks: Dispatch<SetStateAction<EditableBlock[]>>;
   category: string;
   setCategory: Dispatch<SetStateAction<string>>;
-  ctaMode: "category_default" | "preset" | "custom";
-  setCtaMode: Dispatch<SetStateAction<"category_default" | "preset" | "custom">>;
+  ctaMode: "category_default" | "preset" | "custom" | "none";
+  setCtaMode: Dispatch<SetStateAction<"category_default" | "preset" | "custom" | "none">>;
   ctaPresetId: string | null;
   setCtaPresetId: Dispatch<SetStateAction<string | null>>;
   managerOpen: boolean;
@@ -72,7 +72,7 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
   // Layout follows the video itself: vertical video → vertical layout, otherwise horizontal.
   const format: StoryFormat = video.video_orientation === "vertical" ? "vertical_video" : "horizontal_video";
   const [leadMediaUrl, setLeadMediaUrl] = useState(video.thumbnail_url ?? "");
-  const [ctaMode, setCtaMode] = useState<"category_default" | "preset" | "custom">("category_default");
+  const [ctaMode, setCtaMode] = useState<"category_default" | "preset" | "custom" | "none">("category_default");
   const [ctaPresetId, setCtaPresetId] = useState<string | null>(null);
   const [managerOpen, setManagerOpen] = useState(false);
   const nextSteps = useNextSteps(video.organization_id);
