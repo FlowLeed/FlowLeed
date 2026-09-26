@@ -104,9 +104,11 @@ export default function ContentVideoDetailPage() {
         .update({ consent_level })
         .eq("id", id!);
       if (error) throw error;
+      await supabase.from("content_stories" as never).update({ status: consent_level === "public_search" ? "published" : "draft" } as never).eq("source_video_id", id!);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["content-video", id] });
+      qc.invalidateQueries({ queryKey: ["content-story", id] });
       qc.invalidateQueries({ queryKey: ["content-videos"] });
       toast({ title: "Visibility updated" });
     },
@@ -575,7 +577,7 @@ export default function ContentVideoDetailPage() {
 
         {isOrgAdmin && (
           <TabsContent value="story" className="mt-6">
-            <StoryAuthoringPanel video={video} analysis={analysis} />
+            <StoryAuthoringPanel video={video} analysis={analysis} isPublic={video.consent_level === "public_search"} />
           </TabsContent>
         )}
 
