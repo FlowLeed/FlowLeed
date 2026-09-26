@@ -51,7 +51,15 @@ interface StoryEditorValue {
   saveStory: () => Promise<void>;
   savePending: boolean;
   hasTitle: boolean;
+  buildDraft: () => StoryDraft;
 }
+
+export interface StoryDraft {
+  story: Partial<StoryRecord> & Pick<StoryRecord, "title" | "story_format" | "cta_mode">;
+  blocks: Array<{ id: string; block_type: string; body: string | null; sort_order: number }>;
+}
+
+export const storyDraftKey = (videoId: string) => `story-preview:${videoId}`;
 
 const StoryEditorContext = createContext<StoryEditorValue | null>(null);
 
@@ -141,12 +149,31 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
 
   const resolvedPreset = useMemo(() => resolvePreset(nextSteps.presets, ctaMode, ctaPresetId, category), [nextSteps.presets, ctaMode, ctaPresetId, category]);
 
+  // Current unsaved editor state, shaped like the public page payload for preview.
+  const buildDraft = (): StoryDraft => {
+    const first = blocks.find((b) => b.block_type === "next_step")?.body || null;
+    const mode: StoryRecord["cta_mode"] = !first ? "none" : first === "custom" ? "custom" : first.startsWith("preset:") ? "preset" : "category_default";
+    return {
+      story: {
+        title: title.trim() || "Untitled story", person_name: personName.trim() || null, summary: summary.trim() || null,
+        category: category.trim() || null, story_format: format, lead_media_url: leadMediaUrl || null,
+        lead_media_alt: personName.trim() ? `${personName.trim()} story` : title.trim(), cta_mode: mode,
+        cta_preset_id: mode === "preset" && first ? first.slice(7) : null,
+        cta_headline: mode === "custom" ? ctaHeadline.trim() || null : null,
+        cta_description: mode === "custom" ? ctaDescription.trim() || null : null,
+        cta_button_label: mode === "custom" ? ctaLabel.trim() || null : null,
+        cta_url: mode === "custom" ? ctaUrl.trim() || null : null,
+      },
+      blocks: blocks.map((b, i) => ({ id: b.clientId, block_type: b.block_type, body: b.body ?? null, sort_order: i })),
+    };
+  };
+
   const value: StoryEditorValue = {
     isLoading, isPublic, organizationSlug: organization?.slug ?? null, videoId: video.id, organizationId: video.organization_id, format,
     title, setTitle, personName, setPersonName, summary, setSummary, leadMediaUrl, uploading, uploadLead, blocks, setBlocks,
     category, setCategory, ctaMode, setCtaMode, ctaPresetId, setCtaPresetId, managerOpen, setManagerOpen,
     ctaHeadline, setCtaHeadline, ctaDescription, setCtaDescription, ctaLabel, setCtaLabel, ctaUrl, setCtaUrl,
-    nextSteps, resolvedPreset, suggested, saveStory, savePending: save.isPending, hasTitle: !!title.trim(),
+    nextSteps, resolvedPreset, suggested, saveStory, savePending: save.isPending, hasTitle: !!title.trim(), buildDraft,
   };
 
   return <StoryEditorContext.Provider value={value}>{children}<NextStepsManager orgId={video.organization_id} open={managerOpen} onOpenChange={setManagerOpen} /></StoryEditorContext.Provider>;
