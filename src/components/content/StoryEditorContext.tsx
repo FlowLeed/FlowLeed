@@ -4,7 +4,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { useStoryAuthoring } from "@/hooks/useStoryAuthoring";
 import { resolvePreset, useNextSteps } from "@/hooks/useNextSteps";
-import type { EditableBlock } from "./StoryBlockCanvas";
+import { newBlock, type EditableBlock } from "./StoryBlockCanvas";
+import { NextStepsManager } from "./NextStepsManager";
 import { CTA_SUGGESTIONS, type StoryFormat, type StoryRecord } from "@/lib/storyTypes";
 
 type VideoSource = { id: string; organization_id: string; title: string | null; channel_name: string | null; short_description: string | null; thumbnail_url: string | null; youtube_id: string; video_orientation?: string | null };
@@ -80,7 +81,7 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
   const [ctaDescription, setCtaDescription] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
   const [ctaUrl, setCtaUrl] = useState("");
-  const [blocks, setBlocks] = useState<EditableBlock[]>([]);
+  const [blocks, setBlocks] = useState<EditableBlock[]>([newBlock("next_step")]);
 
   useEffect(() => {
     if (!data?.story) return;
@@ -88,7 +89,12 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
     setTitle(story.title); setPersonName(story.person_name ?? ""); setSummary(story.summary ?? ""); setCategory(story.category ?? "");
     setLeadMediaUrl(story.lead_media_url ?? ""); setCtaMode(story.cta_mode); setCtaPresetId(story.cta_preset_id ?? null);
     setCtaHeadline(story.cta_headline ?? ""); setCtaDescription(story.cta_description ?? ""); setCtaLabel(story.cta_button_label ?? ""); setCtaUrl(story.cta_url ?? "");
-    setBlocks(data.blocks.map((block) => ({ ...block, clientId: block.id })));
+    const loaded: EditableBlock[] = data.blocks.map((block) => ({ ...block, clientId: block.id }));
+    // Older stories kept the next step outside the sections — bring it in as a section.
+    if (story.cta_mode !== "none" && !loaded.some((b) => b.block_type === "next_step")) {
+      loaded.push(newBlock("next_step", story.cta_mode === "custom" ? "custom" : story.cta_mode === "preset" && story.cta_preset_id ? `preset:${story.cta_preset_id}` : "auto"));
+    }
+    setBlocks(loaded);
   }, [data]);
 
   const suggested = useMemo(() => {
@@ -116,6 +122,10 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
 
   const saveStory = async () => {
     if (!title.trim()) return;
+    // The first Next Step section drives the story-level next step.
+    const first = blocks.find((b) => b.block_type === "next_step")?.body || null;
+    const ctaMode: StoryRecord["cta_mode"] = !first ? "none" : first === "custom" ? "custom" : first.startsWith("preset:") ? "preset" : "category_default";
+    const ctaPresetId = first?.startsWith("preset:") ? first.slice(7) : null;
     const story: Partial<StoryRecord> & Pick<StoryRecord, "organization_id" | "source_video_id" | "title"> = {
       organization_id: video.organization_id, source_video_id: video.id, title: title.trim(), person_name: personName.trim() || null,
       summary: summary.trim() || null, category: category.trim() || null, story_format: format, lead_media_url: leadMediaUrl || null,
@@ -139,5 +149,5 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
     nextSteps, resolvedPreset, suggested, saveStory, savePending: save.isPending, hasTitle: !!title.trim(),
   };
 
-  return <StoryEditorContext.Provider value={value}>{children}</StoryEditorContext.Provider>;
+  return <StoryEditorContext.Provider value={value}>{children}<NextStepsManager orgId={video.organization_id} open={managerOpen} onOpenChange={setManagerOpen} /></StoryEditorContext.Provider>;
 }

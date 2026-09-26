@@ -6,6 +6,7 @@ import { PublicStoryBlocks } from "@/components/content/PublicStoryBlocks";
 import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
+import { resolvePreset, type NextStepPreset } from "@/hooks/useNextSteps";
 import type { RelatedStory, StoryBlock, StoryCta, StoryRecord } from "@/lib/storyTypes";
 import { handleYoutubeThumbError, resolveThumb } from "@/lib/youtubeThumbnail";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,12 @@ import { cn } from "@/lib/utils";
 type PublicVideo = { id: string; youtube_id: string; title: string | null; channel_name: string | null; thumbnail_url: string | null; duration_seconds: number | null; description: string | null; short_description: string | null; published_at: string | null };
 type Analysis = { summary: string | null; themes: string[] | null; key_quotes: Array<{ text: string; start_seconds: number; impact_score: number }> | null };
 type Payload = { story: StoryRecord | null; video: PublicVideo | null; analysis: Analysis | null; blocks: StoryBlock[]; cta: StoryCta | null; related: RelatedStory[] };
+
+function CtaSection({ cta }: { cta: StoryCta }) {
+  return <section className="bg-primary text-primary-foreground"><div className="mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-14 md:flex-row md:items-center md:justify-between md:px-6 md:py-20"><div className="max-w-2xl"><h2 className="text-3xl font-semibold leading-tight md:text-4xl">{cta.headline}</h2>{cta.description && <p className="mt-3 text-base leading-7 text-primary-foreground/80">{cta.description}</p>}</div><Button asChild size="lg" variant="secondary" className="min-h-12 w-full shrink-0 md:w-auto"><a href={cta.destination_url}>{cta.button_label}<ArrowRight className="ml-2 h-4 w-4" /></a></Button></div></section>;
+}
+
+type PublicPreset = NextStepPreset;
 
 export default function PublicContentVideoPage() {
   const { slug, id } = useParams<{ slug: string; id: string }>();
@@ -22,6 +29,8 @@ export default function PublicContentVideoPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [presets, setPresets] = useState<PublicPreset[]>([]);
+  const [forms, setForms] = useState<Array<{ id: string; slug: string }>>([]);
   const [seek, setSeek] = useState(Number(params.get("t") ?? 0) || 0);
 
   useEffect(() => {
@@ -33,6 +42,14 @@ export default function PublicContentVideoPage() {
         supabase.rpc("get_public_organization" as never, { p_slug: slug } as never),
       ]);
       if (error || !data) setNotFound(true); else setPayload(data as unknown as Payload);
+      const orgId = (data as unknown as Payload | null)?.story?.organization_id;
+      if (orgId) {
+        const [{ data: p }, { data: f }] = await Promise.all([
+          supabase.from("content_story_cta_defaults" as never).select("*").eq("organization_id", orgId),
+          supabase.from("forms").select("id,slug").eq("organization_id", orgId).eq("is_published", true),
+        ]);
+        setPresets((p ?? []) as unknown as PublicPreset[]); setForms((f ?? []) as Array<{ id: string; slug: string }>);
+      }
       const org = (orgRows && Array.isArray(orgRows) ? orgRows[0] : orgRows) as { name?: string } | null | undefined;
       setOrgName(org?.name ?? ""); setLoading(false);
     };
@@ -53,6 +70,15 @@ export default function PublicContentVideoPage() {
   const media = story?.lead_media_url ?? resolveThumb(video?.thumbnail_url, video?.youtube_id);
   const published = story?.published_at ?? video?.published_at;
   const publishedLabel = published ? new Date(published).toLocaleDateString(undefined, { year: "numeric", month: "long" }) : null;
+  const hasNextStepBlocks = blocks.some((b) => b.block_type === "next_step");
+  const ctaFor = (block: StoryBlock): StoryCta | null => {
+    const choice = block.body || "auto";
+    if (choice === "custom") return story?.cta_mode === "custom" ? cta : null;
+    const p = resolvePreset(presets, choice.startsWith("preset:") ? "preset" : "category_default", choice.startsWith("preset:") ? choice.slice(7) : null, story?.category ?? "");
+    if (!p) return choice === "auto" ? cta : null;
+    const url = p.destination_type === "form" ? (forms.find((f) => f.id === p.form_id) ? `/${slug}/f/${forms.find((f) => f.id === p.form_id)!.slug}` : null) : p.destination_url;
+    return url ? { headline: p.headline, description: p.description, button_label: p.button_label, destination_url: url } as StoryCta : null;
+  };
   const jumpTo = (seconds: number) => { setSeek(seconds); setPlaying(true); const next = new URLSearchParams(params); next.set("t", String(Math.floor(seconds))); setParams(next, { replace: true }); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
   return <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-story-background text-foreground">
@@ -75,11 +101,11 @@ export default function PublicContentVideoPage() {
       </section>
 
       <section className="border-y border-story-border bg-story-paper"><div className="mx-auto w-full max-w-3xl px-4 py-12 md:px-6 md:py-20">
-        {blocks.length > 0 && <PublicStoryBlocks blocks={blocks} />}
+        {blocks.length > 0 && <PublicStoryBlocks blocks={blocks} renderNextStep={(b) => { const c = ctaFor(b); return c ? <CtaSection cta={c} /> : null; }} />}
         {false && <p className="text-center text-muted-foreground">This story is being prepared.</p>}
       </div></section>
 
-      {cta && story?.cta_mode !== "none" && <section className="bg-primary text-primary-foreground"><div className="mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-14 md:flex-row md:items-center md:justify-between md:px-6 md:py-20"><div className="max-w-2xl"><h2 className="text-3xl font-semibold leading-tight md:text-4xl">{cta.headline}</h2>{cta.description && <p className="mt-3 text-base leading-7 text-primary-foreground/80">{cta.description}</p>}</div><Button asChild size="lg" variant="secondary" className="min-h-12 w-full shrink-0 md:w-auto"><a href={cta.destination_url}>{cta.button_label}<ArrowRight className="ml-2 h-4 w-4" /></a></Button></div></section>}
+      {cta && story?.cta_mode !== "none" && !hasNextStepBlocks && <CtaSection cta={cta} />}
 
       {related.length > 0 && <section className="mx-auto w-full max-w-7xl px-4 py-14 md:px-6 md:py-20"><div className="mb-7"><p className="text-xs font-semibold uppercase text-primary">Keep exploring</p><h2 className="mt-2 text-3xl font-semibold">More stories like this</h2></div><div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-3 md:mx-0 md:grid md:grid-cols-4 md:overflow-visible md:px-0">{related.map((item) => { const thumb = item.lead_media_url ?? resolveThumb(item.thumbnail_url, item.youtube_id); const itemId = item.source_video_id ?? item.id; return <Link key={item.id} to={`/${slug}/content/videos/${itemId}`} className="group w-[78vw] max-w-[310px] shrink-0 snap-start md:w-auto"><div className={cn("overflow-hidden bg-story-media", item.story_format === "vertical_video" ? "aspect-[4/5]" : "aspect-video")}>{thumb && <img src={thumb} alt="" onError={item.youtube_id ? handleYoutubeThumbError : undefined} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.025] motion-reduce:transition-none" />}</div>{item.category && <p className="mt-3 text-[11px] font-semibold uppercase text-primary">{item.category}</p>}<h3 className="mt-1 text-lg font-semibold leading-tight">{item.title}</h3>{item.person_name && <p className="mt-1 text-sm text-muted-foreground">{item.person_name}</p>}</Link>; })}</div></section>}
     </main>

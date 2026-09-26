@@ -1,11 +1,9 @@
 import { useRef } from "react";
-import { ExternalLink, ImagePlus, Loader2, Plus, Trash2 } from "lucide-react";
-import { NextStepPicker } from "./StoryEditorSettings";
+import { ExternalLink, ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { describeDestination } from "@/hooks/useNextSteps";
 import { StoryBlockCanvas } from "./StoryBlockCanvas";
 import { useStoryEditor } from "./StoryEditorContext";
 
@@ -41,23 +39,6 @@ export function StoryAuthoringPanel() {
 
       <StoryBlockCanvas blocks={blocks} setBlocks={setBlocks} organizationId={organizationId} videoId={videoId} />
 
-      {/* Next step section — included by default, removable */}
-      {editor.ctaMode === "none"
-        ? <Button type="button" variant="outline" className="w-full border-dashed" onClick={() => editor.setCtaMode("category_default")}><Plus className="mr-2 h-4 w-4" />Add next step section</Button>
-        : <Card className="space-y-4 p-5 md:p-6">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Next step</p>
-            <Button type="button" size="icon" variant="ghost" className="h-8 w-8" aria-label="Remove next step" onClick={() => editor.setCtaMode("none")}><Trash2 className="h-4 w-4" /></Button>
-          </div>
-          <div className="rounded-lg bg-muted/50 p-4">
-            {editor.ctaMode === "custom"
-              ? <><p className="text-lg font-semibold">{editor.ctaHeadline || "Add a headline"}</p><p className="text-sm text-muted-foreground">{editor.ctaDescription || "Add one sentence"}</p><p className="text-sm font-medium text-primary">{editor.ctaLabel || "Button label"}</p></>
-              : editor.resolvedPreset
-                ? <><p className="text-lg font-semibold">{editor.resolvedPreset.headline}</p><p className="text-sm text-muted-foreground">{editor.resolvedPreset.description}</p><p className="text-sm font-medium text-primary">{editor.resolvedPreset.button_label} → {describeDestination(editor.resolvedPreset, editor.nextSteps.forms)}</p></>
-                : <p className="text-sm text-muted-foreground">No matching next step yet — pick one below.</p>}
-          </div>
-          <NextStepPicker />
-        </Card>}
     </div>
 
     {/* Inspector */}
