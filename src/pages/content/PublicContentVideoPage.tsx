@@ -34,8 +34,10 @@ function CtaSection({ cta }: { cta: StoryCta }) {
 
 type PublicPreset = NextStepPreset;
 
-export default function PublicContentVideoPage() {
-  const { slug, id } = useParams<{ slug: string; id: string }>();
+export default function PublicContentVideoPage({ previewSlug, previewVideoId, previewDraft }: { previewSlug?: string; previewVideoId?: string; previewDraft?: StoryDraft } = {}) {
+  const routeParams = useParams<{ slug: string; id: string }>();
+  const slug = previewSlug ?? routeParams.slug;
+  const id = previewVideoId ?? routeParams.id;
   const [params, setParams] = useSearchParams();
   const [payload, setPayload] = useState<Payload | null>(null);
   const [orgName, setOrgName] = useState("");
@@ -55,8 +57,15 @@ export default function PublicContentVideoPage() {
         supabase.rpc("get_public_story" as never, { p_slug: slug, p_content_id: id } as never),
         supabase.rpc("get_public_organization" as never, { p_slug: slug } as never),
       ]);
-      if (error || !data) setNotFound(true);
-      else {
+      if ((error || !data) && previewDraft) {
+        // Drafts that aren't public yet: build the page from the editor alone.
+        setPayload(mergePreviewDraft({ story: null, video: null, analysis: null, blocks: [], cta: null, related: [] }, previewDraft));
+        setIsPreview(true);
+      } else if (error || !data) setNotFound(true);
+      else if (previewDraft) {
+        setPayload(mergePreviewDraft(data as unknown as Payload, previewDraft));
+        setIsPreview(true);
+      } else {
         const merged = data as unknown as Payload;
         // Draft preview: overlay the editor's latest unsaved state from shared, same-origin storage.
         const previewId = new URLSearchParams(window.location.search).get("preview");
