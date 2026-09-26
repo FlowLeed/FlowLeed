@@ -5,10 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { useContentVideos } from "@/hooks/useContent";
 import { formatTimestamp } from "@/lib/contentUtils";
 import { Header } from "@/components/layout/Header";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
+import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
+import { NextStepsManager } from "@/components/content/NextStepsManager";
 
 export default function ContentLibraryPage() {
   const { data: videos = [], isLoading } = useContentVideos();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { organization } = useProfile();
+  const { isOrgAdmin } = useIsOrgAdmin(user?.id);
+  const [nextStepsOpen, setNextStepsOpen] = useState(false);
   return (
     <div className="flex flex-col h-full">
       <Header
@@ -20,10 +30,14 @@ export default function ContentLibraryPage() {
       />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="container max-w-5xl space-y-6 px-4 py-6 sm:px-6 md:py-10">
-          <header>
-            <h1 className="text-2xl font-light md:text-3xl">Library</h1>
-            <p className="text-muted-foreground text-sm">{videos.length} video{videos.length === 1 ? "" : "s"}</p>
+          <header className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-light md:text-3xl">Library</h1>
+              <p className="text-muted-foreground text-sm">{videos.length} video{videos.length === 1 ? "" : "s"}</p>
+            </div>
+            {isOrgAdmin && organization?.id && <Button variant="outline" size="sm" onClick={() => setNextStepsOpen(true)}>Next Steps</Button>}
           </header>
+          {organization?.id && <NextStepsManager orgId={organization.id} open={nextStepsOpen} onOpenChange={setNextStepsOpen} />}
           {isLoading ? (
             <div className="text-sm text-muted-foreground">Loading…</div>
           ) : (

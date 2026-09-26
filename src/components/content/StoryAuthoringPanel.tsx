@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useStoryAuthoring } from "@/hooks/useStoryAuthoring";
+import { describeDestination, resolvePreset, useNextSteps } from "@/hooks/useNextSteps";
+import { NextStepsManager } from "./NextStepsManager";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CTA_SUGGESTIONS, STORY_FORMATS, type StoryBlock, type StoryBlockType, type StoryFormat, type StoryRecord } from "@/lib/storyTypes";
@@ -30,7 +32,10 @@ export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; a
   const [format, setFormat] = useState<StoryFormat>("horizontal_video");
   const [leadMediaUrl, setLeadMediaUrl] = useState(video.thumbnail_url ?? "");
   const [status, setStatus] = useState<"draft" | "published">("draft");
-  const [ctaMode, setCtaMode] = useState<"category_default" | "custom">("category_default");
+  const [ctaMode, setCtaMode] = useState<"category_default" | "preset" | "custom">("category_default");
+  const [ctaPresetId, setCtaPresetId] = useState<string | null>(null);
+  const [managerOpen, setManagerOpen] = useState(false);
+  const nextSteps = useNextSteps(video.organization_id);
   const [ctaHeadline, setCtaHeadline] = useState("");
   const [ctaDescription, setCtaDescription] = useState("");
   const [ctaLabel, setCtaLabel] = useState("");
@@ -41,7 +46,7 @@ export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; a
     if (!data?.story) return;
     const story = data.story;
     setTitle(story.title); setPersonName(story.person_name ?? ""); setSummary(story.summary ?? ""); setCategory(story.category ?? "");
-    setFormat(story.story_format); setLeadMediaUrl(story.lead_media_url ?? ""); setStatus(story.status); setCtaMode(story.cta_mode);
+    setFormat(story.story_format); setLeadMediaUrl(story.lead_media_url ?? ""); setStatus(story.status); setCtaMode(story.cta_mode); setCtaPresetId(story.cta_preset_id ?? null);
     setCtaHeadline(story.cta_headline ?? ""); setCtaDescription(story.cta_description ?? ""); setCtaLabel(story.cta_button_label ?? ""); setCtaUrl(story.cta_url ?? "");
     setBlocks(data.blocks.map((block) => ({ ...block, clientId: block.id })));
   }, [data]);
@@ -79,7 +84,7 @@ export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; a
     const story: Partial<StoryRecord> & Pick<StoryRecord, "organization_id" | "source_video_id" | "title"> = {
       organization_id: video.organization_id, source_video_id: video.id, title: title.trim(), person_name: personName.trim() || null,
       summary: summary.trim() || null, category: category.trim() || null, story_format: format, lead_media_url: leadMediaUrl || null,
-      lead_media_alt: personName.trim() ? `${personName.trim()} story` : title.trim(), status, cta_mode: ctaMode,
+      lead_media_alt: personName.trim() ? `${personName.trim()} story` : title.trim(), status, cta_mode: ctaMode, cta_preset_id: ctaMode === "preset" ? ctaPresetId : null,
       cta_headline: ctaMode === "custom" ? ctaHeadline.trim() || null : null,
       cta_description: ctaMode === "custom" ? ctaDescription.trim() || null : null,
       cta_button_label: ctaMode === "custom" ? ctaLabel.trim() || null : null,
@@ -119,7 +124,10 @@ export function StoryAuthoringPanel({ video, analysis }: { video: VideoSource; a
 
       <Card className="space-y-5 p-5 md:p-6">
         <div><h3 className="font-semibold">Next step</h3><p className="text-sm text-muted-foreground">Give this story one natural invitation.</p></div>
-        <div className="flex items-center justify-between gap-4"><div><Label htmlFor="custom-cta">Custom for this story</Label><p className="text-xs text-muted-foreground">Otherwise the category default is used.</p></div><Switch id="custom-cta" checked={ctaMode === "custom"} onCheckedChange={(checked) => setCtaMode(checked ? "custom" : "category_default")} /></div>
+        <div className="space-y-2"><Label>Invitation</Label><Select value={ctaMode === "preset" && ctaPresetId ? `preset:${ctaPresetId}` : ctaMode} onValueChange={(v) => { if (v.startsWith("preset:")) { setCtaMode("preset"); setCtaPresetId(v.slice(7)); } else { setCtaMode(v as "category_default" | "custom"); } }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="category_default">Automatic (category or church default)</SelectItem>{nextSteps.presets.map((p) => <SelectItem key={p.id} value={`preset:${p.id}`}>{p.is_global ? "Church-wide default" : p.category}</SelectItem>)}<SelectItem value="custom">Custom one-off link</SelectItem></SelectContent></Select></div>
+        {ctaMode !== "custom" && (() => { const p = resolvePreset(nextSteps.presets, ctaMode, ctaPresetId, category); return p ? <div className="border border-border bg-muted/20 p-3 text-sm"><p className="font-medium">{p.headline}</p><p className="text-muted-foreground">{p.button_label} → {describeDestination(p, nextSteps.forms)}</p><p className="mt-1 text-xs text-muted-foreground">Managed centrally — updates automatically.</p></div> : <p className="text-sm text-muted-foreground">No matching next step. Add a church-wide default so every story has one.</p>; })()}
+        <Button type="button" variant="link" className="h-auto p-0 text-sm" onClick={() => setManagerOpen(true)}>Manage church Next Steps</Button>
+        <NextStepsManager orgId={video.organization_id} open={managerOpen} onOpenChange={setManagerOpen} />
         {ctaMode === "custom" && <div className="space-y-3"><div className="flex justify-end"><Button type="button" variant="outline" size="sm" onClick={() => { setCtaHeadline(suggested.headline); setCtaDescription(suggested.description); setCtaLabel(suggested.button); }}><Sparkles className="mr-2 h-4 w-4" />Use suggested wording</Button></div><Input value={ctaHeadline} onChange={(event) => setCtaHeadline(event.target.value)} placeholder="Short headline" /><Textarea rows={2} value={ctaDescription} onChange={(event) => setCtaDescription(event.target.value)} placeholder="One sentence" /><div className="grid gap-3 sm:grid-cols-2"><Input value={ctaLabel} onChange={(event) => setCtaLabel(event.target.value)} placeholder="Button label" /><Input value={ctaUrl} onChange={(event) => setCtaUrl(event.target.value)} placeholder="https://…" /></div></div>}
       </Card>
     </div>
