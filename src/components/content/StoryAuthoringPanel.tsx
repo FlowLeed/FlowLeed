@@ -48,12 +48,21 @@ export function StoryAuthoringPanel() {
         <Button className="w-full" disabled={editor.savePending || !editor.hasTitle} onClick={() => void editor.saveStory()}>{editor.savePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save story</Button>
         {editor.organizationSlug && <Button variant="outline" className="w-full" onClick={() => {
           const previewId = crypto.randomUUID();
-          const draft = JSON.stringify(editor.buildDraft());
+          const currentDraft = editor.buildDraft();
+          const draft = JSON.stringify(currentDraft);
           // Keep both a unique snapshot and a latest snapshot. The latter makes
           // preview reliable in browsers that strip or delay popup query state.
           localStorage.setItem(storyDraftKey(editor.videoId, previewId), draft);
           localStorage.setItem(storyDraftKey(editor.videoId), draft);
-          window.open(`/${editor.organizationSlug}/content/videos/${editor.videoId}?preview=${encodeURIComponent(previewId)}&v=${Date.now()}`, "_blank");
+          const previewWindow = window.open(`/${editor.organizationSlug}/content/videos/${editor.videoId}?preview=${encodeURIComponent(previewId)}&v=${Date.now()}`, "_blank");
+          // Send the live React state directly as well. This avoids browser
+          // storage isolation in preview tabs and guarantees unsaved edits win.
+          if (previewWindow) {
+            const sendDraft = () => previewWindow.postMessage({ type: "flowleed-story-preview", videoId: editor.videoId, draft: currentDraft }, window.location.origin);
+            window.setTimeout(sendDraft, 250);
+            window.setTimeout(sendDraft, 1000);
+            window.setTimeout(sendDraft, 2500);
+          }
         }}><ExternalLink className="mr-2 h-4 w-4" />Preview story page</Button>}
       </Card>
     </aside>
