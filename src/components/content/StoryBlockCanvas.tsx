@@ -18,6 +18,7 @@ import {
   ImagePlus,
   Images,
   Loader2,
+  Megaphone,
   Plus,
   Quote as QuoteIcon,
   Trash2,
@@ -32,12 +33,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { StoryBlock, StoryBlockType } from "@/lib/storyTypes";
+import { useStoryEditor } from "./StoryEditorContext";
+import { NextStepBlockEditor } from "./NextStepBlockEditor";
 
 export type EditableBlock = Partial<StoryBlock> & { clientId: string; block_type: StoryBlockType };
 
-export const newBlock = (block_type: StoryBlockType): EditableBlock => ({
+export const newBlock = (block_type: StoryBlockType, body?: string): EditableBlock => ({
   clientId: crypto.randomUUID(),
   block_type,
+  body: body ?? (block_type === "next_step" ? "auto" : undefined),
   gallery_items: [],
 });
 
@@ -53,6 +57,7 @@ const BLOCK_LIBRARY: Array<{
   { type: "image", label: "Photo", hint: "One photo with a caption", Icon: ImagePlus },
   { type: "gallery", label: "Photo group", hint: "A few photos side by side", Icon: Images },
   { type: "video", label: "Video clip", hint: "A YouTube moment", Icon: Video },
+  { type: "next_step", label: "Next step", hint: "Invite them to take a step", Icon: Megaphone },
 ];
 
 const labelFor = (type: StoryBlockType) => BLOCK_LIBRARY.find((item) => item.type === type)?.label ?? type;
@@ -62,10 +67,11 @@ function AddBlockButton({
   onAdd,
   variant = "inline",
 }: {
-  onAdd: (type: StoryBlockType) => void;
+  onAdd: (type: StoryBlockType, body?: string) => void;
   variant?: "inline" | "primary";
 }) {
   const [open, setOpen] = useState(false);
+  const { nextSteps } = useStoryEditor();
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -110,6 +116,13 @@ function AddBlockButton({
               </span>
             </button>
           ))}
+          {nextSteps.presets.length > 0 && <p className="px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Church next steps</p>}
+          {nextSteps.presets.map((preset) => (
+            <button key={preset.id} type="button" onClick={() => { onAdd("next_step", `preset:${preset.id}`); setOpen(false); }} className="flex w-full items-center gap-3 rounded-md p-2 text-left transition hover:bg-accent">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10"><Megaphone className="h-4 w-4 text-primary" /></span>
+              <span className="min-w-0"><span className="block truncate text-sm font-medium">{preset.headline}</span><span className="block truncate text-xs text-muted-foreground">{preset.is_global ? "Church-wide default" : preset.category}</span></span>
+            </button>
+          ))}
         </div>
       </PopoverContent>
     </Popover>
@@ -130,6 +143,8 @@ function BlockEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const busy = uploadingId === block.clientId;
   const gallery = block.gallery_items ?? [];
+
+  if (block.block_type === "next_step") return <NextStepBlockEditor block={block} update={update} />;
 
   if (block.block_type === "heading") {
     return (
@@ -417,10 +432,10 @@ export function StoryBlockCanvas({
     });
   };
 
-  const insertAt = (index: number, type: StoryBlockType) =>
+  const insertAt = (index: number, type: StoryBlockType, body?: string) =>
     setBlocks((current) => {
       const next = [...current];
-      next.splice(index, 0, newBlock(type));
+      next.splice(index, 0, newBlock(type, body));
       return next;
     });
 
@@ -460,14 +475,14 @@ export function StoryBlockCanvas({
                 remove={() => setBlocks((current) => current.filter((item) => item.clientId !== block.clientId))}
                 upload={upload}
                 uploadingId={uploadingId}
-                onInsert={(type) => insertAt(index, type)}
+                onInsert={(type, body) => insertAt(index, type, body)}
               />
             ))}
           </SortableContext>
         </DndContext>
       )}
       <div className="pt-2">
-        <AddBlockButton variant="primary" onAdd={(type) => insertAt(blocks.length, type)} />
+        <AddBlockButton variant="primary" onAdd={(type, body) => insertAt(blocks.length, type, body)} />
       </div>
     </div>
   );

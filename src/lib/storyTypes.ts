@@ -1,6 +1,6 @@
 export type StoryFormat = "horizontal_video" | "vertical_video" | "written" | "mixed";
 export type StoryStatus = "draft" | "published";
-export type StoryBlockType = "heading" | "paragraph" | "quote" | "image" | "gallery" | "video";
+export type StoryBlockType = "heading" | "paragraph" | "quote" | "image" | "gallery" | "video" | "next_step";
 
 export interface StoryRecord {
   id: string;
