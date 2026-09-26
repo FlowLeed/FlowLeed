@@ -7,6 +7,7 @@ import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
 import { resolvePreset, type NextStepPreset } from "@/hooks/useNextSteps";
+import { storyDraftKey, type StoryDraft } from "@/components/content/StoryEditorContext";
 import type { RelatedStory, StoryBlock, StoryCta, StoryRecord } from "@/lib/storyTypes";
 import { handleYoutubeThumbError, resolveThumb } from "@/lib/youtubeThumbnail";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ export default function PublicContentVideoPage() {
   const [presets, setPresets] = useState<PublicPreset[]>([]);
   const [forms, setForms] = useState<Array<{ id: string; slug: string }>>([]);
   const [seek, setSeek] = useState(Number(params.get("t") ?? 0) || 0);
+  const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -41,7 +43,28 @@ export default function PublicContentVideoPage() {
         supabase.rpc("get_public_story" as never, { p_slug: slug, p_content_id: id } as never),
         supabase.rpc("get_public_organization" as never, { p_slug: slug } as never),
       ]);
-      if (error || !data) setNotFound(true); else setPayload(data as unknown as Payload);
+      if (error || !data) setNotFound(true);
+      else {
+        const merged = data as unknown as Payload;
+        // Draft preview: overlay the editor's unsaved state passed through sessionStorage.
+        if (new URLSearchParams(window.location.search).get("preview") === "1") {
+          try {
+            const raw = sessionStorage.getItem(storyDraftKey(id));
+            if (raw) {
+              const draft = JSON.parse(raw) as StoryDraft;
+              merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;
+              merged.blocks = draft.blocks as unknown as StoryBlock[];
+              if (draft.story.cta_mode === "custom") {
+                merged.cta = draft.story.cta_url
+                  ? { headline: draft.story.cta_headline ?? "", description: draft.story.cta_description ?? null, button_label: draft.story.cta_button_label ?? "Learn more", destination_url: draft.story.cta_url } as StoryCta
+                  : null;
+              }
+              setIsPreview(true);
+            }
+          } catch { /* ignore malformed drafts */ }
+        }
+        setPayload(merged);
+      }
       const orgId = (data as unknown as Payload | null)?.story?.organization_id;
       if (orgId) {
         const [{ data: p }, { data: f }] = await Promise.all([
@@ -83,6 +106,8 @@ export default function PublicContentVideoPage() {
 
   return <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-story-background text-foreground">
     <header className="sticky top-0 z-50 border-b border-story-border bg-story-background/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}><div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 md:px-6 md:py-4"><Link to={`/${slug}/content`} className="min-w-0 flex-1"><img src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug ?? "")}`} alt={orgName ? `${orgName} logo` : "Organization logo"} className="h-8 w-auto max-w-[11rem] object-contain md:h-10" onError={(event) => { event.currentTarget.style.display = "none"; }} /></Link><Button asChild variant="ghost" size="sm"><Link to={`/${slug}/content`}><ArrowLeft className="mr-2 h-4 w-4" />All stories</Link></Button></div></header>
+
+    {isPreview && <div className="border-b border-story-border bg-story-paper px-4 py-2 text-center text-xs font-medium text-muted-foreground">Previewing unsaved changes — save the story to publish them.</div>}
 
     <main>
       <section className="mx-auto grid w-full max-w-7xl gap-7 px-4 pb-10 pt-8 md:px-6 md:pb-16 md:pt-12 lg:grid-cols-12 lg:items-center lg:gap-12">
