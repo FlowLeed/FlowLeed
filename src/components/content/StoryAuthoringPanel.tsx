@@ -12,7 +12,7 @@ import { NextStepsManager } from "./NextStepsManager";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
-import { CTA_SUGGESTIONS, STORY_FORMATS, type StoryBlock, type StoryBlockType, type StoryFormat, type StoryRecord } from "@/lib/storyTypes";
+import { CTA_SUGGESTIONS, type StoryBlock, type StoryBlockType, type StoryFormat, type StoryRecord } from "@/lib/storyTypes";
 
 type VideoSource = { id: string; organization_id: string; title: string | null; channel_name: string | null; short_description: string | null; thumbnail_url: string | null; youtube_id: string; video_orientation?: string | null };
 type AnalysisSource = { summary?: string | null; themes?: string[] | null; key_quotes?: Array<{ text: string }> | null } | null;
