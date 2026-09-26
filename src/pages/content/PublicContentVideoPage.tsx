@@ -45,7 +45,7 @@ export default function PublicContentVideoPage() {
   const { story, video, analysis, blocks, cta, related } = payload;
   const title = story?.title ?? video?.title ?? "Untitled story";
   const person = story?.person_name ?? video?.channel_name;
-  const summary = story?.summary ?? video?.short_description ?? analysis?.summary;
+  const summary = story ? story.summary : (video?.short_description ?? analysis?.summary);
   const category = story?.category ?? analysis?.themes?.[0];
   const format = story?.story_format ?? "vertical_video";
   const portrait = format === "vertical_video";
@@ -75,8 +75,8 @@ export default function PublicContentVideoPage() {
       </section>
 
       <section className="border-y border-story-border bg-story-paper"><div className="mx-auto w-full max-w-3xl px-4 py-12 md:px-6 md:py-20">
-        {blocks.length > 0 ? <PublicStoryBlocks blocks={blocks} /> : <div className="space-y-10">{(analysis?.summary || video?.description) && <p className="whitespace-pre-line text-lg leading-9 text-foreground/85">{analysis?.summary || video?.description}</p>}{analysis?.key_quotes?.map((quote, index) => <button key={`${quote.start_seconds}-${index}`} type="button" onClick={() => jumpTo(quote.start_seconds)} className="group block w-full border-l-2 border-primary px-6 py-5 text-left"><span className="mb-3 inline-flex items-center gap-2 text-xs font-semibold text-primary"><Play className="h-3 w-3 fill-current" />{formatTimestamp(quote.start_seconds)}</span><span className="block text-xl font-medium leading-8 md:text-2xl md:leading-10">“{quote.text}”</span></button>)}</div>}
-        {written && blocks.length === 0 && !summary && <p className="text-center text-muted-foreground">This story is being prepared.</p>}
+        {blocks.length > 0 && <PublicStoryBlocks blocks={blocks} />}
+        {false && <p className="text-center text-muted-foreground">This story is being prepared.</p>}
       </div></section>
 
       {cta && <section className="bg-primary text-primary-foreground"><div className="mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-14 md:flex-row md:items-center md:justify-between md:px-6 md:py-20"><div className="max-w-2xl"><h2 className="text-3xl font-semibold leading-tight md:text-4xl">{cta.headline}</h2>{cta.description && <p className="mt-3 text-base leading-7 text-primary-foreground/80">{cta.description}</p>}</div><Button asChild size="lg" variant="secondary" className="min-h-12 w-full shrink-0 md:w-auto"><a href={cta.destination_url}>{cta.button_label}<ArrowRight className="ml-2 h-4 w-4" /></a></Button></div></section>}
