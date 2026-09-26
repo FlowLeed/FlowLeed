@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { ExternalLink, ImagePlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { useStoryEditor } from "./StoryEditorContext";
 
 export function StoryAuthoringPanel() {
   const editor = useStoryEditor();
+  const uploadRef = useRef<HTMLInputElement>(null);
   const { format, leadMediaUrl, uploading, uploadLead, title, setTitle, personName, setPersonName, summary, setSummary, blocks, setBlocks, organizationId, videoId } = editor;
 
   if (editor.isLoading) return <Card className="flex min-h-48 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></Card>;
@@ -23,13 +25,11 @@ export function StoryAuthoringPanel() {
               ? <img src={leadMediaUrl} alt="" className="h-full w-full object-cover" />
               : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No opening photo yet</div>}
           </div>
-          <input type="file" accept="image/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadLead(file); event.target.value = ""; }} />
-          <label className="absolute right-3 top-3">
-            <Button type="button" size="sm" variant="secondary" disabled={uploading} onClick={(event) => { event.preventDefault(); (event.currentTarget.closest("label")?.querySelector("input") as HTMLInputElement | null)?.click(); }}>
-              {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
-              {leadMediaUrl ? "Replace photo" : "Add photo"}
-            </Button>
-          </label>
+          <input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadLead(file); event.target.value = ""; }} />
+          <Button type="button" size="sm" variant="secondary" className="absolute right-3 top-3" disabled={uploading} onClick={() => uploadRef.current?.click()}>
+            {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}
+            {leadMediaUrl ? "Replace photo" : "Add photo"}
+          </Button>
         </div>
         <div className="space-y-2">
           <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Story title" className="h-auto border-0 bg-transparent px-0 text-3xl font-semibold leading-tight shadow-none focus-visible:ring-0" />

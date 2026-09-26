@@ -64,8 +64,6 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
   const { data, isLoading, save } = useStoryAuthoring(video.id);
   const { toast } = useToast();
   const { organization } = useProfile();
-  const uploadRef = { current: null as HTMLInputElement | null };
-  void uploadRef;
   const [uploading, setUploading] = useState(false);
   const [title, setTitle] = useState(video.title ?? "");
   const [personName, setPersonName] = useState(video.channel_name ?? "");
