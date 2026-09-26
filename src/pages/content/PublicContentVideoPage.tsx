@@ -46,10 +46,11 @@ export default function PublicContentVideoPage() {
       if (error || !data) setNotFound(true);
       else {
         const merged = data as unknown as Payload;
-        // Draft preview: overlay the editor's unsaved state passed through sessionStorage.
-        if (new URLSearchParams(window.location.search).get("preview") === "1") {
+        // Draft preview: overlay the editor's latest unsaved state from shared, same-origin storage.
+        const previewId = new URLSearchParams(window.location.search).get("preview");
+        if (previewId) {
           try {
-            const raw = sessionStorage.getItem(storyDraftKey(id));
+            const raw = localStorage.getItem(storyDraftKey(id, previewId === "1" ? "latest" : previewId));
             if (raw) {
               const draft = JSON.parse(raw) as StoryDraft;
               merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;

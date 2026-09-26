@@ -59,7 +59,7 @@ export interface StoryDraft {
   blocks: Array<{ id: string; block_type: string; body: string | null; sort_order: number }>;
 }
 
-export const storyDraftKey = (videoId: string) => `story-preview:${videoId}`;
+export const storyDraftKey = (videoId: string, previewId = "latest") => `story-preview:${videoId}:${previewId}`;
 
 const StoryEditorContext = createContext<StoryEditorValue | null>(null);
 
