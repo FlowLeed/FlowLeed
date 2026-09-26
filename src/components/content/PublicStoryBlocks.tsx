@@ -1,11 +1,13 @@
 import { YouTubePlayer } from "@/components/content/YouTubePlayer";
+import type { ReactNode } from "react";
 import type { StoryBlock } from "@/lib/storyTypes";
 import { cn } from "@/lib/utils";
 
-export function PublicStoryBlocks({ blocks }: { blocks: StoryBlock[] }) {
+export function PublicStoryBlocks({ blocks, renderNextStep }: { blocks: StoryBlock[]; renderNextStep?: (block: StoryBlock) => ReactNode }) {
   return (
     <div className="space-y-8 md:space-y-12">
       {blocks.map((block) => {
+        if (block.block_type === "next_step") return renderNextStep ? <div key={block.id} className="-mx-4 md:-mx-6">{renderNextStep(block)}</div> : null;
         if (block.block_type === "heading") return <h2 key={block.id} className="pt-4 text-2xl font-semibold leading-tight text-foreground md:text-3xl">{block.heading}</h2>;
         if (block.block_type === "paragraph") return <p key={block.id} className="whitespace-pre-line text-base leading-8 text-foreground/85 md:text-lg md:leading-9">{block.body}</p>;
         if (block.block_type === "quote") return (
