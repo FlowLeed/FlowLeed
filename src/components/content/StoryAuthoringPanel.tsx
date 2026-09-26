@@ -46,7 +46,11 @@ export function StoryAuthoringPanel() {
       <Card className="space-y-3 p-5">
         <p className="text-xs text-muted-foreground">{editor.isPublic ? "This story is public — saving updates the live page." : "Turn on Public at the top to show this story in the Story Library."}</p>
         <Button className="w-full" disabled={editor.savePending || !editor.hasTitle} onClick={() => void editor.saveStory()}>{editor.savePending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save story</Button>
-        {editor.organizationSlug && <Button variant="outline" className="w-full" onClick={() => { sessionStorage.setItem(storyDraftKey(editor.videoId), JSON.stringify(editor.buildDraft())); window.open(`/${editor.organizationSlug}/content/videos/${editor.videoId}?preview=1`, "_blank", "noreferrer"); }}><ExternalLink className="mr-2 h-4 w-4" />Preview story page</Button>}
+        {editor.organizationSlug && <Button variant="outline" className="w-full" onClick={() => {
+          const previewId = crypto.randomUUID();
+          localStorage.setItem(storyDraftKey(editor.videoId, previewId), JSON.stringify(editor.buildDraft()));
+          window.open(`/${editor.organizationSlug}/content/videos/${editor.videoId}?preview=${encodeURIComponent(previewId)}`, "_blank", "noreferrer");
+        }}><ExternalLink className="mr-2 h-4 w-4" />Preview story page</Button>}
       </Card>
     </aside>
   </div>;
