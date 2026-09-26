@@ -15,7 +15,8 @@ export interface StoryRecord {
   lead_media_alt: string | null;
   reading_time_minutes: number | null;
   status: StoryStatus;
-  cta_mode: "category_default" | "custom";
+  cta_mode: "category_default" | "preset" | "custom";
+  cta_preset_id: string | null;
   cta_headline: string | null;
   cta_description: string | null;
   cta_button_label: string | null;
