@@ -495,6 +495,9 @@ export default function ContentVideoDetailPage() {
             />
           </div>
 
+          {isOrgAdmin && <StoryEditorSettings />}
+
+
           {!analysis ? (
             <Card className="p-6 text-sm text-muted-foreground">
               {video.ingest_status === "ready" ? "No analysis yet." : "Analysis will appear once processing completes."}
@@ -579,10 +582,11 @@ export default function ContentVideoDetailPage() {
 
         {isOrgAdmin && (
           <TabsContent value="story" className="mt-6">
-            <StoryAuthoringPanel video={video} analysis={analysis} isPublic={video.consent_level === "public_search"} />
+            <StoryAuthoringPanel />
           </TabsContent>
         )}
       </Tabs>
+      </StoryEditorProvider>
         </div>
       </div>
     </div>
