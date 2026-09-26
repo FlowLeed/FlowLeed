@@ -149,7 +149,7 @@ export function StoryMosaic({ videos, slug, playingId, onPlay }: StoryMosaicProp
               <article
                 key={video.id}
                 className={cn(
-                  "group relative min-h-[300px] overflow-hidden bg-story-media",
+                  "group relative overflow-hidden bg-story-media md:min-h-[300px]",
                   isPortrait ? "aspect-[4/5] md:aspect-auto" : format === "compact" ? "min-h-[240px]" : "aspect-[16/10] md:aspect-auto",
                   span,
                 )}
@@ -162,7 +162,7 @@ export function StoryMosaic({ videos, slug, playingId, onPlay }: StoryMosaicProp
                     {video.channel_name && <p className="mt-2 text-xs text-story-overlay-muted">{video.channel_name}</p>}
                   </div>
                 )}
-                <Link to={`/${slug}/content/videos/${video.id}`} className="absolute right-3 top-3 z-20 rounded-full bg-story-overlay px-3 py-2 text-xs font-medium text-story-overlay-foreground opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 focus:opacity-100">
+                <Link to={`/${slug}/content/videos/${video.id}`} className="absolute right-3 top-3 z-20 rounded-full bg-story-overlay px-3 py-2 text-xs font-medium text-story-overlay-foreground opacity-0 pointer-events-none backdrop-blur-sm transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto">
                   View story
                 </Link>
               </article>
