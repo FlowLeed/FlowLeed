@@ -277,6 +277,40 @@ export default function ContentVideoDetailPage() {
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="container max-w-6xl space-y-6 px-4 py-6 sm:px-6 md:py-10">
 
+      <Tabs defaultValue="overview">
+      <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full max-w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
+          <TabsList className="w-max">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            {isOrgAdmin && <TabsTrigger value="story">Story</TabsTrigger>}
+          </TabsList>
+        </div>
+        {isOrgAdmin && (
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="featured-toggle" className="text-sm inline-flex items-center gap-1">
+                <Star className={`h-3.5 w-3.5 ${video.is_featured ? "fill-current text-amber-500" : ""}`} /> Featured
+              </Label>
+              <Switch
+                id="featured-toggle"
+                checked={!!video.is_featured}
+                disabled={setFeatured.isPending}
+                onCheckedChange={(v) => setFeatured.mutate(v)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="visibility-toggle" className="text-sm">Public</Label>
+              <Switch
+                id="visibility-toggle"
+                checked={video.consent_level === "public_search"}
+                disabled={setConsent.isPending}
+                onCheckedChange={(v) => setConsent.mutate(v ? "public_search" : "internal_use")}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       <header className="space-y-2">
         {editingTitle ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -458,41 +492,7 @@ export default function ContentVideoDetailPage() {
 
 
 
-      <Tabs defaultValue="overview">
-        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="w-full max-w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
-          <TabsList className="w-max">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            {isOrgAdmin && <TabsTrigger value="story">Story</TabsTrigger>}
-          </TabsList>
-          </div>
-          {isOrgAdmin && (
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="featured-toggle" className="text-sm inline-flex items-center gap-1">
-                  <Star className={`h-3.5 w-3.5 ${video.is_featured ? "fill-current text-amber-500" : ""}`} /> Featured
-                </Label>
-                <Switch
-                  id="featured-toggle"
-                  checked={!!video.is_featured}
-                  disabled={setFeatured.isPending}
-                  onCheckedChange={(v) => setFeatured.mutate(v)}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="visibility-toggle" className="text-sm">Public</Label>
-                <Switch
-                  id="visibility-toggle"
-                  checked={video.consent_level === "public_search"}
-                  disabled={setConsent.isPending}
-                  onCheckedChange={(v) => setConsent.mutate(v ? "public_search" : "internal_use")}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        <TabsContent value="overview" className="space-y-4 mt-6">
+      <TabsContent value="overview" className="space-y-4 mt-6">
 
           {!analysis ? (
             <Card className="p-6 text-sm text-muted-foreground">
