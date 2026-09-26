@@ -31,6 +31,8 @@ import { useContentVideo, useContentAnalysis, useContentChunks } from "@/hooks/u
 import { formatTimestamp } from "@/lib/contentUtils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StoryAuthoringPanel } from "@/components/content/StoryAuthoringPanel";
+import { StoryEditorProvider } from "@/components/content/StoryEditorContext";
+import { StoryEditorSettings } from "@/components/content/StoryEditorSettings";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -277,6 +279,7 @@ export default function ContentVideoDetailPage() {
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="container max-w-6xl space-y-6 px-4 py-6 sm:px-6 md:py-10">
 
+      <StoryEditorProvider video={video} analysis={analysis} isPublic={video.consent_level === "public_search"}>
       <Tabs defaultValue="overview">
       <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="w-full max-w-full overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
