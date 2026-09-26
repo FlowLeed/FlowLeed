@@ -54,18 +54,16 @@ export default function PublicContentVideoPage() {
             const raw = localStorage.getItem(requestedKey) ?? localStorage.getItem(storyDraftKey(id));
             if (raw) {
               const draft = JSON.parse(raw) as StoryDraft;
-              const savedAt = localStorage.getItem(storySavedKey(id));
-              const draftIsCurrent = !savedAt || (Boolean(draft.created_at) && new Date(draft.created_at).getTime() > new Date(savedAt).getTime());
-              if (draftIsCurrent) {
-                merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;
-                merged.blocks = draft.blocks as unknown as StoryBlock[];
-                if (draft.story.cta_mode === "custom") {
-                  merged.cta = draft.story.cta_url
-                    ? { headline: draft.story.cta_headline ?? "", description: draft.story.cta_description ?? null, button_label: draft.story.cta_button_label ?? "Learn more", destination_url: draft.story.cta_url } as StoryCta
-                    : null;
-                }
-                setIsPreview(true);
+              // A snapshot with this preview ID was created by the editor for
+              // this exact tab, so it must always win over the saved payload.
+              merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;
+              merged.blocks = draft.blocks as unknown as StoryBlock[];
+              if (draft.story.cta_mode === "custom") {
+                merged.cta = draft.story.cta_url
+                  ? { headline: draft.story.cta_headline ?? "", description: draft.story.cta_description ?? null, button_label: draft.story.cta_button_label ?? "Learn more", destination_url: draft.story.cta_url } as StoryCta
+                  : null;
               }
+              setIsPreview(true);
             }
           } catch { /* ignore malformed drafts */ }
         }

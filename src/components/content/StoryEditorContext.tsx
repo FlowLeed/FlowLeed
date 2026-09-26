@@ -65,6 +65,16 @@ export interface StoryDraft {
 export const storyDraftKey = (videoId: string, previewId = "latest") => `story-preview:${videoId}:${previewId}`;
 export const storySavedKey = (videoId: string) => `story-saved:${videoId}`;
 
+const clearStoryDrafts = (videoId: string) => {
+  const prefix = `story-preview:${videoId}:`;
+  const matchingKeys: string[] = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (key?.startsWith(prefix)) matchingKeys.push(key);
+  }
+  matchingKeys.forEach((key) => localStorage.removeItem(key));
+};
+
 const StoryEditorContext = createContext<StoryEditorValue | null>(null);
 
 export function useStoryEditor(): StoryEditorValue {
@@ -154,6 +164,9 @@ export function StoryEditorProvider({ video, analysis, isPublic, children }: { v
     };
     try {
       const saved = await save.mutateAsync({ story, blocks });
+      // Saved data is now authoritative. Remove every older preview snapshot so
+      // an already-open preview reloads from the public story instead of stale storage.
+      clearStoryDrafts(video.id);
       localStorage.setItem(storySavedKey(video.id), new Date().toISOString());
       toast({ title: "Story saved", description: `${saved.blocks.length} section${saved.blocks.length === 1 ? "" : "s"} updated on the public page.` });
     }
