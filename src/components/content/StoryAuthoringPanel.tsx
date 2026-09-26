@@ -48,7 +48,7 @@ export function StoryAuthoringPanel({ video, analysis, isPublic }: { video: Vide
     if (!data?.story) return;
     const story = data.story;
     setTitle(story.title); setPersonName(story.person_name ?? ""); setSummary(story.summary ?? ""); setCategory(story.category ?? "");
-    setFormat(story.story_format); setLeadMediaUrl(story.lead_media_url ?? ""); setCtaMode(story.cta_mode); setCtaPresetId(story.cta_preset_id ?? null);
+    setLeadMediaUrl(story.lead_media_url ?? ""); setCtaMode(story.cta_mode); setCtaPresetId(story.cta_preset_id ?? null);
     setCtaHeadline(story.cta_headline ?? ""); setCtaDescription(story.cta_description ?? ""); setCtaLabel(story.cta_button_label ?? ""); setCtaUrl(story.cta_url ?? "");
     setBlocks(data.blocks.map((block) => ({ ...block, clientId: block.id })));
   }, [data]);
@@ -106,7 +106,6 @@ export function StoryAuthoringPanel({ video, analysis, isPublic }: { video: Vide
           <div className="space-y-2"><Label htmlFor="story-person">Person or family</Label><Input id="story-person" value={personName} onChange={(event) => setPersonName(event.target.value)} /></div>
           <div className="space-y-2"><Label htmlFor="story-category">Category</Label><Input id="story-category" value={category} onChange={(event) => setCategory(event.target.value)} placeholder="Community, baptism, serving…" /></div>
           <div className="space-y-2 sm:col-span-2"><Label htmlFor="story-summary">Opening summary</Label><Textarea id="story-summary" value={summary} onChange={(event) => setSummary(event.target.value)} rows={3} /></div>
-          <div className="space-y-2"><Label>Story format</Label><Select value={format} onValueChange={(value) => setFormat(value as StoryFormat)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STORY_FORMATS.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></div>
           <div className="space-y-2"><Label>Lead image</Label><input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadLead(file); event.target.value = ""; }} /><Button type="button" variant="outline" className="w-full" disabled={uploading} onClick={() => uploadRef.current?.click()}>{uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-2 h-4 w-4" />}{leadMediaUrl ? "Replace image" : "Upload image"}</Button></div>
         </div>
       </Card>
