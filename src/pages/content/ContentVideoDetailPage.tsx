@@ -311,116 +311,116 @@ export default function ContentVideoDetailPage() {
         )}
       </div>
 
-      <header className="space-y-2">
-        {editingTitle ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              autoFocus
-              value={titleDraft}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && titleDraft.trim()) saveTitle.mutate(titleDraft.trim());
-                if (e.key === "Escape") setEditingTitle(false);
-              }}
-              className="h-11 min-w-0 flex-1 text-xl font-light sm:text-2xl"
-            />
-            <Button size="icon" variant="ghost" disabled={saveTitle.isPending || !titleDraft.trim()} onClick={() => saveTitle.mutate(titleDraft.trim())}>
-              <Check className="h-4 w-4" />
-            </Button>
-            <Button size="icon" variant="ghost" onClick={() => setEditingTitle(false)}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="group flex items-start gap-2">
-            <h1 className="min-w-0 flex-1 break-words text-2xl font-light">{video.title}</h1>
-            {isOrgAdmin && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
-                onClick={() => { setTitleDraft(video.title ?? ""); setEditingTitle(true); }}
-                aria-label="Edit title"
-              >
-                <Pencil className="h-4 w-4" />
+      <TabsContent value="overview" className="space-y-4 mt-6">
+        <header className="space-y-2">
+          {editingTitle ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                autoFocus
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && titleDraft.trim()) saveTitle.mutate(titleDraft.trim());
+                  if (e.key === "Escape") setEditingTitle(false);
+                }}
+                className="h-11 min-w-0 flex-1 text-xl font-light sm:text-2xl"
+              />
+              <Button size="icon" variant="ghost" disabled={saveTitle.isPending || !titleDraft.trim()} onClick={() => saveTitle.mutate(titleDraft.trim())}>
+                <Check className="h-4 w-4" />
               </Button>
-            )}
-          </div>
-        )}
+              <Button size="icon" variant="ghost" onClick={() => setEditingTitle(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="group flex items-start gap-2">
+              <h1 className="min-w-0 flex-1 break-words text-2xl font-light">{video.title}</h1>
+              {isOrgAdmin && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                  onClick={() => { setTitleDraft(video.title ?? ""); setEditingTitle(true); }}
+                  aria-label="Edit title"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
 
-        {/* Public short description (story highlight) */}
-        {editingDescription ? (
-          <div className="space-y-2">
-            <Textarea
-              autoFocus
-              value={descriptionDraft}
-              onChange={(e) => setDescriptionDraft(e.target.value.slice(0, 240))}
-              placeholder="One emotional sentence that captures the story (shown on the public library)"
-              rows={2}
-              className="text-sm"
-            />
-            <div className="flex items-center justify-between">
-              <div className="text-[11px] text-muted-foreground">
-                {descriptionDraft.length}/240 · Shown on public library cards
-              </div>
-              <div className="flex gap-1">
-                <Button size="sm" variant="ghost" onClick={() => setEditingDescription(false)}>
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={() => saveDescription.mutate(descriptionDraft)} disabled={saveDescription.isPending}>
-                  Save
-                </Button>
+          {/* Public short description (story highlight) */}
+          {editingDescription ? (
+            <div className="space-y-2">
+              <Textarea
+                autoFocus
+                value={descriptionDraft}
+                onChange={(e) => setDescriptionDraft(e.target.value.slice(0, 240))}
+                placeholder="One emotional sentence that captures the story (shown on the public library)"
+                rows={2}
+                className="text-sm"
+              />
+              <div className="flex items-center justify-between">
+                <div className="text-[11px] text-muted-foreground">
+                  {descriptionDraft.length}/240 · Shown on public library cards
+                </div>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => setEditingDescription(false)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={() => saveDescription.mutate(descriptionDraft)} disabled={saveDescription.isPending}>
+                    Save
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="group flex items-start gap-2">
-            <p className={`text-sm flex-1 leading-relaxed ${video.short_description ? "text-foreground/80 italic" : "text-muted-foreground"}`}>
-              {video.short_description || (isOrgAdmin ? "Add a one-sentence story highlight…" : "")}
-            </p>
-            {isOrgAdmin && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
-                onClick={() => { setDescriptionDraft(video.short_description ?? ""); setEditingDescription(true); }}
-                aria-label="Edit description"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-        )}
-
-
-        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span>{video.channel_name}</span>
-          {video.duration_seconds != null && (
-            <Badge variant="outline" className="text-xs">{formatTimestamp(video.duration_seconds)}</Badge>
-          )}
-          {video.ingest_status !== "ready" && video.ingest_status !== "failed" && (
-            <Badge variant="secondary" className="text-xs gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> {video.ingest_status}
-            </Badge>
-          )}
-          {video.ingest_status === "failed" && (
-            <>
-              {/No transcript/i.test(video.error_message ?? "") ? (
-                <Badge variant="secondary" className="max-w-full whitespace-normal break-words text-xs">No transcript available</Badge>
-              ) : (
-                <Badge variant="destructive" className="max-w-full whitespace-normal break-words text-xs">Failed: {video.error_message}</Badge>
-              )}
+          ) : (
+            <div className="group flex items-start gap-2">
+              <p className={`text-sm flex-1 leading-relaxed ${video.short_description ? "text-foreground/80 italic" : "text-muted-foreground"}`}>
+                {video.short_description || (isOrgAdmin ? "Add a one-sentence story highlight…" : "")}
+              </p>
               {isOrgAdmin && (
-                <Button size="sm" variant="outline" onClick={() => retryIngest.mutate()} disabled={retryIngest.isPending}>
-                  <RefreshCw className={`h-3 w-3 mr-1 ${retryIngest.isPending ? "animate-spin" : ""}`} /> Retry
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+                  onClick={() => { setDescriptionDraft(video.short_description ?? ""); setEditingDescription(true); }}
+                  aria-label="Edit description"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
                 </Button>
               )}
-            </>
+            </div>
           )}
-        </div>
-      </header>
 
-      <TabsContent value="overview" className="space-y-4 mt-6">
+
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>{video.channel_name}</span>
+            {video.duration_seconds != null && (
+              <Badge variant="outline" className="text-xs">{formatTimestamp(video.duration_seconds)}</Badge>
+            )}
+            {video.ingest_status !== "ready" && video.ingest_status !== "failed" && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> {video.ingest_status}
+              </Badge>
+            )}
+            {video.ingest_status === "failed" && (
+              <>
+                {/No transcript/i.test(video.error_message ?? "") ? (
+                  <Badge variant="secondary" className="max-w-full whitespace-normal break-words text-xs">No transcript available</Badge>
+                ) : (
+                  <Badge variant="destructive" className="max-w-full whitespace-normal break-words text-xs">Failed: {video.error_message}</Badge>
+                )}
+                {isOrgAdmin && (
+                  <Button size="sm" variant="outline" onClick={() => retryIngest.mutate()} disabled={retryIngest.isPending}>
+                    <RefreshCw className={`h-3 w-3 mr-1 ${retryIngest.isPending ? "animate-spin" : ""}`} /> Retry
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </header>
+
 
           {isOrgAdmin && (
             <Card className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
