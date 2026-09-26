@@ -16,6 +16,18 @@ type PublicVideo = { id: string; youtube_id: string; title: string | null; chann
 type Analysis = { summary: string | null; themes: string[] | null; key_quotes: Array<{ text: string; start_seconds: number; impact_score: number }> | null };
 type Payload = { story: StoryRecord | null; video: PublicVideo | null; analysis: Analysis | null; blocks: StoryBlock[]; cta: StoryCta | null; related: RelatedStory[] };
 
+function mergePreviewDraft(payload: Payload, draft: StoryDraft): Payload {
+  const merged = { ...payload };
+  merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;
+  merged.blocks = draft.blocks as unknown as StoryBlock[];
+  if (draft.story.cta_mode === "custom") {
+    merged.cta = draft.story.cta_url
+      ? { headline: draft.story.cta_headline ?? "", description: draft.story.cta_description ?? null, button_label: draft.story.cta_button_label ?? "Learn more", destination_url: draft.story.cta_url } as StoryCta
+      : null;
+  }
+  return merged;
+}
+
 function CtaSection({ cta }: { cta: StoryCta }) {
   return <section className="bg-primary text-primary-foreground"><div className="mx-auto flex w-full max-w-5xl flex-col items-start gap-6 px-4 py-14 md:flex-row md:items-center md:justify-between md:px-6 md:py-20"><div className="max-w-2xl"><h2 className="text-3xl font-semibold leading-tight md:text-4xl">{cta.headline}</h2>{cta.description && <p className="mt-3 text-base leading-7 text-primary-foreground/80">{cta.description}</p>}</div><Button asChild size="lg" variant="secondary" className="min-h-12 w-full shrink-0 md:w-auto"><a href={cta.destination_url}>{cta.button_label}<ArrowRight className="ml-2 h-4 w-4" /></a></Button></div></section>;
 }
@@ -56,13 +68,7 @@ export default function PublicContentVideoPage() {
               const draft = JSON.parse(raw) as StoryDraft;
               // A snapshot with this preview ID was created by the editor for
               // this exact tab, so it must always win over the saved payload.
-              merged.story = { ...(merged.story ?? {}), ...draft.story } as StoryRecord;
-              merged.blocks = draft.blocks as unknown as StoryBlock[];
-              if (draft.story.cta_mode === "custom") {
-                merged.cta = draft.story.cta_url
-                  ? { headline: draft.story.cta_headline ?? "", description: draft.story.cta_description ?? null, button_label: draft.story.cta_button_label ?? "Learn more", destination_url: draft.story.cta_url } as StoryCta
-                  : null;
-              }
+              Object.assign(merged, mergePreviewDraft(merged, draft));
               setIsPreview(true);
             }
           } catch { /* ignore malformed drafts */ }
@@ -82,6 +88,19 @@ export default function PublicContentVideoPage() {
     };
     void load();
   }, [slug, id]);
+
+  useEffect(() => {
+    if (!id || !params.get("preview")) return;
+    const receiveDraft = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const message = event.data as { type?: string; videoId?: string; draft?: StoryDraft } | null;
+      if (message?.type !== "flowleed-story-preview" || message.videoId !== id || !message.draft) return;
+      setPayload((current) => current ? mergePreviewDraft(current, message.draft as StoryDraft) : current);
+      setIsPreview(true);
+    };
+    window.addEventListener("message", receiveDraft);
+    return () => window.removeEventListener("message", receiveDraft);
+  }, [id, params]);
 
   useEffect(() => {
     if (!id || !params.get("preview")) return;
