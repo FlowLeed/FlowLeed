@@ -149,7 +149,7 @@ export function StoryMosaic({ videos, slug, playingId, onPlay }: StoryMosaicProp
               <article
                 key={video.id}
                 className={cn(
-                  "group relative min-h-[300px] overflow-hidden bg-story-media",
+                  "group relative overflow-hidden bg-story-media md:min-h-[300px]",
                   isPortrait ? "aspect-[4/5] md:aspect-auto" : format === "compact" ? "min-h-[240px]" : "aspect-[16/10] md:aspect-auto",
                   span,
                 )}
