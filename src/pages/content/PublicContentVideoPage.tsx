@@ -133,10 +133,15 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
   const ctaFor = (block: StoryBlock): StoryCta | null => {
     const choice = block.body || "auto";
     if (choice === "custom") return story?.cta_mode === "custom" ? cta : null;
-    const p = resolvePreset(presets, choice.startsWith("preset:") ? "preset" : "category_default", choice.startsWith("preset:") ? choice.slice(7) : null, story?.category ?? "");
+    const toCta = (p: PublicPreset): StoryCta | null => {
+      const url = p.destination_type === "form" ? (forms.find((f) => f.id === p.form_id) ? `/${slug}/f/${forms.find((f) => f.id === p.form_id)!.slug}` : null) : p.destination_url;
+      return url ? { headline: p.headline, description: p.description, button_label: p.button_label, destination_url: url } as StoryCta : null;
+    };
+    const resolved = resolvePreset(presets, choice.startsWith("preset:") ? "preset" : "category_default", choice.startsWith("preset:") ? choice.slice(7) : null, story?.category ?? "");
+    // Never leave a Next Step block empty: fall back to the global default, then any preset.
+    const p = resolved ?? presets.find((x) => x.is_global) ?? presets[0] ?? null;
     if (!p) return choice === "auto" ? cta : null;
-    const url = p.destination_type === "form" ? (forms.find((f) => f.id === p.form_id) ? `/${slug}/f/${forms.find((f) => f.id === p.form_id)!.slug}` : null) : p.destination_url;
-    return url ? { headline: p.headline, description: p.description, button_label: p.button_label, destination_url: url } as StoryCta : null;
+    return toCta(p) ?? (choice === "auto" ? cta : null);
   };
   const jumpTo = (seconds: number) => { setSeek(seconds); setPlaying(true); const next = new URLSearchParams(params); next.set("t", String(Math.floor(seconds))); setParams(next, { replace: true }); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
