@@ -15,7 +15,21 @@ Respond as JSON only:
  "blocks": [{"type":"heading"|"paragraph"|"quote","text":string,"attribution"?:string}]}
 Structure: 2-3 chapters (e.g. "Before", "What changed", "Today"), each a heading followed by 1-2 short paragraphs (2-4 sentences each). Include 2-3 quote blocks placed where they fit. Keep total under ~500 words.`;
 
+function getUserIdFromJwt(authHeader: string): string | null {
+  try {
+    const payload = authHeader.replace("Bearer ", "").split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
+    const claims = JSON.parse(atob(padded));
+    return typeof claims?.sub === "string" ? claims.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
+
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const { videoId } = await req.json().catch(() => ({}));
