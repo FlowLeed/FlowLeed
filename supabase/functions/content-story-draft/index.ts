@@ -15,7 +15,21 @@ Respond as JSON only:
  "blocks": [{"type":"heading"|"paragraph"|"quote","text":string,"attribution"?:string}]}
 Structure: 2-3 chapters (e.g. "Before", "What changed", "Today"), each a heading followed by 1-2 short paragraphs (2-4 sentences each). Include 2-3 quote blocks placed where they fit. Keep total under ~500 words.`;
 
+function getUserIdFromJwt(authHeader: string): string | null {
+  try {
+    const payload = authHeader.replace("Bearer ", "").split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
+    const claims = JSON.parse(atob(padded));
+    return typeof claims?.sub === "string" ? claims.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
+
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const { videoId } = await req.json().catch(() => ({}));
@@ -25,14 +39,20 @@ Deno.serve(async (req) => {
     const url = Deno.env.get("SUPABASE_URL")!;
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const userClient = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: auth } } });
-    const { data: claims } = await userClient.auth.getClaims(auth.slice(7));
-    if (!claims?.claims) return json({ error: "Unauthorized" }, 401);
+    // Verify through RLS rather than Auth session lookup: valid app tokens can fail
+    // getClaims/getUser with "Session not found" after token rotation.
+    const userId = getUserIdFromJwt(auth);
+    if (!userId) return json({ error: "Unauthorized" }, 401);
 
     const { data: video } = await admin.from("content_videos").select("organization_id, title").eq("id", videoId).maybeSingle();
     if (!video) return json({ error: "Not found" }, 404);
-    const { data: mem } = await admin.from("organization_members").select("role")
-      .eq("organization_id", video.organization_id).eq("user_id", claims.claims.sub).maybeSingle();
-    if (!mem) return json({ error: "Forbidden" }, 403);
+    const { data: mem, error: memErr } = await userClient.from("organization_members").select("user_id, role")
+      .eq("organization_id", video.organization_id).eq("user_id", userId).maybeSingle();
+    if (memErr || !mem?.user_id) {
+      console.error("membership check failed", memErr?.message);
+      return json({ error: "Forbidden" }, 403);
+    }
+
 
     const { data: chunks } = await admin.from("content_transcript_chunks").select("text")
       .eq("video_id", videoId).order("chunk_index", { ascending: true });
