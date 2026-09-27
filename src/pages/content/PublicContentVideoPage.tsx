@@ -47,7 +47,6 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
   const [presets, setPresets] = useState<PublicPreset[]>([]);
   const [forms, setForms] = useState<Array<{ id: string; slug: string }>>([]);
   const [seek, setSeek] = useState(Number(params.get("t") ?? 0) || 0);
-  const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -60,11 +59,9 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
       if ((error || !data) && previewDraft) {
         // Drafts that aren't public yet: build the page from the editor alone.
         setPayload(mergePreviewDraft({ story: null, video: null, analysis: null, blocks: [], cta: null, related: [] }, previewDraft));
-        setIsPreview(true);
       } else if (error || !data) setNotFound(true);
       else if (previewDraft) {
         setPayload(mergePreviewDraft(data as unknown as Payload, previewDraft));
-        setIsPreview(true);
       } else {
         const merged = data as unknown as Payload;
         // Draft preview: overlay the editor's latest unsaved state from shared, same-origin storage.
@@ -78,7 +75,6 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
               // A snapshot with this preview ID was created by the editor for
               // this exact tab, so it must always win over the saved payload.
               Object.assign(merged, mergePreviewDraft(merged, draft));
-              setIsPreview(true);
             }
           } catch { /* ignore malformed drafts */ }
         }
@@ -105,7 +101,6 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
       const message = event.data as { type?: string; videoId?: string; draft?: StoryDraft } | null;
       if (message?.type !== "flowleed-story-preview" || message.videoId !== id || !message.draft) return;
       setPayload((current) => current ? mergePreviewDraft(current, message.draft as StoryDraft) : current);
-      setIsPreview(true);
     };
     window.addEventListener("message", receiveDraft);
     return () => window.removeEventListener("message", receiveDraft);
@@ -148,7 +143,6 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
   return <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-story-background text-foreground">
     <header className="sticky top-0 z-50 border-b border-story-border bg-story-background/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}><div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 md:px-6 md:py-4"><Link to={`/${slug}/content`} className="min-w-0 flex-1"><img src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug ?? "")}`} alt={orgName ? `${orgName} logo` : "Organization logo"} className="h-8 w-auto max-w-[11rem] object-contain md:h-10" onError={(event) => { event.currentTarget.style.display = "none"; }} /></Link><Button asChild variant="ghost" size="sm"><Link to={`/${slug}/content`}><ArrowLeft className="mr-2 h-4 w-4" />All stories</Link></Button></div></header>
 
-    {isPreview && <div className="border-b border-story-border bg-story-paper px-4 py-2 text-center text-xs font-medium text-muted-foreground">Previewing unsaved changes — save the story to publish them.</div>}
 
     <main>
       <section className="mx-auto grid w-full max-w-7xl gap-7 px-4 pb-10 pt-8 md:px-6 md:pb-16 md:pt-12 lg:grid-cols-12 lg:items-center lg:gap-12">
