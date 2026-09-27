@@ -59,11 +59,9 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
       if ((error || !data) && previewDraft) {
         // Drafts that aren't public yet: build the page from the editor alone.
         setPayload(mergePreviewDraft({ story: null, video: null, analysis: null, blocks: [], cta: null, related: [] }, previewDraft));
-        setIsPreview(true);
       } else if (error || !data) setNotFound(true);
       else if (previewDraft) {
         setPayload(mergePreviewDraft(data as unknown as Payload, previewDraft));
-        setIsPreview(true);
       } else {
         const merged = data as unknown as Payload;
         // Draft preview: overlay the editor's latest unsaved state from shared, same-origin storage.
@@ -77,7 +75,6 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
               // A snapshot with this preview ID was created by the editor for
               // this exact tab, so it must always win over the saved payload.
               Object.assign(merged, mergePreviewDraft(merged, draft));
-              setIsPreview(true);
             }
           } catch { /* ignore malformed drafts */ }
         }
@@ -104,7 +101,6 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
       const message = event.data as { type?: string; videoId?: string; draft?: StoryDraft } | null;
       if (message?.type !== "flowleed-story-preview" || message.videoId !== id || !message.draft) return;
       setPayload((current) => current ? mergePreviewDraft(current, message.draft as StoryDraft) : current);
-      setIsPreview(true);
     };
     window.addEventListener("message", receiveDraft);
     return () => window.removeEventListener("message", receiveDraft);
