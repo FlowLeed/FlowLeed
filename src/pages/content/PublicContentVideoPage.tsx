@@ -47,7 +47,6 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
   const [presets, setPresets] = useState<PublicPreset[]>([]);
   const [forms, setForms] = useState<Array<{ id: string; slug: string }>>([]);
   const [seek, setSeek] = useState(Number(params.get("t") ?? 0) || 0);
-  const [isPreview, setIsPreview] = useState(false);
 
   useEffect(() => {
     const load = async () => {
