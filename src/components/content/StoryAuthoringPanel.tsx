@@ -18,6 +18,7 @@ export function StoryAuthoringPanel() {
   const uploadRef = useRef<HTMLInputElement>(null);
   const [previewDraft, setPreviewDraft] = useState<StoryDraft | null>(null);
   const [drafting, setDrafting] = useState(false);
+  const [guidance, setGuidance] = useState("");
   const { format, leadMediaUrl, uploading, uploadLead, title, setTitle, personName, setPersonName, summary, setSummary, blocks, setBlocks, organizationId, videoId } = editor;
 
   const draftFromTranscript = async () => {
@@ -25,7 +26,7 @@ export function StoryAuthoringPanel() {
     if (hasContent && !window.confirm("Replace your current story sections with an AI draft? Your Next Step sections will be kept.")) return;
     setDrafting(true);
     try {
-      const { data, error } = await supabase.functions.invoke("content-story-draft", { body: { videoId } });
+      const { data, error } = await supabase.functions.invoke("content-story-draft", { body: { videoId, guidance: guidance.trim(), personName: personName.trim() } });
       if (error || data?.error) {
         let msg = data?.error as string | undefined;
         try { msg = msg ?? (await (error as any)?.context?.json())?.error; } catch { /* ignore */ }
@@ -77,15 +78,19 @@ export function StoryAuthoringPanel() {
         </div>
       </Card>
 
-      <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
-        <div className="min-w-0">
-          <p className="text-sm font-medium">Draft from transcript</p>
-          <p className="text-xs text-muted-foreground">Let AI write chapters, story text and quotes from the video. You can tweak everything after.</p>
+      <Card className="space-y-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">Draft from transcript</p>
+            <p className="text-xs text-muted-foreground">Let AI write chapters, story text and quotes from the video. You can tweak everything after.</p>
+          </div>
+          <Button type="button" variant="outline" size="sm" disabled={drafting} onClick={() => void draftFromTranscript()}>
+            {drafting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            {drafting ? "Writing story…" : "Draft story"}
+          </Button>
         </div>
-        <Button type="button" variant="outline" size="sm" disabled={drafting} onClick={() => void draftFromTranscript()}>
-          {drafting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-          {drafting ? "Writing story…" : "Draft story"}
-        </Button>
+        <Textarea value={guidance} onChange={(e) => setGuidance(e.target.value)} rows={2} maxLength={1000}
+          placeholder="Optional guidance for the AI — e.g. “Alex is a woman (she/her). Focus on her recovery and her kids.”" className="text-sm" />
       </Card>
 
       <StoryBlockCanvas blocks={blocks} setBlocks={setBlocks} organizationId={organizationId} videoId={videoId} />

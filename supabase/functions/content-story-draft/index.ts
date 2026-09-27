@@ -32,8 +32,11 @@ Deno.serve(async (req) => {
 
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { videoId } = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
+    const videoId = body?.videoId;
     if (typeof videoId !== "string" || !/^[0-9a-f-]{36}$/i.test(videoId)) return json({ error: "videoId required" }, 400);
+    const guidance = typeof body?.guidance === "string" ? body.guidance.trim().slice(0, 1000) : "";
+    const knownName = typeof body?.personName === "string" ? body.personName.trim().slice(0, 120) : "";
     const auth = req.headers.get("Authorization");
     if (!auth?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
     const url = Deno.env.get("SUPABASE_URL")!;
@@ -73,7 +76,7 @@ Deno.serve(async (req) => {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
-          { role: "user", content: `Video title: ${video.title ?? ""}\n\nTranscript:\n${transcript}` },
+          { role: "user", content: `Video title: ${video.title ?? ""}${knownName ? `\nPerson/family name (use exactly): ${knownName}` : ""}${guidance ? `\n\nEditor guidance (high priority — follow it, e.g. pronouns, focus, tone; still never invent facts):\n${guidance}` : ""}\n\nTranscript:\n${transcript}` },
         ],
       }),
     });
