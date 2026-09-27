@@ -160,7 +160,7 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
         </div>
       </section>
 
-      <section className="border-y border-story-border bg-story-paper"><div className="mx-auto w-full max-w-3xl px-4 py-12 md:px-6 md:py-20">
+      <section className="border-y border-story-border bg-story-paper"><div className="mx-auto w-full max-w-3xl px-4 py-8 md:px-6 md:py-12">
         {blocks.length > 0 && <PublicStoryBlocks blocks={blocks} renderNextStep={(b) => { const c = ctaFor(b); return c ? <CtaSection cta={c} /> : null; }} />}
         {false && <p className="text-center text-muted-foreground">This story is being prepared.</p>}
       </div></section>

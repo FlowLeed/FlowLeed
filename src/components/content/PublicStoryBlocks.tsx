@@ -5,15 +5,15 @@ import { cn } from "@/lib/utils";
 
 export function PublicStoryBlocks({ blocks, renderNextStep }: { blocks: StoryBlock[]; renderNextStep?: (block: StoryBlock) => ReactNode }) {
   return (
-    <div className="space-y-8 md:space-y-12">
+    <div className="space-y-5 md:space-y-7">
       {blocks.map((block) => {
         if (block.block_type === "next_step") return renderNextStep ? <div key={block.id} className="-mx-4 md:-mx-6">{renderNextStep(block)}</div> : null;
-        if (block.block_type === "heading") return <h2 key={block.id} className="pt-4 text-2xl font-semibold leading-tight text-foreground md:text-3xl">{block.heading ?? block.body}</h2>;
-        if (block.block_type === "paragraph") return <p key={block.id} className="whitespace-pre-line text-base leading-8 text-foreground/85 md:text-lg md:leading-9">{block.body}</p>;
+        if (block.block_type === "heading") return <h2 key={block.id} className="pt-2 text-2xl font-semibold leading-tight text-foreground md:text-3xl">{block.heading ?? block.body}</h2>;
+        if (block.block_type === "paragraph") return <p key={block.id} className="whitespace-pre-line text-base leading-7 text-foreground/85 md:text-lg md:leading-8">{block.body}</p>;
         if (block.block_type === "quote") return (
-          <figure key={block.id} className="border-l-2 border-primary bg-story-paper px-6 py-7 md:px-9 md:py-10">
-            <blockquote className="text-xl font-medium leading-8 text-foreground md:text-2xl md:leading-10">“{block.body}”</blockquote>
-            {block.quote_attribution && <figcaption className="mt-4 text-sm text-muted-foreground">— {block.quote_attribution}</figcaption>}
+          <figure key={block.id} className="border-l-2 border-primary bg-story-paper px-5 py-5 md:px-7 md:py-6">
+            <blockquote className="text-xl font-medium leading-7 text-foreground md:text-2xl md:leading-9">“{block.body}”</blockquote>
+            {block.quote_attribution && <figcaption className="mt-3 text-sm text-muted-foreground">— {block.quote_attribution}</figcaption>}
           </figure>
         );
         if (block.block_type === "image" && block.media_url) return (
