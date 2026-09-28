@@ -100,7 +100,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
       setSelectedStageId(null);
     }
   }, [stages]);
-  const [formData, setFormData] = useState<Partial<Contact & {
+  type ContactFormState = Partial<Contact & {
     birthday?: string;
     occupation?: string;
     maritalStatus?: string;
@@ -108,7 +108,9 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     city?: string;
     state?: string;
     zipCode?: string;
-  }>>({
+  }>;
+
+  const buildBlankForm = React.useCallback((): ContactFormState => ({
     name: "",
     date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
     tags: [],
@@ -119,6 +121,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     } : undefined,
     email: "",
     phone: "",
+    notes: "",
     birthday: "",
     occupation: "",
     maritalStatus: "",
@@ -126,7 +129,23 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     city: "",
     state: "",
     zipCode: "",
-  });
+  }), [profile]);
+
+  const [formData, setFormData] = useState<ContactFormState>(() => ({
+    name: "",
+    date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+    tags: [],
+    status: "active",
+    email: "",
+    phone: "",
+    birthday: "",
+    occupation: "",
+    maritalStatus: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    zipCode: "",
+  }));
 
   // Normalize values coming from external sources (e.g., PCO)
   const normalizeMaritalStatus = (value?: string) => (value ? String(value).trim().toLowerCase() : "");
