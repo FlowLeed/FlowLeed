@@ -278,7 +278,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
     toast.success("Column updated");
   };
 
-  const handleSaveContact = async (contact: Contact) => {
+  const handleSaveContact = async (contact: Contact, _flowData?: unknown, addAnother?: boolean) => {
     if (!organization) {
       toast.error("Organization not found");
       return;
@@ -382,15 +382,16 @@ export const FlowView: React.FC<FlowViewProps> = ({
         toast.success("Contact added to flow");
       }
 
-      // Trigger a data refresh by calling updateFlow
-      // This will cause the FlowContext to reload the flow data from the database
-      if (onFlowChange) {
-        // Force a reload by passing the flow - this will trigger updateFlow 
-        // which reloads data from database due to our recent changes
-        window.location.reload();
+      // Refresh flow data in place (no full page reload, so the form never
+      // keeps the previous person's details when adding several people)
+      await refreshFlows();
+      queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
+      window.dispatchEvent(new CustomEvent('flow-assignment-updated'));
+
+      if (!addAnother) {
+        setIsFormOpen(false);
+        setCurrentContact(null);
       }
-      
-      setIsFormOpen(false);
     } catch (error) {
       console.error("Error saving contact:", error);
       toast.error(`Failed to save contact: ${error instanceof Error ? error.message : 'Unknown error'}`);
