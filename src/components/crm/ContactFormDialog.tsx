@@ -108,6 +108,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     city?: string;
     state?: string;
     zipCode?: string;
+    country?: string;
   }>;
 
   const buildBlankForm = React.useCallback((): ContactFormState => ({
@@ -129,6 +130,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     city: "",
     state: "",
     zipCode: "",
+    country: "",
   }), [profile]);
 
   const [formData, setFormData] = useState<ContactFormState>(() => ({
@@ -145,6 +147,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     city: "",
     state: "",
     zipCode: "",
+    country: "",
   }));
 
   // Normalize values coming from external sources (e.g., PCO)
@@ -257,6 +260,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         city: extendedContact.city || "",
         state: extendedContact.state || "",
         zipCode: extendedContact.zipCode || "",
+        country: extendedContact.country || "",
       });
       setAddToFlow(false);
       setSelectedPipelineId(null);
@@ -454,7 +458,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
+                  <Label htmlFor="state">State / Region</Label>
                   <Input
                     id="state"
                     value={formData.state || ""}
@@ -462,13 +466,23 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="zipCode">Zip Code</Label>
+                  <Label htmlFor="zipCode">ZIP / Postal Code</Label>
                   <Input
                     id="zipCode"
                     value={formData.zipCode || ""}
                     onChange={(e) => handleChange("zipCode", e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  placeholder="e.g. United States, Canada, Nigeria"
+                  value={formData.country || ""}
+                  onChange={(e) => handleChange("country", e.target.value)}
+                />
               </div>
             </div>
           </div>

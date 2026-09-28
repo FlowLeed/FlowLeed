@@ -609,7 +609,7 @@ const UserProfilePage = () => {
       }
 
       // Update or create primary address
-      if (updatedContact.streetAddress || updatedContact.city || updatedContact.state || updatedContact.zipCode) {
+      if (updatedContact.streetAddress || updatedContact.city || updatedContact.state || updatedContact.zipCode || (updatedContact as any).country) {
         const { error: addressError } = await supabase
           .from('contact_addresses')
           .upsert({
@@ -618,6 +618,7 @@ const UserProfilePage = () => {
             city: updatedContact.city || null,
             state: updatedContact.state || null,
             zip_code: updatedContact.zipCode || null,
+            country: (updatedContact as any).country || null,
             is_primary: true,
             address_type: 'home'
           });
@@ -671,6 +672,7 @@ const UserProfilePage = () => {
       city: primaryAddress?.city || "",
       state: primaryAddress?.state || "",
       zipCode: primaryAddress?.zip_code || "",
+      country: (primaryAddress as any)?.country || "",
     };
   };
 
