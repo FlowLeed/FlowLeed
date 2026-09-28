@@ -37,7 +37,7 @@ interface ContactFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contact: Contact | null;
-  onSave: (contact: Contact, flowData?: FlowEnrollmentData | null) => void;
+  onSave: (contact: Contact, flowData?: FlowEnrollmentData | null, addAnother?: boolean) => void;
   flowId?: string; // Optional flow ID to filter team members
 }
 
@@ -48,6 +48,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   onSave,
   flowId,
 }) => {
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
   const { profile, organization } = useProfile();
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -99,7 +100,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
       setSelectedStageId(null);
     }
   }, [stages]);
-  const [formData, setFormData] = useState<Partial<Contact & {
+  type ContactFormState = Partial<Contact & {
     birthday?: string;
     occupation?: string;
     maritalStatus?: string;
@@ -107,7 +108,9 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     city?: string;
     state?: string;
     zipCode?: string;
-  }>>({
+  }>;
+
+  const buildBlankForm = React.useCallback((): ContactFormState => ({
     name: "",
     date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
     tags: [],
@@ -118,6 +121,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     } : undefined,
     email: "",
     phone: "",
+    notes: "",
     birthday: "",
     occupation: "",
     maritalStatus: "",
@@ -125,7 +129,23 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     city: "",
     state: "",
     zipCode: "",
-  });
+  }), [profile]);
+
+  const [formData, setFormData] = useState<ContactFormState>(() => ({
+    name: "",
+    date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
+    tags: [],
+    status: "active",
+    email: "",
+    phone: "",
+    birthday: "",
+    occupation: "",
+    maritalStatus: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    zipCode: "",
+  }));
 
   // Normalize values coming from external sources (e.g., PCO)
   const normalizeMaritalStatus = (value?: string) => (value ? String(value).trim().toLowerCase() : "");
@@ -210,9 +230,22 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     }
   };
 
+  const resetForm = React.useCallback(() => {
+    setFormData(buildBlankForm());
+    setAddToFlow(false);
+    setSelectedPipelineId(null);
+    setSelectedStageId(null);
+  }, [buildBlankForm]);
+
   useEffect(() => {
+    if (!open) {
+      // Always drop any typed data when the dialog closes so the next
+      // person never inherits the previous person's details.
+      resetForm();
+      return;
+    }
+
     if (contact) {
-      console.log("Setting form data with contact:", contact);
       const extendedContact = contact as any; // Type assertion for extended properties
       setFormData({
         ...contact,
@@ -225,36 +258,13 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         state: extendedContact.state || "",
         zipCode: extendedContact.zipCode || "",
       });
-      // Reset flow state when editing existing contact
       setAddToFlow(false);
       setSelectedPipelineId(null);
       setSelectedStageId(null);
     } else {
-      setFormData({
-        name: "",
-        date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-        tags: [],
-        status: "active",
-        assignedTo: profile ? {
-          name: profile.full_name || profile.email,
-          avatar: profile.avatar_url || undefined
-        } : undefined,
-        email: "",
-        phone: "",
-        birthday: "",
-        occupation: "",
-        maritalStatus: "",
-        streetAddress: "",
-        city: "",
-        state: "",
-        zipCode: "",
-      });
-      // Reset flow state for new contact
-      setAddToFlow(false);
-      setSelectedPipelineId(null);
-      setSelectedStageId(null);
+      resetForm();
     }
-  }, [contact, profile]);
+  }, [open, contact, profile, resetForm]);
 
   const handleAssignedToChange = (userId: string) => {
     const selectedMember = organizationMembers.find(member => member.user_id === userId);
@@ -276,15 +286,13 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     setFormData((prev) => ({ ...prev, tags: newTags }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const submitForm = (addAnother: boolean) => {
     // Generate an ID if this is a new contact
     const finalContact = {
       id: contact?.id || Math.random().toString(36).substring(2, 10),
       ...formData
     } as Contact;
-    
+
     // Include flow data if selected (only for new contacts)
     const flowData = !contact && addToFlow && selectedPipelineId && selectedStageId
       ? {
@@ -294,9 +302,27 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
           defaultAssigneeUserId: stages?.find(s => s.id === selectedStageId)?.default_assignee_user_id
         }
       : null;
-    
-    onSave(finalContact, flowData);
+
+    onSave(finalContact, flowData, addAnother);
+
+    if (addAnother) {
+      const keepFlow = addToFlow ? { addToFlow, selectedPipelineId, selectedStageId } : null;
+      setFormData(buildBlankForm());
+      if (keepFlow) {
+        // Keep the chosen flow/stage so a whole group can be entered quickly
+        setAddToFlow(true);
+        setSelectedPipelineId(keepFlow.selectedPipelineId);
+        setSelectedStageId(keepFlow.selectedStageId);
+      }
+      requestAnimationFrame(() => nameInputRef.current?.focus());
+    }
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitForm(false);
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -310,6 +336,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
+              ref={nameInputRef}
               value={formData.name || ""}
               onChange={(e) => handleChange("name", e.target.value)}
               required
@@ -512,7 +539,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
             </div>
           )}
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex flex-wrap justify-end gap-2 pt-4">
             <Button 
               type="button" 
               variant="outline" 
@@ -520,6 +547,16 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
             >
               Cancel
             </Button>
+            {!contact && (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!formData.name?.trim()}
+                onClick={() => submitForm(true)}
+              >
+                Save &amp; add another
+              </Button>
+            )}
             <Button type="submit">Save</Button>
           </div>
         </form>

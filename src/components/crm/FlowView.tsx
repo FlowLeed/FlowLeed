@@ -28,6 +28,7 @@ import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
 import { useBulkActions } from "@/hooks/useBulkActions";
 import { toCsv, downloadCsv, sanitizeFilename } from "@/lib/csvExport";
 import { usePausedContactIds } from "@/hooks/useLifeSeason";
+import { useFlowContext } from "@/contexts/FlowContext";
 
 interface TeamMember {
   id: string;
@@ -70,6 +71,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [showCompleted, setShowCompleted] = useState(true);
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+  const { refreshFlows } = useFlowContext();
 
   // Save view mode preference
   useEffect(() => {
@@ -203,7 +205,14 @@ export const FlowView: React.FC<FlowViewProps> = ({
   };
 
   const handleEditContact = (contact: Contact) => {
-    setCurrentContact(contact);
+    // The table view's "Add Contact" row passes a blank contact with no id —
+    // treat that as adding a brand new person, not editing an existing one.
+    if (!contact.id) {
+      setCurrentContact(null);
+      setCurrentStageId((contact as any).stageId || flow.stages[0]?.id || null);
+    } else {
+      setCurrentContact(contact);
+    }
     setIsFormOpen(true);
   };
 
@@ -278,7 +287,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
     toast.success("Column updated");
   };
 
-  const handleSaveContact = async (contact: Contact) => {
+  const handleSaveContact = async (contact: Contact, _flowData?: unknown, addAnother?: boolean) => {
     if (!organization) {
       toast.error("Organization not found");
       return;
@@ -382,15 +391,16 @@ export const FlowView: React.FC<FlowViewProps> = ({
         toast.success("Contact added to flow");
       }
 
-      // Trigger a data refresh by calling updateFlow
-      // This will cause the FlowContext to reload the flow data from the database
-      if (onFlowChange) {
-        // Force a reload by passing the flow - this will trigger updateFlow 
-        // which reloads data from database due to our recent changes
-        window.location.reload();
+      // Refresh flow data in place (no full page reload, so the form never
+      // keeps the previous person's details when adding several people)
+      await refreshFlows();
+      queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
+      window.dispatchEvent(new CustomEvent('flow-assignment-updated'));
+
+      if (!addAnother) {
+        setIsFormOpen(false);
+        setCurrentContact(null);
       }
-      
-      setIsFormOpen(false);
     } catch (error) {
       console.error("Error saving contact:", error);
       toast.error(`Failed to save contact: ${error instanceof Error ? error.message : 'Unknown error'}`);

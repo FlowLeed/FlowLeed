@@ -191,7 +191,7 @@ const ContactsPage = () => {
     filters.tag !== "all";
 
 
-  const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null) => {
+  const handleSaveContact = async (contact: Contact, flowData?: FlowEnrollmentData | null, addAnother?: boolean) => {
     if (!organization) {
       toast.error("Organization not found");
       return;
@@ -281,7 +281,7 @@ const ContactsPage = () => {
           console.error('Error adding contact to flow:', flowError);
           toast.warning(`Contact "${contact.name}" created, but failed to add to flow`);
           queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
-          setShowAddDialog(false);
+          if (!addAnother) setShowAddDialog(false);
           return;
         }
         
@@ -293,7 +293,7 @@ const ContactsPage = () => {
       }
 
       queryClient.invalidateQueries({ queryKey: ['all-contacts'] });
-      setShowAddDialog(false);
+      if (!addAnother) setShowAddDialog(false);
       
     } catch (error: any) {
       console.error('Error saving contact:', error);
