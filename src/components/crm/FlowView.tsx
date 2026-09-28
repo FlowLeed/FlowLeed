@@ -376,6 +376,29 @@ export const FlowView: React.FC<FlowViewProps> = ({
           if (tagError) throw tagError;
         }
 
+        // Save demographics and address details (including country)
+        const demo = contact as any;
+        if (demo.birthday || demo.occupation || demo.maritalStatus) {
+          await supabase.from('contact_demographics').insert({
+            contact_id: newContact.id,
+            birthday: demo.birthday || null,
+            occupation: demo.occupation || null,
+            marital_status: demo.maritalStatus || null
+          });
+        }
+        if (demo.streetAddress || demo.city || demo.state || demo.zipCode || demo.country) {
+          await supabase.from('contact_addresses').insert({
+            contact_id: newContact.id,
+            street_address: demo.streetAddress || null,
+            city: demo.city || null,
+            state: demo.state || null,
+            zip_code: demo.zipCode || null,
+            country: demo.country || null,
+            address_type: 'home',
+            is_primary: true
+          });
+        }
+
         // Link contact to flow stage (stored as pipeline_contacts in database)
         const { error: flowContactError } = await supabase
           .from('pipeline_contacts')

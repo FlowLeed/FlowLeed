@@ -17,6 +17,7 @@ interface Address {
   city?: string;
   state?: string;
   zip_code?: string;
+  country?: string;
   is_primary: boolean;
 }
 
@@ -134,6 +135,9 @@ export const ContactDemographics: React.FC<ContactDemographicsProps> = ({
                     .filter(Boolean)
                     .join(', ')}
                 </p>
+              )}
+              {primaryAddress.country && (
+                <p className="text-sm text-muted-foreground">{primaryAddress.country}</p>
               )}
               <Badge variant="outline" className="text-xs">
                 {primaryAddress.address_type}

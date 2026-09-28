@@ -242,7 +242,7 @@ const ContactsPage = () => {
       // Insert demographics if any fields are filled
       const demo = contact as any;
       if (demo.birthday || demo.occupation || demo.maritalStatus || 
-          demo.streetAddress || demo.city || demo.state || demo.zipCode) {
+          demo.streetAddress || demo.city || demo.state || demo.zipCode || demo.country) {
         await supabase.from('contact_demographics').insert({
           contact_id: newContact.id,
           birthday: demo.birthday || null,
@@ -251,13 +251,14 @@ const ContactsPage = () => {
         });
         
         // Insert address if any address fields are filled
-        if (demo.streetAddress || demo.city || demo.state || demo.zipCode) {
+        if (demo.streetAddress || demo.city || demo.state || demo.zipCode || demo.country) {
           await supabase.from('contact_addresses').insert({
             contact_id: newContact.id,
             street_address: demo.streetAddress || null,
             city: demo.city || null,
             state: demo.state || null,
             zip_code: demo.zipCode || null,
+            country: demo.country || null,
             address_type: 'home',
             is_primary: true
           });
