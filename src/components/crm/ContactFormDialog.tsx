@@ -230,9 +230,22 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     }
   };
 
+  const resetForm = React.useCallback(() => {
+    setFormData(buildBlankForm());
+    setAddToFlow(false);
+    setSelectedPipelineId(null);
+    setSelectedStageId(null);
+  }, [buildBlankForm]);
+
   useEffect(() => {
+    if (!open) {
+      // Always drop any typed data when the dialog closes so the next
+      // person never inherits the previous person's details.
+      resetForm();
+      return;
+    }
+
     if (contact) {
-      console.log("Setting form data with contact:", contact);
       const extendedContact = contact as any; // Type assertion for extended properties
       setFormData({
         ...contact,
@@ -245,36 +258,13 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         state: extendedContact.state || "",
         zipCode: extendedContact.zipCode || "",
       });
-      // Reset flow state when editing existing contact
       setAddToFlow(false);
       setSelectedPipelineId(null);
       setSelectedStageId(null);
     } else {
-      setFormData({
-        name: "",
-        date: new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
-        tags: [],
-        status: "active",
-        assignedTo: profile ? {
-          name: profile.full_name || profile.email,
-          avatar: profile.avatar_url || undefined
-        } : undefined,
-        email: "",
-        phone: "",
-        birthday: "",
-        occupation: "",
-        maritalStatus: "",
-        streetAddress: "",
-        city: "",
-        state: "",
-        zipCode: "",
-      });
-      // Reset flow state for new contact
-      setAddToFlow(false);
-      setSelectedPipelineId(null);
-      setSelectedStageId(null);
+      resetForm();
     }
-  }, [contact, profile]);
+  }, [open, contact, profile, resetForm]);
 
   const handleAssignedToChange = (userId: string) => {
     const selectedMember = organizationMembers.find(member => member.user_id === userId);
@@ -296,15 +286,13 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     setFormData((prev) => ({ ...prev, tags: newTags }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const submitForm = (addAnother: boolean) => {
     // Generate an ID if this is a new contact
     const finalContact = {
       id: contact?.id || Math.random().toString(36).substring(2, 10),
       ...formData
     } as Contact;
-    
+
     // Include flow data if selected (only for new contacts)
     const flowData = !contact && addToFlow && selectedPipelineId && selectedStageId
       ? {
@@ -314,9 +302,27 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
           defaultAssigneeUserId: stages?.find(s => s.id === selectedStageId)?.default_assignee_user_id
         }
       : null;
-    
-    onSave(finalContact, flowData);
+
+    onSave(finalContact, flowData, addAnother);
+
+    if (addAnother) {
+      const keepFlow = addToFlow ? { addToFlow, selectedPipelineId, selectedStageId } : null;
+      setFormData(buildBlankForm());
+      if (keepFlow) {
+        // Keep the chosen flow/stage so a whole group can be entered quickly
+        setAddToFlow(true);
+        setSelectedPipelineId(keepFlow.selectedPipelineId);
+        setSelectedStageId(keepFlow.selectedStageId);
+      }
+      requestAnimationFrame(() => nameInputRef.current?.focus());
+    }
   };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitForm(false);
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
