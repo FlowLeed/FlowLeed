@@ -37,7 +37,7 @@ interface ContactFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contact: Contact | null;
-  onSave: (contact: Contact, flowData?: FlowEnrollmentData | null) => void;
+  onSave: (contact: Contact, flowData?: FlowEnrollmentData | null, addAnother?: boolean) => void;
   flowId?: string; // Optional flow ID to filter team members
 }
 
@@ -48,6 +48,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   onSave,
   flowId,
 }) => {
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
   const { profile, organization } = useProfile();
   const [organizationMembers, setOrganizationMembers] = useState<OrganizationMember[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
