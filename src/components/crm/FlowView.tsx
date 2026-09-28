@@ -209,7 +209,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
     // treat that as adding a brand new person, not editing an existing one.
     if (!contact.id) {
       setCurrentContact(null);
-      setCurrentStageId(contact.stageId || flow.stages[0]?.id || null);
+      setCurrentStageId((contact as any).stageId || flow.stages[0]?.id || null);
     } else {
       setCurrentContact(contact);
     }
