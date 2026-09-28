@@ -14,7 +14,7 @@ import { useBulkActions } from "@/hooks/useBulkActions";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFlowContext } from "@/contexts/FlowContext";
 import { Flow } from "@/types/crm";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { buildPhoneOrFilter } from "@/lib/phoneSearch";
 
@@ -39,6 +39,7 @@ interface AddPeopleToFlowDialogProps {
   flow: Flow;
   teamMembers: TeamMember[];
   initialStageId?: string;
+  onCreateNew?: (stageId: string) => void;
 }
 
 const STAGE_DEFAULT = "__stage_default__";
@@ -50,6 +51,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
   flow,
   teamMembers,
   initialStageId,
+  onCreateNew,
 }) => {
   const { organization } = useProfile();
   const queryClient = useQueryClient();
@@ -192,7 +194,7 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle>Add people to {flow.name}</DialogTitle>
           <DialogDescription>
-            Pick existing contacts to enroll. Duplicates are skipped automatically.
+            Pick existing contacts to enroll, or create someone new. Duplicates are skipped automatically.
           </DialogDescription>
         </DialogHeader>
 
@@ -200,7 +202,8 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
           {/* LEFT: contact picker */}
           <div className="flex flex-col min-h-0 border-r">
             <div className="p-4 space-y-3 border-b">
-              <div className="relative">
+            <div className="flex gap-2">
+              <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name, email, or phone…"
@@ -210,6 +213,16 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
                   autoFocus
                 />
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="shrink-0"
+                onClick={() => onCreateNew?.(stageId)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                New person
+              </Button>
+            </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <button
                   type="button"
@@ -229,8 +242,19 @@ export const AddPeopleToFlowDialog: React.FC<AddPeopleToFlowDialogProps> = ({
                   <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
                 </div>
               ) : contacts.length === 0 ? (
-                <div className="text-center py-12 text-sm text-muted-foreground">
-                  No contacts found.
+                <div className="text-center py-12 space-y-3">
+                  <p className="text-sm text-muted-foreground">No contacts found.</p>
+                  {onCreateNew && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onCreateNew(stageId)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      New person
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <ul className="divide-y">
