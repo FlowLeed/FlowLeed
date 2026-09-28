@@ -28,6 +28,7 @@ import { useFlowTeamMembers } from "@/hooks/useFlowTeamMembers";
 import { useBulkActions } from "@/hooks/useBulkActions";
 import { toCsv, downloadCsv, sanitizeFilename } from "@/lib/csvExport";
 import { usePausedContactIds } from "@/hooks/useLifeSeason";
+import { useFlowContext } from "@/contexts/FlowContext";
 
 interface TeamMember {
   id: string;
@@ -70,6 +71,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [showCompleted, setShowCompleted] = useState(true);
   const { organization } = useProfile();
   const queryClient = useQueryClient();
+  const { refreshFlows } = useFlowContext();
 
   // Save view mode preference
   useEffect(() => {
