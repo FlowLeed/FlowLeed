@@ -336,6 +336,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
+              ref={nameInputRef}
               value={formData.name || ""}
               onChange={(e) => handleChange("name", e.target.value)}
               required
@@ -538,7 +539,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
             </div>
           )}
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex flex-wrap justify-end gap-2 pt-4">
             <Button 
               type="button" 
               variant="outline" 
@@ -546,6 +547,16 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
             >
               Cancel
             </Button>
+            {!contact && (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!formData.name?.trim()}
+                onClick={() => submitForm(true)}
+              >
+                Save &amp; add another
+              </Button>
+            )}
             <Button type="submit">Save</Button>
           </div>
         </form>
