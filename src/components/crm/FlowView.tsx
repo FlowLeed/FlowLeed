@@ -52,6 +52,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddPeopleOpen, setIsAddPeopleOpen] = useState(false);
   const [addPeopleStageId, setAddPeopleStageId] = useState<string | undefined>(undefined);
+  const [reopenAddPeopleAfterForm, setReopenAddPeopleAfterForm] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [currentStageId, setCurrentStageId] = useState<string | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
@@ -202,6 +203,18 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const handleAddPeopleToStage = (stageId: string) => {
     setAddPeopleStageId(stageId);
     setIsAddPeopleOpen(true);
+  };
+
+  // "New person" inside the add-people picker: close the picker, open the
+  // contact form pre-set to the picker's chosen step, and return to the
+  // picker afterwards so bulk enrollment can continue.
+  const handleCreateNewPersonFromPicker = (stageId: string) => {
+    setIsAddPeopleOpen(false);
+    setAddPeopleStageId(undefined);
+    setCurrentContact(null);
+    setCurrentStageId(stageId || flow.stages[0]?.id || null);
+    setReopenAddPeopleAfterForm(true);
+    setIsFormOpen(true);
   };
 
   const handleEditContact = (contact: Contact) => {
@@ -773,7 +786,13 @@ export const FlowView: React.FC<FlowViewProps> = ({
       {isFormOpen && (
         <ContactFormDialog
           open={isFormOpen}
-          onOpenChange={setIsFormOpen}
+          onOpenChange={(open) => {
+            setIsFormOpen(open);
+            if (!open && reopenAddPeopleAfterForm) {
+              setReopenAddPeopleAfterForm(false);
+              setIsAddPeopleOpen(true);
+            }
+          }}
           contact={currentContact}
           onSave={handleSaveContact}
           flowId={flow.id}
@@ -814,6 +833,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
         flow={flow}
         teamMembers={teamMembers}
         initialStageId={addPeopleStageId}
+        onCreateNew={handleCreateNewPersonFromPicker}
       />
     </div>
   );
