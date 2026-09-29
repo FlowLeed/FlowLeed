@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, MapPin, Calendar, Clock, Search, ArrowRight } from "lucide-react";
 import { GroupAvatar } from "@/components/groups/GroupAvatar";
-import { useGroupTypes } from "@/hooks/useGroupTypes";
+import { useGroupTypesPublic } from "@/hooks/useGroupTypes";
 import { useGroupSettingsPublic } from "@/hooks/useGroupSettings";
 interface PublicGroup {
   id: string;
@@ -54,7 +54,7 @@ export default function GroupDirectoryPage() {
 
   });
 
-  const { types: typeDefs, isHiddenType } = useGroupTypes(org?.id, { includeInactive: true });
+  const { types: typeDefs, isHiddenType } = useGroupTypesPublic(org?.id);
   const { data: settings } = useGroupSettingsPublic(org?.id);
   const typeLabel = (key: string) => typeDefs.find((t) => t.key === key)?.label || fallbackLabels[key] || key;
   const typeColor = (key: string) => typeDefs.find((t) => t.key === key)?.color;
