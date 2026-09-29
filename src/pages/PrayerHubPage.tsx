@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
-import { HandHeart, Link2, EyeOff, MoreVertical, Plus, Trash2, Pencil, Sparkles, CheckCircle2 } from "lucide-react";
+import { HandHeart, Link2, EyeOff, MoreVertical, Plus, Trash2, Pencil, Sparkles, CheckCircle2, LayoutGrid, Table2, Search, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -44,6 +46,10 @@ export default function PrayerHubPage() {
   const seeding = useRef(false);
   const [anonOnly, setAnonOnly] = useState(false);
   const [editing, setEditing] = useState<Partial<Stage> | null>(null);
+  const [view, setView] = useState<"board" | "table">("board");
+  const [search, setSearch] = useState("");
+  const [kindFilter, setKindFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState("all");
 
   const stagesQ = useQuery({
     queryKey: ["prayer-stages", orgId],
