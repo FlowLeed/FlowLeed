@@ -1,55 +1,76 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { formatDistanceToNow, differenceInDays } from "date-fns";
-import { HandHeart, Link2, Check, EyeOff, Sparkles } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { HandHeart, Link2, EyeOff, MoreVertical, Plus, Trash2, Pencil, Sparkles, CheckCircle2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type Prayer = { user_id: string; created_at: string };
+type Stage = { id: string; name: string; color: string; stage_order: number; is_answered_step: boolean };
 type Req = {
   id: string; title: string | null; description: string | null; kind: string; status: string | null;
-  is_anonymous: boolean; source: string; submitter_name: string | null; contact_id: string | null;
-  created_at: string; answered_at: string | null; answer_description: string | null;
-  prayers: Prayer[]; contactName?: string | null;
+  is_anonymous: boolean; submitter_name: string | null; contact_id: string | null; stage_id: string | null;
+  created_at: string; answer_description: string | null;
+  prayers: { user_id: string; created_at: string }[]; contactName?: string | null;
 };
 
-const TABS = [
-  { key: "all", label: "All" },
-  { key: "followup", label: "Follow-up needed" },
-  { key: "anonymous", label: "Anonymous" },
-  { key: "praise", label: "Praise reports" },
-] as const;
+const COLORS = ["#3B82F6", "#F59E0B", "#8B5CF6", "#10B981", "#EF4444", "#EC4899", "#14B8A6", "#6B7280"];
+const DEFAULT_STAGES = [
+  { name: "New", color: "#3B82F6", is_answered_step: false },
+  { name: "Praying", color: "#8B5CF6", is_answered_step: false },
+  { name: "Follow-up needed", color: "#F59E0B", is_answered_step: false },
+  { name: "Praise reports", color: "#10B981", is_answered_step: true },
+];
+const db = supabase as any;
 
 export default function PrayerHubPage() {
   const { user } = useAuth();
   const { organization } = useProfile();
-  const qc = useQueryClient();
-  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("all");
-  const [answering, setAnswering] = useState<Req | null>(null);
-  const [answer, setAnswer] = useState("");
   const orgId = organization?.id;
+  const qc = useQueryClient();
+  const seeding = useRef(false);
+  const [anonOnly, setAnonOnly] = useState(false);
+  const [editing, setEditing] = useState<Partial<Stage> | null>(null);
 
-  const { data = [], isLoading } = useQuery({
+  const stagesQ = useQuery({
+    queryKey: ["prayer-stages", orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await db.from("prayer_stages").select("*").eq("organization_id", orgId).order("stage_order");
+      if (error) throw error;
+      return (data || []) as Stage[];
+    },
+  });
+
+  useEffect(() => {
+    if (!orgId || !stagesQ.data || stagesQ.data.length || seeding.current) return;
+    seeding.current = true;
+    db.from("prayer_stages").insert(DEFAULT_STAGES.map((s, i) => ({ ...s, stage_order: i, organization_id: orgId })))
+      .then(() => qc.invalidateQueries({ queryKey: ["prayer-stages", orgId] }));
+  }, [orgId, stagesQ.data, qc]);
+
+  const reqQ = useQuery({
     queryKey: ["prayer-hub", orgId],
     enabled: !!orgId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contact_prayer_requests" as any)
+      const { data, error } = await db.from("contact_prayer_requests")
         .select("*, prayers:prayer_request_prayers(user_id, created_at)")
-        .eq("organization_id", orgId!)
-        .order("created_at", { ascending: false })
-        .limit(300);
+        .eq("organization_id", orgId).order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
-      const rows = (data as unknown as Req[]) || [];
+      const rows = (data || []) as Req[];
       const ids = [...new Set(rows.map((r) => r.contact_id).filter(Boolean))] as string[];
       const names = new Map<string, string>();
       if (ids.length) {
@@ -60,41 +81,61 @@ export default function PrayerHubPage() {
     },
   });
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ["prayer-hub", orgId] });
+  const stages = stagesQ.data || [];
+  const requests = reqQ.data || [];
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["prayer-hub", orgId] });
+    qc.invalidateQueries({ queryKey: ["prayer-stages", orgId] });
+  };
 
-  const pray = useMutation({
-    mutationFn: async (r: Req) => {
-      const { error } = await supabase.from("prayer_request_prayers" as any)
-        .insert({ prayer_request_id: r.id, organization_id: orgId, user_id: user!.id });
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Thank you for praying"); refresh(); },
-    onError: () => toast.error("Couldn't save"),
-  });
+  // Requests without a step: answered ones go to the first answered step, the rest to the first step.
+  const columns = useMemo(() => {
+    const first = stages[0]?.id;
+    const answered = stages.find((s) => s.is_answered_step)?.id ?? first;
+    const map = new Map<string, Req[]>(stages.map((s) => [s.id, []]));
+    requests.filter((r) => !anonOnly || r.is_anonymous).forEach((r) => {
+      let sid = r.stage_id && map.has(r.stage_id) ? r.stage_id : null;
+      if (!sid) sid = (r.kind === "praise" || r.status === "answered") ? answered : first;
+      if (sid) map.get(sid)!.push(r);
+    });
+    return map;
+  }, [stages, requests, anonOnly]);
 
-  const markAnswered = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("contact_prayer_requests" as any)
-        .update({ status: "answered", answered_at: new Date().toISOString(), answer_description: answer || null })
-        .eq("id", answering!.id);
-      if (error) throw error;
-    },
-    onSuccess: () => { toast.success("Moved to Praise reports"); setAnswering(null); setAnswer(""); refresh(); },
-    onError: () => toast.error("Couldn't save"),
-  });
+  const onDragEnd = async (res: DropResult) => {
+    if (!res.destination || res.destination.droppableId === res.source.droppableId) return;
+    const stage = stages.find((s) => s.id === res.destination!.droppableId)!;
+    const patch: any = { stage_id: stage.id };
+    if (stage.is_answered_step) { patch.status = "answered"; patch.answered_at = new Date().toISOString(); }
+    else { patch.status = "active"; }
+    qc.setQueryData(["prayer-hub", orgId], (old: Req[] = []) => old.map((r) => r.id === res.draggableId ? { ...r, ...patch } : r));
+    const { error } = await db.from("contact_prayer_requests").update(patch).eq("id", res.draggableId);
+    if (error) { toast.error("Couldn't move"); refresh(); }
+  };
 
-  const myLastPrayer = (r: Req) =>
-    r.prayers.filter((p) => p.user_id === user?.id).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+  const pray = async (r: Req) => {
+    const { error } = await db.from("prayer_request_prayers").insert({ prayer_request_id: r.id, organization_id: orgId, user_id: user!.id });
+    if (error) return toast.error("Couldn't save");
+    toast.success("Thank you for praying");
+    refresh();
+  };
 
-  const isPraise = (r: Req) => r.kind === "praise" || r.status === "answered";
+  const saveStage = async () => {
+    if (!editing?.name?.trim()) return;
+    const payload = { name: editing.name.trim(), color: editing.color || COLORS[0], is_answered_step: !!editing.is_answered_step };
+    const { error } = editing.id
+      ? await db.from("prayer_stages").update(payload).eq("id", editing.id)
+      : await db.from("prayer_stages").insert({ ...payload, organization_id: orgId, stage_order: stages.length });
+    if (error) return toast.error("Couldn't save step");
+    setEditing(null);
+    refresh();
+  };
 
-  const list = useMemo(() => data.filter((r) => {
-    if (tab === "praise") return isPraise(r);
-    if (tab === "anonymous") return r.is_anonymous && !isPraise(r);
-    if (tab === "followup") { const p = myLastPrayer(r); return !isPraise(r) && !!p && differenceInDays(new Date(), new Date(p.created_at)) >= 7; }
-    return !isPraise(r);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [data, tab, user?.id]);
+  const deleteStage = async (s: Stage) => {
+    if (stages.length <= 1) return toast.error("Keep at least one step");
+    if (!confirm(`Delete "${s.name}"? Its requests move to the first step.`)) return;
+    await db.from("prayer_stages").delete().eq("id", s.id);
+    refresh();
+  };
 
   const copyLink = () => {
     const url = `${window.location.origin}/${(organization as any)?.slug}/pray`;
@@ -102,79 +143,115 @@ export default function PrayerHubPage() {
     toast.success("Prayer form link copied", { description: url });
   };
 
+  const loading = stagesQ.isLoading || reqQ.isLoading || !stages.length;
+
   return (
     <div className="flex flex-col h-full">
       <Header title="Prayer" showFlowIcon={false} showAddButton={false} />
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="max-w-2xl mx-auto px-5 py-6 pb-24">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold">Prayer Hub</h2>
-            <Button size="sm" variant="outline" onClick={copyLink}><Link2 className="mr-1 h-4 w-4" />Share prayer form</Button>
-          </div>
-          <div className="mb-4 flex gap-1 overflow-x-auto">
-            {TABS.map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={cn("whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition",
-                  tab === t.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground")}>
-                {t.label}
-              </button>
-            ))}
-          </div>
+      <div className="flex items-center justify-between gap-3 px-5 py-3 border-b">
+        <div className="flex items-center gap-2">
+          <Switch id="anon" checked={anonOnly} onCheckedChange={setAnonOnly} />
+          <Label htmlFor="anon" className="text-sm font-normal flex items-center gap-1"><EyeOff className="h-3.5 w-3.5" />Anonymous only</Label>
+        </div>
+        <Button size="sm" variant="outline" onClick={copyLink}><Link2 className="mr-1 h-4 w-4" />Share prayer form</Button>
+      </div>
 
-          {isLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full" />)}</div>
-          ) : list.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground space-y-2">
-              <p>{tab === "followup" ? "Nothing to follow up on yet." : tab === "praise" ? "No praise reports yet." : "No prayer requests yet."}</p>
-              {tab === "all" && <p className="text-sm">Share the prayer form so people can send requests.</p>}
-            </div>
-          ) : (
-            <div className="divide-y">
-              {list.map((r) => {
-                const who = r.is_anonymous ? "Anonymous" : r.contactName || r.submitter_name || "Someone";
-                const mine = myLastPrayer(r);
-                const text = [r.title, r.description].filter(Boolean).join(" — ");
+      <div className="flex-1 overflow-auto">
+        {loading ? (
+          <div className="flex gap-4 p-5">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-96 w-72 flex-shrink-0 rounded-xl" />)}</div>
+        ) : (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex gap-4 p-5 min-h-full items-start">
+              {stages.map((s) => {
+                const items = columns.get(s.id) || [];
                 return (
-                  <div key={r.id} className="py-4 space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      {r.is_anonymous && <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
-                      {!r.is_anonymous && r.contact_id ? (
-                        <Link to={`/contacts/${r.contact_id}`} className="font-semibold hover:underline">{who}</Link>
-                      ) : <span className="font-semibold">{who}</span>}
-                      {isPraise(r) && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">Praise</span>}
-                      <span className="text-muted-foreground text-xs ml-auto">{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span>
+                  <div key={s.id} style={{ borderColor: s.color }} className="w-72 flex-shrink-0 p-3 border shadow-sm rounded-xl flex flex-col">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: s.color }} />
+                      <h3 className="font-normal text-foreground truncate">{s.name}</h3>
+                      <span className="text-xs text-muted-foreground">{items.length}</span>
+                      {s.is_answered_step && <Badge variant="secondary" className="text-xs gap-1"><CheckCircle2 className="h-3 w-3" />Answered</Badge>}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="ml-auto p-1 rounded-full hover:bg-muted" aria-label="Step settings"><MoreVertical className="h-4 w-4 text-muted-foreground" /></button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditing(s)}><Pencil className="mr-2 h-4 w-4" />Edit step</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => deleteStage(s)}><Trash2 className="mr-2 h-4 w-4" />Delete step</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{text}</p>
-                    {r.answer_description && <p className="text-sm text-muted-foreground"><Sparkles className="inline h-3.5 w-3.5 mr-1" />{r.answer_description}</p>}
-                    {tab === "followup" && mine && (
-                      <p className="text-xs text-muted-foreground">You prayed for this {formatDistanceToNow(new Date(mine.created_at))} ago. Send an encouragement?</p>
-                    )}
-                    <div className="flex items-center gap-2 pt-1">
-                      <Button size="sm" variant="ghost" onClick={() => pray.mutate(r)} disabled={pray.isPending}>
-                        <HandHeart className="mr-1 h-4 w-4" />Prayed{r.prayers.length > 0 && ` · ${r.prayers.length}`}
-                      </Button>
-                      {!isPraise(r) && (
-                        <Button size="sm" variant="ghost" onClick={() => setAnswering(r)}><Check className="mr-1 h-4 w-4" />Mark answered</Button>
+                    <Droppable droppableId={s.id}>
+                      {(p, snap) => (
+                        <div ref={p.innerRef} {...p.droppableProps} className={cn("space-y-3 min-h-[200px] p-1 rounded-lg transition-colors", snap.isDraggingOver && "bg-muted")}>
+                          {items.map((r, i) => (
+                            <Draggable key={r.id} draggableId={r.id} index={i}>
+                              {(dp, ds) => (
+                                <div ref={dp.innerRef} {...dp.draggableProps} {...dp.dragHandleProps}>
+                                  <PrayerCard r={r} dragging={ds.isDragging} onPray={() => pray(r)} />
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {p.placeholder}
+                        </div>
                       )}
-                      {!r.is_anonymous && r.contact_id && tab === "followup" && (
-                        <Button size="sm" variant="ghost" asChild><Link to={`/contacts/${r.contact_id}`}>Encourage</Link></Button>
-                      )}
-                    </div>
+                    </Droppable>
                   </div>
                 );
               })}
+              <button onClick={() => setEditing({ color: COLORS[stages.length % COLORS.length] })}
+                className="w-72 flex-shrink-0 h-14 rounded-xl border border-dashed text-sm text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center gap-1">
+                <Plus className="h-4 w-4" />Add step
+              </button>
             </div>
-          )}
-        </div>
+          </DragDropContext>
+        )}
       </div>
 
-      <Dialog open={!!answering} onOpenChange={(o) => !o && setAnswering(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader><DialogTitle>Prayer answered</DialogTitle></DialogHeader>
-          <Textarea autoFocus rows={3} placeholder="How did God answer? (optional)" value={answer} onChange={(e) => setAnswer(e.target.value)} />
-          <Button onClick={() => markAnswered.mutate()} disabled={markAnswered.isPending}>Move to Praise reports</Button>
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>{editing?.id ? "Edit step" : "New step"}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <Input autoFocus placeholder="Step name" value={editing?.name || ""} onChange={(e) => setEditing({ ...editing, name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && saveStage()} />
+            <div className="flex gap-2">
+              {COLORS.map((c) => (
+                <button key={c} onClick={() => setEditing({ ...editing, color: c })} style={{ backgroundColor: c }}
+                  className={cn("h-7 w-7 rounded-full ring-offset-2 ring-offset-background", editing?.color === c && "ring-2 ring-ring")} aria-label={c} />
+              ))}
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="ans" className="font-normal text-sm">Requests here count as answered (praise)</Label>
+              <Switch id="ans" checked={!!editing?.is_answered_step} onCheckedChange={(v) => setEditing({ ...editing, is_answered_step: v })} />
+            </div>
+          </div>
+          <DialogFooter><Button onClick={saveStage}>Save</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function PrayerCard({ r, dragging, onPray }: { r: Req; dragging: boolean; onPray: () => void }) {
+  const who = r.is_anonymous ? "Anonymous" : r.contactName || r.submitter_name || "Someone";
+  const text = [r.title, r.description].filter(Boolean).join(" — ");
+  return (
+    <div className={cn("rounded-lg border bg-card p-3 space-y-2 shadow-sm", dragging && "shadow-lg")}>
+      <div className="flex items-center gap-1.5 text-sm">
+        {r.is_anonymous && <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+        {!r.is_anonymous && r.contact_id
+          ? <Link to={`/contacts/${r.contact_id}`} className="font-semibold truncate hover:underline">{who}</Link>
+          : <span className="font-semibold truncate">{who}</span>}
+        {r.kind === "praise" && <span className="rounded-full bg-primary/10 px-1.5 text-[10px] text-primary">Praise</span>}
+      </div>
+      <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">{text}</p>
+      {r.answer_description && <p className="text-xs text-muted-foreground"><Sparkles className="inline h-3 w-3 mr-1" />{r.answer_description}</p>}
+      <div className="flex items-center justify-between">
+        <button onClick={onPray} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+          <HandHeart className="h-3.5 w-3.5" />Prayed{r.prayers.length > 0 && ` · ${r.prayers.length}`}
+        </button>
+        <span className="text-[11px] text-muted-foreground">{formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}</span>
+      </div>
     </div>
   );
 }
