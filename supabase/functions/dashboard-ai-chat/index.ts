@@ -174,6 +174,23 @@ const TOOL_REGISTRY = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "create_task",
+      description: "Prepare a task for the current user. Optionally linked to one person. This never saves immediately; it creates a confirmation.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Short task title." },
+          description: { type: "string", description: "Optional details." },
+          person_name: { type: "string", description: "Optional exact name of a person the task is about." },
+          due_date: { type: "string", description: "Optional due date in ISO format (YYYY-MM-DD)." },
+        },
+        required: ["title"],
+      },
+    },
+  },
 ];
 
 const TOOL_DEFAULTS: Record<string, boolean> = {
@@ -183,7 +200,42 @@ const TOOL_DEFAULTS: Record<string, boolean> = {
   add_people_to_flow: false,
   create_contact_note: false,
   create_prayer_request: false,
+  create_task: true,
 };
+
+async function prepareTask(
+  adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
+): Promise<string> {
+  const title = String(args?.title || "").trim();
+  const description = String(args?.description || "").trim();
+  const personName = String(args?.person_name || "").trim();
+  const dueRaw = String(args?.due_date || "").trim();
+  if (!title) return "Please tell me what the task should be.";
+  if (title.length > 200) return "That task title is too long. Please keep it under 200 characters.";
+  if (description.length > 5000) return "Those task details are too long.";
+  let dueAt: string | null = null;
+  if (dueRaw) {
+    const d = new Date(dueRaw.length === 10 ? `${dueRaw}T12:00:00Z` : dueRaw);
+    if (isNaN(d.getTime())) return `I couldn't understand the due date "${dueRaw}".`;
+    dueAt = d.toISOString();
+  }
+  let contact: { id: string; name: string } | null = null;
+  if (personName) {
+    const { data: contacts } = await adminClient.from("contacts").select("id, name").eq("organization_id", orgId).ilike("name", personName).limit(2);
+    if (!contacts || contacts.length !== 1) return contacts?.length ? `I found more than one person matching "${personName}". Please use their full name.` : `I couldn't find ${personName} in your church records.`;
+    contact = contacts[0] as any;
+  }
+  const summary = [title, contact ? `For: ${contact.name}` : null, dueAt ? `Due: ${dueAt.slice(0, 10)}` : null, description || null].filter(Boolean).join("\n");
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const { data: request, error } = await adminClient.from("ai_action_requests").insert({
+    organization_id: orgId, requested_by_user_id: userId, tool_key: "create_task",
+    summary, expires_at: expiresAt,
+    action_payload: { title, description: description || null, contact_id: contact?.id || null, contact_name: contact?.name || null, due_at: dueAt },
+  }).select("id").single();
+  if (error || !request) throw error || new Error("Could not prepare task");
+  await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "create_task", action_request_id: request.id, outcome: "prepared", affected_records: contact ? [{ type: "contact", id: contact.id }] : [] });
+  return `Ready for review. Nothing has been saved yet.\n\n${actionMarker({ id: request.id, type: "create_task", summary, expires_at: expiresAt })}`;
+}
 
 const actionMarker = (payload: Record<string, unknown>) =>
   `<!--flowleed:action=${JSON.stringify(payload).replace(/-->/g, "--\\u003e")}-->`;
@@ -278,8 +330,30 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     return { ok: false, message: "That confirmation expired. Ask FlowLeed AI to prepare it again." };
   }
   const { data: setting } = await adminClient.from("ai_tool_settings").select("enabled").eq("organization_id", orgId).eq("tool_key", request.tool_key).maybeSingle();
-  if (!setting?.enabled) return { ok: false, message: "This AI action is disabled in Organization Settings." };
+  if (!(setting?.enabled ?? TOOL_DEFAULTS[request.tool_key] ?? false)) return { ok: false, message: "This AI action is disabled in Organization Settings." };
   const payload = request.action_payload as any;
+  if (request.tool_key === "create_task") {
+    const title = String(payload?.title || "").trim();
+    if (!title || title.length > 200) return { ok: false, message: "This task is no longer valid. Ask FlowLeed AI to prepare it again." };
+    let contactName: string | null = null;
+    if (payload.contact_id) {
+      const { data: contact } = await adminClient.from("contacts").select("id, name").eq("id", payload.contact_id).eq("organization_id", orgId).maybeSingle();
+      if (!contact) return { ok: false, message: "This person is no longer available." };
+      contactName = contact.name;
+    }
+    const { data: task, error } = await userClient.from("tasks").insert({ organization_id: orgId, title, description: payload.description || null, contact_id: payload.contact_id || null, due_at: payload.due_at || null, assigned_to_user_id: userId, created_by_user_id: userId }).select("id").single();
+    if (error || !task) {
+      const errorMessage = error?.message || "The task could not be saved.";
+      await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: errorMessage } }).eq("id", request.id).eq("status", "pending");
+      await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "failed", affected_records: [], error_message: errorMessage });
+      return { ok: false, message: "I couldn't save this task." };
+    }
+    const now = new Date().toISOString();
+    const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { task_id: task.id } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
+    if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
+    await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "task", id: task.id }] });
+    return { ok: true, message: `Added the task "${title}"${contactName ? ` for [${contactName}](/contacts/${payload.contact_id})` : ""} to your [Tasks](/tasks).` };
+  }
   if (request.tool_key === "create_contact_note") {
     const content = String(payload?.content || "").trim();
     const allowedTypes = new Set(["general", "prayer", "pastoral", "follow-up"]);
