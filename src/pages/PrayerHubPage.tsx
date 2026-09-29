@@ -221,6 +221,72 @@ export default function PrayerHubPage() {
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex gap-4 p-5">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-96 w-72 flex-shrink-0 rounded-xl" />)}</div>
+        ) : view === "table" ? (
+          <div className="p-5">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead>Person</TableHead>
+                    <TableHead className="w-[40%]">Request</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Step</TableHead>
+                    <TableHead>Prayed</TableHead>
+                    <TableHead>Added</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No requests match your filters.</TableCell></TableRow>
+                  )}
+                  {filtered.map((r) => {
+                    const who = r.is_anonymous ? "Anonymous" : r.contactName || r.submitter_name || "Someone";
+                    const sid = stageOf(r);
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell>
+                          <span className="flex items-center gap-1.5 font-medium">
+                            {r.is_anonymous && <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {!r.is_anonymous && r.contact_id
+                              ? <Link to={`/contacts/${r.contact_id}`} className="hover:underline">{who}</Link>
+                              : who}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          <span className="line-clamp-2 whitespace-pre-wrap">{[r.title, r.description].filter(Boolean).join(" — ")}</span>
+                        </TableCell>
+                        <TableCell>
+                          {r.kind === "praise"
+                            ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">Praise</span>
+                            : <span className="text-sm text-muted-foreground">Prayer</span>}
+                        </TableCell>
+                        <TableCell>
+                          <Select value={sid || ""} onValueChange={(v) => moveToStage(r, v)}>
+                            <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {stages.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />{s.name}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <button onClick={() => pray(r)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+                            <HandHeart className="h-3.5 w-3.5" />{r.prayers.length > 0 ? r.prayers.length : "Pray"}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
             <div className="flex gap-4 p-5 min-h-full items-start">
