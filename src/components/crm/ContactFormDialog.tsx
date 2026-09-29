@@ -405,8 +405,8 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
               {selectedMessagingChannels.length < MESSAGING_CHANNELS.length && (
                 <Select onValueChange={(value) => addMessagingChannel(value as MessagingChannelKey)}>
                   <SelectTrigger className="h-9 w-auto min-w-[180px]">
-                    <span className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm">
+                      <Plus className="h-4 w-4 shrink-0" />
                       Add an App
                     </span>
                   </SelectTrigger>
