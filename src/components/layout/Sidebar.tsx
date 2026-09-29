@@ -550,6 +550,10 @@ export const Sidebar = () => {
     icon: CheckSquare,
     path: "/tasks"
   }, {
+    title: "Prayer",
+    icon: HandHeart,
+    path: "/prayer"
+  }, {
     title: "Content",
     icon: Film,
     path: "/content",
