@@ -149,3 +149,6 @@ verify_jwt = false
 
 [functions.demo-data-clear]
 verify_jwt = false
+
+[functions.public-prayer-submit]
+verify_jwt = false
