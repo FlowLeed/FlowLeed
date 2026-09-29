@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TagManager } from "@/components/contact/TagManager";
 import { useOrgTagSuggestions } from "@/hooks/useContactTags";
 import { useQuery } from "@tanstack/react-query";
+import { MESSAGING_CHANNELS } from "@/lib/messagingChannels";
 
 export interface FlowEnrollmentData {
   pipelineId: string;

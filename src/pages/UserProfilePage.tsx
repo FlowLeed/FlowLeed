@@ -564,6 +564,10 @@ const UserProfilePage = () => {
           name: updatedContact.name,
           email: updatedContact.email,
           phone: updatedContact.phone,
+          telegram: updatedContact.telegram || null,
+          facebook: updatedContact.facebook || null,
+          whatsapp: updatedContact.whatsapp || null,
+          instagram: updatedContact.instagram || null,
           status: updatedContact.status,
           notes: updatedContact.notes
         })
@@ -655,6 +659,10 @@ const UserProfilePage = () => {
       name: contact.name,
       email: contact.email || "",
       phone: contact.phone || "",
+      telegram: (contact as any).telegram || "",
+      facebook: (contact as any).facebook || "",
+      whatsapp: (contact as any).whatsapp || "",
+      instagram: (contact as any).instagram || "",
       avatar: contact.avatar,
       date: new Date(contact.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
       tags: (tags || []) as any,
