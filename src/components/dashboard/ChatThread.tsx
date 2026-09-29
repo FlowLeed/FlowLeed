@@ -200,7 +200,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                       const status = state?.status;
                       const expiresAt = state?.expires_at ?? action.expires_at;
                       const expired = new Date(expiresAt).getTime() <= Date.now();
-                      const title = action.type === "create_contact_note" ? "note" : action.type === "create_prayer_request" ? "prayer request" : "Flow change";
+                      const title = action.type === "create_contact_note" ? "note" : action.type === "create_prayer_request" ? "prayer request" : action.type === "create_task" ? "task" : "Flow change";
 
                       if (status === "completed") {
                         return (
@@ -226,10 +226,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
 
                       return (
                         <div className="not-prose mt-4 rounded-md border bg-muted/30 p-4">
-                           <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">{action.type === "create_contact_note" ? "Confirm new note" : action.type === "create_prayer_request" ? "Confirm prayer request" : "Confirm Flow change"}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{action.summary}</p></div></div>
+                           <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">{action.type === "create_contact_note" ? "Confirm new note" : action.type === "create_prayer_request" ? "Confirm prayer request" : action.type === "create_task" ? "Confirm new task" : "Confirm Flow change"}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{action.summary}</p></div></div>
                           <div className="mt-4 flex flex-wrap gap-2">
                             <Button size="sm" disabled={confirmingId === action.id} onClick={async () => { if (!onConfirmAction || !action) return; setConfirmingId(action.id); const result = await onConfirmAction(action.id); setConfirmingId(null); if (result.ok) setHandledActions((current) => new Set(current).add(action.id)); }}>
-                               {confirmingId === action.id ? "Confirming..." : action.type === "create_contact_note" ? "Save note" : action.type === "create_prayer_request" ? "Save prayer request" : "Confirm add"}
+                               {confirmingId === action.id ? "Confirming..." : action.type === "create_contact_note" ? "Save note" : action.type === "create_prayer_request" ? "Save prayer request" : action.type === "create_task" ? "Save task" : "Confirm add"}
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => setHandledActions((current) => new Set(current).add(action.id))}>Cancel</Button>
                           </div>
