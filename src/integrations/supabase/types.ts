@@ -1358,40 +1358,70 @@ export type Database = {
         Row: {
           answer_description: string | null
           answered_at: string | null
-          contact_id: string
+          contact_id: string | null
           created_at: string
-          created_by_user_id: string
+          created_by_user_id: string | null
           description: string | null
           id: string
+          is_anonymous: boolean
+          kind: string
+          organization_id: string | null
+          source: string
           status: string | null
-          title: string
+          submitter_name: string | null
+          title: string | null
           updated_at: string
         }
         Insert: {
           answer_description?: string | null
           answered_at?: string | null
-          contact_id: string
+          contact_id?: string | null
           created_at?: string
-          created_by_user_id: string
+          created_by_user_id?: string | null
           description?: string | null
           id?: string
+          is_anonymous?: boolean
+          kind?: string
+          organization_id?: string | null
+          source?: string
           status?: string | null
-          title: string
+          submitter_name?: string | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
           answer_description?: string | null
           answered_at?: string | null
-          contact_id?: string
+          contact_id?: string | null
           created_at?: string
-          created_by_user_id?: string
+          created_by_user_id?: string | null
           description?: string | null
           id?: string
+          is_anonymous?: boolean
+          kind?: string
+          organization_id?: string | null
+          source?: string
           status?: string | null
-          title?: string
+          submitter_name?: string | null
+          title?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_prayer_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_prayer_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_tags: {
         Row: {
@@ -4860,6 +4890,52 @@ export type Database = {
             columns: ["completion_moment_type_id"]
             isOneToOne: false
             referencedRelation: "flow_moment_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prayer_request_prayers: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          prayer_request_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          prayer_request_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          prayer_request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_request_prayers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_request_prayers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_request_prayers_prayer_request_id_fkey"
+            columns: ["prayer_request_id"]
+            isOneToOne: false
+            referencedRelation: "contact_prayer_requests"
             referencedColumns: ["id"]
           },
         ]
