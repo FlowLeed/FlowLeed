@@ -407,7 +407,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
                   <SelectTrigger className="h-9 w-auto min-w-[180px]">
                     <span className="flex items-center gap-2">
                       <Plus className="h-4 w-4" />
-                      Add messaging app
+                      Add an App
                     </span>
                   </SelectTrigger>
                   <SelectContent align="end">
