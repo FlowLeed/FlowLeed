@@ -129,15 +129,21 @@ export default function PrayerHubPage() {
     return map;
   }, [stages, filtered]);
 
-  const onDragEnd = async (res: DropResult) => {
-    if (!res.destination || res.destination.droppableId === res.source.droppableId) return;
-    const stage = stages.find((s) => s.id === res.destination!.droppableId)!;
+  const moveToStage = async (r: Req, stageId: string) => {
+    const stage = stages.find((s) => s.id === stageId);
+    if (!stage) return;
     const patch: any = { stage_id: stage.id };
     if (stage.is_answered_step) { patch.status = "answered"; patch.answered_at = new Date().toISOString(); }
     else { patch.status = "active"; }
-    qc.setQueryData(["prayer-hub", orgId], (old: Req[] = []) => old.map((r) => r.id === res.draggableId ? { ...r, ...patch } : r));
-    const { error } = await db.from("contact_prayer_requests").update(patch).eq("id", res.draggableId);
+    qc.setQueryData(["prayer-hub", orgId], (old: Req[] = []) => old.map((x) => x.id === r.id ? { ...x, ...patch } : x));
+    const { error } = await db.from("contact_prayer_requests").update(patch).eq("id", r.id);
     if (error) { toast.error("Couldn't move"); refresh(); }
+  };
+
+  const onDragEnd = async (res: DropResult) => {
+    if (!res.destination || res.destination.droppableId === res.source.droppableId) return;
+    const r = requests.find((x) => x.id === res.draggableId);
+    if (r) moveToStage(r, res.destination.droppableId);
   };
 
   const pray = async (r: Req) => {
