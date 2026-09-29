@@ -1367,6 +1367,7 @@ export type Database = {
           kind: string
           organization_id: string | null
           source: string
+          stage_id: string | null
           status: string | null
           submitter_name: string | null
           title: string | null
@@ -1384,6 +1385,7 @@ export type Database = {
           kind?: string
           organization_id?: string | null
           source?: string
+          stage_id?: string | null
           status?: string | null
           submitter_name?: string | null
           title?: string | null
@@ -1401,6 +1403,7 @@ export type Database = {
           kind?: string
           organization_id?: string | null
           source?: string
+          stage_id?: string | null
           status?: string | null
           submitter_name?: string | null
           title?: string | null
@@ -1419,6 +1422,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_prayer_requests_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "prayer_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -4936,6 +4946,54 @@ export type Database = {
             columns: ["prayer_request_id"]
             isOneToOne: false
             referencedRelation: "contact_prayer_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prayer_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_answered_step: boolean
+          name: string
+          organization_id: string
+          stage_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_answered_step?: boolean
+          name: string
+          organization_id: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_answered_step?: boolean
+          name?: string
+          organization_id?: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_stages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_stages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
