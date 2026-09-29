@@ -87,13 +87,21 @@ export const useGroupSettingsPublic = (organizationId: string | undefined) => {
     queryKey: ["group-settings-public", organizationId],
     enabled: !!organizationId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("group_settings")
-        .select("*")
-        .eq("organization_id", organizationId!)
-        .maybeSingle();
+      // Anonymous visitors can't read group_settings directly (RLS); this
+      // security-definer RPC exposes only the directory display fields.
+      const { data, error } = await (supabase as any).rpc("get_public_group_settings", {
+        p_org_id: organizationId!,
+      });
       if (error) throw error;
-      return data as GroupSettings | null;
+      const row = Array.isArray(data) ? data[0] : data;
+      return (row as Pick<
+        GroupSettings,
+        | "directory_hero_title"
+        | "directory_hero_subtitle"
+        | "directory_show_meeting_time"
+        | "directory_show_location"
+        | "directory_show_capacity"
+      > | undefined) ?? null;
     },
   });
 };

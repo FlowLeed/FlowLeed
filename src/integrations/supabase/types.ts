@@ -5914,6 +5914,28 @@ export type Database = {
         Args: { p_slug: string; p_video_id: string }
         Returns: Json
       }
+      get_public_group_settings: {
+        Args: { p_org_id: string }
+        Returns: {
+          directory_hero_subtitle: string
+          directory_hero_title: string
+          directory_show_capacity: boolean
+          directory_show_location: boolean
+          directory_show_meeting_time: boolean
+        }[]
+      }
+      get_public_group_types: {
+        Args: { p_org_id: string }
+        Returns: {
+          color: string
+          icon: string
+          is_active: boolean
+          is_hidden: boolean
+          key: string
+          label: string
+          sort_order: number
+        }[]
+      }
       get_public_organization: {
         Args: { p_slug: string }
         Returns: {
