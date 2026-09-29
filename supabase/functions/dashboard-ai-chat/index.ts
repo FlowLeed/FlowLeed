@@ -1311,13 +1311,13 @@ serve(async (req) => {
     const tools = TOOL_REGISTRY.filter((tool) => isEnabled(tool.function.name));
 
     const latestUserText = String(messages[messages.length - 1]?.content || "").trim();
-    if (/^(yes|confirm|do it|go ahead|add (him|her|them)|save (it|the note|the prayer request))\W*$/i.test(latestUserText)) {
+    if (/^(yes|confirm|do it|go ahead|add (him|her|them)|save (it|the note|the prayer request|the task))\W*$/i.test(latestUserText)) {
       for (let i = messages.length - 2; i >= 0; i--) {
         const marker = String(messages[i]?.content || "").match(/<!--flowleed:action=({.*?})-->/);
         if (!marker) continue;
         try {
           const pending = JSON.parse(marker[1]);
-          if (["add_people_to_flow", "create_contact_note", "create_prayer_request"].includes(pending?.type) && typeof pending.id === "string") {
+          if (["add_people_to_flow", "create_contact_note", "create_prayer_request", "create_task"].includes(pending?.type) && typeof pending.id === "string") {
             const result = await executePendingAction(adminClient, userClient, orgId, userId, pending.id);
             const encoder = new TextEncoder();
             const response = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: result.message } }] })}\n\ndata: [DONE]\n\n`)); controller.close(); } });
@@ -1458,6 +1458,7 @@ You have access to tools to look up detailed information about specific people a
 - **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "Fairfield women who were in a small group earlier this year but aren't in one now"), call this tool. Map EVERY part of the request to an argument: campus -> campus_name, women/men -> gender, "was in a group earlier this year" -> in_group_between {from: Jan 1 of this year, to: today}, "not in a group now" -> not_in_active_group: true, "Member" -> pc_membership, "served N months" -> serving_min_days = N*30. Set limit to 200 so counts are accurate.
 ${isEnabled("add_people_to_flow") ? '- **add_people_to_flow**: When the user clearly names one person, one Flow, and one step, prepare the exact action for confirmation. Never say it happened until the structured execution result confirms it.' : '- Adding people to a Flow is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_contact_note") ? '- **create_contact_note**: When the user asks to add or save a note about one person, prepare the exact note for confirmation. Preserve the user’s wording, default to a shared general note unless they request another type or privacy, and never say it was saved until execution confirms it.' : '- Adding profile notes is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
+${isEnabled("create_task") ? '- **create_task**: When the user asks to create a task, to-do, or reminder (optionally about one person, optionally with a due date), prepare it for confirmation. Resolve relative dates like "Friday" against today. Never say it was saved until execution confirms it.' : '- Creating tasks is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_prayer_request") ? '- **create_prayer_request**: When the user asks to create or save a prayer request for one person, prepare the person, title, and exact request details for confirmation. Never say it was saved until execution confirms it.' : '- Creating prayer requests is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
@@ -1657,6 +1658,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
           } else if (fnName === "create_contact_note") {
             result = await prepareContactNote(adminClient, orgId, userId, args);
+            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+          } else if (fnName === "create_task") {
+            result = await prepareTask(adminClient, orgId, userId, args);
             pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
           } else if (fnName === "create_prayer_request") {
             result = await preparePrayerRequest(adminClient, orgId, userId, args);
