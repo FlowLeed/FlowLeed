@@ -94,18 +94,40 @@ export default function PrayerHubPage() {
     qc.invalidateQueries({ queryKey: ["prayer-stages", orgId] });
   };
 
-  // Requests without a step: answered ones go to the first answered step, the rest to the first step.
-  const columns = useMemo(() => {
+  const stageOf = (r: Req) => {
     const first = stages[0]?.id;
     const answered = stages.find((s) => s.is_answered_step)?.id ?? first;
+    if (r.stage_id && stages.some((s) => s.id === r.stage_id)) return r.stage_id;
+    return (r.kind === "praise" || r.status === "answered") ? answered : first;
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return requests.filter((r) => {
+      if (anonOnly && !r.is_anonymous) return false;
+      if (kindFilter !== "all" && r.kind !== kindFilter) return false;
+      if (stageFilter !== "all" && stageOf(r) !== stageFilter) return false;
+      if (q) {
+        const who = (r.is_anonymous ? "anonymous" : r.contactName || r.submitter_name || "").toLowerCase();
+        const text = [r.title, r.description, r.answer_description].filter(Boolean).join(" ").toLowerCase();
+        if (!who.includes(q) && !text.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [requests, anonOnly, kindFilter, stageFilter, search, stages]);
+
+  const hasFilters = anonOnly || kindFilter !== "all" || stageFilter !== "all" || !!search.trim();
+  const clearFilters = () => { setAnonOnly(false); setKindFilter("all"); setStageFilter("all"); setSearch(""); };
+
+  // Requests without a step: answered ones go to the first answered step, the rest to the first step.
+  const columns = useMemo(() => {
     const map = new Map<string, Req[]>(stages.map((s) => [s.id, []]));
-    requests.filter((r) => !anonOnly || r.is_anonymous).forEach((r) => {
-      let sid = r.stage_id && map.has(r.stage_id) ? r.stage_id : null;
-      if (!sid) sid = (r.kind === "praise" || r.status === "answered") ? answered : first;
-      if (sid) map.get(sid)!.push(r);
+    filtered.forEach((r) => {
+      const sid = stageOf(r);
+      if (sid && map.has(sid)) map.get(sid)!.push(r);
     });
     return map;
-  }, [stages, requests, anonOnly]);
+  }, [stages, filtered]);
 
   const onDragEnd = async (res: DropResult) => {
     if (!res.destination || res.destination.droppableId === res.source.droppableId) return;
