@@ -16,6 +16,11 @@ export interface Contact {
   notes?: string;
   email?: string;
   phone?: string;
+  // Messaging channels for contacts who don't share a phone number
+  telegram?: string;
+  facebook?: string;
+  whatsapp?: string;
+  instagram?: string;
   stageEnteredAt?: string;
   completedEndAt?: string;
   campusId?: string;
