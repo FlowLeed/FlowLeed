@@ -43,6 +43,7 @@ const MessagesPage = lazy(() => import("./pages/MessagesPage"));
 const CallsPage = lazy(() => import("./pages/CallsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const TasksPage = lazy(() => import("./pages/TasksPage"));
+const PrayerHubPage = lazy(() => import("./pages/PrayerHubPage"));
 const SuperAdminAuthPage = lazy(() => import("./pages/admin/SuperAdminAuthPage"));
 const OrganizationsListPage = lazy(() => import("./pages/admin/OrganizationsListPage"));
 const OrganizationDetailPage = lazy(() => import("./pages/admin/OrganizationDetailPage"));
@@ -69,6 +70,7 @@ const FormsListPage = lazy(() => import("./pages/forms/FormsListPage"));
 const FormBuilderPage = lazy(() => import("./pages/forms/FormBuilderPage"));
 const FormSubmissionsPage = lazy(() => import("./pages/forms/FormSubmissionsPage"));
 const PublicFormPage = lazy(() => import("./pages/public/PublicFormPage"));
+const PublicPrayerPage = lazy(() => import("./pages/public/PublicPrayerPage"));
 const PublicFormRedirect = lazy(() => import("./pages/public/PublicFormRedirect"));
 
 
@@ -151,6 +153,7 @@ const App = () => (
               <Route path="/content/videos/:id" element={<FeatureGate feature="content"><ContentVideoDetailPage /></FeatureGate>} />
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/prayer" element={<PrayerHubPage />} />
               <Route path="/forms" element={<FeatureGate feature="forms"><FormsListPage /></FeatureGate>} />
               <Route path="/forms/:id" element={<FeatureGate feature="forms"><FormBuilderPage /></FeatureGate>} />
               <Route path="/forms/:id/submissions" element={<FeatureGate feature="forms"><FormSubmissionsPage /></FeatureGate>} />
@@ -174,6 +177,7 @@ const App = () => (
               <Route path="/:slug/groups" element={<GroupDirectoryPage />} />
               <Route path="/:slug/content" element={<PublicContentPage />} />
               <Route path="/:slug/content/videos/:id" element={<PublicContentVideoPage />} />
+              <Route path="/:slug/pray" element={<PublicPrayerPage />} />
               <Route path="/:orgSlug/f/:formSlug" element={<PublicFormPage />} />
 
               <Route path="*" element={<NotFound />} />
