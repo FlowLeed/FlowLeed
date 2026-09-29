@@ -5269,6 +5269,70 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assigned_to_user_id: string
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          due_at: string | null
+          id: string
+          organization_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id: string
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          organization_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          organization_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       twilio_phone_numbers: {
         Row: {
           assigned_to_user_id: string | null

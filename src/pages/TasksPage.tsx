@@ -1,133 +1,141 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { format, isPast, isToday } from "date-fns";
+import { MoreVertical, Plus, Trash2, Sparkles } from "lucide-react";
 import { Header } from "@/components/layout/Header";
-import { Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
-import { useMyAssignedContacts } from "@/hooks/useMyAssignedContacts";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import { TaskContactRow } from "@/components/tasks/TaskContactRow";
-import { PersonalMetrics } from "@/components/dashboard/PersonalMetrics";
-import { MyContactsFilters, SortKey } from "@/components/tasks/MyContactsFilters";
+import { useProfile } from "@/hooks/useProfile";
+import { useTasks, useTaskMutations, Task } from "@/hooks/useTasks";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const dueLabel = (due: string) => {
+  const d = new Date(due);
+  if (isToday(d)) return "Today";
+  return format(d, "MMM d");
+};
+
+const TaskRow = ({ task, onToggle, onDelete }: { task: Task; onToggle: () => void; onDelete: () => void }) => {
+  const done = !!task.completed_at;
+  const overdue = !done && task.due_at && isPast(new Date(task.due_at)) && !isToday(new Date(task.due_at));
+  const meta = [task.contact?.name, task.due_at ? dueLabel(task.due_at) : null].filter(Boolean);
+  return (
+    <div className="flex items-start gap-4 px-1 py-4">
+      <Checkbox checked={done} onCheckedChange={onToggle} className="mt-1 h-5 w-5 rounded-md" aria-label={done ? "Mark not done" : "Mark done"} />
+      <div className="min-w-0 flex-1">
+        <p className={cn("font-semibold leading-snug", done && "text-muted-foreground line-through")}>{task.title}</p>
+        {task.description && <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{task.description}</p>}
+        {meta.length > 0 && (
+          <p className={cn("mt-1 text-xs text-muted-foreground", overdue && "text-destructive")}>
+            {task.contact ? <Link to={`/contacts/${task.contact.id}`} className="hover:underline">{task.contact.name}</Link> : null}
+            {task.contact && task.due_at ? " · " : null}
+            {task.due_at ? (overdue ? `Overdue · ${dueLabel(task.due_at)}` : dueLabel(task.due_at)) : null}
+          </p>
+        )}
+      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label="Task options">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onToggle}>{done ? "Mark not done" : "Mark done"}</DropdownMenuItem>
+          <DropdownMenuItem onClick={onDelete} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+};
 
 const TasksPage = () => {
   const { user } = useAuth();
-  const { data: contacts, isLoading } = useMyAssignedContacts(user?.id);
-  const { data: dashboardData, isLoading: loadingDashboard } = useDashboardData(user?.id);
+  const { organization } = useProfile();
+  const { data: tasks, isLoading } = useTasks(user?.id);
+  const { toggle, remove, create } = useTaskMutations(user?.id);
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [due, setDue] = useState("");
 
-  const [search, setSearch] = useState("");
-  const [flow, setFlow] = useState("all");
-  const [stage, setStage] = useState("all");
-  const [campus, setCampus] = useState("all");
-  const [sort, setSort] = useState<SortKey>("last_contact");
+  const openTasks = (tasks || []).filter((t) => !t.completed_at);
+  const doneTasks = (tasks || []).filter((t) => t.completed_at);
 
-  const flowOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    (contacts || []).forEach((c) => { if (c.flowId && c.flowName) map.set(c.flowId, c.flowName); });
-    return [...map.entries()].map(([value, label]) => ({ value, label }));
-  }, [contacts]);
-
-  const stageOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    (contacts || [])
-      .filter((c) => flow === "all" || c.flowId === flow)
-      .forEach((c) => { if (c.stageId && c.stageName) map.set(c.stageId, c.stageName); });
-    return [...map.entries()].map(([value, label]) => ({ value, label }));
-  }, [contacts, flow]);
-
-  const campusOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    (contacts || []).forEach((c) => { if (c.campusId && c.campusName) map.set(c.campusId, c.campusName); });
-    return [...map.entries()].map(([value, label]) => ({ value, label }));
-  }, [contacts]);
-
-  const filtered = useMemo(() => {
-    let list = contacts || [];
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((c) => c.name.toLowerCase().includes(q));
-    }
-    if (flow !== "all") list = list.filter((c) => c.flowId === flow);
-    if (stage !== "all") list = list.filter((c) => c.stageId === stage);
-    if (campus !== "all") list = list.filter((c) => c.campusId === campus);
-
-    const sorted = [...list];
-    if (sort === "last_contact") {
-      sorted.sort((a, b) => b.daysSinceLastContact - a.daysSinceLastContact);
-    } else if (sort === "name") {
-      sorted.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sort === "recent") {
-      sorted.sort((a, b) => {
-        const ta = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
-        const tb = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
-        return tb - ta;
+  const save = async () => {
+    if (!title.trim() || !organization?.id) return;
+    try {
+      await create.mutateAsync({
+        organization_id: organization.id,
+        title: title.trim(),
+        description: description.trim() || null,
+        due_at: due ? new Date(`${due}T12:00:00`).toISOString() : null,
       });
+      setTitle(""); setDescription(""); setDue(""); setOpen(false);
+    } catch (e: any) {
+      toast.error(e.message || "Could not save task");
     }
-    return sorted;
-  }, [contacts, search, flow, stage, campus, sort]);
+  };
 
-  const hasActiveFilters = !!search || flow !== "all" || stage !== "all" || campus !== "all";
-  const clearFilters = () => { setSearch(""); setFlow("all"); setStage("all"); setCampus("all"); };
+  const renderList = (list: Task[]) => (
+    <div className="divide-y">
+      {list.map((t) => (
+        <TaskRow key={t.id} task={t} onToggle={() => toggle.mutate(t)} onDelete={() => remove.mutate(t.id)} />
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full">
       <Header title="Tasks" showFlowIcon={false} showAddButton={false} />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="max-w-4xl mx-auto p-6 space-y-6">
-          <PersonalMetrics
-            metrics={dashboardData?.metrics || { myContacts: 0, myInteractions: 0, pendingTasks: 0, peopleNeedingAttention: 0 }}
-            loading={loadingDashboard}
-          />
+        <div className="max-w-2xl mx-auto px-5 py-6 pb-24">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-lg font-semibold">My tasks {openTasks.length > 0 && <span className="text-muted-foreground font-normal">({openTasks.length})</span>}</h2>
+            <Button size="sm" onClick={() => setOpen(true)}><Plus className="mr-1 h-4 w-4" />New task</Button>
+          </div>
 
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <h2 className="text-lg font-light">My Contacts</h2>
-              {contacts && contacts.length > 0 && (
-                <span className="text-sm text-muted-foreground">
-                  ({filtered.length}{filtered.length !== contacts.length ? ` of ${contacts.length}` : ""})
-                </span>
+          {isLoading ? (
+            <div className="space-y-3 pt-2">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
+          ) : openTasks.length === 0 && doneTasks.length === 0 ? (
+            <div className="py-16 text-center text-muted-foreground space-y-2">
+              <p>No tasks yet.</p>
+              <p className="text-sm flex items-center justify-center gap-1"><Sparkles className="h-4 w-4" />Tip: ask FlowLeed AI “Remind me to call John on Friday”.</p>
+            </div>
+          ) : (
+            <>
+              {openTasks.length > 0 ? renderList(openTasks) : <p className="py-8 text-center text-muted-foreground">All caught up.</p>}
+              {doneTasks.length > 0 && (
+                <div className="mt-8">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Completed</p>
+                  {renderList(doneTasks)}
+                </div>
               )}
-            </div>
-
-            <div className="mb-4">
-              <MyContactsFilters
-                search={search} onSearchChange={setSearch}
-                flow={flow} onFlowChange={(v) => { setFlow(v); setStage("all"); }}
-                stage={stage} onStageChange={setStage}
-                campus={campus} onCampusChange={setCampus}
-                sort={sort} onSortChange={setSort}
-                flowOptions={flowOptions}
-                stageOptions={stageOptions}
-                campusOptions={campusOptions}
-                hasActiveFilters={hasActiveFilters}
-                onClear={clearFilters}
-              />
-            </div>
-
-            {isLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
-              </div>
-            ) : !contacts || contacts.length === 0 ? (
-              <div className="border rounded-lg p-6 text-center">
-                <p className="text-muted-foreground">No contacts assigned to you yet.</p>
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="border rounded-lg p-6 text-center space-y-3">
-                <p className="text-muted-foreground">No contacts match your filters.</p>
-                <Button variant="outline" size="sm" onClick={clearFilters}>Clear filters</Button>
-              </div>
-            ) : (
-              <div className="border rounded-lg divide-y">
-                {filtered.map((contact) => (
-                  <TaskContactRow key={contact.id} contact={contact} />
-                ))}
-              </div>
-            )}
-          </section>
+            </>
+          )}
         </div>
       </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>New task</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Input autoFocus placeholder="What needs to be done?" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && save()} />
+            <Textarea placeholder="Details (optional)" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+            <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} aria-label="Due date" />
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button onClick={save} disabled={!title.trim() || create.isPending}>{create.isPending ? "Saving..." : "Add task"}</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
