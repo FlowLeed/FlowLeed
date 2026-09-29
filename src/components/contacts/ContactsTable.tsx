@@ -15,6 +15,7 @@ import { SignalChip, SIGNAL_RISK_ORDER } from "@/components/contact/SignalChip";
 import type { SignalLevel } from "@/hooks/useContactSignal";
 import { LoadingStatus } from "@/components/contacts/LoadingStatus";
 import { MobilePersonRow } from "@/components/contacts/MobilePersonRow";
+import { MessagingChannelLinks } from "@/components/contact/MessagingChannelLinks";
 
 interface ContactsTableProps {
   contacts: any[];
