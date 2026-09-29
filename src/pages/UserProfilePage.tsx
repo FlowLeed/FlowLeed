@@ -1019,6 +1019,27 @@ const UserProfilePage = () => {
                       )}
                     </div>
                   )}
+
+                  {/* Messaging apps */}
+                  {resolveMessagingChannels(contact as any).length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">Messaging:</span>
+                      {resolveMessagingChannels(contact as any).map((channel) => (
+                        <a
+                          key={channel.key}
+                          href={channel.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`${channel.label}: ${channel.display}`}
+                          className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 hover:bg-muted transition-colors"
+                        >
+                          <MessagingChannelIcon channelKey={channel.key} className={`h-3.5 w-3.5 ${channel.colorClass}`} />
+                          <span className="truncate max-w-[180px]">{channel.display}</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  
                   
                   {/* Demographics Information */}
                   <div className="pt-2 border-t border-border/40">
