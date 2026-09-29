@@ -1429,7 +1429,9 @@ export type Database = {
           campus_id: string | null
           created_at: string
           email: string | null
+          facebook: string | null
           id: string
+          instagram: string | null
           is_demo: boolean
           last_synced_at: string | null
           name: string
@@ -1441,7 +1443,9 @@ export type Database = {
           phone: string | null
           source_type: string | null
           status: string
+          telegram: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           assigned_to_user_id?: string | null
@@ -1449,7 +1453,9 @@ export type Database = {
           campus_id?: string | null
           created_at?: string
           email?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           is_demo?: boolean
           last_synced_at?: string | null
           name: string
@@ -1461,7 +1467,9 @@ export type Database = {
           phone?: string | null
           source_type?: string | null
           status?: string
+          telegram?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           assigned_to_user_id?: string | null
@@ -1469,7 +1477,9 @@ export type Database = {
           campus_id?: string | null
           created_at?: string
           email?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           is_demo?: boolean
           last_synced_at?: string | null
           name?: string
@@ -1481,7 +1491,9 @@ export type Database = {
           phone?: string | null
           source_type?: string | null
           status?: string
+          telegram?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {

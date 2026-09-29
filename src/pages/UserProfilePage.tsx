@@ -44,6 +44,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useTwilioIntegration } from "@/hooks/useTwilioIntegration";
 import { useCalls, CallRecord } from "@/hooks/useCalls";
 import { CallStatusDialog } from "@/components/calls/CallStatusDialog";
+import { resolveMessagingChannels } from "@/lib/messagingChannels";
+import { MessagingChannelIcon } from "@/components/contact/MessagingChannelLinks";
 
 const getInitials = (name?: string | null) => {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
@@ -564,6 +566,10 @@ const UserProfilePage = () => {
           name: updatedContact.name,
           email: updatedContact.email,
           phone: updatedContact.phone,
+          telegram: updatedContact.telegram || null,
+          facebook: updatedContact.facebook || null,
+          whatsapp: updatedContact.whatsapp || null,
+          instagram: updatedContact.instagram || null,
           status: updatedContact.status,
           notes: updatedContact.notes
         })
@@ -655,6 +661,10 @@ const UserProfilePage = () => {
       name: contact.name,
       email: contact.email || "",
       phone: contact.phone || "",
+      telegram: (contact as any).telegram || "",
+      facebook: (contact as any).facebook || "",
+      whatsapp: (contact as any).whatsapp || "",
+      instagram: (contact as any).instagram || "",
       avatar: contact.avatar,
       date: new Date(contact.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }),
       tags: (tags || []) as any,
@@ -1011,6 +1021,27 @@ const UserProfilePage = () => {
                       )}
                     </div>
                   )}
+
+                  {/* Messaging apps */}
+                  {resolveMessagingChannels(contact as any).length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">Messaging:</span>
+                      {resolveMessagingChannels(contact as any).map((channel) => (
+                        <a
+                          key={channel.key}
+                          href={channel.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`${channel.label}: ${channel.display}`}
+                          className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 hover:bg-muted transition-colors"
+                        >
+                          <MessagingChannelIcon channelKey={channel.key} className={`h-3.5 w-3.5 ${channel.colorClass}`} />
+                          <span className="truncate max-w-[180px]">{channel.display}</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  
                   
                   {/* Demographics Information */}
                   <div className="pt-2 border-t border-border/40">

@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import { differenceInDays } from "date-fns";
 import { useEngagementScore } from "@/hooks/useCheckinData";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
+import { MessagingChannelLinks } from "@/components/contact/MessagingChannelLinks";
 
 // Helper function to calculate days in current stage
 const getDaysInStage = (stageEnteredAt?: string): number => {
@@ -150,7 +151,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             </div>
             <span className="text-xs text-gray-500">Unassigned</span>
           </div>}
-        <div className="flex gap-1 flex-shrink-0">
+        <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
+          <MessagingChannelLinks contact={contact} />
           {phone && <a href={`sms:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send text message">
               <MessageSquare className="h-3.5 w-3.5" />
             </a>}

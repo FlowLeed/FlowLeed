@@ -15,6 +15,7 @@ import { SignalChip, SIGNAL_RISK_ORDER } from "@/components/contact/SignalChip";
 import type { SignalLevel } from "@/hooks/useContactSignal";
 import { LoadingStatus } from "@/components/contacts/LoadingStatus";
 import { MobilePersonRow } from "@/components/contacts/MobilePersonRow";
+import { MessagingChannelLinks } from "@/components/contact/MessagingChannelLinks";
 
 interface ContactsTableProps {
   contacts: any[];
@@ -227,7 +228,10 @@ export const ContactsTable = ({ contacts, isLoading, hasActiveFilters, selectedI
                   {contact.email || "—"}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {contact.phone || "—"}
+                  <div className="flex items-center gap-2">
+                    <span>{contact.phone || "—"}</span>
+                    <MessagingChannelLinks contact={contact} />
+                  </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {contact.campuses?.name ? (

@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TagManager } from "@/components/contact/TagManager";
 import { useOrgTagSuggestions } from "@/hooks/useContactTags";
 import { useQuery } from "@tanstack/react-query";
+import { MESSAGING_CHANNELS } from "@/lib/messagingChannels";
 
 export interface FlowEnrollmentData {
   pipelineId: string;
@@ -131,6 +132,10 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     state: "",
     zipCode: "",
     country: "",
+    telegram: "",
+    facebook: "",
+    whatsapp: "",
+    instagram: "",
   }), [profile]);
 
   const [formData, setFormData] = useState<ContactFormState>(() => ({
@@ -148,6 +153,10 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     state: "",
     zipCode: "",
     country: "",
+    telegram: "",
+    facebook: "",
+    whatsapp: "",
+    instagram: "",
   }));
 
   // Normalize values coming from external sources (e.g., PCO)
@@ -261,6 +270,10 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         state: extendedContact.state || "",
         zipCode: extendedContact.zipCode || "",
         country: extendedContact.country || "",
+        telegram: contact.telegram || "",
+        facebook: contact.facebook || "",
+        whatsapp: contact.whatsapp || "",
+        instagram: contact.instagram || "",
       });
       setAddToFlow(false);
       setSelectedPipelineId(null);
@@ -364,6 +377,41 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
               value={formData.phone || ""}
               onChange={(e) => handleChange("phone", e.target.value)}
             />
+          </div>
+
+          {/* Messaging apps — for people who don't share a phone number */}
+          <div className="space-y-3 border-t pt-4">
+            <div>
+              <h4 className="text-sm font-medium">Messaging apps</h4>
+              <p className="text-xs text-muted-foreground">
+                Add any app they use. Each one becomes a one-click chat link on their card and profile.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {MESSAGING_CHANNELS.map((channel) => (
+                <div key={channel.key} className="space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor={channel.key}>{channel.label}</Label>
+                    {channel.key === 'whatsapp' && formData.phone ? (
+                      <button
+                        type="button"
+                        className="text-xs text-primary hover:underline"
+                        onClick={() => handleChange('whatsapp', formData.phone || '')}
+                      >
+                        Use phone number
+                      </button>
+                    ) : null}
+                  </div>
+                  <Input
+                    id={channel.key}
+                    placeholder={channel.placeholder}
+                    value={(formData as any)[channel.key] || ""}
+                    onChange={(e) => handleChange(channel.key, e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">{channel.hint}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-2">
