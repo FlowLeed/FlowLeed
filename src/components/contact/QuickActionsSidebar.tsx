@@ -16,8 +16,10 @@ import {
 import { useTwilioIntegration } from '@/hooks/useTwilioIntegration';
 import { useCalls, CallRecord } from '@/hooks/useCalls';
 import { CallStatusDialog } from '@/components/calls/CallStatusDialog';
+import { MessagingChannelValues, resolveMessagingChannels } from '@/lib/messagingChannels';
+import { MessagingChannelIcon } from '@/components/contact/MessagingChannelLinks';
 
-interface Contact {
+interface Contact extends MessagingChannelValues {
   id: string;
   name?: string;
   avatar?: string;
@@ -47,6 +49,7 @@ export const QuickActionsSidebar: React.FC<QuickActionsSidebarProps> = ({
   const { initiateCall, setActiveCallId } = useCalls();
   const [showCallDialog, setShowCallDialog] = useState(false);
   const [activeCall, setActiveCall] = useState<CallRecord | null>(null);
+  const messagingChannels = resolveMessagingChannels(contact);
 
   const handleCall = () => {
     if (!contact.phone) return;
@@ -118,6 +121,19 @@ export const QuickActionsSidebar: React.FC<QuickActionsSidebarProps> = ({
             <MessageSquare className="h-4 w-4 mr-2" />
             Text
           </Button>
+          {messagingChannels.map((channel) => (
+            <Button
+              key={channel.key}
+              asChild
+              variant="outline"
+              className="w-full justify-start"
+            >
+              <a href={channel.url} target="_blank" rel="noopener noreferrer" title={channel.display}>
+                <MessagingChannelIcon channelKey={channel.key} className={`h-4 w-4 mr-2 ${channel.colorClass}`} />
+                {channel.label === 'Facebook Messenger' ? 'Messenger' : channel.label}
+              </a>
+            </Button>
+          ))}
         </CardContent>
       </Card>
 

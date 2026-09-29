@@ -14,6 +14,15 @@ const ICONS: Record<MessagingChannelKey, React.ElementType> = {
   instagram: Instagram,
 };
 
+/** Renders the brand-ish icon for a messaging channel. */
+export const MessagingChannelIcon: React.FC<{ channelKey: MessagingChannelKey; className?: string }> = ({
+  channelKey,
+  className,
+}) => {
+  const Icon = ICONS[channelKey];
+  return <Icon className={className} />;
+};
+
 interface MessagingChannelLinksProps {
   contact: MessagingChannelValues | null | undefined;
   /** Icon size in pixels. */
