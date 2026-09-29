@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
-import { HandHeart, Link2, EyeOff, MoreVertical, Plus, Trash2, Pencil, Sparkles, CheckCircle2 } from "lucide-react";
+import { HandHeart, Link2, EyeOff, MoreVertical, Plus, Trash2, Pencil, Sparkles, CheckCircle2, LayoutGrid, Table2, Search, X } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -44,6 +46,10 @@ export default function PrayerHubPage() {
   const seeding = useRef(false);
   const [anonOnly, setAnonOnly] = useState(false);
   const [editing, setEditing] = useState<Partial<Stage> | null>(null);
+  const [view, setView] = useState<"board" | "table">("board");
+  const [search, setSearch] = useState("");
+  const [kindFilter, setKindFilter] = useState("all");
+  const [stageFilter, setStageFilter] = useState("all");
 
   const stagesQ = useQuery({
     queryKey: ["prayer-stages", orgId],
@@ -88,28 +94,56 @@ export default function PrayerHubPage() {
     qc.invalidateQueries({ queryKey: ["prayer-stages", orgId] });
   };
 
-  // Requests without a step: answered ones go to the first answered step, the rest to the first step.
-  const columns = useMemo(() => {
+  const stageOf = (r: Req) => {
     const first = stages[0]?.id;
     const answered = stages.find((s) => s.is_answered_step)?.id ?? first;
+    if (r.stage_id && stages.some((s) => s.id === r.stage_id)) return r.stage_id;
+    return (r.kind === "praise" || r.status === "answered") ? answered : first;
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return requests.filter((r) => {
+      if (anonOnly && !r.is_anonymous) return false;
+      if (kindFilter !== "all" && r.kind !== kindFilter) return false;
+      if (stageFilter !== "all" && stageOf(r) !== stageFilter) return false;
+      if (q) {
+        const who = (r.is_anonymous ? "anonymous" : r.contactName || r.submitter_name || "").toLowerCase();
+        const text = [r.title, r.description, r.answer_description].filter(Boolean).join(" ").toLowerCase();
+        if (!who.includes(q) && !text.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [requests, anonOnly, kindFilter, stageFilter, search, stages]);
+
+  const hasFilters = anonOnly || kindFilter !== "all" || stageFilter !== "all" || !!search.trim();
+  const clearFilters = () => { setAnonOnly(false); setKindFilter("all"); setStageFilter("all"); setSearch(""); };
+
+  // Requests without a step: answered ones go to the first answered step, the rest to the first step.
+  const columns = useMemo(() => {
     const map = new Map<string, Req[]>(stages.map((s) => [s.id, []]));
-    requests.filter((r) => !anonOnly || r.is_anonymous).forEach((r) => {
-      let sid = r.stage_id && map.has(r.stage_id) ? r.stage_id : null;
-      if (!sid) sid = (r.kind === "praise" || r.status === "answered") ? answered : first;
-      if (sid) map.get(sid)!.push(r);
+    filtered.forEach((r) => {
+      const sid = stageOf(r);
+      if (sid && map.has(sid)) map.get(sid)!.push(r);
     });
     return map;
-  }, [stages, requests, anonOnly]);
+  }, [stages, filtered]);
 
-  const onDragEnd = async (res: DropResult) => {
-    if (!res.destination || res.destination.droppableId === res.source.droppableId) return;
-    const stage = stages.find((s) => s.id === res.destination!.droppableId)!;
+  const moveToStage = async (r: Req, stageId: string) => {
+    const stage = stages.find((s) => s.id === stageId);
+    if (!stage) return;
     const patch: any = { stage_id: stage.id };
     if (stage.is_answered_step) { patch.status = "answered"; patch.answered_at = new Date().toISOString(); }
     else { patch.status = "active"; }
-    qc.setQueryData(["prayer-hub", orgId], (old: Req[] = []) => old.map((r) => r.id === res.draggableId ? { ...r, ...patch } : r));
-    const { error } = await db.from("contact_prayer_requests").update(patch).eq("id", res.draggableId);
+    qc.setQueryData(["prayer-hub", orgId], (old: Req[] = []) => old.map((x) => x.id === r.id ? { ...x, ...patch } : x));
+    const { error } = await db.from("contact_prayer_requests").update(patch).eq("id", r.id);
     if (error) { toast.error("Couldn't move"); refresh(); }
+  };
+
+  const onDragEnd = async (res: DropResult) => {
+    if (!res.destination || res.destination.droppableId === res.source.droppableId) return;
+    const r = requests.find((x) => x.id === res.draggableId);
+    if (r) moveToStage(r, res.destination.droppableId);
   };
 
   const pray = async (r: Req) => {
@@ -148,17 +182,117 @@ export default function PrayerHubPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Prayer" showFlowIcon={false} showAddButton={false} />
-      <div className="flex items-center justify-between gap-3 px-5 py-3 border-b">
+      <div className="flex flex-wrap items-center gap-2 px-5 py-3 border-b">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search requests..." className="pl-9 w-[200px] h-9" />
+        </div>
+        <Select value={kindFilter} onValueChange={setKindFilter}>
+          <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="prayer">Prayer</SelectItem>
+            <SelectItem value="praise">Praise</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={stageFilter} onValueChange={setStageFilter}>
+          <SelectTrigger className="w-[160px] h-9"><SelectValue placeholder="Step" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All steps</SelectItem>
+            {stages.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <div className="flex items-center gap-2">
           <Switch id="anon" checked={anonOnly} onCheckedChange={setAnonOnly} />
           <Label htmlFor="anon" className="text-sm font-normal flex items-center gap-1"><EyeOff className="h-3.5 w-3.5" />Anonymous only</Label>
         </div>
-        <Button size="sm" variant="outline" onClick={copyLink}><Link2 className="mr-1 h-4 w-4" />Share prayer form</Button>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 gap-1"><X className="h-3.5 w-3.5" />Clear</Button>
+        )}
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex rounded-md border">
+            <button onClick={() => setView("board")} aria-label="Board view"
+              className={cn("px-2.5 h-9 flex items-center rounded-l-md", view === "board" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")}>
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button onClick={() => setView("table")} aria-label="Table view"
+              className={cn("px-2.5 h-9 flex items-center rounded-r-md", view === "table" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")}>
+              <Table2 className="h-4 w-4" />
+            </button>
+          </div>
+          <Button size="sm" variant="outline" onClick={copyLink}><Link2 className="mr-1 h-4 w-4" />Share prayer form</Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex gap-4 p-5">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-96 w-72 flex-shrink-0 rounded-xl" />)}</div>
+        ) : view === "table" ? (
+          <div className="p-5">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead>Person</TableHead>
+                    <TableHead className="w-[40%]">Request</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Step</TableHead>
+                    <TableHead>Prayed</TableHead>
+                    <TableHead>Added</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No requests match your filters.</TableCell></TableRow>
+                  )}
+                  {filtered.map((r) => {
+                    const who = r.is_anonymous ? "Anonymous" : r.contactName || r.submitter_name || "Someone";
+                    const sid = stageOf(r);
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell>
+                          <span className="flex items-center gap-1.5 font-medium">
+                            {r.is_anonymous && <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {!r.is_anonymous && r.contact_id
+                              ? <Link to={`/contacts/${r.contact_id}`} className="hover:underline">{who}</Link>
+                              : who}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          <span className="line-clamp-2 whitespace-pre-wrap">{[r.title, r.description].filter(Boolean).join(" — ")}</span>
+                        </TableCell>
+                        <TableCell>
+                          {r.kind === "praise"
+                            ? <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">Praise</span>
+                            : <span className="text-sm text-muted-foreground">Prayer</span>}
+                        </TableCell>
+                        <TableCell>
+                          <Select value={sid || ""} onValueChange={(v) => moveToStage(r, v)}>
+                            <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {stages.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>
+                                  <span className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />{s.name}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <button onClick={() => pray(r)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+                            <HandHeart className="h-3.5 w-3.5" />{r.prayers.length > 0 ? r.prayers.length : "Pray"}
+                          </button>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                          {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
             <div className="flex gap-4 p-5 min-h-full items-start">
