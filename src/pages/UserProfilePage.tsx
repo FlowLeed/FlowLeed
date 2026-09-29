@@ -44,6 +44,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useTwilioIntegration } from "@/hooks/useTwilioIntegration";
 import { useCalls, CallRecord } from "@/hooks/useCalls";
 import { CallStatusDialog } from "@/components/calls/CallStatusDialog";
+import { resolveMessagingChannels } from "@/lib/messagingChannels";
+import { MessagingChannelIcon } from "@/components/contact/MessagingChannelLinks";
 
 const getInitials = (name?: string | null) => {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
