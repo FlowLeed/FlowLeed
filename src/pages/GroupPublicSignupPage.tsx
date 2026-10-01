@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,22 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { useGroupDetails, useSubmitGroupSignup } from "@/hooks/useGroupSignup";
+import { ProviderError } from "@/errors/ProviderError";
 
-interface GroupDetails {
-  id: string;
-  name: string;
-  description: string | null;
-  group_type: string;
-  meeting_day: string | null;
-  meeting_time: string | null;
-  meeting_frequency: string | null;
-  location: string | null;
-  capacity: number | null;
-  member_count: number;
-  is_full: boolean;
-  image_url: string | null;
-  allow_public_signup: boolean;
-}
+const errorMessage = (err: unknown, fallback: string) =>
+  err instanceof ProviderError ? err.message : fallback;
 
 const groupTypeLabels: Record<string, string> = {
   small_group: "Small Group",
@@ -54,91 +43,33 @@ export default function GroupPublicSignupPage() {
   const fromSlug = searchParams.get("from");
   const backHref = fromSlug ? `/${fromSlug}/groups` : "/groups/directory";
   const backLabel = fromSlug ? "Back to Groups" : "Browse All Groups";
-  const [group, setGroup] = useState<GroupDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const { data: group, isLoading: loading, error: loadError } = useGroupDetails(token);
+  const signup = useSubmitGroupSignup();
+  const submitting = signup.isPending;
+  const submitted = signup.isSuccess;
+  const error = !token
+    ? "Invalid signup link"
+    : loadError
+      ? errorMessage(loadError, "Failed to load group details")
+      : signup.error
+        ? errorMessage(signup.error, "Failed to submit signup request")
+        : null;
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
   });
 
-  useEffect(() => {
-    const fetchGroup = async () => {
-      if (!token) {
-        setError("Invalid signup link");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `https://lghamvpolwebtjwaxned.supabase.co/functions/v1/group-public-signup?token=${token}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          setError(result.error || "Group not found");
-          return;
-        }
-
-        setGroup(result.group);
-      } catch (err) {
-        console.error("Error fetching group:", err);
-        setError("Failed to load group details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGroup();
-  }, [token]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !formData.name || !formData.email) return;
 
-    setSubmitting(true);
-    try {
-      const response = await fetch(
-        `https://lghamvpolwebtjwaxned.supabase.co/functions/v1/group-public-signup`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            token,
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone || null,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        setError(result.error || "Failed to submit signup");
-        return;
-      }
-
-      setSubmitted(true);
-    } catch (err) {
-      console.error("Error submitting signup:", err);
-      setError("Failed to submit signup request");
-    } finally {
-      setSubmitting(false);
-    }
+    signup.mutate({
+      token,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone || null,
+    });
   };
 
   if (loading) {

@@ -7,24 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, XCircle, Users, Mail } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-
-interface InvitationData {
-  id: string;
-  organization_id: string;
-  email: string;
-  role: string;
-  organization_name: string;
-  inviter_name: string;
-  expires_at: string;
-  accepted_at: string | null;
-}
+import type { InvitationData } from '@shared/models/InvitationData';
+import { getInvitationDetails } from '@/api/invitations';
+import { ProviderError } from '@/errors/ProviderError';
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
   const { toast } = useToast();
-  
+
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
@@ -48,15 +40,14 @@ export default function InvitePage() {
     try {
       // Robust token extraction - handles Resend tracking URLs, query params, etc.
       let extractedToken = token;
-      
       if (!extractedToken) {
         const url = window.location.href;
         console.log('No param token, extracting from URL:', url);
-        
+
         // Extract UUID from URL (handles /invite/TOKEN/clicks/... or /invite/TOKEN?...)
         const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
         const match = url.match(uuidRegex);
-        
+
         if (match) {
           extractedToken = match[0];
           console.log('Extracted token from URL:', extractedToken);
@@ -69,95 +60,46 @@ export default function InvitePage() {
       } else {
         console.log('Using token from route param:', extractedToken);
       }
-      
-      // First try via Supabase invoke (POST)
-      console.log('Calling get-invitation-details with token:', extractedToken);
-      const { data: invitation, error: invokeError } = await supabase.functions.invoke('get-invitation-details', {
-        body: { token: extractedToken }
-      });
 
-      console.log('Invoke result:', { data: invitation, error: invokeError });
+      const invitationData = await getInvitationDetails(extractedToken);
 
-      let invitationDataRaw: any = invitation;
-
-      if (invokeError || !invitationDataRaw) {
-        console.warn('Invoke failed or returned empty, falling back to GET fetch...', invokeError);
-        // Fallback: direct GET call (helps in environments where invoke is blocked/misconfigured)
-        const resp = await fetch(`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/get-invitation-details?token=${extractedToken}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        
-        console.log('GET fetch response:', resp.status, resp.statusText);
-        
-        if (!resp.ok) {
-          const errText = await resp.text();
-          console.error('GET fetch failed:', resp.status, errText);
-          setError('Invalid or expired invitation link.');
-          setLoading(false);
-          return;
-        }
-        invitationDataRaw = await resp.json();
-        console.log('GET fetch data:', invitationDataRaw);
-      }
-
-      if (!invitationDataRaw) {
-        console.error('No invitation data returned after both attempts');
-        setError('Invalid or expired invitation link.');
-        setLoading(false);
-        return;
-      }
-
-      console.log('Invitation data received:', invitationDataRaw);
-
-      if (invitationDataRaw.accepted_at) {
+      if (invitationData.accepted_at) {
         console.log('Invitation already accepted');
-        
+
         // If user is signed in with the invited email, treat as success
         const { data: { user } } = await supabase.auth.getUser();
-        if (user && user.email?.toLowerCase() === invitationDataRaw.email.toLowerCase()) {
+        if (user && user.email?.toLowerCase() === invitationData.email.toLowerCase()) {
           toast({
             title: "Already a Member",
-            description: `You're already part of ${invitationDataRaw.organization_name}`,
+            description: `You're already part of ${invitationData.organization_name}`,
           });
           setAcceptedComplete(true);
           setTimeout(() => navigate('/dashboard'), 500);
           return;
         }
-        
+
         // Otherwise, show error
         setError('This invitation has already been accepted.');
         return;
       }
 
-      if (new Date(invitationDataRaw.expires_at) < new Date()) {
+      if (new Date(invitationData.expires_at) < new Date()) {
         setError('This invitation has expired.');
         return;
       }
-
-      const invitationData: InvitationData = {
-        id: invitationDataRaw.id,
-        organization_id: invitationDataRaw.organization_id,
-        email: invitationDataRaw.email,
-        role: invitationDataRaw.role,
-        organization_name: invitationDataRaw.organization_name,
-        inviter_name: invitationDataRaw.inviter_name,
-        expires_at: invitationDataRaw.expires_at,
-        accepted_at: invitationDataRaw.accepted_at
-      };
 
       setInvitation(invitationData);
       setEmail(invitationData.email);
 
       // If a user already exists with this email, default to sign-in mode
-      if (invitationDataRaw.user_exists) {
+      if (invitationData.user_exists) {
         setAuthMode('signin');
       }
 
       // Check if user needs to create an account or sign in
       if (!user || user.email !== invitationData.email) {
         setNeedsAccount(true);
-        
+
         // If user is logged in but with wrong email, show message
         if (user && user.email !== invitationData.email) {
           setError(`You are currently signed in as ${user.email}, but this invitation is for ${invitationData.email}. Please sign out and sign in with the correct email.`);
@@ -166,7 +108,7 @@ export default function InvitePage() {
 
     } catch (error) {
       console.error('Error in fetchInvitation:', error);
-      setError('Failed to load invitation details.');
+      setError(error instanceof ProviderError ? error.message : 'Failed to load invitation details.');
     } finally {
       setLoading(false);
     }
@@ -214,17 +156,17 @@ export default function InvitePage() {
 
         // Success! User created and invitation accepted
         setSignupComplete(true);
-        
+
         toast({
           title: "Welcome!",
           description: "Your account has been created and you've joined the organization.",
         });
-        
+
         // Redirect to dashboard immediately without refetching
         setTimeout(() => navigate('/'), 500);
       } else {
         const { error } = await signIn(email, password);
-        
+
         if (error) {
           console.error('Sign in error:', error);
           setAcceptError(error.message || "Failed to sign in. Please try again.");
@@ -241,7 +183,7 @@ export default function InvitePage() {
         console.log('Sign in successful, waiting for session to propagate...');
         // Small delay to ensure session is fully propagated to the client
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         console.log('Session ready, accepting invitation...');
         // After successful sign in, accept the invitation
         await acceptInvitation();
@@ -280,7 +222,7 @@ export default function InvitePage() {
       if (error) {
         console.error('Network/auth error accepting invitation:', error);
         const errorMessage = error.message || error.toString();
-        
+
         if (errorMessage.includes('session') || errorMessage.includes('auth')) {
           setAcceptError('Authentication session expired. Please try signing in again.');
         } else {
@@ -292,13 +234,13 @@ export default function InvitePage() {
       if (data?.error) {
         console.error('Server error:', data.error);
         const errorMsg = data.error.toLowerCase();
-        
+
         // Truly invalid cases - show global error
         if (errorMsg.includes('invalid') || errorMsg.includes('expired')) {
           setError(data.error);
           return;
         }
-        
+
         // Already a member or already accepted - treat as success
         if (errorMsg.includes('already a member') || data.success) {
           console.log('User already a member, treating as success');
@@ -311,7 +253,7 @@ export default function InvitePage() {
           setTimeout(() => navigate('/dashboard'), 300);
           return;
         }
-        
+
         // Email mismatch or other retryable errors - inline
         setAcceptError(data.error);
         return;
@@ -321,7 +263,7 @@ export default function InvitePage() {
       console.log('Invitation accepted successfully:', data);
       setAcceptedComplete(true);
       localStorage.setItem('selectedOrganizationId', invitation.organization_id);
-      
+
       toast({
         title: "Success!",
         description: data.message || "Welcome to the team!",
@@ -361,7 +303,7 @@ export default function InvitePage() {
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
-            
+
             {import.meta.env.DEV && (
               <div className="mt-4 p-3 bg-gray-100 rounded-md text-xs font-mono space-y-1">
                 <div className="font-semibold mb-2 text-gray-700">Debug Info:</div>
@@ -369,9 +311,9 @@ export default function InvitePage() {
                 <div className="text-gray-600">Full URL: {window.location.href}</div>
               </div>
             )}
-            
-            <Button 
-              className="w-full mt-4" 
+
+            <Button
+              className="w-full mt-4"
               onClick={() => navigate('/')}
             >
               Go to Home
@@ -404,16 +346,16 @@ export default function InvitePage() {
                 <AlertDescription>{acceptError}</AlertDescription>
               </Alert>
             )}
-            
+
             <div className="text-center space-y-2">
               <p><strong>Organization:</strong> {invitation.organization_name}</p>
               <p><strong>Invited by:</strong> {invitation.inviter_name}</p>
               <p><strong>Role:</strong> {invitation.role}</p>
               <p><strong>Email:</strong> {invitation.email}</p>
             </div>
-            
-            <Button 
-              onClick={acceptInvitation} 
+
+            <Button
+              onClick={acceptInvitation}
               disabled={accepting}
               className="w-full"
             >
@@ -517,8 +459,8 @@ export default function InvitePage() {
               onClick={() => setAuthMode(authMode === 'signin' ? 'signup' : 'signin')}
               className="text-sm text-blue-600 hover:underline"
             >
-              {authMode === 'signin' 
-                ? "Don't have an account? Create one" 
+              {authMode === 'signin'
+                ? "Don't have an account? Create one"
                 : "Already have an account? Sign in"
               }
             </button>

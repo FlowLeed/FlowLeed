@@ -11,6 +11,7 @@ import { Users, MapPin, Calendar, Clock, Search, ArrowRight } from "lucide-react
 import { GroupAvatar } from "@/components/groups/GroupAvatar";
 import { useGroupTypes } from "@/hooks/useGroupTypes";
 import { useGroupSettingsPublic } from "@/hooks/useGroupSettings";
+import { getOrganizationLogoUrl } from "@/api/organizations";
 interface PublicGroup {
   id: string;
   name: string;
@@ -125,7 +126,7 @@ export default function GroupDirectoryPage() {
         <div className="max-w-4xl mx-auto text-center">
           {slug && org?.logo_url && (
             <img
-              src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
+              src={getOrganizationLogoUrl(slug)}
               alt={org?.name ? `${org.name} logo` : "Organization logo"}
               className="mx-auto mb-6 h-20 w-auto object-contain"
             />

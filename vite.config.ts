@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Request/response types shared with the Edge Functions (type-only imports).
+      "@shared/models": path.resolve(__dirname, "./supabase/functions/_shared/models"),
     },
   },
 }));
