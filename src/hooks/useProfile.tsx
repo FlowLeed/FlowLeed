@@ -16,6 +16,7 @@ interface Organization {
   id: string;
   name: string;
   slug: string;
+  logo_url: string | null;
 }
 
 interface OrganizationMembership {
@@ -55,7 +56,8 @@ export const useProfile = () => {
             organizations (
               id,
               name,
-              slug
+              slug,
+              logo_url
             )
           `)
           .eq('user_id', userId)
