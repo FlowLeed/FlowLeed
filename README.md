@@ -96,6 +96,10 @@ How a chat message is handled:
 4. Tools that change records only create a pending request. The change is saved after the user confirms it in the chat.
 5. The final answer is streamed back over server-sent events (SSE). Any person the tools didn't return is removed first.
 
+How the database, storage, cron jobs and secrets are set up, how they were rebuilt from production, and what each environment needs are all in [supabase/README.md](supabase/README.md).
+
+How the app is deployed to staging (GitHub Actions, then Supabase, then Cloudflare), and the GitHub secrets and variables it needs, are in [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Required environment variables
 
 ### Web app (`.env.local` in the project root)
@@ -121,7 +125,7 @@ Copy `supabase/functions/.env.example` as a starting point.
 | `RESEND_API_KEY` | No | Sends email (invitations, digests, password resets). |
 | `PCO_OAUTH_CLIENT_ID`, `PCO_OAUTH_CLIENT_SECRET` | No | Lets a church connect its Planning Center account. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | No | Browser push notifications. |
-| `CRON_SECRET` | No | Protects Edge Functions that only scheduled jobs may call. |
+| `CRON_SECRET` | Yes | Shared secret that the scheduled jobs send to the Edge Functions they call. Locally `local-cron-secret`, which must match the Vault value in `supabase/seed.sql`. See [supabase/README.md](supabase/README.md#secrets-per-environment). |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | No | Texting and calling, currently paused. |
 
 You don't set `SUPABASE_URL`, `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY` yourself. The Supabase CLI and hosted Supabase inject them.
@@ -144,13 +148,13 @@ npm install
 supabase start
 ```
 
-`supabase start` runs Postgres, Auth, Storage and Studio in Docker. It applies the schema in `supabase/migrations/` and the storage buckets in `supabase/seed.sql`. Run `supabase status` to get the API URL and the anon key.
+`supabase start` runs Postgres, Auth, Storage and Studio in Docker. It applies the migrations in `supabase/migrations/` (the schema, storage buckets and cron jobs) and `supabase/seed.sql` (local Vault secrets). Run `supabase status` to get the API URL and the anon key.
 
 ### 2. Add your keys
 
 1. Create `.env.local` in the project root with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 2. Copy `supabase/functions/.env.example` to `supabase/functions/.env.local`.
-3. Fill in at least `GLOO_CLIENT_ID`, `GLOO_CLIENT_SECRET`, `LOVABLE_API_KEY`, `SITE_URL` and `TOKEN_SALT`.
+3. Fill in at least `GLOO_CLIENT_ID`, `GLOO_CLIENT_SECRET`, `LOVABLE_API_KEY`, `SITE_URL` and `TOKEN_SALT`, and set `CRON_SECRET=local-cron-secret`.
 
 ### 3. Run the Edge Functions and the app (two terminals)
 
