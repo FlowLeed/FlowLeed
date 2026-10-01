@@ -112,7 +112,6 @@ async function alreadySuggested(
 async function askAgent(
   candidates: Candidate[],
   allowedActions: string[],
-  apiKey: string,
 ): Promise<any[]> {
   const system = `You are a pastoral care AI copilot. For each contact + signal, propose ONE concrete follow-up action a pastor should approve. You may only suggest actions from this list: ${allowedActions.join(", ")}. Never invent contact details. Keep reasoning under 2 sentences. Confidence is 0-1.`;
 
@@ -129,7 +128,7 @@ async function askAgent(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${await getGlooAccessToken()}`,
     },
     body: JSON.stringify({
       model: MODEL,
@@ -154,7 +153,7 @@ async function askAgent(
   }
 }
 
-async function runForOrg(sb: ReturnType<typeof createClient>, orgId: string, apiKey: string) {
+async function runForOrg(sb: ReturnType<typeof createClient>, orgId: string) {
   const { data: cfg } = await sb
     .from("signal_agent_configs")
     .select("*")
@@ -195,7 +194,7 @@ async function runForOrg(sb: ReturnType<typeof createClient>, orgId: string, api
     const batch = fresh.slice(i, i + 15);
     let suggestions: any[] = [];
     try {
-      suggestions = await askAgent(batch, allowed, apiKey);
+      suggestions = await askAgent(batch, allowed);
     } catch (e) {
       console.error("agent call failed", e);
       continue;
@@ -230,14 +229,6 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -261,7 +252,7 @@ Deno.serve(async (req) => {
     const results: any[] = [];
     for (const id of orgIds) {
       try {
-        const r = await runForOrg(sb, id, apiKey);
+        const r = await runForOrg(sb, id);
         results.push({ organization_id: id, ...r });
       } catch (e) {
         results.push({ organization_id: id, error: (e as Error).message });

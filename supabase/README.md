@@ -185,6 +185,39 @@ select id, status_code, content, error_msg from net._http_response order by id d
 
 `pco-sync-processor` runs every minute, so you'll see it in the functions terminal once a minute.
 
+## Testing the AI features
+
+The AI features use three providers. Each has its own Edge Function secrets:
+- **Locally,** put them in `supabase/functions/.env.local`, then restart `supabase functions serve`. A running server doesn't pick up new values.
+- **On staging,** add them to the `staging` GitHub environment. The next deploy sets them.
+
+**1. Check the keys first.** The script makes one small request per provider, never prints a key, and skips any provider whose key isn't set:
+
+```bash
+deno run --allow-net --allow-env --env-file=supabase/functions/.env.local scripts/check-ai-providers.ts
+```
+
+To check staging keys before adding them to GitHub, point `--env-file` at a temporary file **outside** the repository, then delete it.
+
+**2. Then try each feature:**
+
+| Provider (secret) | Feature | Where in the app | Edge Functions |
+|---|---|---|---|
+| Gloo AI (`GLOO_CLIENT_ID`, `GLOO_CLIENT_SECRET`) | Care Agent | Dashboard chat | `dashboard-ai-chat`, `generate-chat-title` |
+| Gloo AI | Signal Agent | **Signals → Agent → Run agent now** | `signal-agent-run` |
+| Gloo AI | Suggestions and message drafts for a person | A person's profile | `generate-contact-suggestions`, `generate-contact-message` |
+| Gloo AI | Flow and group description suggestions | Flow and group editors | `generate-flow-description`, `generate-group-description` |
+| Supadata (`SUPADATA_API_KEY`) | Video transcripts | **Content**: add a YouTube video | `content-ingest` |
+| Lovable AI (`LOVABLE_API_KEY`) | Embeddings | Ingesting a video, and **Content → Search** | `content-ingest`, `content-search` |
+| Gloo AI | Transcript analysis | Runs on its own after an ingest | `content-analyze` |
+| Lovable AI and Gloo AI | Questions about content | A video's chat | `content-ask`, `content-chat`: embeddings from Lovable AI, answers from Gloo |
+| Lovable AI | Story drafter | A story: **Draft from transcript** | `content-story-draft` |
+
+**Where to look when something fails:**
+- **Locally:** the `supabase functions serve` terminal.
+- **On staging:** Supabase dashboard → **Edge Functions** → the function → **Logs**.
+- **Supadata:** a successful ingest doesn't prove Supadata works. When Supadata fails, `content-ingest` logs `[supadata] non-ok …` and falls back to reading captions from YouTube directly. Use the check script to confirm the key.
+
 ## Making changes
 
 - **Schema change:**

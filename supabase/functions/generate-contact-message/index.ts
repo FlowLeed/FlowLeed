@@ -23,9 +23,6 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-
-    // (Gloo auth handled in getGlooAccessToken)
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 

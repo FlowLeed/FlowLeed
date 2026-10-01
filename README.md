@@ -155,6 +155,11 @@ supabase start
 1. Create `.env.local` in the project root with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 2. Copy `supabase/functions/.env.example` to `supabase/functions/.env.local`.
 3. Fill in at least `GLOO_CLIENT_ID`, `GLOO_CLIENT_SECRET`, `LOVABLE_API_KEY`, `SITE_URL` and `TOKEN_SALT`, and set `CRON_SECRET=local-cron-secret`.
+4. Check that the AI keys work. This needs [Deno](https://deno.com/), and it never prints a key:
+   ```bash
+   deno run --allow-net --allow-env --env-file=supabase/functions/.env.local scripts/check-ai-providers.ts
+   ```
+   Which feature uses which key, and how to test each one: [supabase/README.md → Testing the AI features](supabase/README.md#testing-the-ai-features).
 
 ### 3. Run the Edge Functions and the app (two terminals)
 
