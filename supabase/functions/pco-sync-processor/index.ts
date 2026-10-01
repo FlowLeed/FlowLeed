@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { hasCronSecret } from '../_shared/cron-auth.ts';
 import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 import {
   groupMappingsByMoment,
@@ -70,6 +71,19 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // pg_cron sends the cron secret. The app also calls this as a signed-in user right after a
+    // mapping is saved, so a valid user token is accepted too.
+    if (!hasCronSecret(req)) {
+      const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+      const { data: userData } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
+      if (!userData.user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     console.log('Processing next pending chunks from queue...');
 

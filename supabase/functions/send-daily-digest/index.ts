@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { rejectUnlessCron } from "../_shared/cron-auth.ts";
 import { Resend } from "resend";
 
 const corsHeaders = {
@@ -151,6 +152,9 @@ const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const unauthorized = rejectUnlessCron(req, corsHeaders);
+  if (unauthorized) return unauthorized;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

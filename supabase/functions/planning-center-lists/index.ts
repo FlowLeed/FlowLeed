@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { rejectUnlessCron } from '../_shared/cron-auth.ts';
 import { syncDemographicData } from "../_shared/pco-demographics.ts";
 import { getPcoAuthHeader, getUserPcoAuthHeader } from "../_shared/pco-auth.ts";
 import { pcoFetch, sleep, PCO_PAGE_DELAY, PcoRateLimitError } from "./pco-fetch.ts";
@@ -20,8 +21,10 @@ Deno.serve(async (req) => {
   try {
     const { action, integrationId, listMappings } = await req.json();
 
-    // Handle autoSync BEFORE authentication (called by cron with anon key)
+    // autoSync comes from pg_cron, which sends the cron secret instead of a user token
     if (action === 'autoSync') {
+      const unauthorized = rejectUnlessCron(req, corsHeaders);
+      if (unauthorized) return unauthorized;
       console.log('Auto-sync triggered by cron job');
       return await autoSyncAllMappings();
     }

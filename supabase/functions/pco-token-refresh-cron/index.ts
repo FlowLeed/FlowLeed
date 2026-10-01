@@ -1,6 +1,7 @@
 // Pre-refreshes PCO OAuth tokens (org integrations + user connections)
 // whose access_token expires within 24 hours. Runs daily via pg_cron.
 import { createClient } from '@supabase/supabase-js';
+import { rejectUnlessCron } from '../_shared/cron-auth.ts';
 import { refreshOrgToken, refreshUserToken } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {
@@ -10,6 +11,9 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  const unauthorized = rejectUnlessCron(req, corsHeaders);
+  if (unauthorized) return unauthorized;
 
   try {
     const supabase = createClient(

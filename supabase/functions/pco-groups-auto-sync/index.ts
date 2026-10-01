@@ -1,6 +1,7 @@
 // Cron-triggered orchestrator: runs pco-sync-groups + pco-sync-group-attendance
 // for every active PCO integration whose cadence is due.
 import { createClient } from '@supabase/supabase-js';
+import { rejectUnlessCron } from '../_shared/cron-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,9 @@ const MAX_ATT_ROUNDS = 40;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  const unauthorized = rejectUnlessCron(req, corsHeaders);
+  if (unauthorized) return unauthorized;
 
   try {
     const supabase = createClient(
