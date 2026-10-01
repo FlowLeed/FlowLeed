@@ -1,7 +1,7 @@
 // Content module: AI-grounded answer over transcript chunks.
 // Returns a short narrative answer with quoted snippets and a list of source
 // videos with timestamps, similar to a RAG-style answer card.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { createClient } from "@supabase/supabase-js";
 import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {

@@ -1,7 +1,7 @@
 // Content module: RAG chat. Streams a response with citations.
 // Embeds the query, fetches top-k matching chunks via match_content_chunks,
 // then streams a model response prefixed by a JSON header of citations.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { createClient } from "@supabase/supabase-js";
 import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {

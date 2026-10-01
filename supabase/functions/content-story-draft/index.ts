@@ -1,5 +1,5 @@
 // Drafts a readable story (title, summary, blocks) from a video's transcript.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { createClient } from "@supabase/supabase-js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",

@@ -1,7 +1,7 @@
 // Content module: ingest a YouTube URL.
 // Creates the content_videos row, fetches metadata + transcript,
 // chunks, embeds, then analyzes. Runs sequentially inline.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,6 +77,8 @@ async function fetchTranscriptViaSupadata(youtubeId: string): Promise<Transcript
   }
 }
 
+// TODO: reconsider the decision to  a fallback to innertube,
+// Conside moving key to env
 async function fetchTranscriptViaInnertube(youtubeId: string): Promise<TranscriptSegment[] | null> {
   // Lightweight Innertube fallback: rotate through web client and parse caption tracks
   // We attempt the youtubei/v1/player endpoint and read captionTracks baseUrl.

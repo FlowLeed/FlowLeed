@@ -1,6 +1,6 @@
 // Signal Agent — reviews watched signals and drops suggestions into the
 // signal_agent_suggestions queue. Never executes actions itself.
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {

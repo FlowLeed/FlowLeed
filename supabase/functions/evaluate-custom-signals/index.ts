@@ -1,7 +1,7 @@
 // Evaluate custom signals for an org: match contacts against rules and
 // upsert results into custom_signal_contacts (setting cleared_at when a
 // contact no longer matches).
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

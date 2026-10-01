@@ -1,7 +1,7 @@
 // Seeds a fictional "sample church" into an organization so a new user can explore
 // FlowLeed before connecting Planning Center or importing anything.
 // Everything created here is flagged is_demo = true and removed by demo-data-clear.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

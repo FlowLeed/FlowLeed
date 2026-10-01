@@ -1,6 +1,6 @@
 // Pre-refreshes PCO OAuth tokens (org integrations + user connections)
 // whose access_token expires within 24 hours. Runs daily via pg_cron.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 import { refreshOrgToken, refreshUserToken } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {

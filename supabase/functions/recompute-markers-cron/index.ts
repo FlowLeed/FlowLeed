@@ -1,6 +1,6 @@
 // Nightly safety net: recompute signal (marker) results for every organization
 // that has contacts, so counts never go stale if an import is skipped.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

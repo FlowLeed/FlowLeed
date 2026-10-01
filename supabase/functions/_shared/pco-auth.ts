@@ -6,7 +6,7 @@
 // refreshes per integration row; on invalid_grant the integration is
 // flipped to status='reauth_required'.
 
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const PCO_TOKEN_URL = 'https://api.planningcenteronline.com/oauth/token';
 const REFRESH_SKEW_SECONDS = 60;

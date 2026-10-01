@@ -1,7 +1,7 @@
 // Runs a Church Health Audit for the caller's organization.
 // Body: { organizationId: string, reportId?: string }
 // If reportId is provided we resume/refresh that report; otherwise create a new one.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {

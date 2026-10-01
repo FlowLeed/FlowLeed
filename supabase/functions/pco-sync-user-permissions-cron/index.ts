@@ -2,7 +2,7 @@
 // an active personal PCO connection. Triggered by pg_cron via net.http_post.
 // No JWT required — protected by the CRON_SECRET header.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 import { getUserPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {

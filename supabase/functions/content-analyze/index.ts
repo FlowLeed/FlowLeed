@@ -1,6 +1,6 @@
 // Content module: analyze a video using its transcript chunks.
 // Writes a content_analyses row and sets the video to ready.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { createClient } from "@supabase/supabase-js";
 import { getGlooAccessToken } from "../_shared/gloo.ts";
 
 const corsHeaders = {

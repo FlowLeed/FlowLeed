@@ -1,6 +1,6 @@
 // Cron-triggered orchestrator: runs pco-sync-groups + pco-sync-group-attendance
 // for every active PCO integration whose cadence is due.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
