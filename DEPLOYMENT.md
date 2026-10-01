@@ -47,7 +47,7 @@ The web app goes live last, so it never runs against a database that hasn't been
 
 Run this once in the staging project's SQL editor.
 - The `cron_secret` value must be **identical** to the `CRON_SECRET` GitHub secret below.
-- Without these secrets, the cron jobs fail with "Vault secrets project_url and cron_secret are required…".
+- Without these secrets, the cron jobs fail with "Vault secrets project_url and cron_secret are required…", and push notifications aren't sent.
 
 ```sql
 select vault.create_secret('https://<staging-ref>.supabase.co', 'project_url');
@@ -92,7 +92,7 @@ All of these go on the **`staging`** environment.
 | `SUPABASE_DB_PASSWORD` | Yes | `supabase db push` | Chosen when the project was created; reset under **Project Settings → Database** |
 | `CLOUDFLARE_API_TOKEN` | Yes | `wrangler deploy` | Step 4 |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes | `wrangler deploy` | Step 4 |
-| `CRON_SECRET` | Yes | Edge Function secret; the cron-called functions check it | A long random value, identical to the `cron_secret` Vault secret (step 2) |
+| `CRON_SECRET` | Yes | Edge Function secret; the cron-called functions and `send-push` check it | A long random value, identical to the `cron_secret` Vault secret (step 2) |
 | `TOKEN_SALT` | Yes | Edge Function secret; password-reset and email-verification tokens | A long random value |
 | `GLOO_CLIENT_ID` | Yes | Edge Function secret; Gloo AI | Gloo AI developer portal |
 | `GLOO_CLIENT_SECRET` | Yes | Edge Function secret; Gloo AI | Gloo AI developer portal |

@@ -16,6 +16,7 @@ For running the whole app locally, see [How to run the demo](../README.md#how-to
 | `migrations/20260930000000_baseline.sql` | The whole production schema as one migration. Every environment starts from here. |
 | `migrations/20261001140000_storage_buckets_and_policies.sql` | The five storage buckets and the 20 `storage.objects` policies. |
 | `migrations/20261001150000_schedule_cron_jobs_from_vault.sql` | The 13 pg_cron jobs, and the helper they use to call Edge Functions. |
+| `migrations/20261001160000_push_notifications_from_vault.sql` | Points the push-notification trigger at the right project, using the same helper and Vault secrets. |
 | `migrations_archive/` | The 233 original Lovable migrations, unchanged, kept for history. **Never applied.** |
 | `seed.sql` | Local-only: the local Vault values. Runs on `supabase db reset` and the first `supabase start`, never on hosted projects. |
 | `functions/` | Edge Functions (Deno). Each one has its own `deno.json` with pinned dependencies. |
@@ -113,15 +114,30 @@ Now each one checks the `x-cron-secret` header with `_shared/cron-auth.ts`:
 | `content-retry-failed`, `pco-checkin-auto-sync`, `pco-groups-auto-sync`, `pco-token-refresh-cron`, `pco-sync-user-permissions-cron`, `recompute-markers-cron`, `recurring-flow-processor`, `send-daily-digest` | Cron only |
 | `pco-sync-processor` | Cron, or a signed-in user. The app calls it right after a Planning Center mapping is saved. |
 | `planning-center-lists` | Cron for the `autoSync` action only. Every other action already requires a signed-in user. |
+| `send-push` | The push-notification trigger in the database, and `send-test-push`. See step 7. |
+
+### 7. Push notifications
+
+When a row is inserted into `public.notifications`, the trigger `trg_notify_push_on_notification` runs `notify_push_on_notification()`. That function calls the `send-push` Edge Function to send a browser push.
+
+As dumped from production, it had two problems:
+- **Production's URL was written into it,** so every environment pushed through production. Locally and on staging it skipped silently, because it also needed a `service_role_key` Vault secret.
+- **`send-push` accepted any JWT for the project,** including the public anon key built into the web app. Anyone could push any message to any user.
+
+`migrations/20261001160000_push_notifications_from_vault.sql` fixes both:
+- The trigger now calls `send-push` through `private.invoke_edge_function()`, like the cron jobs.
+- `send-push` checks the cron secret and has `verify_jwt = false`. `send-test-push` sends the secret when it calls `send-push`.
+- A push that can't be sent is logged as a warning. It never stops the notification from being saved.
+
+The `service_role_key` Vault secret is no longer used.
 
 ## Secrets per environment
 
 | Secret | Kind | Used by | Local value | Staging and production |
 |---|---|---|---|---|
-| `project_url` | Vault | Cron jobs | `http://host.docker.internal:54321` (from `seed.sql`) | `https://<project-ref>.supabase.co` |
-| `cron_secret` | Vault | Cron jobs | `local-cron-secret` (from `seed.sql`) | A long random value, **identical to `CRON_SECRET`** |
-| `CRON_SECRET` | Edge Function secret | The 10 cron-called functions | `local-cron-secret` in `functions/.env.local` | `supabase secrets set CRON_SECRET=…` |
-| `service_role_key` | Vault | `notify_push_on_notification()` (push notifications) | Not set, so pushes are skipped | Production already has it |
+| `project_url` | Vault | Cron jobs and push notifications | `http://host.docker.internal:54321` (from `seed.sql`) | `https://<project-ref>.supabase.co` |
+| `cron_secret` | Vault | Cron jobs and push notifications | `local-cron-secret` (from `seed.sql`) | A long random value, **identical to `CRON_SECRET`** |
+| `CRON_SECRET` | Edge Function secret | The 10 cron-called functions and `send-push` | `local-cron-secret` in `functions/.env.local` | `supabase secrets set CRON_SECRET=…` |
 
 `host.docker.internal` is how the Postgres container reaches the Supabase API on your machine. From inside the container, `localhost` would mean the container itself.
 
@@ -155,7 +171,9 @@ supabase secrets set CRON_SECRET=<new value> --project-ref <project-ref>
 | Rebuild from scratch | `supabase db reset` | **Deletes all local data.** Then reapplies migrations and `seed.sql`. |
 | Run Edge Functions with your local secrets | `supabase functions serve --env-file supabase/functions/.env.local` | |
 
-`CRON_SECRET` in `functions/.env.local` must be `local-cron-secret`, the Vault value from `seed.sql`. Otherwise every cron call gets a 401.
+`CRON_SECRET` in `functions/.env.local` must be `local-cron-secret`, the Vault value from `seed.sql`. Otherwise every cron call and push gets a 401.
+
+The functions that `supabase start` serves on its own don't read `functions/.env.local`, so they have no `CRON_SECRET` and refuse those calls too. Run `supabase functions serve --env-file supabase/functions/.env.local` whenever you need cron jobs or push notifications locally.
 
 To check the cron jobs, run these in Studio (http://127.0.0.1:54323) or psql:
 
@@ -198,31 +216,27 @@ The staging pipeline is set up. See [DEPLOYMENT.md](../DEPLOYMENT.md). Every pus
 
 **Before the first deploy to staging:**
 
-1. **Create the Vault secrets and the GitHub secrets and variables.** See [DEPLOYMENT.md](../DEPLOYMENT.md#one-time-setup), steps 2 and 5. Without the Vault secrets, every cron job fails with "Vault secrets project_url and cron_secret are required…".
-2. **Leave `service_role_key` out of staging's Vault for now.**
-   - `notify_push_on_notification()` still has the production URL written into it.
-   - It skips sending when `service_role_key` isn't in Vault, so staging is safe as long as that secret is missing.
-   - Change the function to read `project_url` from Vault before adding the secret.
+1. **Create the Vault secrets and the GitHub secrets and variables.** See [DEPLOYMENT.md](../DEPLOYMENT.md#one-time-setup), steps 2 and 5. Without the Vault secrets, every cron job fails with "Vault secrets project_url and cron_secret are required…", and push notifications aren't sent.
 
 **Before turning on production:**
 
-3. **Repair production's migration history** once, before the first `db push` to production:
+2. **Repair production's migration history** once, before the first `db push` to production:
    - mark the baseline as applied: `supabase migration repair --status applied 20260930000000`;
    - mark the archived versions as reverted, if `supabase migration list` shows them.
    - `supabase db diff --linked` should then show no differences.
-4. **Rotate the production cron secret.**
+3. **Rotate the production cron secret.**
    - The current value is written in plain text in production's cron commands and run history, and it was shared in a chat.
    - Creating the new `cron_secret` and `CRON_SECRET` with a new value is the rotation.
-   - Once the new jobs are running, delete the old `pco_cron_secret` Vault entry.
-5. **Check `verify_jwt` for the other functions.**
-   - `config.toml` now lists 43 of the 74 functions. The CLI deploys the other 31 with `verify_jwt = true`.
+   - Once the new jobs are running, delete the old `pco_cron_secret` Vault entry, and the `service_role_key` entry, which is no longer used.
+4. **Check `verify_jwt` for the other functions.**
+   - `config.toml` now lists 44 of the 74 functions. The CLI deploys the other 30 with `verify_jwt = true`.
    - Compare with production's current settings first.
-6. **Compare production's storage policies** with the migration. Run `select policyname from pg_policies where schemaname = 'storage' and tablename = 'objects';`.
+5. **Compare production's storage policies** with the migration. Run `select policyname from pg_policies where schemaname = 'storage' and tablename = 'objects';`.
    - The migration only adds policies that are missing by name, and leaves the rest alone.
    - All 20 names also appear in the archived Lovable migrations, so production most likely has them all.
-7. **Expect a few minutes of 401s.** The migrations and the function deploy run a few minutes apart. In that gap, cron calls to the five functions that were missing from `config.toml` may get a 401. They succeed on the next run.
+6. **Expect a few minutes of 401s.** The migrations and the function deploy run a few minutes apart. In that gap, cron calls to the five functions that were missing from `config.toml` may get a 401, and pushes may fail. Cron calls succeed on the next run, and the notifications themselves are still saved.
 
 ### Known issues
 
 - **Sign-up with a reserved word fails.** `handle_new_user()` builds the organization slug from the sign-up details. When that slug is a reserved word, such as `admin`, the reserved-slug check rejects it and sign-up fails, for example for `admin@yourchurch.org`. Locally, use an address like `pastor@example.com`.
-- **Existing type errors.** `deno check` reports type errors in four functions: `pco-sync-processor` (5), `pco-sync-user-permissions-cron` (2), `recurring-flow-processor` (1) and `send-daily-digest` (1). Deploys don't type-check, so they don't block anything.
+- **Existing type errors.** `deno check` reports type errors in five functions: `send-push` (7), `pco-sync-processor` (5), `pco-sync-user-permissions-cron` (2), `recurring-flow-processor` (1) and `send-daily-digest` (1). Deploys don't type-check, so they don't block anything.

@@ -12,6 +12,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const res = await admin.functions.invoke("send-push", {
+      headers: { "x-cron-secret": Deno.env.get("CRON_SECRET") ?? "" },
       body: {
         user_id: user.id,
         title: "Flow test notification 🎉",

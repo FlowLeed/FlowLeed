@@ -125,7 +125,7 @@ Copy `supabase/functions/.env.example` as a starting point.
 | `RESEND_API_KEY` | No | Sends email (invitations, digests, password resets). |
 | `PCO_OAUTH_CLIENT_ID`, `PCO_OAUTH_CLIENT_SECRET` | No | Lets a church connect its Planning Center account. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | No | Browser push notifications. |
-| `CRON_SECRET` | Yes | Shared secret that the scheduled jobs send to the Edge Functions they call. Locally `local-cron-secret`, which must match the Vault value in `supabase/seed.sql`. See [supabase/README.md](supabase/README.md#secrets-per-environment). |
+| `CRON_SECRET` | Yes | Shared secret that the database sends to the Edge Functions it calls (scheduled jobs and push notifications). Locally `local-cron-secret`, which must match the Vault value in `supabase/seed.sql`. See [supabase/README.md](supabase/README.md#secrets-per-environment). |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | No | Texting and calling, currently paused. |
 
 You don't set `SUPABASE_URL`, `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY` yourself. The Supabase CLI and hosted Supabase inject them.

@@ -168,3 +168,8 @@ verify_jwt = false
 
 [functions.recompute-markers-cron]
 verify_jwt = false
+
+# Called only by the notify_push_on_notification() trigger and send-test-push, which send the
+# x-cron-secret header that it checks (_shared/cron-auth.ts).
+[functions.send-push]
+verify_jwt = false
