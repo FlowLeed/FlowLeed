@@ -208,3 +208,11 @@ CREATE POLICY "story media org admins delete"
         AND public.get_user_organization_role(auth.uid(), ((storage.foldername(name))[1])::uuid) 
         IN ('owner','admin')
     );
+
+
+-- Vault secrets the pg_cron jobs read (local values only; each hosted project sets its own,
+-- see supabase/README.md). host.docker.internal reaches the host's Supabase API (port 54321) from
+-- inside the Postgres container.
+select vault.create_secret('http://host.docker.internal:54321', 'project_url');
+-- Must match CRON_SECRET in supabase/functions/.env.local.
+select vault.create_secret('local-cron-secret', 'cron_secret');
