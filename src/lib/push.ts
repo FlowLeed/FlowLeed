@@ -1,9 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Public VAPID key — safe to ship in the client.
-export const VAPID_PUBLIC_KEY =
-  (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ||
-  "BBGrIhcN1uGC0029qLFCfP4iy4Mb0LbUfTiIxnmJ0k5_d6BV1A5CocKNB6gpwB_yADHPHPBLcUCVY0XeGMmaPmk";
+// This environment's public VAPID key (safe to ship in the client). It must match the
+// VAPID_PUBLIC_KEY Edge Function secret, so there is no fallback: another environment's key
+// would create subscriptions this environment can't send to.
+export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -68,6 +68,9 @@ export async function getPermission(): Promise<NotificationPermission> {
 
 export async function subscribeToPush(): Promise<PushSubscription | null> {
   if (!isPushSupported()) throw new Error("Push not supported on this browser.");
+  if (!VAPID_PUBLIC_KEY) {
+    throw new Error("Push notifications aren't set up for this site yet (VITE_VAPID_PUBLIC_KEY is missing).");
+  }
   if (isIOS() && !isStandalone()) {
     throw new Error(
       "On iOS, please first add Flow to your Home Screen (Share → Add to Home Screen), then enable push from the installed app."

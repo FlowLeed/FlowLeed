@@ -108,7 +108,7 @@ How the app is deployed to staging (GitHub Actions, then Supabase, then Cloudfla
 |---|---|---|
 | `VITE_SUPABASE_URL` | Yes | Supabase API URL. Locally: `http://127.0.0.1:54321`. |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes | Supabase anon (publishable) key, from `supabase status`. |
-| `VITE_VAPID_PUBLIC_KEY` | No | Public key for browser push notifications. |
+| `VITE_VAPID_PUBLIC_KEY` | No | Public VAPID key for browser push notifications. Must be the same as the Edge Functions' `VAPID_PUBLIC_KEY`. Without it, turning on push notifications shows an error. |
 
 ### Edge Functions (`supabase/functions/.env.local` locally; `supabase secrets set` on a hosted project)
 

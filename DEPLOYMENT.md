@@ -113,11 +113,12 @@ All of these go on the **`staging`** environment.
 | `VITE_SUPABASE_URL` | Yes | Built into the web app | `https://<staging-ref>.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes | Built into the web app | Staging **Project Settings → API Keys**, the publishable (or legacy anon) key |
 | `SITE_URL` | Yes | Edge Function secret for links in emails; also the environment link in GitHub | The staging web address, for example `https://flowleed-staging.<your-subdomain>.workers.dev` |
-| `VITE_VAPID_PUBLIC_KEY` | No | Built into the web app; push notifications | Your VAPID public key |
+| `VITE_VAPID_PUBLIC_KEY` | No | Built into the web app; push notifications | Your VAPID public key, the same value as `VAPID_PUBLIC_KEY`. Without it, push notifications can't be turned on. |
 | `VAPID_PUBLIC_KEY` | No | Edge Function secret; push notifications | Your VAPID public key |
 | `VAPID_SUBJECT` | No | Edge Function secret; push notifications | For example `mailto:support@flowleed.com` |
 
 You don't set `SUPABASE_URL`, `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY`. Supabase gives them to every Edge Function automatically.
+You can use `npx web-push generate-vapid-keys` to generate the VAPID keys
 
 ## Day to day
 
@@ -159,6 +160,7 @@ Production needs the checklist in [supabase/README.md → Before merging to dev 
 Then:
 1. Create a GitHub environment `production`. Allow only `main`, and add required reviewers so every deploy waits for approval.
 2. Give it the same secrets and variables, with production values.
+   - For `VAPID_PUBLIC_KEY`, `VITE_VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`, reuse production's existing VAPID pair (its `VAPID_PUBLIC_KEY` Supabase secret). A new pair would break every existing browser subscription.
 3. Copy the workflow to `deploy-production.yml`:
    - trigger on `main`;
    - use `environment: production`;
