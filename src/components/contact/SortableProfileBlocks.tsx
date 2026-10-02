@@ -2,7 +2,16 @@ import React, { useEffect, useState } from "react";
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+/** 3x3 dot grid drag handle icon. */
+const GripDots = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 12 12" fill="currentColor" className={className} aria-hidden="true">
+    {[0, 1, 2].map((row) =>
+      [0, 1, 2].map((col) => (
+        <circle key={`${row}-${col}`} cx={2 + col * 4} cy={2 + row * 4} r="1.2" />
+      )),
+    )}
+  </svg>
+);
 import { cn } from "@/lib/utils";
 
 export interface ProfileBlock {
@@ -28,9 +37,9 @@ const SortableItem = ({ block }: { block: ProfileBlock }) => {
         {...listeners}
         aria-label={`Move ${block.label}`}
         title="Drag to reorder"
-        className="absolute right-2 top-2 z-10 flex h-6 w-6 cursor-grab touch-none items-center justify-center rounded text-muted-foreground opacity-40 transition-opacity hover:bg-muted hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
+        className="absolute left-0 top-1/2 z-10 flex h-7 w-6 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
-        <GripVertical className="h-3.5 w-3.5" />
+        <GripDots className="h-3.5 w-3.5" />
       </button>
       {block.node}
     </div>
@@ -71,7 +80,7 @@ export const SortableProfileBlocks = ({ blocks }: { blocks: ProfileBlock[] }) =>
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={sorted} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3">
+        <div className="space-y-3 pl-8">
           {sorted.map((id) => (
             <SortableItem key={id} block={byId[id]} />
           ))}
