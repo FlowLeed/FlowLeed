@@ -2,7 +2,16 @@ import React, { useEffect, useState } from "react";
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+/** 3x3 dot grid drag handle icon. */
+const GripDots = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 12 12" fill="currentColor" className={className} aria-hidden="true">
+    {[0, 1, 2].map((row) =>
+      [0, 1, 2].map((col) => (
+        <circle key={`${row}-${col}`} cx={2 + col * 4} cy={2 + row * 4} r="1.2" />
+      )),
+    )}
+  </svg>
+);
 import { cn } from "@/lib/utils";
 
 export interface ProfileBlock {
