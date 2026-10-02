@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Send, Square, Sparkles } from "lucide-react";
+import { Send, Square, Sparkles, Mic, X, Check, Loader2 } from "lucide-react";
+import { recordWav, type WavRecording } from "@/lib/recordWav";
+import { transcribeAudio } from "@/lib/transcribeAudio";
+
+const MAX_RECORDING_SECONDS = 120;
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +38,12 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const triggerStartRef = useRef<number | null>(null);
   const { organization } = useProfile();
+  const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
+  const [elapsed, setElapsed] = useState(0);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const recordingRef = useRef<WavRecording | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const finishRecordingRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (!isLoading && textareaRef.current) {
@@ -196,6 +206,73 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     }
   };
 
+  // ---- Voice input: record → transcribe → drop text into the box for review ----
+  const clearTimer = () => {
+    if (timerRef.current) window.clearInterval(timerRef.current);
+    timerRef.current = null;
+  };
+
+  const startRecording = async () => {
+    setVoiceError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setVoiceError("Voice recording isn't supported in this browser.");
+      return;
+    }
+    try {
+      recordingRef.current = await recordWav();
+      setElapsed(0);
+      setVoiceState("recording");
+      const started = Date.now();
+      timerRef.current = window.setInterval(() => {
+        const secs = Math.floor((Date.now() - started) / 1000);
+        setElapsed(secs);
+        if (secs >= MAX_RECORDING_SECONDS) finishRecordingRef.current();
+      }, 250);
+    } catch (e: any) {
+      const denied = e?.name === "NotAllowedError" || e?.name === "SecurityError";
+      setVoiceError(denied
+        ? "Microphone access is blocked. Allow it in your browser settings to record."
+        : "Couldn't start the microphone. Please try again.");
+    }
+  };
+
+  const cancelRecording = () => {
+    clearTimer();
+    recordingRef.current?.cancel();
+    recordingRef.current = null;
+    setVoiceState("idle");
+  };
+
+  const finishRecording = async () => {
+    const rec = recordingRef.current;
+    if (!rec) return;
+    recordingRef.current = null;
+    clearTimer();
+    setVoiceState("transcribing");
+    const base = input.trim() ? input.trimEnd() + " " : "";
+    try {
+      const file = await rec.stop();
+      const text = await transcribeAudio(file, (partial) => setInput(base + partial));
+      setInput(base + text);
+      requestAnimationFrame(() => {
+        const el = textareaRef.current;
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+        el.style.height = "auto";
+        el.style.height = Math.min(el.scrollHeight, 160) + "px";
+      });
+    } catch (e: any) {
+      setInput(base.trimEnd());
+      setVoiceError(e?.message || "Transcription failed. Please try again.");
+    } finally {
+      setVoiceState("idle");
+    }
+  };
+  finishRecordingRef.current = finishRecording;
+
+  useEffect(() => () => { clearTimer(); recordingRef.current?.cancel(); }, []);
+
   const dropdownOpen = mentionQuery !== null && mentionResults.length > 0;
 
   return (
@@ -218,8 +295,32 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
           className="min-h-12 max-h-32 w-full resize-none bg-transparent px-4 py-2 text-base leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none md:text-sm"
           disabled={isLoading}
         />
-        <div className="flex items-center justify-end px-3 pb-3">
-          {isLoading ? (
+        {voiceError && (
+          <div className="px-4 pb-1 text-xs text-destructive">{voiceError}</div>
+        )}
+        <div className="flex items-center justify-end gap-2 px-3 pb-3">
+          {voiceState === "recording" ? (
+            <>
+              <div className="mr-auto flex items-center gap-2 pl-1 text-xs text-muted-foreground">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-60" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
+                </span>
+                <span className="tabular-nums font-medium text-foreground">
+                  {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}
+                </span>
+                <span className="hidden sm:inline">Listening…</span>
+              </div>
+              <Button size="sm" variant="ghost" onClick={cancelRecording} className="rounded-xl gap-1.5" aria-label="Cancel recording">
+                <X className="h-3.5 w-3.5" />
+                Cancel
+              </Button>
+              <Button size="sm" onClick={finishRecording} className="rounded-xl gap-1.5" aria-label="Finish recording">
+                <Check className="h-3.5 w-3.5" />
+                Done
+              </Button>
+            </>
+          ) : isLoading ? (
             <Button
               size="sm"
               variant="destructive"
@@ -230,15 +331,28 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
               Stop
             </Button>
           ) : (
-            <Button
-              size="sm"
-              onClick={handleSubmit}
-              disabled={!input.trim()}
-              className="rounded-xl gap-1.5"
-            >
-              <Send className="h-3.5 w-3.5" />
-              Send
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={startRecording}
+                disabled={voiceState === "transcribing"}
+                className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground"
+                aria-label="Record a voice message"
+                title="Record a voice message"
+              >
+                {voiceState === "transcribing" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={!input.trim() || voiceState === "transcribing"}
+                className="rounded-xl gap-1.5"
+              >
+                <Send className="h-3.5 w-3.5" />
+                Send
+              </Button>
+            </>
           )}
         </div>
 
