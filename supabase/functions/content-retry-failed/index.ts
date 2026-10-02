@@ -1,7 +1,8 @@
 // Content module: periodically retry failed video ingests.
 // Finds recently-failed videos (retry_count < MAX_RETRIES) that haven't been
 // retried in the last cooldown window, and re-invokes content-ingest for each.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { createClient } from "@supabase/supabase-js";
+import { rejectUnlessCron } from "../_shared/cron-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,9 @@ const BATCH_SIZE = 10;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const unauthorized = rejectUnlessCron(req, corsHeaders);
+  if (unauthorized) return unauthorized;
 
   try {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);

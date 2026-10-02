@@ -1,6 +1,6 @@
 // Public endpoint that streams the organization logo by slug.
 // Bypasses the private bucket restriction so logos can show on public pages.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { createClient } from "@supabase/supabase-js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

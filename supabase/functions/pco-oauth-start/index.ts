@@ -4,7 +4,7 @@
 //
 // For purpose='org', caller must be owner/admin of the organization.
 // For purpose='user', any authenticated org member can initiate.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 import { PCO_OAUTH_SCOPES } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {

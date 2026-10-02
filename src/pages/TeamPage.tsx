@@ -190,9 +190,10 @@ const TeamPage = () => {
       const {
         data: memberData,
         error: membersError
-      } = await supabase.from('organization_members').select('id, user_id, role, created_at').eq('organization_id', organization.id).order('created_at', {
-        ascending: true
-      });
+      } = await supabase.from('organization_members')
+        .select('id, user_id, role, created_at')
+        .eq('organization_id', organization.id)
+        .order('created_at', { ascending: true });
       if (membersError) throw membersError;
       if (memberData && memberData.length > 0) {
         // Get user IDs to fetch profiles

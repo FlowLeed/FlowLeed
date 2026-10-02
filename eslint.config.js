@@ -24,6 +24,12 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "@typescript-eslint/no-unused-vars": "off",
+      
+      /* 
+        Enable after code base is refactored to remove any usage of 'any' type
+        Especially in the case of function parameters and return types, as it defeats the purpose of using TypeScript
+      */ 
+      "@typescript-eslint/no-explicit-any": "off" 
     },
   }
 );

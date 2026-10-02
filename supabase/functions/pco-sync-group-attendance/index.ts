@@ -1,6 +1,6 @@
 // Syncs Planning Center Group events + attendances into FlowLeed.
 // Pulls last 90 days of events per group (capped per run).
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 import { getPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {

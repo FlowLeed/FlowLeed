@@ -19,6 +19,9 @@ import {
   Info
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getChurchOnlineWebhookUrl, testChurchOnlineConnection } from "@/api/churchOnline";
+import { ProviderError } from "@/errors/ProviderError";
+import type { ChurchOnlineConnectionTest } from "@shared/models/ChurchOnlineConnectionTest";
 
 interface ChurchOnlineIntegrationProps {
   organizationId: string;
@@ -74,13 +77,10 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
       const { domain, isCustomDomain } = parseDomainInput(input);
 
       // Test connection first
-      const { data: testResult, error: testError } = await supabase.functions.invoke(
-        'church-online-test-connection',
-        { body: { domain } }
-      );
+      const testResult = await testChurchOnlineConnection({ domain });
 
-      if (testError || !testResult?.success) {
-        throw new Error(testResult?.error || 'Failed to connect to Church Online Platform');
+      if (!testResult.success) {
+        throw new Error(testResult.error || 'Failed to connect to Church Online Platform');
       }
 
       // Create integration with domain info
@@ -143,13 +143,18 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
     setTestingConnection(true);
     
     try {
-      const { data, error } = await supabase.functions.invoke(
-        'church-online-test-connection',
-        { body: { integrationId: integration.id } }
-      );
+      let data: ChurchOnlineConnectionTest | null = null;
+      let failureMessage: string | null = null;
 
-      if (error || !data?.success) {
-        toast.error('Connection Failed', { description: data?.error || 'Unable to connect' });
+      try {
+        data = await testChurchOnlineConnection({ integrationId: integration.id });
+        if (!data.success) failureMessage = data.error || 'Unable to connect';
+      } catch (err) {
+        failureMessage = err instanceof ProviderError ? err.message : 'Unable to connect';
+      }
+
+      if (failureMessage) {
+        toast.error('Connection Failed', { description: failureMessage });
         // Update status to failed
         await supabase
           .from('integrations')
@@ -157,8 +162,8 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
           .eq('id', integration.id);
       } else {
         toast.success('Connection Successful', {
-          description: data.currentService 
-            ? `Current service: ${data.currentService.title}` 
+          description: data?.currentService
+            ? `Current service: ${data.currentService.title}`
             : 'Connected successfully'
         });
         await supabase
@@ -181,7 +186,7 @@ export function ChurchOnlineIntegration({ organizationId }: ChurchOnlineIntegrat
 
   const getWebhookUrl = () => {
     if (!integration) return '';
-    return `https://lghamvpolwebtjwaxned.supabase.co/functions/v1/church-online-webhook?integration_id=${integration.id}`;
+    return getChurchOnlineWebhookUrl(integration.id);
   };
 
   const handleCopyWebhook = async () => {

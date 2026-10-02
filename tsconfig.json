@@ -7,6 +7,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@shared/models/*": [
+        "./supabase/functions/_shared/models/*"
       ]
     },
     "skipLibCheck": true,

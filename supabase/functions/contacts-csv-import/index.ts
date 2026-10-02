@@ -6,7 +6,7 @@
 //   batch  { importId, rows: MappedRow[] } -> { created, updated, enrolled, skipped }
 //   finish { importId } -> { ok: true }
 //   undo   { importId } -> { deleted, unenrolled }
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

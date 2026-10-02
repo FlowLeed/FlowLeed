@@ -1,7 +1,7 @@
 // Content module: analyze a video using its transcript chunks.
 // Writes a content_analyses row and sets the video to ready.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { createClient } from "@supabase/supabase-js";
+import { DEFAULT_GLOO_MODEL, glooChat } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,10 +12,9 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
-const MODEL = "gloo-google-gemini-3-flash";
-const AI_GATEWAY = "https://platform.ai.gloo.com/ai/v2/chat/completions";
+// Recorded on each analysis row.
+const MODEL = DEFAULT_GLOO_MODEL;
 
 const SYSTEM = `You analyze transcripts of videos (often sermons, talks, or stories) and extract narrative structure.
 Always respond as JSON matching this shape:
@@ -99,27 +98,15 @@ Deno.serve(async (req) => {
       .join("\n");
     const truncated = transcript.length > 60000 ? transcript.slice(0, 60000) + "\n…[truncated]" : transcript;
 
-    const r = await fetch(AI_GATEWAY, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${await getGlooAccessToken()}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: `Title: ${video.title ?? "(untitled)"}\n\nTranscript:\n${truncated}` },
-        ],
-        response_format: { type: "json_object" },
-      }),
+    const data = await glooChat({
+      model: MODEL,
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: `Title: ${video.title ?? "(untitled)"}\n\nTranscript:\n${truncated}` },
+      ],
+      response_format: { type: "json_object" },
     });
-    if (!r.ok) {
-      const text = await r.text();
-      throw new Error(`AI gateway ${r.status}: ${text}`);
-    }
-    const data = await r.json();
-    const raw = data.choices?.[0]?.message?.content ?? "{}";
+    const raw = data.choices[0]?.message?.content ?? "{}";
     let parsed: any;
     try { parsed = JSON.parse(raw); } catch { parsed = {}; }
 

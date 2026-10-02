@@ -91,7 +91,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
   }, [messages]);
 
   const markdownComponents = useMemo(() => ({
-    p: ({ children }: any) => <p className="font-sans text-sm font-normal">{children}</p>,
+    // Same size as the headings and list items around it (prose-base), so a reply doesn't mix text sizes.
+    p: ({ children }: any) => <p className="font-sans font-normal">{children}</p>,
     a: ({ href, children, ...props }: any) => {
       const isInternal = href?.startsWith("/");
       // Only link to a person when the id looks like a real record id; the

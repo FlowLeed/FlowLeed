@@ -1,7 +1,7 @@
 // Confirms (or rejects) a freshly authorized Planning Center organization.
 // Body: { organizationId: string, action: 'confirm' | 'reject' }
 // Only owners/admins of the FlowLeed organization may call it.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

@@ -11,6 +11,7 @@ import { storyDraftKey, storySavedKey, type StoryDraft } from "@/components/cont
 import type { RelatedStory, StoryBlock, StoryCta, StoryRecord } from "@/lib/storyTypes";
 import { handleYoutubeThumbError, resolveThumb } from "@/lib/youtubeThumbnail";
 import { cn } from "@/lib/utils";
+import { getOrganizationLogoUrl } from "@/api/organizations";
 
 type PublicVideo = { id: string; youtube_id: string; title: string | null; channel_name: string | null; thumbnail_url: string | null; duration_seconds: number | null; description: string | null; short_description: string | null; published_at: string | null };
 type Analysis = { summary: string | null; themes: string[] | null; key_quotes: Array<{ text: string; start_seconds: number; impact_score: number }> | null };
@@ -146,8 +147,21 @@ export default function PublicContentVideoPage({ previewSlug, previewVideoId, pr
   const jumpTo = (seconds: number) => { setSeek(seconds); setPlaying(true); const next = new URLSearchParams(params); next.set("t", String(Math.floor(seconds))); setParams(next, { replace: true }); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
   return <div className="h-[100dvh] w-full overflow-y-auto overflow-x-hidden overscroll-contain bg-story-background text-foreground">
-    <header className="sticky top-0 z-50 border-b border-story-border bg-story-background/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}><div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 md:px-6 md:py-4"><Link to={`/${slug}/content`} className="min-w-0 flex-1"><img src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug ?? "")}`} alt={orgName ? `${orgName} logo` : "Organization logo"} className="h-8 w-auto max-w-[11rem] object-contain md:h-10" onError={(event) => { event.currentTarget.style.display = "none"; }} /></Link><Button asChild variant="ghost" size="sm"><Link to={`/${slug}/content`}><ArrowLeft className="mr-2 h-4 w-4" />All stories</Link></Button></div></header>
-
+    <header className="sticky top-0 z-50 border-b border-story-border bg-story-background/95 backdrop-blur-md" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 md:px-6 md:py-4">
+        <Link to={`/${slug}/content`} className="min-w-0 flex-1">
+          <img src={getOrganizationLogoUrl(slug ?? "")}
+            alt={orgName ? `${orgName} logo` : "Organization logo"} 
+            className="h-8 w-auto max-w-[11rem] object-contain md:h-10" 
+            onError={(event) => { event.currentTarget.style.display = "none"; }} />
+        </Link>
+        <Button asChild variant="ghost" size="sm">
+          <Link to={`/${slug}/content`}>
+            <ArrowLeft className="mr-2 h-4 w-4" />All stories
+          </Link>
+        </Button>
+      </div>
+    </header>
 
     <main>
       <section className="mx-auto grid w-full max-w-7xl gap-7 px-4 pb-10 pt-8 md:px-6 md:pb-16 md:pt-12 lg:grid-cols-12 lg:items-center lg:gap-12">

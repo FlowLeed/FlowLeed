@@ -6,6 +6,7 @@ let initialized = false;
 
 export function initAnalytics() {
   if (initialized || typeof window === 'undefined') return;
+  if (import.meta.env.DEV === true) return;
   try {
     amplitude.initAll(API_KEY, {
       analytics: { autocapture: true },

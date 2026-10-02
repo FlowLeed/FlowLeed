@@ -1,14 +1,12 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { createClient } from "@supabase/supabase-js";
+import { type GlooChatCompletion, glooChat, glooErrorStatus, glooToolCalls } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,14 +25,6 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Organization ID is required" }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "AI service not configured" }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -82,14 +72,9 @@ Provide options with different tones:
 2. Friendly (warm, welcoming, conversational)
 3. Concise (brief, action-oriented, to-the-point)`}`;
 
-    const response = await fetch('https://platform.ai.gloo.com/ai/v2/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${await getGlooAccessToken()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gloo-google-gemini-3-flash',
+    let data: GlooChatCompletion;
+    try {
+      data = await glooChat({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -124,20 +109,18 @@ Provide options with different tones:
           }
         ],
         tool_choice: { type: "function", function: { name: "suggest_group_descriptions" } }
-      }),
-    });
+      });
+    } catch (error) {
+      const status = glooErrorStatus(error);
+      console.error('AI gateway error:', status, error);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
-      
-      if (response.status === 429) {
+      if (status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402) {
+      if (status === 402) {
         return new Response(
           JSON.stringify({ error: "AI credits depleted. Please add funds to your workspace." }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -150,8 +133,7 @@ Provide options with different tones:
       );
     }
 
-    const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const toolCall = glooToolCalls(data)[0];
     if (!toolCall || toolCall.function.name !== 'suggest_group_descriptions') {
       return new Response(
         JSON.stringify({ error: "Invalid AI response" }),

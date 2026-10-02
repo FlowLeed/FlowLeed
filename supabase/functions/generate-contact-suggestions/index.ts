@@ -1,13 +1,12 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { createClient } from "@supabase/supabase-js";
+import { type GlooChatCompletion, glooChat, glooErrorStatus, glooToolCalls } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,9 +23,6 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-
-    // (Gloo auth handled in getGlooAccessToken)
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -352,17 +348,13 @@ ${birthdayInfo ? `Birthday Coming Up: In ${birthdayInfo.daysUntil} days (${birth
 Current Pipeline Assignments:
 ${pipelineContexts || 'Not in any pipeline'}`;
 
-    console.log('Calling Lovable AI with prompt:', { systemPrompt, userPrompt });
+    // Log ids and counts only: the prompt and the reply contain the person's details.
+    console.log('Calling Gloo AI for contact suggestions:', { contactId });
 
-    // Call Lovable AI with tool calling
-    const response = await fetch('https://platform.ai.gloo.com/ai/v2/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${await getGlooAccessToken()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gloo-google-gemini-3-flash',
+    // Call Gloo AI with tool calling
+    let aiResponse: GlooChatCompletion;
+    try {
+      aiResponse = await glooChat({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -417,40 +409,36 @@ ${pipelineContexts || 'Not in any pipeline'}`;
           }
         ],
         tool_choice: { type: 'function', function: { name: 'suggest_contact_actions' } }
-      }),
-    });
+      });
+    } catch (error) {
+      const status = glooErrorStatus(error);
+      console.error('Gloo AI error:', status, error);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
-      
-      if (response.status === 429) {
+      if (status === 429) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }), 
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      if (response.status === 402) {
+      if (status === 402) {
         return new Response(
-          JSON.stringify({ error: 'Payment required. Please add credits to your Lovable AI workspace.' }), 
+          JSON.stringify({ error: 'Payment required. Please add credits to your Gloo AI account.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
-      throw new Error(`AI Gateway error: ${response.status}`);
+
+      throw error;
     }
 
-    const aiResponse = await response.json();
-    console.log('AI Response:', JSON.stringify(aiResponse, null, 2));
-
     // Extract suggestions from tool call
-    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+    const toolCall = glooToolCalls(aiResponse)[0];
     if (!toolCall) {
       throw new Error('No tool call in AI response');
     }
 
     const suggestions = JSON.parse(toolCall.function.arguments).suggestions;
+    console.log('Gloo AI returned suggestions:', { contactId, count: suggestions?.length ?? 0 });
 
     // Track AI usage
     try {

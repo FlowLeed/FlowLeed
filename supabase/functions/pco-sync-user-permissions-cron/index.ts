@@ -2,7 +2,8 @@
 // an active personal PCO connection. Triggered by pg_cron via net.http_post.
 // No JWT required — protected by the CRON_SECRET header.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
+import { rejectUnlessCron } from '../_shared/cron-auth.ts';
 import { getUserPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {
@@ -20,11 +21,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const cronSecret = Deno.env.get('CRON_SECRET');
-    const provided = req.headers.get('x-cron-secret');
-    if (cronSecret && provided !== cronSecret) {
-      return json({ error: 'Unauthorized' }, 401);
-    }
+    const unauthorized = rejectUnlessCron(req, corsHeaders);
+    if (unauthorized) return unauthorized;
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,

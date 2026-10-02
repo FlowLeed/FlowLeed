@@ -1,5 +1,6 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "@supabase/supabase-js";
 import { corsHeaders } from "../_shared/cors.ts";
+import { rejectUnlessCron } from "../_shared/cron-auth.ts";
 import { sendWebPush } from "../_shared/web-push.ts";
 
 interface Payload {
@@ -16,6 +17,11 @@ interface Payload {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Only internal callers: the notify_push_on_notification() trigger and send-test-push. Without
+  // this check, anyone holding the public anon key could push to any user.
+  const unauthorized = rejectUnlessCron(req, corsHeaders);
+  if (unauthorized) return unauthorized;
 
   const VAPID_PUBLIC = Deno.env.get("VAPID_PUBLIC_KEY");
   const VAPID_PRIVATE = Deno.env.get("VAPID_PRIVATE_KEY");

@@ -11,27 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
 import { cn } from "@/lib/utils";
 import { handleYoutubeThumbError, resolveThumb } from "@/lib/youtubeThumbnail";
+import { askPublicLibrary } from "@/api/content";
+import { getOrganizationLogoUrl } from "@/api/organizations";
+import type { AskResponse } from "@shared/models/AskResponse";
 
 interface VideoTheme {
   video_id: string;
   themes: string[];
-}
-
-interface AskSource {
-  index: number;
-  video_id: string;
-  chunk_id: string;
-  title: string | null;
-  thumbnail_url: string | null;
-  channel_name: string | null;
-  snippet: string;
-  start_seconds: number;
-  similarity: number;
-}
-
-interface AskResponse {
-  answer: string;
-  sources: AskSource[];
 }
 
 const parseStoredSearch = (key: string) => {
@@ -128,11 +114,8 @@ export default function PublicContentPage() {
     setSearching(true);
     setAnswer({ answer: "", sources: [] });
     try {
-      const { data, error } = await supabase.functions.invoke("content-ask", {
-        body: { query: searchQuery, orgSlug: slug, public: true },
-      });
-      if (error) throw error;
-      setAnswer((data as AskResponse) ?? { answer: "", sources: [] });
+      const response = await askPublicLibrary(searchQuery, slug);
+      setAnswer(response);
     } catch {
       setAnswer({ answer: "Something went wrong while searching. Please try again.", sources: [] });
     } finally {
@@ -158,7 +141,7 @@ export default function PublicContentPage() {
           {slug && (
             <Button variant="ghost" onClick={clearSearch} className="h-11 min-w-0 justify-start px-0 hover:bg-transparent hover:opacity-75" aria-label="Back to library home">
               <img
-                src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug)}`}
+                src={getOrganizationLogoUrl(slug)}
                 alt={orgName ? `${orgName} logo` : "Church logo"}
                 className="h-8 w-auto max-w-[10rem] object-contain md:h-9 md:max-w-[13rem]"
                 onError={(event) => { event.currentTarget.style.display = "none"; }}

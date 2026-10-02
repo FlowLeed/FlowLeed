@@ -1,73 +1,56 @@
-// Shared Gloo AI helper: OAuth2 client-credentials token cache + OpenAI-compatible chat helper.
+// Shared Gloo AI client. Gloo's API is OpenAI-compatible, so we call it with the openai SDK.
 // Docs: https://docs.gloo.com/api-guides/sdks-and-libraries
+// Every Edge Function that talks to Gloo goes through these helpers; none calls the API directly.
 
-const GLOO_TOKEN_URL = "https://platform.ai.gloo.com/oauth2/token";
-const GLOO_CHAT_URL = "https://platform.ai.gloo.com/ai/v2/chat/completions";
+import OpenAI from "openai";
+
+const GLOO_BASE_URL = "https://platform.ai.gloo.com/ai/v2/guarded";
 
 // Default chat model — override per call if needed.
 export const DEFAULT_GLOO_MODEL = "gloo-google-gemini-3-flash";
 
-let cachedToken: { token: string; expiresAt: number } | null = null;
+export type GlooChatCompletion = OpenAI.Chat.Completions.ChatCompletion;
+export type GlooToolCall = OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall;
 
-export async function getGlooAccessToken(): Promise<string> {
-  const now = Date.now();
-  if (cachedToken && cachedToken.expiresAt - 60_000 > now) return cachedToken.token;
+type WithOptionalModel<T> = Omit<T, "model"> & { model?: string };
+export type GlooChatParams = WithOptionalModel<OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming>;
+export type GlooStreamParams = WithOptionalModel<Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming, "stream">>;
 
-  const clientId = Deno.env.get("GLOO_CLIENT_ID");
-  const clientSecret = Deno.env.get("GLOO_CLIENT_SECRET");
-  if (!clientId || !clientSecret) {
-    throw new Error("GLOO_CLIENT_ID and GLOO_CLIENT_SECRET must be configured");
-  }
-  const basic = btoa(`${clientId}:${clientSecret}`);
-  const res = await fetch(GLOO_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${basic}`,
-    },
-    body: "grant_type=client_credentials&scope=api/access",
-  });
-  if (!res.ok) {
-    throw new Error(`Gloo auth failed ${res.status}: ${await res.text()}`);
-  }
-  const data = await res.json();
-  const expiresInMs = ((data.expires_in as number) ?? 3600) * 1000;
-  cachedToken = { token: data.access_token, expiresAt: now + expiresInMs };
-  return cachedToken.token;
+let client: OpenAI | null = null;
+
+function glooClient(): OpenAI {
+  if (client) return client;
+  const apiKey = Deno.env.get("GLOO_API_KEY");
+  if (!apiKey) throw new Error("GLOO_API_KEY must be configured");
+  client = new OpenAI({ apiKey, baseURL: GLOO_BASE_URL });
+  return client;
 }
 
-export interface GlooChatOptions {
-  model?: string;
-  messages: Array<{ role: string; content: unknown; tool_call_id?: string; tool_calls?: unknown }>;
-  temperature?: number;
-  max_tokens?: number;
-  tools?: unknown[];
-  tool_choice?: unknown;
-  response_format?: unknown;
-  stream?: boolean;
-  [key: string]: unknown;
+/** A chat completion. Throws on failure; use glooErrorStatus to read the HTTP status. */
+export function glooChat(params: GlooChatParams): Promise<GlooChatCompletion> {
+  return glooClient().chat.completions.create({ ...params, model: params.model ?? DEFAULT_GLOO_MODEL });
 }
 
 /**
- * OpenAI-compatible chat completion call to Gloo AI (`/ai/v2/chat/completions`).
- * Returns the raw fetch Response so callers can stream or parse JSON as needed.
+ * A streamed chat completion, returned as Gloo's raw server-sent events
+ * (`data: {...}` lines ending with `data: [DONE]`) so callers can forward or transform them.
+ * Throws before streaming starts if Gloo rejects the request.
  */
-export async function glooChatFetch(opts: GlooChatOptions): Promise<Response> {
-  const token = await getGlooAccessToken();
-  const { model, ...rest } = opts;
-  return fetch(GLOO_CHAT_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ model: model ?? DEFAULT_GLOO_MODEL, ...rest }),
-  });
+export async function glooChatStream(params: GlooStreamParams): Promise<ReadableStream<Uint8Array>> {
+  const response = await glooClient().chat.completions
+    .create({ ...params, model: params.model ?? DEFAULT_GLOO_MODEL, stream: true })
+    .asResponse();
+  if (!response.body) throw new Error("Gloo returned an empty stream");
+  return response.body;
 }
 
-/** Convenience: parse a non-streaming Gloo chat completion, throw on error. */
-export async function glooChatJson(opts: GlooChatOptions): Promise<any> {
-  const r = await glooChatFetch(opts);
-  if (!r.ok) throw new Error(`Gloo chat ${r.status}: ${await r.text()}`);
-  return r.json();
+/** The function tool calls in the completion's first choice. */
+export function glooToolCalls(completion: GlooChatCompletion): GlooToolCall[] {
+  return (completion.choices[0]?.message?.tool_calls ?? [])
+    .filter((call): call is GlooToolCall => call.type === "function");
+}
+
+/** The HTTP status Gloo answered with (e.g. 429, 402), or undefined for other errors. */
+export function glooErrorStatus(error: unknown): number | undefined {
+  return error instanceof OpenAI.APIError ? error.status : undefined;
 }

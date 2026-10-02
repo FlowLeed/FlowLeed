@@ -1,6 +1,5 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
+import { rejectUnlessCron } from '../_shared/cron-auth.ts';
 import { syncDemographicData } from "../_shared/pco-demographics.ts";
 import { getPcoAuthHeader, getUserPcoAuthHeader } from "../_shared/pco-auth.ts";
 import { pcoFetch, sleep, PCO_PAGE_DELAY, PcoRateLimitError } from "./pco-fetch.ts";
@@ -14,7 +13,7 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -22,8 +21,10 @@ serve(async (req) => {
   try {
     const { action, integrationId, listMappings } = await req.json();
 
-    // Handle autoSync BEFORE authentication (called by cron with anon key)
+    // autoSync comes from pg_cron, which sends the cron secret instead of a user token
     if (action === 'autoSync') {
+      const unauthorized = rejectUnlessCron(req, corsHeaders);
+      if (unauthorized) return unauthorized;
       console.log('Auto-sync triggered by cron job');
       return await autoSyncAllMappings();
     }

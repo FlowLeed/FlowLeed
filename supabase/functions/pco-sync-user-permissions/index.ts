@@ -3,7 +3,7 @@
 // row, pages /people/v2/people using their personal token, and replaces the
 // snapshot transactionally via replace_user_pco_visible_people RPC.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 import { getUserPcoAuthHeader } from '../_shared/pco-auth.ts';
 
 const corsHeaders = {

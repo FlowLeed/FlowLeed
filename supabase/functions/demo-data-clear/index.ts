@@ -1,6 +1,6 @@
 // Deletes every record flagged as sample data for the caller's organization.
 // Called by "Set Up My Church" and automatically the first time real data arrives.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.0';
+import { createClient } from '@supabase/supabase-js';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
