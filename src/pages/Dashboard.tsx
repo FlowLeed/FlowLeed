@@ -75,8 +75,8 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* The daily care briefing is the opening message in the main AI conversation. */}
-          {!hasMessages && <CareBriefingThread onAsk={sendMessage} />}
+          {/* The daily care briefing stays as the opening message in the main AI conversation. */}
+          <CareBriefingThread onAsk={sendMessage} />
 
           {/* Chat Input - hero state only */}
           {!hasMessages && (
