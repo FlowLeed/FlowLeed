@@ -99,18 +99,19 @@ export function useCareBriefing() {
   };
 
   const run = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (_opts?: { silent?: boolean }) => {
       const { data, error } = await supabase.functions.invoke("care-agent-run", { body: { organizationId: organization?.id } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: (d: any) => {
+    onSuccess: (d: any, opts) => {
       refresh();
+      if (opts?.silent) return;
       if (d?.skipped) toast.message("Today's briefing is already being prepared.");
       else if (!d?.created) toast.message("No one new needs you today. That's a good thing.");
     },
-    onError: (e: any) => toast.error(e?.message || "Couldn't prepare the briefing."),
+    onError: (e: any, opts) => { if (!opts?.silent) toast.error(e?.message || "Couldn't prepare the briefing."); },
   });
 
   const takeCare = useMutation({

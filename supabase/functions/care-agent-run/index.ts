@@ -100,8 +100,8 @@ async function runOrg(admin: any, orgId: string, onlyUser: string | null): Promi
       // but new prayer requests from the leader's circle always come through.
       const remaining = Math.max(0, MAX_PER_PERSON - already.size);
       const balanced = pickBalanced(candidates);
-      const prayersInCircle = candidates.filter((s: any) => isPrayer(s) && s.tier <= 2);
-      const others = balanced.filter((s) => !prayersInCircle.includes(s as any));
+      const prayersInCircle = candidates.filter((s: any) => isPrayer(s) && s.tier <= 3).filter((s: any, i: number, a: any[]) => a.findIndex((x: any) => x.contact_id === s.contact_id) === i);
+      const others = balanced.filter((s) => !prayersInCircle.some((p: any) => p.contact_id === s.contact_id));
       const picked = [...prayersInCircle, ...others].slice(0, Math.max(remaining, prayersInCircle.length));
       if (!picked.length) continue;
 
