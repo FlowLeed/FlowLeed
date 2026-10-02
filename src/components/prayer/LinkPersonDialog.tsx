@@ -22,8 +22,18 @@ async function findPeople(orgId: string, q: string): Promise<Person[]> {
   if (!words.length) return [];
   let query = supabase.from("contacts").select("id, name, email, phone").eq("organization_id", orgId);
   words.forEach((w) => { query = query.ilike("name", `%${w}%`); });
-  const { data } = await query.limit(8);
-  return (data || []) as Person[];
+  const { data, error } = await query.limit(8);
+  if (error) throw new Error(error.message);
+  let rows = (data || []) as Person[];
+  // Fallback: match on any single name word (covers middle names, swapped order, typos)
+  if (!rows.length && words.length > 1) {
+    const orClause = words.map((w) => `name.ilike.%${w}%`).join(",");
+    const { data: loose, error: err2 } = await supabase.from("contacts")
+      .select("id, name, email, phone").eq("organization_id", orgId).or(orClause).limit(8);
+    if (err2) throw new Error(err2.message);
+    rows = (loose || []) as Person[];
+  }
+  return rows;
 }
 
 /** Suggests people whose name matches the submitter, and lets a leader search and link manually. */
