@@ -51,7 +51,7 @@ const Dashboard = () => {
         <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
         <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain hide-scrollbar">
           <div className="max-w-3xl mx-auto px-3 md:px-6 py-4 md:py-6">
-            <CareBriefingThread onBack={() => setCareOpen(false)} />
+            <CareBriefingThread onBack={() => setCareOpen(false)} onAsk={(p) => { setCareOpen(false); sendMessage(p); }} />
           </div>
         </div>
       </div>

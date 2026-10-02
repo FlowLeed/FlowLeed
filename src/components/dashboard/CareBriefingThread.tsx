@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO, isToday } from "date-fns";
-import { ArrowLeft, HeartHandshake, Lock, RefreshCw, UserRound, Loader2 } from "lucide-react";
+import { ArrowLeft, HeartHandshake, RefreshCw, UserRound, Loader2, Sun, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,8 +17,9 @@ const STATUS_LABEL: Record<string, string> = {
   taking: "You're taking this", delegated: "Asked a leader", handled: "Handled", snoozed: "Snoozed", dismissed: "Not needed",
 };
 
-export function CareBriefingThread({ onBack }: { onBack: () => void }) {
+export function CareBriefingThread({ onBack, onAsk }: { onBack: () => void; onAsk?: (prompt: string) => void }) {
   const care = useCareBriefing();
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [delegating, setDelegating] = useState<CareRecommendation | null>(null);
   const [message, setMessage] = useState("");
   const [handling, setHandling] = useState<CareRecommendation | null>(null);
@@ -62,52 +63,57 @@ export function CareBriefingThread({ onBack }: { onBack: () => void }) {
         <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
           Every morning I'll look for the 3–5 people who most need you — a new prayer request, someone who stepped away from their group, a new step of faith — and bring them here. Tap <b>Check for today</b> to look now.
         </div>
-      ) : days.map(([date, recs]) => (
-        <section key={date} className="space-y-3">
-          <div className="text-center text-xs font-medium text-muted-foreground">{isToday(parseISO(date)) ? "Today" : format(parseISO(date), "EEEE, MMM d")}</div>
-          <p className="text-sm text-foreground">
-            Good morning. {recs.length === 1 ? "One person" : `${recs.length} people`} may need you {isToday(parseISO(date)) ? "today" : "that day"}.
-          </p>
-          {recs.map((r) => (
-            <article key={r.id} className={`rounded-xl border bg-card p-4 space-y-3 ${r.status !== "pending" ? "opacity-70" : ""}`}>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{KIND_LABEL[r.kind]}</Badge>
-                {r.sensitive && <Badge variant="outline" className="gap-1"><Lock className="h-3 w-3" />Pastor only</Badge>}
-                {r.status !== "pending" && <Badge variant="outline">{STATUS_LABEL[r.status]}</Badge>}
-              </div>
-              <div>
-                <Link to={`/contacts/${r.contact_id}`} className="font-semibold hover:underline">{r.contact?.name ?? "Unknown person"}</Link>
-                <p className="text-sm font-medium">{r.headline}</p>
-              </div>
-              <div>
-                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Why you're seeing them</div>
-                <p className="text-sm">{r.why}</p>
-              </div>
-              {r.known?.length > 0 && (
-                <div>
-                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">What FlowLeed knows</div>
-                  <ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">{r.known.map((k, i) => <li key={i}>{k}</li>)}</ul>
+      ) : days.map(([date, recs]) => {
+        const needCare = recs.filter((r) => r.kind === "life_moment" || r.kind === "faith_moment");
+        const checking = recs.filter((r) => r.kind === "drift" || r.kind === "follow_up");
+        const row = (r: CareRecommendation) => {
+          const open = expanded === r.id;
+          const name = r.contact?.name ?? "Unknown person";
+          return (
+            <li key={r.id}>
+              <button type="button" onClick={() => setExpanded(open ? null : r.id)} className={`w-full text-left text-sm py-1 hover:text-primary ${r.status !== "pending" ? "opacity-60" : ""}`}>
+                <span className="font-semibold">{name},</span> {r.headline}
+                {r.sensitive && <span className="font-semibold">, Pastoral review required</span>}
+                {r.status !== "pending" && <span className="text-muted-foreground"> · {STATUS_LABEL[r.status]}</span>}
+              </button>
+              {open && (
+                <div className="mt-2 mb-3 space-y-3 rounded-xl border bg-card p-4">
+                  <p className="text-sm">{r.why}</p>
+                  {r.known?.length > 0 && (
+                    <ul className="list-disc pl-5 text-sm text-muted-foreground">{r.known.map((k, i) => <li key={i}>{k}</li>)}</ul>
+                  )}
+                  {r.best_connection && (
+                    <p className="text-sm"><UserRound className="mr-1 inline h-4 w-4" />Best connection: <b>{r.best_connection.name}</b> <span className="text-muted-foreground">· {r.best_connection.role}</span></p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {r.status === "pending" && <>
+                      <Button size="sm" onClick={() => care.takeCare.mutate(r)} disabled={care.takeCare.isPending}>I'll take care of this</Button>
+                      {r.best_connection && !r.sensitive && <Button size="sm" variant="outline" onClick={() => openDelegate(r)}>Ask {r.best_connection.name?.split(" ")[0]}</Button>}
+                      <Button size="sm" variant="outline" onClick={() => { setOutcome("spoke"); setNote(""); setHandling(r); }}>Already handled</Button>
+                      <Button size="sm" variant="ghost" onClick={() => care.snooze.mutate(r)}>Snooze</Button>
+                    </>}
+                    {onAsk && <Button size="sm" variant="ghost" className="gap-1" onClick={() => onAsk(`Tell me more about ${name}.`)}><MessageCircle className="h-3.5 w-3.5" />Ask in chat</Button>}
+                    <Button size="sm" variant="ghost" asChild><Link to={`/contacts/${r.contact_id}`}>Profile</Link></Button>
+                  </div>
                 </div>
               )}
-              {r.best_connection && (
-                <div className="rounded-lg bg-muted/60 p-3 text-sm">
-                  <div className="flex items-center gap-1.5 font-medium"><UserRound className="h-4 w-4" />Best connection: {r.best_connection.name} <span className="font-normal text-muted-foreground">· {r.best_connection.role}</span></div>
-                  <div className="text-muted-foreground">{r.best_connection.why} · Confidence: {r.best_connection.confidence}</div>
-                </div>
-              )}
-              {r.status === "pending" && (
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" onClick={() => care.takeCare.mutate(r)} disabled={care.takeCare.isPending}>I'll take care of this</Button>
-                  {r.best_connection && !r.sensitive && <Button size="sm" variant="outline" onClick={() => openDelegate(r)}>Ask {r.best_connection.name?.split(" ")[0]} to check in</Button>}
-                  <Button size="sm" variant="outline" onClick={() => { setOutcome("spoke"); setNote(""); setHandling(r); }}>Already handled</Button>
-                  <Button size="sm" variant="ghost" onClick={() => care.snooze.mutate(r)}>Snooze 7 days</Button>
-                  <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => care.dismiss.mutate(r)}>Not needed</Button>
-                </div>
-              )}
-            </article>
-          ))}
-        </section>
-      ))}
+            </li>
+          );
+        };
+        return (
+          <section key={date} className="rounded-3xl bg-muted p-6 md:p-8 space-y-5">
+            <h3 className="flex items-center gap-2 text-lg font-bold"><Sun className="h-5 w-5 text-primary" />Morning briefing — {format(parseISO(date), "EEEE, MMM d")}</h3>
+            <p className="text-sm font-semibold">Who needs you {isToday(parseISO(date)) ? "today" : "that day"}?</p>
+            {needCare.length > 0 && (
+              <div><p className="text-sm font-semibold mb-1">{needCare.length} Need Care</p><ul className="list-disc pl-5">{needCare.map(row)}</ul></div>
+            )}
+            {checking.length > 0 && (
+              <div><p className="text-sm font-semibold mb-1">Worth Checking On</p><ul className="list-disc pl-5">{checking.map(row)}</ul></div>
+            )}
+            <p className="text-xs text-muted-foreground">Tap a name to see why and what to do.</p>
+          </section>
+        );
+      })}
 
       <Dialog open={!!delegating} onOpenChange={(o) => !o && setDelegating(null)}>
         <DialogContent>
