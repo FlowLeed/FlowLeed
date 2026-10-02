@@ -211,3 +211,9 @@
   scrollbar-width: thin;
   scrollbar-color: #A855F7 transparent;
 }
+
+/* Contact profile blocks: one compact, consistent card style */
+.profile-block h3 { font-size: 1rem; line-height: 1.5rem; padding-right: 1.5rem; }
+.profile-block .p-6:not(.pt-0) { padding: 0.875rem 1rem; }
+.profile-block .p-6.pt-0 { padding: 0 1rem 0.875rem; }
+.profile-block .text-2xl, .profile-block .text-xl, .profile-block .text-lg { font-size: 1rem; line-height: 1.5rem; }
