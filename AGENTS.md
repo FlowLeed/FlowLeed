@@ -1,1 +1,2 @@
 - Care agent: `care-agent-run` edge function (cron, bounded batches, per-org lease in `care_agent_state`) writes per-leader rows to `care_recommendations`; the main AI conversation renders and acts on those rows directly under recipient-only RLS. Why: deterministic orchestration with AI used only for wording, without a separate briefing destination.
+- When demo data is cleared and an org has zero flows, a trigger on `organizations.demo_cleared_at` calls `create_default_pipelines`. Why: churches must never be left with an empty Flows list.
