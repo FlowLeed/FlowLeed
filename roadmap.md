@@ -24,6 +24,7 @@
 
 ## Daily care agent
 - [x] Place the concise daily care briefing directly in the main FlowLeed AI conversation
+- [x] Show each leader's overdue and due-today tasks in the morning briefing
 
 ## Navigation visibility
 - [x] Hide Connect when Messages and Calls are unavailable

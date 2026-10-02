@@ -23,6 +23,14 @@ export type CareRecommendation = {
   contact?: { id: string; name: string | null } | null;
 };
 
+export type BriefingTask = {
+  id: string;
+  title: string;
+  due_at: string;
+  contact_id: string | null;
+  contact?: { id: string; name: string | null } | null;
+};
+
 const db = supabase as any;
 const DAY = 86400000;
 const iso = (d: number) => new Date(Date.now() + d * DAY).toISOString();
@@ -56,7 +64,34 @@ export function useCareBriefing() {
     queryFn: async () => (await db.from("care_agent_state").select("paused_reason, last_run_date").eq("organization_id", organization!.id).maybeSingle()).data,
   });
 
-  const refresh = () => { qc.invalidateQueries({ queryKey: key }); qc.invalidateQueries({ queryKey: ["tasks"] }); };
+  const todos = useQuery({
+    queryKey: ["care-briefing-todos", user?.id, organization?.id],
+    enabled: !!user?.id && !!organization?.id,
+    queryFn: async (): Promise<BriefingTask[]> => {
+      const userId = user?.id;
+      const organizationId = organization?.id;
+      if (!userId || !organizationId) return [];
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+      const { data, error } = await db
+        .from("tasks")
+        .select("id, title, due_at, contact_id, contact:contacts(id, name)")
+        .eq("assigned_to_user_id", userId)
+        .eq("organization_id", organizationId)
+        .is("completed_at", null)
+        .not("due_at", "is", null)
+        .lte("due_at", endOfToday.toISOString())
+        .order("due_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: key });
+    qc.invalidateQueries({ queryKey: ["tasks"] });
+    qc.invalidateQueries({ queryKey: ["care-briefing-todos", user?.id, organization?.id] });
+  };
 
   const update = async (id: string, patch: Record<string, unknown>) => {
     const { error } = await db.from("care_recommendations").update({ ...patch, acted_at: new Date().toISOString() }).eq("id", id);
@@ -130,7 +165,24 @@ export function useCareBriefing() {
     onSuccess: refresh,
   });
 
-  return { list, status, run, takeCare, delegate, handled, snooze, dismiss };
+  const completeTodo = useMutation({
+    mutationFn: async (id: string) => {
+      const userId = user?.id;
+      const organizationId = organization?.id;
+      if (!userId || !organizationId) throw new Error("Your account is not ready yet.");
+      const { error } = await db
+        .from("tasks")
+        .update({ completed_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("assigned_to_user_id", userId)
+        .eq("organization_id", organizationId);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Task completed."); refresh(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return { list, status, todos, run, takeCare, delegate, handled, snooze, dismiss, completeTodo };
 }
 
 export const OUTCOMES: Record<string, string> = {

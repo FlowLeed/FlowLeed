@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { format, parseISO, isToday } from "date-fns";
-import { HeartHandshake, RefreshCw, UserRound, Loader2, Sun, MessageCircle } from "lucide-react";
+import { format, parseISO, isToday, isBefore, startOfToday } from "date-fns";
+import { HeartHandshake, RefreshCw, UserRound, Loader2, Sun, MessageCircle, CircleCheck, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,8 +29,21 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
   const days = useMemo(() => {
     const m = new Map<string, CareRecommendation[]>();
     for (const r of care.list.data ?? []) { if (!m.has(r.briefing_date)) m.set(r.briefing_date, []); m.get(r.briefing_date)!.push(r); }
+    if ((care.todos.data?.length ?? 0) > 0) {
+      const today = format(new Date(), "yyyy-MM-dd");
+      if (!m.has(today)) m.set(today, []);
+    }
     return [...m.entries()];
-  }, [care.list.data]);
+  }, [care.list.data, care.todos.data]);
+
+  const overdueTasks = useMemo(
+    () => (care.todos.data ?? []).filter((task) => isBefore(parseISO(task.due_at), startOfToday())),
+    [care.todos.data],
+  );
+  const todayTasks = useMemo(
+    () => (care.todos.data ?? []).filter((task) => isToday(parseISO(task.due_at))),
+    [care.todos.data],
+  );
 
   const openDelegate = (r: CareRecommendation) => {
     const first = (r.contact?.name ?? "").split(" ")[0] || "them";
@@ -58,6 +71,7 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
           </div>
         </div>
       ) : days.map(([date, recs]) => {
+        const currentDay = isToday(parseISO(date));
         const needCare = recs.filter((r) => r.kind === "life_moment" || r.kind === "faith_moment");
         const checking = recs.filter((r) => r.kind === "drift" || r.kind === "follow_up");
         const row = (r: CareRecommendation) => {
@@ -106,7 +120,35 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
               {checking.length > 0 && (
                 <div><p className="mb-1 text-sm font-semibold">Worth Checking On</p><ul className="list-disc pl-5">{checking.map(row)}</ul></div>
               )}
-              <p className="text-xs text-muted-foreground">Tap a name to see why and what to do.</p>
+              {currentDay && (overdueTasks.length > 0 || todayTasks.length > 0) && (
+                <div className="space-y-2">
+                  <p className="flex items-center gap-1.5 text-sm font-semibold"><ListTodo className="h-4 w-4 text-primary" />Today’s To-Dos</p>
+                  <ul className="space-y-1">
+                    {[...overdueTasks, ...todayTasks].map((task) => {
+                      const overdue = overdueTasks.some((item) => item.id === task.id);
+                      return (
+                        <li key={task.id} className="flex min-w-0 items-center gap-2 text-sm">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-primary"
+                            aria-label={`Complete ${task.title}`}
+                            disabled={care.completeTodo.isPending}
+                            onClick={() => care.completeTodo.mutate(task.id)}
+                          >
+                            <CircleCheck className="h-4 w-4" />
+                          </Button>
+                          <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                          {overdue && <span className="shrink-0 text-xs font-medium text-destructive">Overdue</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild><Link to="/tasks">View all tasks</Link></Button>
+                </div>
+              )}
+              {(needCare.length > 0 || checking.length > 0) && <p className="text-xs text-muted-foreground">Tap a name to see why and what to do.</p>}
             </section>
           </div>
         );
