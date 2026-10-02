@@ -49,21 +49,32 @@ export function LinkPersonDialog({ request, orgId, onClose, onLinked }: Props) {
     if (!request || !orgId || !request.submitter_name) return;
     setLoading(true);
     (async () => {
-      const name = request.submitter_name!;
-      let found = await findPeople(orgId, name);
-      if (!found.length) {
-        // Fall back to last name only (e.g. different first-name spelling)
-        const parts = sanitize(name).split(/\s+/);
-        if (parts.length > 1) found = await findPeople(orgId, parts[parts.length - 1]);
+      try {
+        const name = request.submitter_name!;
+        let found = await findPeople(orgId, name);
+        if (!found.length) {
+          // Fall back to last name only (e.g. different first-name spelling)
+          const parts = sanitize(name).split(/\s+/);
+          if (parts.length > 1) found = await findPeople(orgId, parts[parts.length - 1]);
+        }
+        setSuggested(found);
+      } catch (e: any) {
+        console.error("Suggested matches failed:", e);
+        toast.error("Could not search people — please use the search box below");
+      } finally {
+        setLoading(false);
       }
-      setSuggested(found);
-      setLoading(false);
     })();
   }, [request, orgId]);
 
   useEffect(() => {
     if (!orgId || q.trim().length < 2) { setResults([]); return; }
-    const t = setTimeout(() => findPeople(orgId, q).then(setResults), 250);
+    const t = setTimeout(() => {
+      findPeople(orgId, q).then(setResults).catch((e) => {
+        console.error("People search failed:", e);
+        toast.error("Search failed — please try again");
+      });
+    }, 250);
     return () => clearTimeout(t);
   }, [q, orgId]);
 
