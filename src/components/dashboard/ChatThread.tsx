@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { type ChatMessage } from "@/hooks/useDashboardChat";
+import { type ChatMessage, BRIEFING_MARKER } from "@/hooks/useDashboardChat";
 import { User, HeartHandshake, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
