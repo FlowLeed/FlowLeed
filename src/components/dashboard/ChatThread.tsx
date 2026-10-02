@@ -20,14 +20,40 @@ const THINKING_MESSAGES = [
   "Almost there...",
 ];
 
-const formatAssistantMarkdown = (content: string) => content
-  // Preserve markdown structure when a streamed heading arrives immediately
-  // after the previous sentence.
-  .replace(/([^\n])(?=#{2,3}\s)/g, "$1\n\n")
-  // Repair common sentence boundaries lost by upstream streaming.
-  .replace(/([.!?])(?=[A-Z])/g, "$1 ")
-  // Repair common profile section headings joined to their first sentence.
-  .replace(/^(#{2,3}\s+.*(?:Overview|Activity|History|Summary|Context|Connections|Engagement|Household|Groups|Flows|Next Steps))(?=[A-Z])/gm, "$1\n\n");
+/** Words that mark a section title rather than body text. */
+const TITLE_HINT =
+  /(Overview|Activity|History|Summary|Context|Connection|Engagement|Household|Groups?|Flows?|Journey|Milestones?|Profile|Serving|Family|Care|Spiritual|Recent|Leadership|Next Steps|Prayer|Notes|Demographics|Tags|Interactions)/i;
+
+const formatAssistantMarkdown = (content: string) => {
+  let text = content
+    // Preserve markdown structure when a streamed heading arrives immediately
+    // after the previous sentence.
+    .replace(/([^\n])(?=#{2,3}\s)/g, "$1\n\n")
+    // A bold-only line is a section title, not body text.
+    .replace(/^\s*\*\*([^*]+)\*\*\s*$/gm, (_m, t: string) => `### ${t.trim().replace(/:$/, "")}`)
+    // A bold title glued to the sentence that follows gets its own line first.
+    .replace(/^(\s*)\*\*([^*]+?)\*\*(?=\S)/gm, (m, sp: string, inner: string) => {
+      const title = inner.trim().replace(/:$/, "");
+      if (/:$/.test(inner.trim()) || TITLE_HINT.test(title)) {
+        return `${sp}### ${title}\n\n`;
+      }
+      // Likely a plain emphasized word - keep it inline, just separate it.
+      return `${m} `;
+    })
+    // Mid-line bold labels start their own quiet heading between paragraphs.
+    .replace(/([^\n*])\s*\*\*([^*]{1,60}?):\*\*(?=\s*\S)/g, (_m, before: string, label: string) =>
+      `${before}\n\n### ${label.trim()}\n\n`);
+  // Bold stays for titles only - paragraphs render as plain text.
+  text = text.replace(/\*\*([^*]+)\*\*/g, "$1");
+  return text
+    // Keep person links readable when glued to a preceding word.
+    .replace(/(\S)(?=\[)/g, "$1 ")
+    // Repair common sentence boundaries lost by upstream streaming.
+    .replace(/([.!?])(?=[A-Z])/g, "$1 ")
+    .replace(/([:;])(?=[A-Z])/g, "$1 ")
+    // Repair common profile section headings joined to their first sentence.
+    .replace(/^(#{2,3}\s+.*(?:Overview|Activity|History|Summary|Context|Connections|Engagement|Household|Groups|Flows|Next Steps))(?=[A-Z])/gm, "$1\n\n");
+};
 
 /** Rotating, human-centered status lines shown while FlowLeed AI thinks. */
 const ThinkingStatus = () => {
