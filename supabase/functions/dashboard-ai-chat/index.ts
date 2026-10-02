@@ -1572,6 +1572,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
 
 
+    let lastDirectAnswer = "";
+    let lastToolResult = "";
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
       const toolCheckResponse = await fetch(AI_GATEWAY, {
@@ -1624,6 +1626,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       const toolCalls = choice.message?.tool_calls;
 
       if (!toolCalls || toolCalls.length === 0) {
+        if (typeof choice.message?.content === "string") lastDirectAnswer = choice.message.content;
         // No tool calls — model wants to respond directly.
         // If we already have tool results, stream the final response.
         // If this is the first round with no tool calls, also stream.
@@ -1680,6 +1683,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         }
 
         registerPeople(result);
+        lastToolResult = result;
 
 
         aiMessages.push({
@@ -1810,7 +1814,20 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         // into plain language (the raw tool text contains internal instructions).
         if (!fullText.trim() && !sentAnything && lastFinderResult) {
           const fallback = clean(humanizeFinderResult(lastFinderResult)).trim();
-          if (fallback) send(fallback);
+          if (fallback) { send(fallback); sentAnything = true; }
+        }
+        // Never end with silence: fall back to the model's earlier answer, the
+        // last tool's plain message, or a short honest note.
+        if (!sentAnything) {
+          const toolText = lastToolResult
+            .replace(/<!--[\s\S]*?-->/g, "")
+            .split("\n").filter((l) => !/^(INSTRUCTION|NOTE|IMPORTANT|SYSTEM)\b/i.test(l.trim())).join("\n").trim();
+          const fb = clean(lastDirectAnswer).trim()
+            || (pendingActionMarker ? "Here's what I prepared. Please review it and confirm below." : "")
+            || (toolText && toolText.length < 600 ? toolText : "")
+            || "Sorry, I couldn't put together an answer for that. Could you say it another way, or tell me the person's full name?";
+          send(fb);
+          sentAnything = true;
         }
 
         if (removedTotal > 0) {
