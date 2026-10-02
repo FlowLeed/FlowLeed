@@ -216,7 +216,8 @@
 .profile-block h3 { font-size: 1rem; line-height: 1.5rem; padding-right: 1.5rem; }
 /* Reserve room for the in-card drag grip at the top-right of each block */
 .profile-block [data-slot="card-header"]:first-child { padding-right: 3rem; display: flex; flex-direction: column; justify-content: center; align-items: stretch; min-height: 3.25rem; padding-top: 0; padding-bottom: 0; }
-.profile-block > *:first-child > :first-child:is(.flex, [class*="flex"]) { padding-right: 2rem; align-items: center; }
+.profile-block [data-slot="card-header"]:first-child > :first-child:is(.flex, [class*="flex"]) { align-items: center; }
+.profile-block > *:first-child > :first-child:is(.flex, [class*="flex"]):not([data-slot="card-header"]) { padding-right: 2rem; align-items: center; }
 .profile-block .p-6:not(.pt-0) { padding: 0.875rem 1rem; }
 .profile-block .p-6.pt-0 { padding: 0 1rem 0.875rem; }
 .profile-block .text-2xl, .profile-block .text-xl, .profile-block .text-lg { font-size: 1rem; line-height: 1.5rem; }
