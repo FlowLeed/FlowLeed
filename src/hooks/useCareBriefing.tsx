@@ -68,13 +68,16 @@ export function useCareBriefing() {
     queryKey: ["care-briefing-todos", user?.id, organization?.id],
     enabled: !!user?.id && !!organization?.id,
     queryFn: async (): Promise<BriefingTask[]> => {
+      const userId = user?.id;
+      const organizationId = organization?.id;
+      if (!userId || !organizationId) return [];
       const endOfToday = new Date();
       endOfToday.setHours(23, 59, 59, 999);
       const { data, error } = await db
         .from("tasks")
         .select("id, title, due_at, contact_id, contact:contacts(id, name)")
-        .eq("assigned_to_user_id", user!.id)
-        .eq("organization_id", organization!.id)
+        .eq("assigned_to_user_id", userId)
+        .eq("organization_id", organizationId)
         .is("completed_at", null)
         .not("due_at", "is", null)
         .lte("due_at", endOfToday.toISOString())
@@ -164,12 +167,15 @@ export function useCareBriefing() {
 
   const completeTodo = useMutation({
     mutationFn: async (id: string) => {
+      const userId = user?.id;
+      const organizationId = organization?.id;
+      if (!userId || !organizationId) throw new Error("Your account is not ready yet.");
       const { error } = await db
         .from("tasks")
         .update({ completed_at: new Date().toISOString() })
         .eq("id", id)
-        .eq("assigned_to_user_id", user!.id)
-        .eq("organization_id", organization!.id);
+        .eq("assigned_to_user_id", userId)
+        .eq("organization_id", organizationId);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Task completed."); refresh(); },
