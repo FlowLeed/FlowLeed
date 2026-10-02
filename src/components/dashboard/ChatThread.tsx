@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
-import { User, HeartHandshake, RotateCcw, History, ListPlus, ShieldCheck, CheckCircle2, Clock } from "lucide-react";
+import { User, HeartHandshake, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
@@ -194,20 +194,73 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                   } catch { /* ignore */ }
                 }
                 const visibleContent = cleanContent.replace(/<!--flowleed:[\s\S]*?-->\s*/g, "").trimEnd();
+                const actionTitleType = (section: string) => {
+                  const heading = section.match(/^#{2,3}\s+([^\n]+)/m)?.[1]?.toLowerCase() ?? "";
+                  if (heading.includes("private note") || heading === "note" || heading === "notes") return "create_contact_note";
+                  if (heading.includes("reminder") || heading.includes("task")) return "create_task";
+                  if (heading.includes("prayer")) return "create_prayer_request";
+                  if (heading.includes("flow")) return "add_to_flow";
+                  return undefined;
+                };
+                const sections = formatAssistantMarkdown(visibleContent).split(/(?=^#{2,3}\s)/m).filter(Boolean);
+                const assignedActionIds = new Set<string>();
+                const pendingActions = (actions: ChatAction[]) => actions.filter((action) => {
+                  if (handledActions.has(action.id)) return false;
+                  const state = actionStates?.get(action.id);
+                  const expiresAt = state?.expires_at ?? action.expires_at;
+                  return state?.status !== "completed" && state?.status !== "cancelled" && state?.status !== "failed" && new Date(expiresAt).getTime() > Date.now();
+                });
+                const approveActions = async (actions: ChatAction[], groupId: string) => {
+                  if (!onConfirmAction) return;
+                  setConfirmingId(groupId);
+                  const approvedIds: string[] = [];
+                  for (const action of actions) {
+                    const result = await onConfirmAction(action.id);
+                    if (result.ok) approvedIds.push(action.id);
+                  }
+                  setConfirmingId(null);
+                  if (approvedIds.length > 0) {
+                    setHandledActions((current) => new Set([...current, ...approvedIds]));
+                  }
+                };
+                const approvalButton = (actions: ChatAction[], groupId: string) => {
+                  const waiting = pendingActions(actions);
+                  if (waiting.length === 0) return null;
+                  waiting.forEach((action) => assignedActionIds.add(action.id));
+                  return (
+                    <Button
+                      size="sm"
+                      className="mt-2 h-7 px-2.5 text-xs"
+                      disabled={confirmingId === groupId}
+                      onClick={() => void approveActions(waiting, groupId)}
+                    >
+                      {confirmingId === groupId ? "Approving..." : "Approve"}
+                    </Button>
+                  );
+                };
                 return (
                   <div className="max-w-none">
-                    {/* !h-auto: the text block defaults to full height, which pushed the
-                        confirmation cards below it out of the clipped message box. */}
-                    <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }} className="!h-auto font-sans text-sm font-normal leading-6
-                      [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-                      [&_p]:my-0 [&_p+p]:mt-4
-                      [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
-                      [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:leading-6
-                      [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_li]:leading-6
-                      [&_strong]:font-semibold [&_strong]:text-foreground
-                      [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2">
-                      {formatAssistantMarkdown(visibleContent)}
-                    </MessageResponse>
+                    {sections.map((section, sectionIndex) => {
+                      const type = actionTitleType(section);
+                      const sectionActions = type ? actionsAll.filter((action) => action.type === type) : [];
+                      const groupId = `${i}-${type ?? sectionIndex}`;
+                      return (
+                        <div key={groupId} className="not-prose">
+                          {/* !h-auto prevents controls after the text from being clipped. */}
+                          <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }} className="!h-auto font-sans text-sm font-normal leading-6
+                            [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
+                            [&_p]:my-0 [&_p+p]:mt-4
+                            [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
+                            [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:leading-6
+                            [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_li]:leading-6
+                            [&_strong]:font-semibold [&_strong]:text-foreground
+                            [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2">
+                            {section}
+                          </MessageResponse>
+                          {approvalButton(sectionActions, groupId)}
+                        </div>
+                      );
+                    })}
                     {contactIds.length > 0 && (
                       <div className="not-prose mt-4 flex flex-wrap gap-2">
                         <Button size="sm" onClick={() => setBulkIds(contactIds)} className="gap-2">
@@ -216,47 +269,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         </Button>
                       </div>
                     )}
-                    {actionsAll.filter((action) => !handledActions.has(action.id)).map((action) => (<div key={action.id}>{(() => {
-                      const state = actionStates?.get(action.id) as { status?: string; expires_at?: string } | undefined;
-                      const status = state?.status;
-                      const expiresAt = state?.expires_at ?? action.expires_at;
-                      const expired = new Date(expiresAt).getTime() <= Date.now();
-                      const title = action.type === "create_contact_note" ? "note" : action.type === "create_prayer_request" ? "prayer request" : action.type === "create_task" ? "task" : "Flow change";
-
-                      if (status === "completed") {
-                        return (
-                          <div className="not-prose mt-4 flex items-start gap-3 rounded-md border bg-muted/30 p-4 text-sm">
-                            <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
-                            <p>This {title} was already saved.</p>
-                          </div>
-                        );
-                      }
-
-                      if (status === "cancelled" || status === "failed" || expired) {
-                        return (
-                          <div className="not-prose mt-4 flex items-start gap-3 rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-                            <Clock className="mt-0.5 h-5 w-5" />
-                            <p>
-                              {status === "failed"
-                                ? `This ${title} could not be saved. Ask FlowLeed AI again to try once more.`
-                                : `This ${title} is no longer waiting for you. Ask FlowLeed AI again if you still want it.`}
-                            </p>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="not-prose mt-4 rounded-md border bg-muted/30 p-4">
-                           <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">{action.type === "create_contact_note" ? "Confirm new note" : action.type === "create_prayer_request" ? "Confirm prayer request" : action.type === "create_task" ? "Confirm new task" : "Confirm Flow change"}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{action.summary}</p></div></div>
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            <Button size="sm" disabled={confirmingId === action.id} onClick={async () => { if (!onConfirmAction) return; setConfirmingId(action.id); const result = await onConfirmAction(action.id); setConfirmingId(null); if (result.ok) setHandledActions((current) => new Set(current).add(action.id)); }}>
-                               {confirmingId === action.id ? "Confirming..." : action.type === "create_contact_note" ? "Save note" : action.type === "create_prayer_request" ? "Save prayer request" : action.type === "create_task" ? "Save task" : "Confirm add"}
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => setHandledActions((current) => new Set(current).add(action.id))}>Cancel</Button>
-                          </div>
-                        </div>
-                      );
-                    })()}</div>))}
+                    {approvalButton(
+                      actionsAll.filter((action) => !assignedActionIds.has(action.id)),
+                      `${i}-remaining-actions`,
+                    )}
                   </div>
                 );
               })()
