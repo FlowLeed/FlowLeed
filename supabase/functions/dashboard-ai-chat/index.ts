@@ -1130,7 +1130,10 @@ function sanitizePeopleMentions(
     );
   }
 
-  const cleaned = outLines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  // No trim: the reply is cleaned one streamed chunk at a time, and trimming each chunk
+  // would delete the line breaks and spaces between chunks (headings and lists then
+  // run into the previous sentence). Callers trim the start and end of the whole reply.
+  const cleaned = outLines.join("\n").replace(/\n{3,}/g, "\n\n");
   return { text: cleaned, removed };
 }
 
