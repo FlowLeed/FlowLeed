@@ -5558,6 +5558,7 @@ export type Database = {
           created_by_user_id: string
           description: string | null
           due_at: string | null
+          due_notified_at: string | null
           id: string
           organization_id: string
           title: string
@@ -5571,6 +5572,7 @@ export type Database = {
           created_by_user_id: string
           description?: string | null
           due_at?: string | null
+          due_notified_at?: string | null
           id?: string
           organization_id: string
           title: string
@@ -5584,6 +5586,7 @@ export type Database = {
           created_by_user_id?: string
           description?: string | null
           due_at?: string | null
+          due_notified_at?: string | null
           id?: string
           organization_id?: string
           title?: string
@@ -6389,6 +6392,7 @@ export type Database = {
         }
         Returns: number
       }
+      notify_due_tasks: { Args: never; Returns: number }
       preview_engagement_settings:
         | { Args: { p_org_id: string; p_settings: Json }; Returns: Json }
         | {
