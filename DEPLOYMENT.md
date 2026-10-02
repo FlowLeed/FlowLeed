@@ -40,7 +40,7 @@ The web app goes live last, so it never runs against a database that hasn't been
 ### 1. Create the staging Supabase project
 
 - **Plan:** in the same organization and region as production, on Postgres 17.
-- **Database password:** keep the one you choose. It becomes `SUPABASE_DB_PASSWORD`.
+- **Database password:** CI doesn't need it. Store it in your password manager for your own use.
 - **Project ref:** note it from **Project Settings → General → Reference ID**.
 
 ### 2. Add the Vault secrets to staging
@@ -89,7 +89,6 @@ All of these go on the **`staging`** environment.
 | Name | Required | Used for | Where to get it |
 |---|---|---|---|
 | `SUPABASE_ACCESS_TOKEN` | Yes | Supabase CLI login | Supabase dashboard → **Account → Access Tokens** |
-| `SUPABASE_DB_PASSWORD` | Yes | `supabase db push` | Chosen when the project was created; reset under **Project Settings → Database** |
 | `CLOUDFLARE_API_TOKEN` | Yes | `wrangler deploy` | Step 4 |
 | `CLOUDFLARE_ACCOUNT_ID` | Yes | `wrangler deploy` | Step 4 |
 | `CRON_SECRET` | Yes | Edge Function secret; the cron-called functions and `send-push` check it | A long random value, identical to the `cron_secret` Vault secret (step 2) |
@@ -142,6 +141,7 @@ You can use `npx web-push generate-vapid-keys` to generate the VAPID keys
 |---|---|
 | Build fails at "Check build variables" | `VITE_SUPABASE_URL` or `VITE_SUPABASE_PUBLISHABLE_KEY` isn't set on the `staging` environment. |
 | Build fails at "Install dependencies" | `bun.lock` doesn't match `package.json`. Run `bun install` and commit `bun.lock`. |
+| `supabase db push` fails with "failed to initialise login role", or asks for a database password | The CLI couldn't get a temporary login with `SUPABASE_ACCESS_TOKEN`. Check that the token's account can access the staging project. As a fallback, add the database password as a `SUPABASE_DB_PASSWORD` secret and pass it to the job's `env`. |
 | `supabase db push` fails with "Remote migration versions not found in local migrations directory" | The project's migration history has versions that aren't in `supabase/migrations/`. This doesn't happen on a new staging project. For production, see the checklist in [supabase/README.md](supabase/README.md#before-merging-to-dev-and-turning-on-cicd). |
 | Cron jobs fail in `cron.job_run_details` with "Vault secrets … are required" | Step 2 wasn't done. |
 | Cron calls get a 401 | The `cron_secret` Vault value and the `CRON_SECRET` secret are different. |
