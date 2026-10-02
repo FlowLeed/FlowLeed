@@ -22,8 +22,18 @@ async function findPeople(orgId: string, q: string): Promise<Person[]> {
   if (!words.length) return [];
   let query = supabase.from("contacts").select("id, name, email, phone").eq("organization_id", orgId);
   words.forEach((w) => { query = query.ilike("name", `%${w}%`); });
-  const { data } = await query.limit(8);
-  return (data || []) as Person[];
+  const { data, error } = await query.limit(8);
+  if (error) throw new Error(error.message);
+  let rows = (data || []) as Person[];
+  // Fallback: match on any single name word (covers middle names, swapped order, typos)
+  if (!rows.length && words.length > 1) {
+    const orClause = words.map((w) => `name.ilike.%${w}%`).join(",");
+    const { data: loose, error: err2 } = await supabase.from("contacts")
+      .select("id, name, email, phone").eq("organization_id", orgId).or(orClause).limit(8);
+    if (err2) throw new Error(err2.message);
+    rows = (loose || []) as Person[];
+  }
+  return rows;
 }
 
 /** Suggests people whose name matches the submitter, and lets a leader search and link manually. */
@@ -39,21 +49,32 @@ export function LinkPersonDialog({ request, orgId, onClose, onLinked }: Props) {
     if (!request || !orgId || !request.submitter_name) return;
     setLoading(true);
     (async () => {
-      const name = request.submitter_name!;
-      let found = await findPeople(orgId, name);
-      if (!found.length) {
-        // Fall back to last name only (e.g. different first-name spelling)
-        const parts = sanitize(name).split(/\s+/);
-        if (parts.length > 1) found = await findPeople(orgId, parts[parts.length - 1]);
+      try {
+        const name = request.submitter_name!;
+        let found = await findPeople(orgId, name);
+        if (!found.length) {
+          // Fall back to last name only (e.g. different first-name spelling)
+          const parts = sanitize(name).split(/\s+/);
+          if (parts.length > 1) found = await findPeople(orgId, parts[parts.length - 1]);
+        }
+        setSuggested(found);
+      } catch (e: any) {
+        console.error("Suggested matches failed:", e);
+        toast.error("Could not search people — please use the search box below");
+      } finally {
+        setLoading(false);
       }
-      setSuggested(found);
-      setLoading(false);
     })();
   }, [request, orgId]);
 
   useEffect(() => {
     if (!orgId || q.trim().length < 2) { setResults([]); return; }
-    const t = setTimeout(() => findPeople(orgId, q).then(setResults), 250);
+    const t = setTimeout(() => {
+      findPeople(orgId, q).then(setResults).catch((e) => {
+        console.error("People search failed:", e);
+        toast.error("Search failed — please try again");
+      });
+    }, 250);
     return () => clearTimeout(t);
   }, [q, orgId]);
 
