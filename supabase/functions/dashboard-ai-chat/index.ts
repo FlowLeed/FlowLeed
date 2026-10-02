@@ -1498,10 +1498,11 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 - When mentioning a person's name, ALWAYS wrap it in a markdown link, e.g. [John Smith](/contacts/def-456).
 - When listing people, format them clearly with relevant details.
 - When suggesting actions, be specific and actionable.
-- Use markdown formatting: use ## for section headers, **bold** for emphasis, and bullet lists for data.
-- CRITICAL FORMATTING RULE: Always start with a short greeting paragraph, then leave a BLANK LINE before the first section header. Every section header must have a blank line ABOVE it.
-- Use ## or ### for section titles. Every section must start with a header on its own line, preceded by a blank line.
-- Write in clear, well-spaced paragraphs. Each paragraph must be separated by a blank line.
+- Use restrained markdown formatting: short section labels, **bold** for emphasis, and bullet lists only when they improve scanning.
+- Keep headings the same visual importance as body text. Do not use oversized or title-style headings in an answer.
+- Start directly with the answer. Use short, natural paragraphs of 1–3 sentences, separated by one blank line.
+- Every section label must be on its own line with a blank line above and below it. Never join a heading, label, sentence, or list item to the next text.
+- Before finishing, verify there is whitespace after every period and that no words from separate sentences or sections are joined together.
 - NEVER put two bold-labeled items in the same paragraph. Each must be its own paragraph with a blank line before it.
 - When describing multiple flows, moments, or categories, use this format EXACTLY:
 
