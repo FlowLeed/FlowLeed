@@ -90,6 +90,7 @@ interface ChatThreadProps {
   onClear: () => void;
   onOpenHistory?: () => void;
   onConfirmAction?: (actionRequestId: string) => Promise<{ ok: boolean; message: string }>;
+  renderBriefing?: () => React.ReactNode;
 }
 
 interface ActionRequestState {
@@ -98,7 +99,7 @@ interface ActionRequestState {
   expires_at: string;
 }
 
-export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory, onConfirmAction }) => {
+export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory, onConfirmAction, renderBriefing }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [bulkIds, setBulkIds] = useState<string[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -158,7 +159,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
           New conversation
         </Button>
       </div>
-      {messages.map((msg, i) => (
+      {messages.map((msg, i) => msg.role === "assistant" && msg.content.startsWith(BRIEFING_MARKER) ? (
+        <div key={i}>{renderBriefing?.()}</div>
+      ) : (
         <Message key={i} from={msg.role} className={`flex-row gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           {msg.role === "assistant" && (
             <div className="flex-shrink-0 mt-1">
