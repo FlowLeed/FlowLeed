@@ -173,3 +173,6 @@ verify_jwt = false
 # x-cron-secret header that it checks (_shared/cron-auth.ts).
 [functions.send-push]
 verify_jwt = false
+
+[functions.public-prayer-submit]
+verify_jwt = false

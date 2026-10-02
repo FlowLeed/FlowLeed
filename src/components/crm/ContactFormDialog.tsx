@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Plus, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { TagManager } from "@/components/contact/TagManager";
 import { useOrgTagSuggestions } from "@/hooks/useContactTags";
 import { useQuery } from "@tanstack/react-query";
+import { MessagingChannelIcon } from "@/components/contact/MessagingChannelLinks";
+import { MESSAGING_CHANNELS, MessagingChannelKey } from "@/lib/messagingChannels";
 
 export interface FlowEnrollmentData {
   pipelineId: string;
@@ -57,6 +60,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
   const [addToFlow, setAddToFlow] = useState(false);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(null);
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
+  const [selectedMessagingChannels, setSelectedMessagingChannels] = useState<MessagingChannelKey[]>([]);
   
   // Get tag suggestions for the organization
   const { suggestions: tagSuggestions } = useOrgTagSuggestions(organization?.id);
@@ -131,6 +135,10 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     state: "",
     zipCode: "",
     country: "",
+    telegram: "",
+    facebook: "",
+    whatsapp: "",
+    instagram: "",
   }), [profile]);
 
   const [formData, setFormData] = useState<ContactFormState>(() => ({
@@ -148,6 +156,10 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
     state: "",
     zipCode: "",
     country: "",
+    telegram: "",
+    facebook: "",
+    whatsapp: "",
+    instagram: "",
   }));
 
   // Normalize values coming from external sources (e.g., PCO)
@@ -235,6 +247,7 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
 
   const resetForm = React.useCallback(() => {
     setFormData(buildBlankForm());
+    setSelectedMessagingChannels([]);
     setAddToFlow(false);
     setSelectedPipelineId(null);
     setSelectedStageId(null);
@@ -261,7 +274,16 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
         state: extendedContact.state || "",
         zipCode: extendedContact.zipCode || "",
         country: extendedContact.country || "",
+        telegram: contact.telegram || "",
+        facebook: contact.facebook || "",
+        whatsapp: contact.whatsapp || "",
+        instagram: contact.instagram || "",
       });
+      setSelectedMessagingChannels(
+        MESSAGING_CHANNELS
+          .filter((channel) => Boolean(contact[channel.key]?.trim()))
+          .map((channel) => channel.key),
+      );
       setAddToFlow(false);
       setSelectedPipelineId(null);
       setSelectedStageId(null);
@@ -288,6 +310,17 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
 
   const handleTagsChange = (newTags: string[]) => {
     setFormData((prev) => ({ ...prev, tags: newTags }));
+  };
+
+  const addMessagingChannel = (channelKey: MessagingChannelKey) => {
+    setSelectedMessagingChannels((current) =>
+      current.includes(channelKey) ? current : [...current, channelKey],
+    );
+  };
+
+  const removeMessagingChannel = (channelKey: MessagingChannelKey) => {
+    setSelectedMessagingChannels((current) => current.filter((key) => key !== channelKey));
+    handleChange(channelKey, "");
   };
 
   const submitForm = (addAnother: boolean) => {
@@ -364,6 +397,81 @@ export const ContactFormDialog: React.FC<ContactFormDialogProps> = ({
               value={formData.phone || ""}
               onChange={(e) => handleChange("phone", e.target.value)}
             />
+          </div>
+
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <Label>Messaging apps</Label>
+              {selectedMessagingChannels.length < MESSAGING_CHANNELS.length && (
+                <Select onValueChange={(value) => addMessagingChannel(value as MessagingChannelKey)}>
+                  <SelectTrigger className="h-9 w-auto min-w-[180px]">
+                    <div className="flex items-center gap-1.5 whitespace-nowrap text-sm">
+                      <Plus className="h-4 w-4 shrink-0" />
+                      Add an App
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {MESSAGING_CHANNELS.filter(
+                      (channel) => !selectedMessagingChannels.includes(channel.key),
+                    ).map((channel) => (
+                      <SelectItem key={channel.key} value={channel.key}>
+                        <span className="flex items-center gap-2">
+                          <MessagingChannelIcon channelKey={channel.key} className={`h-4 w-4 ${channel.colorClass}`} />
+                          {channel.label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {selectedMessagingChannels.map((channelKey) => {
+              const channel = MESSAGING_CHANNELS.find((item) => item.key === channelKey);
+              if (!channel) return null;
+
+              return (
+                <div key={channel.key} className="space-y-1.5 rounded-md border bg-muted/20 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor={channel.key} className="flex items-center gap-2">
+                      <MessagingChannelIcon channelKey={channel.key} className={`h-4 w-4 ${channel.colorClass}`} />
+                      {channel.label}
+                    </Label>
+                    <div className="flex items-center gap-1">
+                      {channel.key === 'whatsapp' && formData.phone ? (
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="h-8 px-2 text-xs"
+                          onClick={() => handleChange('whatsapp', formData.phone || '')}
+                        >
+                          Use phone number
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label={`Remove ${channel.label}`}
+                        title={`Remove ${channel.label}`}
+                        onClick={() => removeMessagingChannel(channel.key)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Input
+                    id={channel.key}
+                    placeholder={channel.placeholder}
+                    value={formData[channel.key] || ""}
+                    onChange={(e) => handleChange(channel.key, e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">{channel.hint}</p>
+                </div>
+              );
+            })}
           </div>
 
           <div className="space-y-2">

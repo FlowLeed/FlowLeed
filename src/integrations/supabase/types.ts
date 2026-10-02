@@ -1358,40 +1358,80 @@ export type Database = {
         Row: {
           answer_description: string | null
           answered_at: string | null
-          contact_id: string
+          contact_id: string | null
           created_at: string
-          created_by_user_id: string
+          created_by_user_id: string | null
           description: string | null
           id: string
+          is_anonymous: boolean
+          kind: string
+          organization_id: string | null
+          source: string
+          stage_id: string | null
           status: string | null
-          title: string
+          submitter_name: string | null
+          title: string | null
           updated_at: string
         }
         Insert: {
           answer_description?: string | null
           answered_at?: string | null
-          contact_id: string
+          contact_id?: string | null
           created_at?: string
-          created_by_user_id: string
+          created_by_user_id?: string | null
           description?: string | null
           id?: string
+          is_anonymous?: boolean
+          kind?: string
+          organization_id?: string | null
+          source?: string
+          stage_id?: string | null
           status?: string | null
-          title: string
+          submitter_name?: string | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
           answer_description?: string | null
           answered_at?: string | null
-          contact_id?: string
+          contact_id?: string | null
           created_at?: string
-          created_by_user_id?: string
+          created_by_user_id?: string | null
           description?: string | null
           id?: string
+          is_anonymous?: boolean
+          kind?: string
+          organization_id?: string | null
+          source?: string
+          stage_id?: string | null
           status?: string | null
-          title?: string
+          submitter_name?: string | null
+          title?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contact_prayer_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_prayer_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_prayer_requests_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "prayer_stages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contact_tags: {
         Row: {
@@ -1429,7 +1469,9 @@ export type Database = {
           campus_id: string | null
           created_at: string
           email: string | null
+          facebook: string | null
           id: string
+          instagram: string | null
           is_demo: boolean
           last_synced_at: string | null
           name: string
@@ -1441,7 +1483,9 @@ export type Database = {
           phone: string | null
           source_type: string | null
           status: string
+          telegram: string | null
           updated_at: string
+          whatsapp: string | null
         }
         Insert: {
           assigned_to_user_id?: string | null
@@ -1449,7 +1493,9 @@ export type Database = {
           campus_id?: string | null
           created_at?: string
           email?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           is_demo?: boolean
           last_synced_at?: string | null
           name: string
@@ -1461,7 +1507,9 @@ export type Database = {
           phone?: string | null
           source_type?: string | null
           status?: string
+          telegram?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Update: {
           assigned_to_user_id?: string | null
@@ -1469,7 +1517,9 @@ export type Database = {
           campus_id?: string | null
           created_at?: string
           email?: string | null
+          facebook?: string | null
           id?: string
+          instagram?: string | null
           is_demo?: boolean
           last_synced_at?: string | null
           name?: string
@@ -1481,7 +1531,9 @@ export type Database = {
           phone?: string | null
           source_type?: string | null
           status?: string
+          telegram?: string | null
           updated_at?: string
+          whatsapp?: string | null
         }
         Relationships: [
           {
@@ -4852,6 +4904,100 @@ export type Database = {
           },
         ]
       }
+      prayer_request_prayers: {
+        Row: {
+          created_at: string
+          id: string
+          organization_id: string
+          prayer_request_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          organization_id: string
+          prayer_request_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          organization_id?: string
+          prayer_request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_request_prayers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_request_prayers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_request_prayers_prayer_request_id_fkey"
+            columns: ["prayer_request_id"]
+            isOneToOne: false
+            referencedRelation: "contact_prayer_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prayer_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          is_answered_step: boolean
+          name: string
+          organization_id: string
+          stage_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_answered_step?: boolean
+          name: string
+          organization_id: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          is_answered_step?: boolean
+          name?: string
+          organization_id?: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prayer_stages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prayer_stages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -5256,6 +5402,70 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_to_user_id: string
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by_user_id: string
+          description: string | null
+          due_at: string | null
+          id: string
+          organization_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id: string
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          organization_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          organization_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       twilio_phone_numbers: {
         Row: {
@@ -5913,6 +6123,28 @@ export type Database = {
       get_public_content_video: {
         Args: { p_slug: string; p_video_id: string }
         Returns: Json
+      }
+      get_public_group_settings: {
+        Args: { p_org_id: string }
+        Returns: {
+          directory_hero_subtitle: string
+          directory_hero_title: string
+          directory_show_capacity: boolean
+          directory_show_location: boolean
+          directory_show_meeting_time: boolean
+        }[]
+      }
+      get_public_group_types: {
+        Args: { p_org_id: string }
+        Returns: {
+          color: string
+          icon: string
+          is_active: boolean
+          is_hidden: boolean
+          key: string
+          label: string
+          sort_order: number
+        }[]
       }
       get_public_organization: {
         Args: { p_slug: string }

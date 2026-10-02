@@ -93,3 +93,28 @@ export const useGroupTypes = (organizationId: string | undefined, opts?: { inclu
 
   return { types, isLoading, createType, updateType, deleteType, hiddenTypeKeys, isHiddenType };
 };
+
+// Public variant for anonymous visitors (e.g. the public group directory).
+// Reads through a security-definer RPC that only exposes display fields for
+// churches with their directory enabled — the table itself stays RLS-locked.
+export const useGroupTypesPublic = (organizationId: string | undefined) => {
+  const { data: types = [], isLoading } = useQuery({
+    queryKey: ["group-types-public", organizationId],
+    enabled: !!organizationId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc("get_public_group_types", {
+        p_org_id: organizationId!,
+      });
+      if (error) throw error;
+      return (data || []) as Pick<
+        GroupTypeDefinition,
+        "key" | "label" | "icon" | "color" | "sort_order" | "is_active" | "is_hidden"
+      >[];
+    },
+  });
+
+  const hiddenTypeKeys = new Set(types.filter((t) => t.is_hidden).map((t) => t.key));
+  const isHiddenType = (key?: string | null) => !!key && hiddenTypeKeys.has(key);
+
+  return { types, isLoading, hiddenTypeKeys, isHiddenType };
+};
