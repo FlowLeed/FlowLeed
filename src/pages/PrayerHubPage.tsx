@@ -330,7 +330,7 @@ export default function PrayerHubPage() {
                             <Draggable key={r.id} draggableId={r.id} index={i}>
                               {(dp, ds) => (
                                 <div ref={dp.innerRef} {...dp.draggableProps} {...dp.dragHandleProps}>
-                                  <PrayerCard r={r} dragging={ds.isDragging} onPray={() => pray(r)} />
+                                  <PrayerCard r={r} dragging={ds.isDragging} onPray={() => pray(r)} onLink={() => setLinking(r)} />
                                 </div>
                               )}
                             </Draggable>
