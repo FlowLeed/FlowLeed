@@ -22,6 +22,9 @@
 - [x] Add confirmed AI prayer request creation on person profiles
 - [ ] Verify chat, settings, desktop, and mobile behavior
 
+## Daily care agent
+- [x] Place the concise daily care briefing directly in the main FlowLeed AI conversation
+
 ## Navigation visibility
 - [x] Hide Connect when Messages and Calls are unavailable
 

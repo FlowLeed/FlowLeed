@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO, isToday } from "date-fns";
-import { ArrowLeft, HeartHandshake, RefreshCw, UserRound, Loader2, Sun, MessageCircle } from "lucide-react";
+import { HeartHandshake, RefreshCw, UserRound, Loader2, Sun, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
   taking: "You're taking this", delegated: "Asked a leader", handled: "Handled", snoozed: "Snoozed", dismissed: "Not needed",
 };
 
-export function CareBriefingThread({ onBack, onAsk }: { onBack: () => void; onAsk?: (prompt: string) => void }) {
+export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void }) {
   const care = useCareBriefing();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [delegating, setDelegating] = useState<CareRecommendation | null>(null);
@@ -39,20 +39,11 @@ export function CareBriefingThread({ onBack, onAsk }: { onBack: () => void; onAs
   };
 
   return (
-    <div className="space-y-6 pb-8">
-      <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 text-muted-foreground"><ArrowLeft className="h-4 w-4" />Back to chat</Button>
+    <div className="w-full max-w-3xl space-y-4 pb-2">
+      <div className="flex justify-end">
         <Button variant="outline" size="sm" onClick={() => care.run.mutate()} disabled={care.run.isPending} className="gap-1.5">
           {care.run.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}Check for today
         </Button>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary"><HeartHandshake className="h-5 w-5 text-primary-foreground" /></div>
-        <div>
-          <h2 className="text-lg font-semibold">Daily care briefing</h2>
-          <p className="text-xs text-muted-foreground">FlowLeed AI prepares. You decide who knows and what happens.</p>
-        </div>
       </div>
 
       {care.status.data?.paused_reason && (
@@ -60,8 +51,11 @@ export function CareBriefingThread({ onBack, onAsk }: { onBack: () => void; onAs
       )}
 
       {care.list.isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /> : days.length === 0 ? (
-        <div className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
-          Every morning I'll look for the 3–5 people who most need you — a new prayer request, someone who stepped away from their group, a new step of faith — and bring them here. Tap <b>Check for today</b> to look now.
+        <div className="flex gap-3">
+          <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI"><HeartHandshake className="h-4 w-4 text-primary-foreground" /></div>
+          <div className="py-2 text-sm text-muted-foreground">
+            Every morning I'll bring the 3–5 people who most need your attention into this conversation. Tap <b>Check for today</b> to look now.
+          </div>
         </div>
       ) : days.map(([date, recs]) => {
         const needCare = recs.filter((r) => r.kind === "life_moment" || r.kind === "faith_moment");
@@ -101,17 +95,20 @@ export function CareBriefingThread({ onBack, onAsk }: { onBack: () => void; onAs
           );
         };
         return (
-          <section key={date} className="rounded-3xl bg-muted p-6 md:p-8 space-y-5">
-            <h3 className="flex items-center gap-2 text-lg font-bold"><Sun className="h-5 w-5 text-primary" />Morning briefing — {format(parseISO(date), "EEEE, MMM d")}</h3>
-            <p className="text-sm font-semibold">Who needs you {isToday(parseISO(date)) ? "today" : "that day"}?</p>
-            {needCare.length > 0 && (
-              <div><p className="text-sm font-semibold mb-1">{needCare.length} Need Care</p><ul className="list-disc pl-5">{needCare.map(row)}</ul></div>
-            )}
-            {checking.length > 0 && (
-              <div><p className="text-sm font-semibold mb-1">Worth Checking On</p><ul className="list-disc pl-5">{checking.map(row)}</ul></div>
-            )}
-            <p className="text-xs text-muted-foreground">Tap a name to see why and what to do.</p>
-          </section>
+          <div key={date} className="flex gap-2 sm:gap-3">
+            <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI"><HeartHandshake className="h-4 w-4 text-primary-foreground" /></div>
+            <section className="min-w-0 flex-1 space-y-4 py-2">
+              <h3 className="flex items-center gap-2 text-base font-semibold"><Sun className="h-4 w-4 text-primary" />Morning briefing — {format(parseISO(date), "EEEE, MMM d")}</h3>
+              <p className="text-sm font-semibold">Who needs you {isToday(parseISO(date)) ? "today" : "that day"}?</p>
+              {needCare.length > 0 && (
+                <div><p className="mb-1 text-sm font-semibold">{needCare.length} Need Care</p><ul className="list-disc pl-5">{needCare.map(row)}</ul></div>
+              )}
+              {checking.length > 0 && (
+                <div><p className="mb-1 text-sm font-semibold">Worth Checking On</p><ul className="list-disc pl-5">{checking.map(row)}</ul></div>
+              )}
+              <p className="text-xs text-muted-foreground">Tap a name to see why and what to do.</p>
+            </section>
+          </div>
         );
       })}
 
