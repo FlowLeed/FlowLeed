@@ -227,7 +227,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     .replace(/\n*\[Referenced contacts:[^\]]*\]\s*$/i, "")
                     .trimEnd();
                   // Bold @mentions
-                  const parts = display.split(/(@\p{Lu}[\p{L}\p{M}.-']*(?:\s\p{Lu}[\p{L}\p{M}.-']*){0,2})/gu);
+                  const parts = display.split(/(@\p{Lu}[\p{L}\p{M}.'-]*(?:\s\p{Lu}[\p{L}\p{M}.'-]*){0,2})/gu);
                   return parts.map((part, idx) =>
                     part.startsWith("@") ? (
                       <strong key={idx} className="font-semibold">{part}</strong>
