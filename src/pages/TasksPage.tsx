@@ -42,7 +42,7 @@ const TaskRow = ({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label="Task options">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" aria-label="Task options">
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -95,9 +95,9 @@ const TasksPage = () => {
     <div className="flex flex-col h-full">
       <Header title="Tasks" showFlowIcon={false} showAddButton={false} />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="max-w-2xl mx-auto px-5 py-6 pb-24">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">My tasks {openTasks.length > 0 && <span className="text-muted-foreground font-normal">({openTasks.length})</span>}</h2>
+        <div className="max-w-2xl mx-auto px-5 py-4 pb-24">
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">My tasks {openTasks.length > 0 && <span className="text-muted-foreground font-normal">({openTasks.length})</span>}</h2>
             <Button size="sm" onClick={() => setOpen(true)}><Plus className="mr-1 h-4 w-4" />New task</Button>
           </div>
 
