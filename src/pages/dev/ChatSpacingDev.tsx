@@ -13,12 +13,12 @@ const messages = [
   {
     role: "assistant" as const,
     content: `<!--flowleed:action={"id":"${noteId}","type":"create_contact_note","summary":"Private note for Sandra Lester-James","expires_at":"${exp}"}-->
-## Private Note
+### Private Note
 
 The note about her job loss is set to be saved as a private entry on her profile.
 
 <!--flowleed:action={"id":"${taskId}","type":"create_task","summary":"Reminders for Sandra Lester-James","expires_at":"${exp}"}-->
-## Reminders
+### Reminders
 
 I have scheduled the first reminder for this Wednesday, October 7th, to ask about her resume. The second reminder is set for October 23rd to follow up on her progress in a few weeks.
 
