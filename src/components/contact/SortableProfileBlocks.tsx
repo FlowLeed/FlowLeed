@@ -30,19 +30,20 @@ const SortableItem = ({ block }: { block: ProfileBlock }) => {
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn("profile-block group flex items-start gap-1.5", isDragging && "z-10 opacity-80")}
+      className={cn("profile-block relative", isDragging && "z-10 opacity-80")}
     >
+      {block.node}
+      {/* Grip sits inside the card, aligned with the header row after the header actions */}
       <button
         ref={setActivatorNodeRef}
         {...attributes}
         {...listeners}
         aria-label={`Move ${block.label}`}
         title="Drag to reorder"
-        className="mt-3.5 flex h-6 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground/70 shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+        className="absolute right-3 top-3.5 z-20 flex h-6 w-5 cursor-grab touch-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground/70 shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
         <GripDots className="h-3 w-3" />
       </button>
-      <div className="min-w-0 flex-1">{block.node}</div>
     </div>
   );
 };

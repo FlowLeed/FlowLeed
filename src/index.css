@@ -214,6 +214,8 @@
 
 /* Contact profile blocks: one compact, consistent card style */
 .profile-block h3 { font-size: 1rem; line-height: 1.5rem; padding-right: 1.5rem; }
+/* Reserve room for the in-card drag grip at the top-right of each block */
+.profile-block [data-slot="card-header"]:first-child { padding-right: 3.5rem; }
 .profile-block .p-6:not(.pt-0) { padding: 0.875rem 1rem; }
 .profile-block .p-6.pt-0 { padding: 0 1rem 0.875rem; }
 .profile-block .text-2xl, .profile-block .text-xl, .profile-block .text-lg { font-size: 1rem; line-height: 1.5rem; }
