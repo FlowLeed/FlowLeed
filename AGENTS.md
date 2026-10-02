@@ -1,0 +1,1 @@
+- Care agent: `care-agent-run` edge function (cron, bounded batches, per-org lease in `care_agent_state`) writes per-leader rows to `care_recommendations`; the UI acts on rows directly under recipient-only RLS. Why: deterministic orchestration with AI used only for wording.
