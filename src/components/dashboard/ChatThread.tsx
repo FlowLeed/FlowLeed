@@ -29,7 +29,7 @@ const formatAssistantMarkdown = (content: string) => {
   let text = content
     // Preserve markdown structure when a streamed heading arrives immediately
     // after the previous sentence.
-    .replace(/([^\n])(?=#{2,3}\s)/g, "$1\n\n")
+    .replace(/([^\n#])(?=#{2,3}\s)/g, "$1\n\n")
     // A bold-only line is a section title, not body text.
     .replace(/^[ \t]*\*\*([^*]+)\*\*[ \t]*$/gm, (_m, t: string) => `### ${t.trim().replace(/:$/, "")}\n\n`)
     // A bold title at the start of a line becomes a quiet heading; ordinary
@@ -202,7 +202,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                   if (heading.includes("flow")) return "add_to_flow";
                   return undefined;
                 };
-                const sections = formatAssistantMarkdown(visibleContent).split(/(?=^#{2,3}\s)/m).filter(Boolean);
+                const sections = formatAssistantMarkdown(visibleContent).split(/(?=^#{2,3}\s)/m).map((s) => s.trim()).filter(Boolean);
                 const assignedActionIds = new Set<string>();
                 const pendingActions = (actions: ChatAction[]) => actions.filter((action) => {
                   if (handledActions.has(action.id)) return false;
@@ -246,15 +246,24 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                       const groupId = `${i}-${type ?? sectionIndex}`;
                       return (
                         <div key={groupId} className="not-prose">
-                          {/* !h-auto prevents controls after the text from being clipped. */}
-                          <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }} className="!h-auto font-sans text-sm font-normal leading-6
-                            [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-                            [&_p]:my-0 [&_p+p]:mt-4
+                          {/* !h-auto prevents controls after the text from being clipped.
+                              The first-section override is per-section: later section headings
+                              keep their top margin so they never sit glued to an Approve button. */}
+                          <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }}
+                            className={`!h-auto font-sans text-sm font-normal leading-6
+                            ${sectionIndex === 0
+                              ? "[&>*:first-child]:mt-0 "
+                              // MessageResponse always prepends mt-0 on the first child;
+                              // re-assert spacing so a heading after an Approve button keeps
+                              // breathing room instead of sitting glued to it.
+                              : "[&>*:first-child]:mt-6 "}
+                            [&>*:last-child]:mb-0
+                            [&_p]:!my-0 [&_p+p]:mt-4 [&_p:empty]:hidden
                             [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
                             [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:leading-6
                             [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_li]:leading-6
                             [&_strong]:font-semibold [&_strong]:text-foreground
-                            [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2">
+                            [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2`}>
                             {section}
                           </MessageResponse>
                           {approvalButton(sectionActions, groupId)}
