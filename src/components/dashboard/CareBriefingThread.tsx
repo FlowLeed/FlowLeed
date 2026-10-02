@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO, isToday, isBefore, startOfToday } from "date-fns";
 import { HeartHandshake, RefreshCw, UserRound, Loader2, Sun, MessageCircle, CircleCheck, ListTodo } from "lucide-react";
@@ -45,6 +45,16 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
     [care.todos.data],
   );
 
+  // Pull a fresh list when the leader opens FlowLeed AI (at most once an hour per browser tab).
+  useEffect(() => {
+    const k = "care-briefing-auto-refresh";
+    const last = Number(sessionStorage.getItem(k) || 0);
+    if (Date.now() - last < 3600000) return;
+    sessionStorage.setItem(k, String(Date.now()));
+    care.run.mutate({ silent: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openDelegate = (r: CareRecommendation) => {
     const first = (r.contact?.name ?? "").split(" ")[0] || "them";
     setMessage(`Hi ${r.best_connection?.name?.split(" ")[0] ?? ""}, could you check in with ${first} this week? ${r.why}`.trim());
@@ -54,7 +64,7 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
   return (
     <div className="w-full max-w-3xl space-y-4 pb-2">
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={() => care.run.mutate()} disabled={care.run.isPending} className="gap-1.5">
+        <Button variant="outline" size="sm" onClick={() => care.run.mutate(undefined)} disabled={care.run.isPending} className="gap-1.5">
           {care.run.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}Check for today
         </Button>
       </div>
