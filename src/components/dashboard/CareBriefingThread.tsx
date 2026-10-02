@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO, isToday, isBefore, startOfToday } from "date-fns";
 import { HeartHandshake, RefreshCw, UserRound, Loader2, Sun, MessageCircle, CircleCheck, ListTodo } from "lucide-react";
@@ -46,7 +46,6 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
   );
 
   // Pull a fresh list when the leader opens FlowLeed AI (at most once an hour per browser tab).
-  const orgId = care.list.data?.[0]?.organization_id;
   useEffect(() => {
     const k = "care-briefing-auto-refresh";
     const last = Number(sessionStorage.getItem(k) || 0);
@@ -55,7 +54,6 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
     care.run.mutate({ silent: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  void orgId;
 
   const openDelegate = (r: CareRecommendation) => {
     const first = (r.contact?.name ?? "").split(" ")[0] || "them";
