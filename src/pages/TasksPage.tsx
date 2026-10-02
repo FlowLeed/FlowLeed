@@ -61,6 +61,7 @@ const TasksPage = () => {
   const { data: tasks, isLoading } = useTasks(user?.id);
   const { toggle, remove, create } = useTaskMutations(user?.id);
   const [open, setOpen] = useState(false);
+  const [showDone, setShowDone] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [due, setDue] = useState("");
@@ -112,9 +113,16 @@ const TasksPage = () => {
             <>
               {openTasks.length > 0 ? renderList(openTasks) : <p className="py-8 text-center text-muted-foreground">All caught up.</p>}
               {doneTasks.length > 0 && (
-                <div className="mt-6">
-                  <p className="mb-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Completed</p>
-                  {renderList(doneTasks)}
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowDone((v) => !v)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    aria-expanded={showDone}
+                  >
+                    {showDone ? "Hide Completed" : `Show Completed (${doneTasks.length})`}
+                  </button>
+                  {showDone && <div className="mt-1">{renderList(doneTasks)}</div>}
                 </div>
               )}
             </>
