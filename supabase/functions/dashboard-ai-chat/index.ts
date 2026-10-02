@@ -191,6 +191,19 @@ const TOOL_REGISTRY = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "list_my_tasks",
+      description: "List the current user's tasks / to-dos (assigned to them). Use when the user asks what their tasks, to-dos or reminders are.",
+      parameters: {
+        type: "object",
+        properties: {
+          include_completed: { type: "boolean", description: "Also include completed tasks. Default false." },
+        },
+      },
+    },
+  },
 ];
 
 const TOOL_DEFAULTS: Record<string, boolean> = {
@@ -201,7 +214,35 @@ const TOOL_DEFAULTS: Record<string, boolean> = {
   create_contact_note: false,
   create_prayer_request: false,
   create_task: true,
+  list_my_tasks: true,
 };
+
+async function executeListMyTasks(
+  adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
+): Promise<string> {
+  let q = adminClient.from("tasks")
+    .select("id, title, description, contact_id, due_at, completed_at")
+    .eq("organization_id", orgId).eq("assigned_to_user_id", userId)
+    .order("due_at", { ascending: true, nullsFirst: false }).limit(50);
+  if (!args?.include_completed) q = q.is("completed_at", null);
+  const { data, error } = await q;
+  if (error) return `Could not load tasks: ${error.message}`;
+  if (!data?.length) return "The user has no open tasks.";
+  const ids = [...new Set(data.map((t: any) => t.contact_id).filter(Boolean))];
+  const names = new Map<string, string>();
+  if (ids.length) {
+    const { data: cs } = await adminClient.from("contacts").select("id, first_name, last_name").in("id", ids);
+    (cs || []).forEach((c: any) => names.set(c.id, `${c.first_name || ""} ${c.last_name || ""}`.trim()));
+  }
+  const now = Date.now();
+  const lines = data.map((t: any) => {
+    const due = t.due_at ? new Date(t.due_at) : null;
+    const status = t.completed_at ? "completed" : due && due.getTime() < now ? "overdue" : "";
+    const who = t.contact_id && names.get(t.contact_id) ? ` — about [${names.get(t.contact_id)}](/contacts/${t.contact_id})` : "";
+    return `- ${t.title}${who}${due ? ` (due ${due.toISOString().split("T")[0]}${status ? `, ${status}` : ""})` : status ? ` (${status})` : ""}${t.description ? `: ${t.description}` : ""}`;
+  });
+  return `User's tasks (${data.length}). Full list at [Tasks](/tasks):\n${lines.join("\n")}`;
+}
 
 async function prepareTask(
   adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
@@ -1488,6 +1529,7 @@ You have access to tools to look up detailed information about specific people a
 ${isEnabled("add_people_to_flow") ? '- **add_people_to_flow**: When the user clearly names one person, one Flow, and one step, prepare the exact action for confirmation. Never say it happened until the structured execution result confirms it.' : '- Adding people to a Flow is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_contact_note") ? '- **create_contact_note**: When the user asks to add or save a note about one person, prepare the exact note for confirmation. Preserve the user’s wording, default to a shared general note unless they request another type or privacy, and never say it was saved until execution confirms it.' : '- Adding profile notes is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_task") ? '- **create_task**: When the user asks to create a task, to-do, or reminder (optionally about one person, optionally with a due date), prepare it for confirmation. Resolve relative dates like "Friday" against today. Never say it was saved until execution confirms it.' : '- Creating tasks is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
+- **list_my_tasks**: When the user asks what their tasks, to-dos or reminders are (e.g. "what are my tasks?", "what's on my plate?"), ALWAYS call this tool and list them (overdue first), keeping the person links exactly as returned. Never say you can't see their tasks.
 ${isEnabled("create_prayer_request") ? '- **create_prayer_request**: When the user asks to create or save a prayer request for one person, prepare the person, title, and exact request details for confirmation. Never say it was saved until execution confirms it.' : '- Creating prayer requests is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
@@ -1716,6 +1758,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           } else if (fnName === "create_contact_note") {
             result = await prepareContactNote(adminClient, orgId, userId, args);
             { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
+          } else if (fnName === "list_my_tasks") {
+            result = await executeListMyTasks(adminClient, orgId, userId, args);
           } else if (fnName === "create_task") {
             result = await prepareTask(adminClient, orgId, userId, args);
             { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
