@@ -2,7 +2,7 @@
 // Embeds the query, fetches top-k matching chunks via match_content_chunks,
 // then streams a model response prefixed by a JSON header of citations.
 import { createClient } from "@supabase/supabase-js";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { glooChatStream } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,7 +16,6 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1";
-const CHAT_MODEL = "gloo-google-gemini-3-flash";
 
 async function embed(text: string): Promise<number[]> {
   const r = await fetch(`${AI_GATEWAY}/embeddings`, {
@@ -148,25 +147,12 @@ If the excerpts do not answer the question, say so.`;
     const userPrompt = `Question: ${message}\n\nExcerpts:\n${context}`;
 
     // Stream
-    const upstream = await fetch("https://platform.ai.gloo.com/ai/v2/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${await getGlooAccessToken()}`,
-      },
-      body: JSON.stringify({
-        model: CHAT_MODEL,
-        stream: true,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-      }),
+    const upstream = await glooChatStream({
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
     });
-    if (!upstream.ok || !upstream.body) {
-      const t = await upstream.text();
-      throw new Error(`AI ${upstream.status}: ${t}`);
-    }
 
     // Prepend a JSON header line with session + citations, then forward SSE
     const encoder = new TextEncoder();
@@ -177,7 +163,7 @@ If the excerpts do not answer the question, say so.`;
     const transformed = new ReadableStream({
       async start(controller) {
         controller.enqueue(encoder.encode(headerLine));
-        const reader = upstream.body!.getReader();
+        const reader = upstream.getReader();
         let leftover = "";
         try {
           while (true) {

@@ -1,15 +1,12 @@
 // Signal Agent — reviews watched signals and drops suggestions into the
 // signal_agent_suggestions queue. Never executes actions itself.
 import { createClient } from "@supabase/supabase-js";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { glooChat } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const GATEWAY = "https://platform.ai.gloo.com/ai/v2/chat/completions";
-const MODEL = "gloo-google-gemini-3-flash";
 
 interface Candidate {
   contact_id: string;
@@ -124,27 +121,14 @@ async function askAgent(
       .join("\n\n")
   }\n\nRespond as JSON: { "suggestions": [{ "index": 1, "action_type": "notify|add_to_flow|create_task|draft_message", "action_payload": { ... }, "reasoning": "...", "confidence": 0.8 }] }. Include one entry per contact you want to act on; skip contacts where no action is warranted.`;
 
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${await getGlooAccessToken()}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-      response_format: { type: "json_object" },
-    }),
+  const json = await glooChat({
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    response_format: { type: "json_object" },
   });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`AI gateway ${res.status}: ${t.slice(0, 400)}`);
-  }
-  const json = await res.json();
-  const content = json.choices?.[0]?.message?.content || "{}";
+  const content = json.choices[0]?.message?.content || "{}";
   try {
     const parsed = JSON.parse(content);
     return Array.isArray(parsed.suggestions) ? parsed.suggestions : [];

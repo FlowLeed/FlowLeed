@@ -116,8 +116,7 @@ Copy `supabase/functions/.env.example` as a starting point.
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `GLOO_CLIENT_ID` | Yes | Gloo AI OAuth2 client ID. Used by the Care Agent, the Signal Agent, Content AI and AI suggestions. |
-| `GLOO_CLIENT_SECRET` | Yes | Gloo AI OAuth2 client secret. |
+| `GLOO_API_KEY` | Yes | Gloo AI API key, from **API Keys** in Gloo AI Studio. Used by the Care Agent, the Signal Agent, Content AI and AI suggestions. |
 | `LOVABLE_API_KEY` | Yes, for Content | Lovable AI Gateway key, for embeddings (semantic search) and the story drafter. |
 | `SITE_URL` | Yes | Base URL of the web app, used in email links. Locally: `http://localhost:3000`. |
 | `TOKEN_SALT` | Yes | Any long random value. Salts the password-reset and email-verification tokens. |
@@ -136,7 +135,7 @@ You don't set `SUPABASE_URL`, `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY`
 - Node.js 20 or later
 - Docker Desktop, running
 - The [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
-- Gloo AI client credentials
+- A Gloo AI API key
 
 ### 1. Install and start the stack
 
@@ -154,10 +153,10 @@ supabase start
 
 1. Create `.env.local` in the project root with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 2. Copy `supabase/functions/.env.example` to `supabase/functions/.env.local`.
-3. Fill in at least `GLOO_CLIENT_ID`, `GLOO_CLIENT_SECRET`, `LOVABLE_API_KEY`, `SITE_URL` and `TOKEN_SALT`, and set `CRON_SECRET=local-cron-secret`.
+3. Fill in at least `GLOO_API_KEY`, `LOVABLE_API_KEY`, `SITE_URL` and `TOKEN_SALT`, and set `CRON_SECRET=local-cron-secret`.
 4. Check that the AI keys work. This needs [Deno](https://deno.com/), and it never prints a key:
    ```bash
-   deno run --allow-net --allow-env --env-file=supabase/functions/.env.local scripts/check-ai-providers.ts
+   deno run --allow-net --allow-env --allow-read --config supabase/functions/_shared/deno.json --env-file=supabase/functions/.env.local scripts/check-ai-providers.ts
    ```
    Which feature uses which key, and how to test each one: [supabase/README.md → Testing the AI features](supabase/README.md#testing-the-ai-features).
 
@@ -286,7 +285,7 @@ Everything below was built during the hackathon.
 
 | Service | Used for |
 |---|---|
-| [Gloo AI](https://docs.gloo.com) | OpenAI-compatible chat completions with tool calling (model `gloo-google-gemini-3-flash`), authenticated with OAuth2 client credentials. Powers the Care Agent, the Signal Agent, Content AI answers and analysis, contact suggestions and AI drafts. |
+| [Gloo AI](https://docs.gloo.com) | OpenAI-compatible chat completions with tool calling (model `gloo-google-gemini-3-flash`) on Gloo's guarded endpoint, called with the `openai` SDK and an API key. Powers the Care Agent, the Signal Agent, Content AI answers and analysis, contact suggestions and AI drafts. |
 | Lovable AI Gateway | Embeddings (`google/gemini-embedding-001`) for semantic search, and the story drafter. |
 | [Supabase](https://supabase.com) | Auth, Postgres, REST API with row-level security, Edge Functions (Deno), Storage, and the Postgres extensions `pgvector`, `pg_cron`, `pg_net` and Vault. |
 | [Planning Center](https://developer.planning.center) | Syncs people, groups, check-ins and serving history (OAuth). |
@@ -315,5 +314,6 @@ Everything below was built during the hackathon.
 | Library | Used for |
 |---|---|
 | `npm:@supabase/supabase-js@2.117.2` | Database and auth access |
+| `npm:openai@7.25.0` | Calling Gloo AI, through `_shared/gloo.ts` |
 | `npm:resend@4.0.0` | Sending email |
 | `npm:@react-email/components@0.0.22`, `npm:react@18.3.1` | Email templates |

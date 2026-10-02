@@ -1,13 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { type GlooChatCompletion, glooChat, glooErrorStatus } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-const AI_GATEWAY = "https://platform.ai.gloo.com/ai/v2/chat/completions";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -50,14 +48,9 @@ Deno.serve(async (req) => {
     // Take only first user + assistant exchange for titling
     const firstExchange = messages.slice(0, 4);
 
-    const response = await fetch(AI_GATEWAY, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${await getGlooAccessToken()}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gloo-google-gemini-3-flash",
+    let result: GlooChatCompletion;
+    try {
+      result = await glooChat({
         messages: [
           {
             role: "system",
@@ -68,32 +61,29 @@ Deno.serve(async (req) => {
             content: firstExchange.map((m: any) => `${m.role}: ${m.content.slice(0, 200)}`).join("\n"),
           },
         ],
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
+      });
+    } catch (error) {
+      const status = glooErrorStatus(error);
+      if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited, please try again later" }), {
           status: 429,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
+      if (status === 402) {
         return new Response(JSON.stringify({ error: "Payment required" }), {
           status: 402,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
+      console.error("AI gateway error:", status, error);
       return new Response(JSON.stringify({ error: "Failed to generate title" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const result = await response.json();
-    const title = result.choices?.[0]?.message?.content?.trim() || "Untitled Chat";
+    const title = result.choices[0]?.message?.content?.trim() || "Untitled Chat";
 
     // Update the conversation title in DB
     await adminClient

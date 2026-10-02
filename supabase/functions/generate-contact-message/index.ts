@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { glooChat, glooToolCalls } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -88,17 +88,9 @@ ${prayerRequests && prayerRequests.length > 0 ? `Active Prayer Requests:\n${pray
 Generate a ${messageType} message for: ${suggestionContext.title}
 Context: ${suggestionContext.description}`;
 
-    console.log('Calling Lovable AI to generate message');
+    console.log('Calling Gloo AI to generate message');
 
-    // Call Lovable AI
-    const response = await fetch('https://platform.ai.gloo.com/ai/v2/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${await getGlooAccessToken()}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gloo-google-gemini-3-flash',
+    const aiResponse = await glooChat({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -129,20 +121,11 @@ Context: ${suggestionContext.description}`;
           }
         ],
         tool_choice: { type: 'function', function: { name: 'generate_message' } }
-      }),
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Lovable AI error:', response.status, errorText);
-      throw new Error(`AI Gateway error: ${response.status}`);
-    }
-
-    const aiResponse = await response.json();
     console.log('AI Response received');
 
     // Extract message from tool call
-    const toolCall = aiResponse.choices?.[0]?.message?.tool_calls?.[0];
+    const toolCall = glooToolCalls(aiResponse)[0];
     if (!toolCall) {
       throw new Error('No tool call in AI response');
     }

@@ -1,13 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { type GlooChatCompletion, glooChat, glooChatStream, glooErrorStatus, glooToolCalls } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-const AI_GATEWAY = "https://platform.ai.gloo.com/ai/v2/chat/completions";
 
 // Tool definitions for on-demand person lookup
 const TOOL_REGISTRY = [
@@ -1489,23 +1487,15 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
-      const toolCheckResponse = await fetch(AI_GATEWAY, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${await getGlooAccessToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gloo-google-gemini-3-flash",
+      let toolCheckData: GlooChatCompletion;
+      try {
+        toolCheckData = await glooChat({
           messages: aiMessages,
           tools,
           tool_choice: "auto",
-          stream: false,
-        }),
-      });
-
-      if (!toolCheckResponse.ok) {
-        const status = toolCheckResponse.status;
+        });
+      } catch (error) {
+        const status = glooErrorStatus(error);
         if (status === 429) {
           return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
             status: 429,
@@ -1518,16 +1508,14 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        const errorText = await toolCheckResponse.text();
-        console.error("AI Gateway error:", status, errorText);
+        console.error("AI Gateway error:", status, error);
         return new Response(JSON.stringify({ error: "AI service error" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const toolCheckData = await toolCheckResponse.json();
-      const choice = toolCheckData.choices?.[0];
+      const choice = toolCheckData.choices[0];
 
       if (!choice) {
         return new Response(JSON.stringify({ error: "No AI response" }), {
@@ -1536,9 +1524,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         });
       }
 
-      const toolCalls = choice.message?.tool_calls;
+      const toolCalls = glooToolCalls(toolCheckData);
 
-      if (!toolCalls || toolCalls.length === 0) {
+      if (toolCalls.length === 0) {
         // No tool calls — model wants to respond directly.
         // If we already have tool results, stream the final response.
         // If this is the first round with no tool calls, also stream.
@@ -1605,21 +1593,11 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     }
 
     // Final streaming response (with tool results in context but no tools offered)
-    const streamResponse = await fetch(AI_GATEWAY, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${await getGlooAccessToken()}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gloo-google-gemini-3-flash",
-        messages: aiMessages,
-        stream: true,
-      }),
-    });
-
-    if (!streamResponse.ok) {
-      const status = streamResponse.status;
+    let upstream: ReadableStream<Uint8Array>;
+    try {
+      upstream = await glooChatStream({ messages: aiMessages });
+    } catch (error) {
+      const status = glooErrorStatus(error);
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }), {
           status: 429,
@@ -1632,8 +1610,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errorText = await streamResponse.text();
-      console.error("AI Gateway stream error:", status, errorText);
+      console.error("AI Gateway stream error:", status, error);
       return new Response(JSON.stringify({ error: "AI service error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -1642,7 +1619,6 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
     // Stream the model's answer as it arrives, sanitizing each completed segment so
     // invented people are still stripped without holding back the whole reply.
-    const upstream = streamResponse.body!;
     const injected = new ReadableStream({
       async start(controller) {
         const reader = upstream.getReader();

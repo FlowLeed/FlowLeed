@@ -2,7 +2,7 @@
 // Returns a short narrative answer with quoted snippets and a list of source
 // videos with timestamps, similar to a RAG-style answer card.
 import { createClient } from "@supabase/supabase-js";
-import { getGlooAccessToken } from "../_shared/gloo.ts";
+import { glooChat } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -74,23 +74,13 @@ Rules:
 
   const user = `Question: ${query}\n\nExcerpts:\n\n${context}`;
 
-  const r = await fetch("https://platform.ai.gloo.com/ai/v2/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${await getGlooAccessToken()}`,
-    },
-    body: JSON.stringify({
-      model: "gloo-google-gemini-3-flash",
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
+  const data = await glooChat({
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
   });
-  if (!r.ok) throw new Error(`llm ${r.status}: ${await r.text()}`);
-  const data = await r.json();
-  return data.choices?.[0]?.message?.content ?? "";
+  return data.choices[0]?.message?.content ?? "";
 }
 
 Deno.serve(async (req) => {

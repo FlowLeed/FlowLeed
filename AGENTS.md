@@ -120,6 +120,7 @@ Never run SQL against a hosted database, deploy Edge Functions, set secrets or p
   | Import | Version |
   |---|---|
   | `@supabase/supabase-js` | `npm:@supabase/supabase-js@2.117.2` |
+  | `openai` | `npm:openai@7.25.0` (any function that imports `_shared/gloo.ts`) |
   | `resend` | `npm:resend@4.0.0` |
   | `react` | `npm:react@18.3.1` |
   | `@react-email/components` | `npm:@react-email/components@0.0.22` |
@@ -143,7 +144,7 @@ if (unauthorized) return unauthorized;
 
 | Provider | Used for | How to call it |
 |---|---|---|
-| **Gloo AI** | All chat and reasoning (Care Agent, Signal Agent, suggestions, Content answers) | Always through `_shared/gloo.ts`: `glooChatFetch`, `glooChatJson` or `getGlooAccessToken`. Credentials are `GLOO_CLIENT_ID` and `GLOO_CLIENT_SECRET`, and nothing else. |
+| **Gloo AI** | All chat and reasoning (Care Agent, Signal Agent, suggestions, Content answers) | Always through the helpers in `_shared/gloo.ts`, which wrap the `openai` SDK: `glooChat`, `glooChatStream` (raw SSE stream), `glooToolCalls` and `glooErrorStatus` (for 429 and 402). Never call Gloo's URL or create an `OpenAI` client elsewhere. The only credential is `GLOO_API_KEY`. |
 | **Lovable AI Gateway** | Embeddings and the story drafter | Key `LOVABLE_API_KEY`. Embeddings use `google/gemini-embedding-001` with 384 dimensions, matching the `vector(384)` column. Changing the model or the size means re-embedding all content, so ask first. |
 | **Supadata** | YouTube transcripts | Key `SUPADATA_API_KEY`, sent in the `x-api-key` header. |
 

@@ -194,7 +194,7 @@ The AI features use three providers. Each has its own Edge Function secrets:
 **1. Check the keys first.** The script makes one small request per provider, never prints a key, and skips any provider whose key isn't set:
 
 ```bash
-deno run --allow-net --allow-env --env-file=supabase/functions/.env.local scripts/check-ai-providers.ts
+deno run --allow-net --allow-env --allow-read --config supabase/functions/_shared/deno.json --env-file=supabase/functions/.env.local scripts/check-ai-providers.ts
 ```
 
 To check staging keys before adding them to GitHub, point `--env-file` at a temporary file **outside** the repository, then delete it.
@@ -203,7 +203,7 @@ To check staging keys before adding them to GitHub, point `--env-file` at a temp
 
 | Provider (secret) | Feature | Where in the app | Edge Functions |
 |---|---|---|---|
-| Gloo AI (`GLOO_CLIENT_ID`, `GLOO_CLIENT_SECRET`) | Care Agent | Dashboard chat | `dashboard-ai-chat`, `generate-chat-title` |
+| Gloo AI (`GLOO_API_KEY`) | Care Agent | Dashboard chat | `dashboard-ai-chat`, `generate-chat-title` |
 | Gloo AI | Signal Agent | **Signals → Agent → Run agent now** | `signal-agent-run` |
 | Gloo AI | Suggestions and message drafts for a person | A person's profile | `generate-contact-suggestions`, `generate-contact-message` |
 | Gloo AI | Flow and group description suggestions | Flow and group editors | `generate-flow-description`, `generate-group-description` |
