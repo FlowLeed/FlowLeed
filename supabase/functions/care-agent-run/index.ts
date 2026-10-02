@@ -82,18 +82,27 @@ async function runOrg(admin: any, orgId: string, onlyUser: string | null): Promi
       const usedFollowUps = new Set(existing.map((e: any) => e.follow_up_of).filter(Boolean));
       const handledBefore = new Set(existing.filter((e: any) => ["taking", "delegated", "handled"].includes(e.status)).map((e: any) => e.contact_id));
 
+      const isPrayer = (s: any) => typeof s.key === "string" && s.key.startsWith("prayer:");
       const candidates = signals.filter((s) => {
         if (already.has(s.contact_id)) return false;
         const c = ctx.byId.get(s.contact_id);
         if (!c) return false;
         if (s.kind === "follow_up") return s.for_user === r.user_id && !usedFollowUps.has(s.follow_up_of);
         if (scope && !scope.has(s.contact_id)) return false;
+        // A brand-new prayer request is a new need: don't hide it behind earlier care or open tasks.
+        if (isPrayer(s)) return true;
         if (snoozedOrRecent.has(s.contact_id)) return false;
         if (c.recentCare || c.openTask) return false;           // already receiving care
         if (s.kind === "drift" && c.lifeSeason) return false;    // paused on purpose
         return true;
       }).map((s) => ({ ...s, tier: proximity(s, ctx.byId.get(s.contact_id), r.user_id, ctx, handledBefore) }));
-      const picked = pickBalanced(candidates);
+      // Refreshes later in the day keep today's list calm: fill only the remaining slots,
+      // but new prayer requests from the leader's circle always come through.
+      const remaining = Math.max(0, MAX_PER_PERSON - already.size);
+      const balanced = pickBalanced(candidates);
+      const prayersInCircle = candidates.filter((s: any) => isPrayer(s) && s.tier <= 2);
+      const others = balanced.filter((s) => !prayersInCircle.includes(s as any));
+      const picked = [...prayersInCircle, ...others].slice(0, Math.max(remaining, prayersInCircle.length));
       if (!picked.length) continue;
 
       const written = pause ? null : await writeCopy(picked.map((s) => ({ s, c: ctx.byId.get(s.contact_id) })));
