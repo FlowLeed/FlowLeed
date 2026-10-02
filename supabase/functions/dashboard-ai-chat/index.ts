@@ -1557,17 +1557,22 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 - Use emojis sparingly for warmth (🙏 ❤️ ✅).`;
 
     // Build the message list for the AI
+    // Earlier prepared items are stripped from the visible history (so the model
+    // never copies them into its reply) and summarized once in a system note.
+    const earlierPrepared: string[] = [];
+    const historyMessages = messages.map((m: any) => typeof m?.content === "string" && m.role === "assistant"
+      ? { ...m, content: m.content
+          .replace(/<!--flowleed:action=(\{.*?\})-->/g, (_x: string, j: string) => {
+            try { const a = JSON.parse(j); const s = String(a.summary ?? "").replace(/\s+/g, " ").slice(0, 160); if (s) earlierPrepared.push(s); } catch { /* ignore */ }
+            return "";
+          })
+          .replace(/\[Earlier prepared for confirmation:[^\]]*\]/g, "")
+          .replace(/<!--flowleed:[\s\S]*?-->/g, "") }
+      : m);
     const aiMessages = [
-      { role: "system", content: systemPrompt + "\n\nAction rule: only say something is prepared or ready to confirm when you called the matching tool in THIS turn. Earlier prepared items may have expired; if the user asks again, call the tool again. Never write hidden <!-- --> markers yourself." },
-      // Hidden confirmation markers from earlier replies are replaced with a plain
-      // note so the model never copies them (or invents fake ones).
-      ...messages.map((m: any) => typeof m?.content === "string" && m.role === "assistant"
-        ? { ...m, content: m.content
-            .replace(/<!--flowleed:action=(\{.*?\})-->/g, (_x: string, j: string) => {
-              try { const a = JSON.parse(j); return `\n[Earlier prepared for confirmation: ${String(a.summary ?? "").replace(/\s+/g, " ").slice(0, 160)}]`; } catch { return ""; }
-            })
-            .replace(/<!--flowleed:[\s\S]*?-->/g, "") }
-        : m),
+      { role: "system", content: systemPrompt + "\n\nAction rule: only say something is prepared or ready to confirm when you called the matching tool in THIS turn. Earlier prepared items may have expired; if the user asks again, call the tool again. Never write hidden <!-- --> markers yourself. Never quote or list internal notes about earlier prepared items in your reply." +
+        (earlierPrepared.length ? `\n\nINTERNAL (do not repeat to the user): earlier in this chat you prepared: ${earlierPrepared.slice(-6).join("; ")}.` : "") },
+      ...historyMessages,
     ];
 
     // Tool call loop: make non-streaming calls until we get a final response, then stream it
@@ -1793,8 +1798,11 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         let sentAnything = false;
         const clean = (chunk: string) => {
           const { text: safe0, removed } = sanitizePeopleMentions(chunk, allowedPeople);
-          // Markers are appended by the server; never let the model echo them.
-          const safe = safe0.replace(/<!--flowleed:[\s\S]*?-->/g, "");
+          // Markers are appended by the server; never let the model echo them
+          // (or the internal history notes about earlier prepared items).
+          const safe = safe0
+            .replace(/<!--flowleed:[\s\S]*?-->/g, "")
+            .replace(/\[?Earlier prepared[^\]\n]*\]?/gi, "");
           removedTotal += removed;
           if (pendingActionMarker) return safe;
           return safe.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
@@ -1878,7 +1886,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         if (removedTotal > 0) {
           console.log(`[chat] stripped ${removedTotal} unverified person link(s) from the answer`);
         }
-        if (collectedContactIds && collectedContactIds.length > 0) {
+        // The bulk "Review people" button is only for list requests; when this turn
+        // prepared a one-person action (task, note, prayer), show just that action.
+        if (collectedContactIds && collectedContactIds.length > 0 && pendingActionMarkers.length === 0) {
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
         if (pendingActionMarkers.length) send(`\n\n${pendingActionMarkers.join("")}`);
