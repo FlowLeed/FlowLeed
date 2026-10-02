@@ -15,7 +15,6 @@ import { SuperAdminLayout } from "./components/admin/SuperAdminLayout";
 import { ImpersonationEscapeHandler } from "./components/ImpersonationEscapeHandler";
 import { FeatureGate } from "./components/FeatureGate";
 import { OrgContentRedirect, OrgContentVideoRedirect, OrgGroupsRedirect } from "./pages/public/OrgRedirect";
-import ChatSpacingDev from "./pages/dev/ChatSpacingDev";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -108,7 +107,6 @@ const App = () => (
               <Route path="/groups/join/:token" element={<GroupPublicSignupPage />} />
               <Route path="/pco/callback" element={<PcoCallbackPage />} />
               <Route path="/dev/mobile-preview" element={<DevMobilePreviewPage />} />
-              <Route path="/dev/chat-spacing" element={<ChatSpacingDev />} />
 
               {/* Legacy public routes → redirect to new /:orgSlug/... URLs */}
               <Route path="/org/:slug/groups" element={<OrgGroupsRedirect />} />
