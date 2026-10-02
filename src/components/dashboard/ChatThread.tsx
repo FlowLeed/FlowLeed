@@ -56,6 +56,12 @@ interface ChatThreadProps {
   onConfirmAction?: (actionRequestId: string) => Promise<{ ok: boolean; message: string }>;
 }
 
+interface ActionRequestState {
+  id: string;
+  status: string;
+  expires_at: string;
+}
+
 export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory, onConfirmAction }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [bulkIds, setBulkIds] = useState<string[] | null>(null);
@@ -87,7 +93,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
         .select("id, status, expires_at")
         .in("id", actionIds);
       if (error) throw error;
-      return new Map((data ?? []).map((row: any) => [row.id as string, row]));
+      return new Map((data ?? []).map((row) => {
+        const state = row as ActionRequestState;
+        return [state.id, state] as const;
+      }));
     },
   });
 
@@ -218,7 +227,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     .replace(/\n*\[Referenced contacts:[^\]]*\]\s*$/i, "")
                     .trimEnd();
                   // Bold @mentions
-                  const parts = display.split(/(@\p{Lu}[\p{L}\p{M}\-\.']*(?:\s\p{Lu}[\p{L}\p{M}\-\.']*){0,2})/gu);
+                  const parts = display.split(/(@\p{Lu}[\p{L}\p{M}.-']*(?:\s\p{Lu}[\p{L}\p{M}.-']*){0,2})/gu);
                   return parts.map((part, idx) =>
                     part.startsWith("@") ? (
                       <strong key={idx} className="font-semibold">{part}</strong>
