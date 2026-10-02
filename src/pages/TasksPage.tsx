@@ -27,13 +27,13 @@ const TaskRow = ({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
   const overdue = !done && task.due_at && isPast(new Date(task.due_at)) && !isToday(new Date(task.due_at));
   const meta = [task.contact?.name, task.due_at ? dueLabel(task.due_at) : null].filter(Boolean);
   return (
-    <div className="flex items-start gap-4 px-1 py-4">
-      <Checkbox checked={done} onCheckedChange={onToggle} className="mt-1 h-5 w-5 rounded-md" aria-label={done ? "Mark not done" : "Mark done"} />
+    <div className="flex items-start gap-3 px-1 py-2.5">
+      <Checkbox checked={done} onCheckedChange={onToggle} className="mt-0.5 h-4 w-4 rounded" aria-label={done ? "Mark not done" : "Mark done"} />
       <div className="min-w-0 flex-1">
-        <p className={cn("font-semibold leading-snug", done && "text-muted-foreground line-through")}>{task.title}</p>
-        {task.description && <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{task.description}</p>}
+        <p className={cn("text-sm font-medium leading-5", done && "text-muted-foreground line-through")}>{task.title}</p>
+        {task.description && <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{task.description}</p>}
         {meta.length > 0 && (
-          <p className={cn("mt-1 text-xs text-muted-foreground", overdue && "text-destructive")}>
+          <p className={cn("mt-0.5 text-xs text-muted-foreground", overdue && "text-destructive")}>
             {task.contact ? <Link to={`/contacts/${task.contact.id}`} className="hover:underline">{task.contact.name}</Link> : null}
             {task.contact && task.due_at ? " · " : null}
             {task.due_at ? (overdue ? `Overdue · ${dueLabel(task.due_at)}` : dueLabel(task.due_at)) : null}
