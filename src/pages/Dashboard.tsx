@@ -8,7 +8,7 @@ import { ChatThread } from "@/components/dashboard/ChatThread";
 import { useDashboardChat } from "@/hooks/useDashboardChat";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { ChatHistoryDrawer } from "@/components/dashboard/ChatHistoryDrawer";
-import { Sparkles, History, HeartHandshake } from "lucide-react";
+import { Sparkles, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PcoPersonalConnectPrompt } from "@/components/dashboard/PcoPersonalConnectPrompt";
 import { DemoHighlights } from "@/components/demo/DemoHighlights";
@@ -19,7 +19,6 @@ const Dashboard = () => {
   const { messages, isLoading, sendMessage, confirmAction, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
   const chatHistory = useChatHistory();
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [careOpen, setCareOpen] = useState(false);
 
   // Category state
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -45,19 +44,6 @@ const Dashboard = () => {
 
   const hasMessages = messages.length > 0;
 
-  if (careOpen) {
-    return (
-      <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
-        <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain hide-scrollbar">
-          <div className="max-w-3xl mx-auto px-3 md:px-6 py-4 md:py-6">
-            <CareBriefingThread onBack={() => setCareOpen(false)} onAsk={(p) => { setCareOpen(false); sendMessage(p); }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <Header title={`Welcome back, ${profile?.full_name || "there"}!`} showAddButton={false} showFlowIcon={false} />
@@ -70,10 +56,6 @@ const Dashboard = () => {
           {!hasMessages && (
             <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6 relative">
               <div className="absolute top-2 right-0 flex gap-1">
-                <Button variant="ghost" size="sm" onClick={() => setCareOpen(true)} className="text-xs text-muted-foreground gap-1.5">
-                  <HeartHandshake className="h-3.5 w-3.5" />
-                  Care briefing
-                </Button>
                 <Button variant="ghost" size="sm" onClick={handleOpenHistory} className="text-xs text-muted-foreground gap-1.5">
                   <History className="h-3.5 w-3.5" />
                   History
@@ -92,6 +74,9 @@ const Dashboard = () => {
               </div>
             </div>
           )}
+
+          {/* The daily care briefing is the opening message in the main AI conversation. */}
+          {!hasMessages && <CareBriefingThread onAsk={sendMessage} />}
 
           {/* Chat Input - hero state only */}
           {!hasMessages && (
