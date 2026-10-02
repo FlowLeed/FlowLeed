@@ -17,23 +17,22 @@ interface Props {
 
 const sanitize = (s: string) => s.replace(/[%_,()*\\]/g, " ").trim();
 
-async function findPeople(orgId: string, q: string): Promise<Person[]> {
-  const words = sanitize(q).split(/\s+/).filter((w) => w.length > 1);
-  if (!words.length) return [];
-  let query = supabase.from("contacts").select("id, name, email, phone").eq("organization_id", orgId);
-  words.forEach((w) => { query = query.ilike("name", `%${w}%`); });
-  const { data, error } = await query.limit(8);
+// Uses the same visibility-aware search RPC as the AI chat mentions. Querying `contacts`
+// directly with ILIKE times out on large orgs because RLS runs per row.
+async function rpcSearch(orgId: string, term: string): Promise<Person[]> {
+  const { data, error } = await (supabase as any).rpc("search_visible_contacts", {
+    _organization_id: orgId,
+    _search_term: term,
+    _limit: 8,
+  });
   if (error) throw new Error(error.message);
-  let rows = (data || []) as Person[];
-  // Fallback: match on any single name word (covers middle names, swapped order, typos)
-  if (!rows.length && words.length > 1) {
-    const orClause = words.map((w) => `name.ilike.%${w}%`).join(",");
-    const { data: loose, error: err2 } = await supabase.from("contacts")
-      .select("id, name, email, phone").eq("organization_id", orgId).or(orClause).limit(8);
-    if (err2) throw new Error(err2.message);
-    rows = (loose || []) as Person[];
-  }
-  return rows;
+  return (data || []) as Person[];
+}
+
+async function findPeople(orgId: string, q: string): Promise<Person[]> {
+  const term = sanitize(q).replace(/\s+/g, " ");
+  if (term.length < 2) return [];
+  return rpcSearch(orgId, term);
 }
 
 /** Suggests people whose name matches the submitter, and lets a leader search and link manually. */
