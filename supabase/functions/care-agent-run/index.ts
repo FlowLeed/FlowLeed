@@ -80,6 +80,7 @@ async function runOrg(admin: any, orgId: string, onlyUser: string | null): Promi
       const snoozedOrRecent = new Set(existing.filter((e: any) => e.briefing_date !== today || e.status !== "pending" || (e.snoozed_until && new Date(e.snoozed_until) > now)).map((e: any) => e.contact_id));
       const already = new Set(existing.filter((e: any) => e.briefing_date === today).map((e: any) => e.contact_id));
       const usedFollowUps = new Set(existing.map((e: any) => e.follow_up_of).filter(Boolean));
+      const handledBefore = new Set(existing.filter((e: any) => ["taking", "delegated", "handled"].includes(e.status)).map((e: any) => e.contact_id));
 
       const candidates = signals.filter((s) => {
         if (already.has(s.contact_id)) return false;
@@ -91,7 +92,7 @@ async function runOrg(admin: any, orgId: string, onlyUser: string | null): Promi
         if (c.recentCare || c.openTask) return false;           // already receiving care
         if (s.kind === "drift" && c.lifeSeason) return false;    // paused on purpose
         return true;
-      });
+      }).map((s) => ({ ...s, tier: proximity(s, ctx.byId.get(s.contact_id), r.user_id, ctx, handledBefore) }));
       const picked = pickBalanced(candidates);
       if (!picked.length) continue;
 
@@ -177,7 +178,7 @@ async function understand(admin: any, orgId: string, ids: string[], now: Date) {
   const [contacts, gm, pc, inter, tasks, seasons, eng, fam, profiles] = await Promise.all([
     admin.from("contacts").select("id, name, assigned_to_user_id").in("id", ids),
     admin.from("group_members").select("contact_id, joined_at, role, groups!inner(id, name, leader_user_id, co_leader_user_id, organization_id)").in("contact_id", ids).eq("status", "active"),
-    admin.from("pipeline_contacts").select("contact_id, assigned_to_user_id, completed_end_at, pipelines(name)").in("contact_id", ids),
+    admin.from("pipeline_contacts").select("contact_id, pipeline_id, assigned_to_user_id, completed_end_at, pipelines(name)").in("contact_id", ids),
     admin.from("contact_interactions").select("contact_id, created_by_user_id, created_at").in("contact_id", ids).gte("created_at", since(60)),
     admin.from("tasks").select("contact_id").in("contact_id", ids).is("completed_at", null),
     admin.from("contact_life_seasons").select("contact_id, reason").in("contact_id", ids).is("ended_on", null),
@@ -201,11 +202,18 @@ async function understand(admin: any, orgId: string, ids: string[], now: Date) {
   }
   for (const p of pc.data ?? []) {
     const c = byId.get(p.contact_id); if (!c) continue;
-    if (!p.completed_end_at) c.known.push(`In the ${(p as any).pipelines?.name ?? ""} Flow`.replace("the  Flow", "a Flow"));
+    if (!p.completed_end_at) { c.known.push(`In the ${(p as any).pipelines?.name ?? ""} Flow`.replace("the  Flow", "a Flow")); (c.pipelineIds ??= []).push(p.pipeline_id); }
     if (p.assigned_to_user_id) { c.flowOwners.push(p.assigned_to_user_id); addScope(p.assigned_to_user_id, c.id); }
+  }
+  const pipeIds = [...new Set((pc.data ?? []).map((p: any) => p.pipeline_id).filter(Boolean))];
+  const teams = new Map<string, Set<string>>();
+  if (pipeIds.length) {
+    const { data: tm } = await admin.from("pipeline_team_members").select("pipeline_id, user_id").in("pipeline_id", pipeIds);
+    for (const t of tm ?? []) { if (!teams.has(t.pipeline_id)) teams.set(t.pipeline_id, new Set()); teams.get(t.pipeline_id)!.add(t.user_id); }
   }
   for (const i of inter.data ?? []) {
     const c = byId.get(i.contact_id); if (!c) continue;
+    if (i.created_by_user_id) (c.touchedBy ??= new Set<string>()).add(i.created_by_user_id);
     if (!c.lastTouch || i.created_at > c.lastTouch.at) c.lastTouch = { at: i.created_at, by: i.created_by_user_id };
   }
   for (const c of byId.values()) {
@@ -223,6 +231,7 @@ async function understand(admin: any, orgId: string, ids: string[], now: Date) {
   return {
     byId, names, memberIds,
     scopeFor: (u: string) => scopes.get(u) ?? new Set<string>(),
+    teamOf: (p: string) => teams.get(p) ?? new Set<string>(),
   } as any;
 }
 
@@ -242,14 +251,30 @@ function connect(c: any, recipient: string, ctx: any) {
   return rest;
 }
 
-function pickBalanced(cands: Signal[]): Signal[] {
-  const byContact = new Map<string, Signal>();
-  for (const s of cands.sort((a, b) => b.urgency - a.urgency || b.at.localeCompare(a.at))) if (!byContact.has(s.contact_id)) byContact.set(s.contact_id, s);
-  const list = [...byContact.values()];
+// Relational proximity to the recipient: 1 direct circle, 2 care history, 3 team Flow, 4 church-wide.
+function proximity(s: Signal, c: any, userId: string, ctx: any, handledBefore: Set<string>): number {
+  if (s.kind === "follow_up") return 1;
+  if (ctx.scopeFor(userId).has(c.id)) return 1;
+  if (c.touchedBy?.has(userId) || handledBefore.has(c.id)) return 2;
+  if ((c.pipelineIds ?? []).some((p: string) => ctx.teamOf(p).has(userId))) return 3;
+  return 4;
+}
+
+const CHURCH_WIDE_BACKFILL = 2;
+
+function pickBalanced(cands: (Signal & { tier: number })[]): Signal[] {
+  const byContact = new Map<string, Signal & { tier: number }>();
+  for (const s of [...cands].sort((a, b) => a.tier - b.tier || b.urgency - a.urgency || b.at.localeCompare(a.at))) if (!byContact.has(s.contact_id)) byContact.set(s.contact_id, s);
+  const all = [...byContact.values()];
+  const circle = all.filter((s) => s.tier <= 3);
   const picked: Signal[] = [];
-  for (const k of ["life_moment", "drift", "faith_moment", "follow_up"] as const) { const s = list.find((x) => x.kind === k); if (s) picked.push(s); }
-  for (const s of list) { if (picked.length >= MAX_PER_PERSON) break; if (!picked.includes(s)) picked.push(s); }
-  return picked.slice(0, MAX_PER_PERSON);
+  // Your circles first: balance kinds within tiers 1–3, closest people first.
+  for (const k of ["life_moment", "drift", "faith_moment", "follow_up"] as const) { const s = circle.find((x) => x.kind === k); if (s) picked.push(s); }
+  for (const s of circle) { if (picked.length >= MAX_PER_PERSON) break; if (!picked.includes(s)) picked.push(s); }
+  // Backfill only when needed, with urgent church-wide needs.
+  const wide = all.filter((s) => s.tier === 4 && s.urgency >= 4);
+  for (const s of wide.slice(0, CHURCH_WIDE_BACKFILL)) { if (picked.length >= Math.min(3, MAX_PER_PERSON)) break; picked.push(s); }
+  return picked.slice(0, MAX_PER_PERSON).sort((a: any, b: any) => a.tier - b.tier);
 }
 
 function defaultHeadline(s: Signal, name: string) {
