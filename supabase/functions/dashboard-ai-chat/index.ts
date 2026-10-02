@@ -1497,6 +1497,11 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 - When mentioning a Flow name, ALWAYS wrap it in a markdown link using the lookup above, e.g. [New Family Follow-Up](/flows/abc-123).
 - When mentioning a person's name, ALWAYS wrap it in a markdown link, e.g. [John Smith](/contacts/def-456).
 - When listing people, format them clearly with relevant details.
+- CRITICAL: NEVER describe more than one person in the same paragraph. Each person gets their own paragraph: start the paragraph with the linked name, then an em dash, then 1-2 sentences about them. Put a blank line between people. Example:
+
+  [Alexa Yarmolatii](/contacts/abc-123) — She shared a prayer request today about being sick.
+
+  [Nick Sevier](/contacts/def-456) — No active prayer requests; a simple check-in would mean a lot.
 - When suggesting actions, be specific and actionable.
 - Formatting: write plain prose. Reserve bold (**) for section titles ONLY - never put bold inside a paragraph, sentence, or list item. Use a short ### heading for each section title, on its own line, with a blank line before and after it.
 - Keep headings the same visual importance as body text. Do not use oversized or title-style headings in an answer.

@@ -52,6 +52,10 @@ const formatAssistantMarkdown = (content: string) => {
     .replace(/^(#{2,3} [^\n]*?[a-z])([A-Z])/gm, "$1\n\n$2")
     // Keep person links readable when glued to a preceding word.
     .replace(/(\S)(?=\[)/g, "$1 ")
+    // Each person gets their own paragraph: split "Name — " entries that were
+    // run together into one long paragraph.
+    .replace(/([.!?])\s+(?=\[[^\]]+\]\(\/contacts\/[^)]+\)\s+[—–-])/g, "$1\n\n")
+    .replace(/([a-z0-9)])\s+(?=\[[^\]]+\]\(\/contacts\/[^)]+\)\s+—)/g, "$1.\n\n")
     // Repair common sentence boundaries lost by upstream streaming.
     .replace(/([.!?])(?=[A-Z])/g, "$1 ")
     .replace(/([:;])(?=[A-Z])/g, "$1 ")
