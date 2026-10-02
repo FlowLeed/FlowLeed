@@ -73,7 +73,7 @@ const TOOL_REGISTRY = [
           },
           group_name: {
             type: "string",
-            description: "Restrict to members of a specific group by (partial) name.",
+            description: "Restrict to members of a church GROUP by its title (e.g. 'Youth', 'Choir', 'Women's Bible Study'). NEVER put a person's name here — use search_person for people.",
           },
           serving_min_days: {
             type: "number",
@@ -529,6 +529,34 @@ async function executeSearchPerson(
         .order("created_at", { ascending: false })
         .limit(15),
     ]);
+
+    // Groups the person belongs to (role + recent attendance)
+    try {
+      const { data: gm } = await adminClient
+        .from("group_members")
+        .select("*, groups(name)")
+        .eq("contact_id", contactId)
+        .limit(20);
+      const active = (gm || []).filter((m: any) => !m.left_at && m.status !== "inactive" && m.is_active !== false);
+      if (active.length > 0) {
+        lines.push(`\n**Groups (${active.length}):**`);
+        for (const m of active) {
+          lines.push(`- ${(m.groups as any)?.name || "Group"}${m.role ? ` — ${m.role}` : ""}`);
+        }
+      } else {
+        lines.push(`\n**Groups:** Not in any active group`);
+      }
+      const { data: att } = await adminClient
+        .from("group_attendance")
+        .select("*")
+        .eq("contact_id", contactId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (att && att.length) {
+        const attended = att.filter((a: any) => a.attended !== false).length;
+        lines.push(`- Recent group attendance: ${attended} of last ${att.length} meetings`);
+      }
+    } catch (_e) { /* ignore group lookup failures */ }
 
     // Demographics
     const demo = demographicsResult.data;
@@ -1453,7 +1481,8 @@ TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 
 ## Tools Available
 You have access to tools to look up detailed information about specific people and flows. USE THEM PROACTIVELY:
-- **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, etc.)
+- **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, groups, etc.)
+- PICKING A PERSON: If you just asked "which person?" and the user replies with only a name (or clicks/points to one), they are choosing that person. Call search_person with that name and continue the conversation about them using their profile. Never pass a person's name to find_contacts_by_criteria (group_name is for group titles only).
 - **search_people_in_flow**: When the user asks who is in a specific flow or wants details about a flow's people, call this tool.
 - **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "Fairfield women who were in a small group earlier this year but aren't in one now"), call this tool. Map EVERY part of the request to an argument: campus -> campus_name, women/men -> gender, "was in a group earlier this year" -> in_group_between {from: Jan 1 of this year, to: today}, "not in a group now" -> not_in_active_group: true, "Member" -> pc_membership, "served N months" -> serving_min_days = N*30. Set limit to 200 so counts are accurate.
 ${isEnabled("add_people_to_flow") ? '- **add_people_to_flow**: When the user clearly names one person, one Flow, and one step, prepare the exact action for confirmation. Never say it happened until the structured execution result confirms it.' : '- Adding people to a Flow is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
