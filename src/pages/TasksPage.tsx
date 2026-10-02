@@ -61,6 +61,7 @@ const TasksPage = () => {
   const { data: tasks, isLoading } = useTasks(user?.id);
   const { toggle, remove, create } = useTaskMutations(user?.id);
   const [open, setOpen] = useState(false);
+  const [showDone, setShowDone] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [due, setDue] = useState("");
