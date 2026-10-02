@@ -447,6 +447,152 @@ export type Database = {
           },
         ]
       }
+      care_agent_state: {
+        Row: {
+          last_run_date: string | null
+          locked_until: string | null
+          organization_id: string
+          paused_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          last_run_date?: string | null
+          locked_until?: string | null
+          organization_id: string
+          paused_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          last_run_date?: string | null
+          locked_until?: string | null
+          organization_id?: string
+          paused_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_agent_state_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_agent_state_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_recommendations: {
+        Row: {
+          acted_at: string | null
+          best_connection: Json | null
+          briefing_date: string
+          contact_id: string
+          created_at: string
+          delegated_to_user_id: string | null
+          follow_up_at: string | null
+          follow_up_of: string | null
+          headline: string
+          id: string
+          kind: string
+          known: Json
+          organization_id: string
+          outcome: string | null
+          outcome_note: string | null
+          recipient_user_id: string
+          sensitive: boolean
+          signal_key: string | null
+          snoozed_until: string | null
+          status: string
+          task_id: string | null
+          updated_at: string
+          why: string
+        }
+        Insert: {
+          acted_at?: string | null
+          best_connection?: Json | null
+          briefing_date?: string
+          contact_id: string
+          created_at?: string
+          delegated_to_user_id?: string | null
+          follow_up_at?: string | null
+          follow_up_of?: string | null
+          headline: string
+          id?: string
+          kind: string
+          known?: Json
+          organization_id: string
+          outcome?: string | null
+          outcome_note?: string | null
+          recipient_user_id: string
+          sensitive?: boolean
+          signal_key?: string | null
+          snoozed_until?: string | null
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+          why: string
+        }
+        Update: {
+          acted_at?: string | null
+          best_connection?: Json | null
+          briefing_date?: string
+          contact_id?: string
+          created_at?: string
+          delegated_to_user_id?: string | null
+          follow_up_at?: string | null
+          follow_up_of?: string | null
+          headline?: string
+          id?: string
+          kind?: string
+          known?: Json
+          organization_id?: string
+          outcome?: string | null
+          outcome_note?: string | null
+          recipient_user_id?: string
+          sensitive?: boolean
+          signal_key?: string | null
+          snoozed_until?: string | null
+          status?: string
+          task_id?: string | null
+          updated_at?: string
+          why?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_recommendations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_recommendations_follow_up_of_fkey"
+            columns: ["follow_up_of"]
+            isOneToOne: false
+            referencedRelation: "care_recommendations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_recommendations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organization_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_recommendations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_conversations: {
         Row: {
           created_at: string
