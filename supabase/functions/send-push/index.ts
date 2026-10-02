@@ -26,13 +26,39 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const payload = (await req.json()) as Payload;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
+    const raw = (await req.json()) as Payload & { notification_id?: string };
+    let payload: Payload;
+
+    if (raw.notification_id) {
+      // Called by the database trigger: trust only the stored notification row.
+      const { data: n } = await admin
+        .from("notifications")
+        .select("id, user_id, type, title, message, contact_id, pipeline_id, created_at")
+        .eq("id", raw.notification_id)
+        .maybeSingle();
+      if (!n || Date.now() - new Date(n.created_at).getTime() > 5 * 60 * 1000) {
+        return new Response(JSON.stringify({ ok: true, sent: 0, reason: "not_found_or_stale" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const url = n.type === "task_due" ? "/tasks"
+        : n.contact_id && n.pipeline_id ? `/contacts/${n.contact_id}?pipelineId=${n.pipeline_id}`
+        : n.contact_id ? `/contacts/${n.contact_id}`
+        : n.pipeline_id ? `/flows/${n.pipeline_id}` : "/";
+      payload = { user_id: n.user_id, title: n.title, body: n.message ?? "", url, tag: n.id };
+    } else {
+      // Direct calls (e.g. test push) must use the service role key.
+      const auth = req.headers.get("Authorization") ?? "";
+      if (auth !== `Bearer ${SERVICE_KEY}`) {
+        return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      payload = raw;
+    }
+
     const userIds = payload.user_ids ?? (payload.user_id ? [payload.user_id] : []);
     if (!userIds.length || !payload.title) {
       return new Response(JSON.stringify({ error: "user_id(s) and title required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const { data: subs, error } = await admin
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth")
