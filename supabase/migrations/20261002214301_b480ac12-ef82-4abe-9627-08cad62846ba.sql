@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.notify_prayer_request_circle() FROM PUBLIC, anon, authenticated;
