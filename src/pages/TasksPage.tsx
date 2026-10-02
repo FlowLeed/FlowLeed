@@ -112,8 +112,8 @@ const TasksPage = () => {
             <>
               {openTasks.length > 0 ? renderList(openTasks) : <p className="py-8 text-center text-muted-foreground">All caught up.</p>}
               {doneTasks.length > 0 && (
-                <div className="mt-8">
-                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Completed</p>
+                <div className="mt-6">
+                  <p className="mb-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Completed</p>
                   {renderList(doneTasks)}
                 </div>
               )}
