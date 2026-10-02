@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getOrganizationLogoUrl } from "@/api/organizations";
 
 export default function PublicPrayerPage() {
   const { slug } = useParams();
@@ -48,7 +49,7 @@ export default function PublicPrayerPage() {
     <div className="h-screen overflow-y-auto bg-muted/30">
       <div className="max-w-lg mx-auto px-5 py-10">
         <div className="text-center mb-6">
-          {org.logo_url && <img src={`https://lghamvpolwebtjwaxned.supabase.co/functions/v1/public-org-logo?slug=${encodeURIComponent(slug || "")}`} alt={org.name} className="h-14 mx-auto mb-3 object-contain" />}
+          {org.logo_url && <img src={getOrganizationLogoUrl(slug || "")} alt={org.name} className="h-14 mx-auto mb-3 object-contain" />}
           <p className="text-sm text-muted-foreground">{org.name}</p>
         </div>
         <div className="bg-card border rounded-2xl shadow-sm p-6 md:p-8">
