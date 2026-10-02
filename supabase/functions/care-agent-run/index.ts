@@ -11,7 +11,7 @@ const DAY = 86400000;
 
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-type Signal = { contact_id: string; kind: "life_moment" | "faith_moment" | "drift" | "follow_up"; key: string; fact: string; at: string; urgency: number; sensitive?: boolean; follow_up_of?: string };
+type Signal = { contact_id: string; kind: "life_moment" | "faith_moment" | "drift" | "follow_up"; key: string; fact: string; at: string; urgency: number; sensitive?: boolean; follow_up_of?: string; for_user?: string };
 
 function subFromAuth(h: string | null): string | null {
   try { const t = h?.replace(/^Bearer\s+/i, "") ?? ""; return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub ?? null; } catch { return null; }
@@ -83,10 +83,10 @@ async function runOrg(admin: any, orgId: string, onlyUser: string | null): Promi
 
       const candidates = signals.filter((s) => {
         if (already.has(s.contact_id)) return false;
-        if (scope && !scope.has(s.contact_id)) return false;
         const c = ctx.byId.get(s.contact_id);
         if (!c) return false;
-        if (s.kind === "follow_up") return !usedFollowUps.has(s.follow_up_of) && ctx.followRecipient.get(s.follow_up_of!) === r.user_id;
+        if (s.kind === "follow_up") return s.for_user === r.user_id && !usedFollowUps.has(s.follow_up_of);
+        if (scope && !scope.has(s.contact_id)) return false;
         if (snoozedOrRecent.has(s.contact_id)) return false;
         if (c.recentCare || c.openTask) return false;           // already receiving care
         if (s.kind === "drift" && c.lifeSeason) return false;    // paused on purpose
@@ -162,11 +162,11 @@ async function notice(admin: any, orgId: string, now: Date): Promise<Signal[]> {
   }
 
   // CONTINUE: follow-ups that came due.
-  const { data: fups } = await admin.from("care_recommendations").select("id, contact_id, headline, acted_at, outcome")
+  const { data: fups } = await admin.from("care_recommendations").select("id, contact_id, recipient_user_id, headline, acted_at, outcome")
     .eq("organization_id", orgId).in("status", ["taking", "delegated", "handled"]).lte("follow_up_at", now.toISOString()).gte("follow_up_at", since(14)).limit(200);
   for (const f of fups ?? []) {
     const days = f.acted_at ? Math.round((now.getTime() - new Date(f.acted_at).getTime()) / DAY) : 7;
-    out.push({ contact_id: f.contact_id, kind: "follow_up", key: `follow:${f.id}`, fact: `${days} days ago: ${f.headline}. A short check-in could mean a lot.`, at: f.acted_at ?? now.toISOString(), urgency: 4, follow_up_of: f.id });
+    out.push({ contact_id: f.contact_id, kind: "follow_up", key: `follow:${f.id}`, fact: `${days} days ago: ${f.headline}. A short check-in could mean a lot.`, at: f.acted_at ?? now.toISOString(), urgency: 4, follow_up_of: f.id, for_user: f.recipient_user_id });
   }
   return out;
 }
@@ -223,7 +223,6 @@ async function understand(admin: any, orgId: string, ids: string[], now: Date) {
   return {
     byId, names, memberIds,
     scopeFor: (u: string) => scopes.get(u) ?? new Set<string>(),
-    followRecipient: new Map<string, string>(), // filled lazily below
   } as any;
 }
 
