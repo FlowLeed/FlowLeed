@@ -184,12 +184,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 const visibleContent = cleanContent.replace(/<!--flowleed:action={.*?}-->\s*/g, "").trimEnd();
                 return (
                   <div className="max-w-none">
-                    <MessageResponse className="font-sans text-[15px] font-normal leading-7 sm:text-base
+                    <MessageResponse className="font-sans text-sm font-normal leading-6
                       [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
                       [&_p]:my-0 [&_p+p]:mt-4
-                      [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-[15px] [&_h2]:font-semibold [&_h2]:leading-7 sm:[&_h2]:text-base
-                      [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-[15px] [&_h3]:font-semibold [&_h3]:leading-7 sm:[&_h3]:text-base
-                      [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_li]:leading-7
+                      [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
+                      [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:leading-6
+                      [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_li]:leading-6
                       [&_strong]:font-semibold [&_strong]:text-foreground
                       [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2">
                       {formatAssistantMarkdown(visibleContent)}
