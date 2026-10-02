@@ -4,8 +4,10 @@ import { Outlet } from "react-router-dom";
 import { ImpersonationBanner } from "@/components/admin/ImpersonationBanner";
 import { DemoModeBanner } from "@/components/demo/DemoModeBanner";
 import { MobileSidebarProvider } from "@/contexts/MobileSidebarContext";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 export const MainLayout = () => {
+  useDocumentTitle();
   return (
     <MobileSidebarProvider>
       <div className="flex h-[100dvh] w-full flex-col overflow-hidden">
