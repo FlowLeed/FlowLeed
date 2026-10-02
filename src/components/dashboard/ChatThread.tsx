@@ -49,7 +49,7 @@ const formatAssistantMarkdown = (content: string) => {
   return text
     .replace(/(#{2,3} [^\n]+\n\n)[ \t]+/g, "$1")
     // A heading glued to its first sentence ("Private NoteA private...").
-    .replace(/^(#{2,3} [^\n]*?[a-z])([A-Z][a-z])/gm, "$1\n\n$2")
+    .replace(/^(#{2,3} [^\n]*?[a-z])([A-Z])/gm, "$1\n\n$2")
     // Keep person links readable when glued to a preceding word.
     .replace(/(\S)(?=\[)/g, "$1 ")
     // Repair common sentence boundaries lost by upstream streaming.

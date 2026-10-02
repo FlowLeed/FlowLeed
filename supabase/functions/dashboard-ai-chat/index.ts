@@ -1524,8 +1524,16 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
     // Build the message list for the AI
     const aiMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages,
+      { role: "system", content: systemPrompt + "\n\nAction rule: only say something is prepared or ready to confirm when you called the matching tool in THIS turn. Earlier prepared items may have expired; if the user asks again, call the tool again. Never write hidden <!-- --> markers yourself." },
+      // Hidden confirmation markers from earlier replies are replaced with a plain
+      // note so the model never copies them (or invents fake ones).
+      ...messages.map((m: any) => typeof m?.content === "string" && m.role === "assistant"
+        ? { ...m, content: m.content
+            .replace(/<!--flowleed:action=(\{.*?\})-->/g, (_x: string, j: string) => {
+              try { const a = JSON.parse(j); return `\n[Earlier prepared for confirmation: ${String(a.summary ?? "").replace(/\s+/g, " ").slice(0, 160)}]`; } catch { return ""; }
+            })
+            .replace(/<!--flowleed:[\s\S]*?-->/g, "") }
+        : m),
     ];
 
     // Tool call loop: make non-streaming calls until we get a final response, then stream it
