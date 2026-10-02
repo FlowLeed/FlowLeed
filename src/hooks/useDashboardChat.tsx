@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 
+export const BRIEFING_MARKER = "<!--flowleed:briefing-->";
+
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -101,7 +103,7 @@ export const useDashboardChat = () => {
           Authorization: `Bearer ${session.access_token}`,
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ messages: allMessages }),
+        body: JSON.stringify({ messages: allMessages.map(m => m.content.startsWith(BRIEFING_MARKER) ? { ...m, content: "(Showed the morning care briefing card.)" } : m) }),
         signal: controller.signal,
       });
 
@@ -239,6 +241,14 @@ export const useDashboardChat = () => {
     return result;
   }, [messages, conversationId, saveConversation]);
 
+  // Adds a fresh morning briefing as a new turn in the same conversation.
+  const appendBriefing = useCallback(async () => {
+    const next: ChatMessage[] = [...messages, { role: "user", content: "Check for today" }, { role: "assistant", content: `${BRIEFING_MARKER}${new Date().toISOString()}` }];
+    setMessages(next);
+    const savedId = await saveConversation(next, conversationId);
+    if (savedId) setConversationId(savedId);
+  }, [messages, conversationId, saveConversation]);
+
   const clearChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
@@ -275,6 +285,6 @@ export const useDashboardChat = () => {
     loadConversation(saved);
   }, [user?.id, messages.length, loadConversation]);
 
-  return { messages, isLoading, sendMessage, confirmAction, cancelStream, clearChat, conversationId, loadConversation };
+  return { messages, isLoading, sendMessage, appendBriefing, confirmAction, cancelStream, clearChat, conversationId, loadConversation };
 };
 

@@ -16,7 +16,7 @@ import { CareBriefingThread } from "@/components/dashboard/CareBriefingThread";
 
 const Dashboard = () => {
   const { profile } = useProfile();
-  const { messages, isLoading, sendMessage, confirmAction, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
+  const { messages, isLoading, sendMessage, appendBriefing, confirmAction, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
   const chatHistory = useChatHistory();
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -76,7 +76,7 @@ const Dashboard = () => {
           )}
 
           {/* The daily care briefing stays as the opening message in the main AI conversation. */}
-          <CareBriefingThread onAsk={sendMessage} />
+          <CareBriefingThread onAsk={sendMessage} onCheck={appendBriefing} />
 
           {/* Chat Input - hero state only */}
           {!hasMessages && (
@@ -106,7 +106,7 @@ const Dashboard = () => {
           )}
 
           {/* Chat Thread */}
-          <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} onConfirmAction={confirmAction} />
+          <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} onConfirmAction={confirmAction} renderBriefing={() => <CareBriefingThread onAsk={sendMessage} inThread />} />
         </div>
       </div>
 

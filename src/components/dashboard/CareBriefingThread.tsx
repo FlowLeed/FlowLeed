@@ -17,7 +17,7 @@ const STATUS_LABEL: Record<string, string> = {
   taking: "You're taking this", delegated: "Asked a leader", handled: "Handled", snoozed: "Snoozed", dismissed: "Not needed",
 };
 
-export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void }) {
+export function CareBriefingThread({ onAsk, onCheck, inThread = false }: { onAsk?: (prompt: string) => void; onCheck?: () => void; inThread?: boolean }) {
   const care = useCareBriefing();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [delegating, setDelegating] = useState<CareRecommendation | null>(null);
@@ -28,7 +28,8 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
 
   const days = useMemo(() => {
     const m = new Map<string, CareRecommendation[]>();
-    for (const r of care.list.data ?? []) { if (!m.has(r.briefing_date)) m.set(r.briefing_date, []); m.get(r.briefing_date)!.push(r); }
+    const todayKey = format(new Date(), "yyyy-MM-dd");
+    for (const r of care.list.data ?? []) { if (inThread && r.briefing_date !== todayKey) continue; if (!m.has(r.briefing_date)) m.set(r.briefing_date, []); m.get(r.briefing_date)!.push(r); }
     if ((care.todos.data?.length ?? 0) > 0) {
       const today = format(new Date(), "yyyy-MM-dd");
       if (!m.has(today)) m.set(today, []);
@@ -49,7 +50,7 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
   useEffect(() => {
     const k = "care-briefing-auto-refresh";
     const last = Number(sessionStorage.getItem(k) || 0);
-    if (Date.now() - last < 3600000) return;
+    if (inThread || Date.now() - last < 3600000) return;
     sessionStorage.setItem(k, String(Date.now()));
     care.run.mutate({ silent: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -63,11 +64,11 @@ export function CareBriefingThread({ onAsk }: { onAsk?: (prompt: string) => void
 
   return (
     <div className="w-full max-w-3xl space-y-4 pb-2">
-      <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={() => care.run.mutate(undefined)} disabled={care.run.isPending} className="gap-1.5">
+      {!inThread && <div className="flex justify-end">
+        <Button variant="outline" size="sm" onClick={() => care.run.mutate(undefined, { onSuccess: () => onCheck?.() })} disabled={care.run.isPending} className="gap-1.5">
           {care.run.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}Check for today
         </Button>
-      </div>
+      </div>}
 
       {care.status.data?.paused_reason && (
         <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">The daily briefing is paused: {care.status.data.paused_reason}.</p>
