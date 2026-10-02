@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
+
 /** 3x3 dot grid drag handle icon. */
 const GripDots = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 12 12" fill="currentColor" className={className} aria-hidden="true">
@@ -12,7 +14,6 @@ const GripDots = ({ className }: { className?: string }) => (
     )}
   </svg>
 );
-import { cn } from "@/lib/utils";
 
 export interface ProfileBlock {
   id: string;
@@ -29,7 +30,7 @@ const SortableItem = ({ block }: { block: ProfileBlock }) => {
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn("profile-block group relative", isDragging && "z-10 opacity-80")}
+      className={cn("profile-block group flex items-start gap-1.5", isDragging && "z-10 opacity-80")}
     >
       <button
         ref={setActivatorNodeRef}
@@ -37,11 +38,11 @@ const SortableItem = ({ block }: { block: ProfileBlock }) => {
         {...listeners}
         aria-label={`Move ${block.label}`}
         title="Drag to reorder"
-        className="absolute left-0 top-1/2 z-10 flex h-7 w-6 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+        className="mt-3.5 flex h-6 w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground/70 shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
-        <GripDots className="h-3.5 w-3.5" />
+        <GripDots className="h-3 w-3" />
       </button>
-      {block.node}
+      <div className="min-w-0 flex-1">{block.node}</div>
     </div>
   );
 };
@@ -80,7 +81,7 @@ export const SortableProfileBlocks = ({ blocks }: { blocks: ProfileBlock[] }) =>
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={sorted} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3 pl-8">
+        <div className="space-y-3">
           {sorted.map((id) => (
             <SortableItem key={id} block={byId[id]} />
           ))}
