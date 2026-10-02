@@ -196,7 +196,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 const visibleContent = cleanContent.replace(/<!--flowleed:[\s\S]*?-->\s*/g, "").trimEnd();
                 return (
                   <div className="max-w-none">
-                    <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }} className="font-sans text-sm font-normal leading-6
+                    {/* !h-auto: the text block defaults to full height, which pushed the
+                        confirmation cards below it out of the clipped message box. */}
+                    <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }} className="!h-auto font-sans text-sm font-normal leading-6
                       [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
                       [&_p]:my-0 [&_p+p]:mt-4
                       [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
