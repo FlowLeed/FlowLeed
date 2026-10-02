@@ -37,9 +37,9 @@ const SortableItem = ({ block }: { block: ProfileBlock }) => {
         {...listeners}
         aria-label={`Move ${block.label}`}
         title="Drag to reorder"
-        className="absolute right-2 top-2 z-10 flex h-6 w-6 cursor-grab touch-none items-center justify-center rounded text-muted-foreground opacity-40 transition-opacity hover:bg-muted hover:opacity-100 focus-visible:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
+        className="absolute -left-7 top-1/2 z-10 flex h-7 w-6 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
-        <GripVertical className="h-3.5 w-3.5" />
+        <GripDots className="h-3.5 w-3.5" />
       </button>
       {block.node}
     </div>
