@@ -1533,6 +1533,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     let toolRound = 0;
     let collectedContactIds: string[] | null = null;
     let lastFinderResult: string | null = null;
+    let pendingActionMarkers: string[] = [];
     let pendingActionMarker: string | null = null;
     // Every person id/name the tools actually returned. Anything else the model
     // writes is a fabrication and gets stripped before the user sees it.
@@ -1664,16 +1665,16 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             }
           } else if (fnName === "add_people_to_flow") {
             result = await prepareAddToFlow(adminClient, orgId, userId, args);
-            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
           } else if (fnName === "create_contact_note") {
             result = await prepareContactNote(adminClient, orgId, userId, args);
-            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
           } else if (fnName === "create_task") {
             result = await prepareTask(adminClient, orgId, userId, args);
-            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
           } else if (fnName === "create_prayer_request") {
             result = await preparePrayerRequest(adminClient, orgId, userId, args);
-            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
           } else {
             result = `Unknown tool: ${fnName}`;
           }
@@ -1749,7 +1750,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         let removedTotal = 0;
         let sentAnything = false;
         const clean = (chunk: string) => {
-          const { text: safe, removed } = sanitizePeopleMentions(chunk, allowedPeople);
+          const { text: safe0, removed } = sanitizePeopleMentions(chunk, allowedPeople);
+          // Markers are appended by the server; never let the model echo them.
+          const safe = safe0.replace(/<!--flowleed:[\s\S]*?-->/g, "");
           removedTotal += removed;
           if (pendingActionMarker) return safe;
           return safe.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
@@ -1836,7 +1839,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         if (collectedContactIds && collectedContactIds.length > 0) {
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
-        if (pendingActionMarker) send(`\n\n${pendingActionMarker}`);
+        if (pendingActionMarkers.length) send(`\n\n${pendingActionMarkers.join("")}`);
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },

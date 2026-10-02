@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
@@ -47,6 +48,8 @@ const formatAssistantMarkdown = (content: string) => {
   text = text.replace(/\*\*([^*]+)\*\*/g, "$1");
   return text
     .replace(/(#{2,3} [^\n]+\n\n)[ \t]+/g, "$1")
+    // A heading glued to its first sentence ("Private NoteA private...").
+    .replace(/^(#{2,3} [^\n]*?[a-z])([A-Z][a-z])/gm, "$1\n\n$2")
     // Keep person links readable when glued to a preceding word.
     .replace(/(\S)(?=\[)/g, "$1 ")
     // Repair common sentence boundaries lost by upstream streaming.
@@ -54,6 +57,12 @@ const formatAssistantMarkdown = (content: string) => {
     .replace(/([:;])(?=[A-Z])/g, "$1 ")
     // Repair common profile section headings joined to their first sentence.
     .replace(/^(#{2,3}\s+.*(?:Overview|Activity|History|Summary|Context|Connections|Engagement|Household|Groups|Flows|Next Steps))(?=[A-Z])/gm, "$1\n\n");
+};
+
+/** In-app links (like /contacts/...) open inside FlowLeed, not as external sites. */
+const ChatLink = ({ href, children }: { href?: string; children?: React.ReactNode }) => {
+  if (href && href.startsWith("/")) return <Link to={href}>{children}</Link>;
+  return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
 };
 
 /** Rotating, human-centered status lines shown while FlowLeed AI thinks. */
@@ -176,15 +185,18 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                   try { contactIds = JSON.parse(match[1]); } catch { /* ignore */ }
                 }
                 const cleanContent = msg.content.replace(/<!--flowleed:contact_ids=\[[^\]]*\]-->\s*/g, "").trimEnd();
-                const actionMatch = cleanContent.match(/<!--flowleed:action=({.*?})-->/);
-                let action: { id: string; type?: string; summary: string; expires_at: string } | null = null;
-                if (actionMatch) {
-                  try { action = JSON.parse(actionMatch[1]); } catch { /* ignore */ }
+                type ChatAction = { id: string; type?: string; summary: string; expires_at: string };
+                const actionsAll: ChatAction[] = [];
+                for (const m of cleanContent.matchAll(/<!--flowleed:action=(\{.*?\})-->/g)) {
+                  try {
+                    const a = JSON.parse(m[1]) as ChatAction;
+                    if (a?.id && !actionsAll.some((x) => x.id === a.id)) actionsAll.push(a);
+                  } catch { /* ignore */ }
                 }
-                const visibleContent = cleanContent.replace(/<!--flowleed:action={.*?}-->\s*/g, "").trimEnd();
+                const visibleContent = cleanContent.replace(/<!--flowleed:[\s\S]*?-->\s*/g, "").trimEnd();
                 return (
                   <div className="max-w-none">
-                    <MessageResponse className="font-sans text-sm font-normal leading-6
+                    <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }} className="font-sans text-sm font-normal leading-6
                       [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
                       [&_p]:my-0 [&_p+p]:mt-4
                       [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
@@ -202,7 +214,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         </Button>
                       </div>
                     )}
-                    {action && !handledActions.has(action.id) && (() => {
+                    {actionsAll.filter((action) => !handledActions.has(action.id)).map((action) => (<div key={action.id}>{(() => {
                       const state = actionStates?.get(action.id) as { status?: string; expires_at?: string } | undefined;
                       const status = state?.status;
                       const expiresAt = state?.expires_at ?? action.expires_at;
@@ -235,14 +247,14 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         <div className="not-prose mt-4 rounded-md border bg-muted/30 p-4">
                            <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">{action.type === "create_contact_note" ? "Confirm new note" : action.type === "create_prayer_request" ? "Confirm prayer request" : action.type === "create_task" ? "Confirm new task" : "Confirm Flow change"}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{action.summary}</p></div></div>
                           <div className="mt-4 flex flex-wrap gap-2">
-                            <Button size="sm" disabled={confirmingId === action.id} onClick={async () => { if (!onConfirmAction || !action) return; setConfirmingId(action.id); const result = await onConfirmAction(action.id); setConfirmingId(null); if (result.ok) setHandledActions((current) => new Set(current).add(action.id)); }}>
+                            <Button size="sm" disabled={confirmingId === action.id} onClick={async () => { if (!onConfirmAction) return; setConfirmingId(action.id); const result = await onConfirmAction(action.id); setConfirmingId(null); if (result.ok) setHandledActions((current) => new Set(current).add(action.id)); }}>
                                {confirmingId === action.id ? "Confirming..." : action.type === "create_contact_note" ? "Save note" : action.type === "create_prayer_request" ? "Save prayer request" : action.type === "create_task" ? "Save task" : "Confirm add"}
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => setHandledActions((current) => new Set(current).add(action.id))}>Cancel</Button>
                           </div>
                         </div>
                       );
-                    })()}
+                    })()}</div>))}
                   </div>
                 );
               })()
