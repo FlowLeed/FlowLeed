@@ -176,9 +176,9 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
           )}
           <MessageContent
             className={`
-              max-w-[92%] min-w-0 text-[15px] leading-7 sm:max-w-[85%] sm:text-base
+              max-w-[92%] min-w-0 text-sm leading-6 sm:max-w-[85%]
               ${msg.role === "user"
-                ? "rounded-2xl rounded-br-md bg-primary px-3.5 py-3 text-primary-foreground sm:px-5 sm:py-4"
+                ? "rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-primary-foreground sm:px-5"
                 : "bg-transparent px-0 py-1"
               }
             `}
