@@ -123,8 +123,8 @@ You can use `npx web-push generate-vapid-keys` to generate the VAPID keys
 - **Deploy:** merge or push to `dev`.
 - **Watch it:** open the run under **Actions**. When it finishes, the `staging` environment shows a link to the site.
 - **Add a dependency:** CI installs strictly from `bun.lock`, which Lovable keeps up to date.
-  - If you add a package locally with npm, also run `bun install` and commit `bun.lock`.
-  - Otherwise the build fails at "Install dependencies".
+  - Locally, add packages with `bun add <package>` and commit the updated `bun.lock`.
+  - Don't use npm: it would create a `package-lock.json` and leave `bun.lock` unchanged, so the build fails at "Install dependencies".
 - **Change the database:** add a migration (see [supabase/README.md → Making changes](supabase/README.md#making-changes)). The next deploy applies it.
 
 ## Rolling back

@@ -133,6 +133,7 @@ You don't set `SUPABASE_URL`, `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY`
 
 **You need:**
 - Node.js 20 or later
+- [Bun](https://bun.sh/) 1.4 or later. `bun.lock` is the project's only lockfile.
 - Docker Desktop, running
 - The [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
 - A Gloo AI API key
@@ -140,7 +141,7 @@ You don't set `SUPABASE_URL`, `SUPABASE_ANON_KEY` or `SUPABASE_SERVICE_ROLE_KEY`
 ### 1. Install and start the stack
 
 ```bash
-npm install
+bun install
 ```
 
 ```bash
@@ -167,7 +168,7 @@ supabase functions serve --env-file supabase/functions/.env.local
 ```
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 The app runs at http://localhost:3000. Supabase Studio is at http://127.0.0.1:54323, and local emails arrive in Mailpit at http://127.0.0.1:54324.
