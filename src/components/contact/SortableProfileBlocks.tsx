@@ -37,7 +37,7 @@ const SortableItem = ({ block }: { block: ProfileBlock }) => {
         {...listeners}
         aria-label={`Move ${block.label}`}
         title="Drag to reorder"
-        className="absolute -left-7 top-1/2 z-10 flex h-7 w-6 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+        className="absolute left-0 top-1/2 z-10 flex h-7 w-6 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-md border border-border bg-card text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
       >
         <GripDots className="h-3.5 w-3.5" />
       </button>
@@ -80,7 +80,7 @@ export const SortableProfileBlocks = ({ blocks }: { blocks: ProfileBlock[] }) =>
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
       <SortableContext items={sorted} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3">
+        <div className="space-y-3 pl-8">
           {sorted.map((id) => (
             <SortableItem key={id} block={byId[id]} />
           ))}
