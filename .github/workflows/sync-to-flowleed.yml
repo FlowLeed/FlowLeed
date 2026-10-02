@@ -1,0 +1,47 @@
+name: Sync Changes to Organization Repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-org-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Personal Repo
+        uses: actions/checkout@v4
+        with:
+          path: lovable-ai-repo
+
+      - name: Checkout Org Repo
+        uses: actions/checkout@v4
+        with:
+          repository: FlowLeed/FlowLeed
+          token: ${{ secrets.ORG_REPO_SYNC_PAT }}
+          path: org-repo
+          fetch-depth: 0
+
+      - name: Copy files and Create PR
+        env:
+          GH_TOKEN: ${{ secrets.ORG_REPO_SYNC_PAT }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          rsync -av --progress lovable-ai-repo/ org-repo/ --exclude .git --exclude .github
+          cd org-repo
+          BRANCH_NAME="sync-lovable-updates-${{ github.run_id }}"
+          git checkout -b $BRANCH_NAME
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "chore: automated sync from Lovable Synced repository"
+            git push origin $BRANCH_NAME
+            gh pr create \
+              --title "Automated Sync: Updates from Lovable Synced Repo" \
+              --body "This PR contains automated changes synchronized from the Lovable Synced repository." \
+              --head "$BRANCH_NAME" \
+              --base "lovable" \
+              --repo "FlowLeed/FlowLeed"
+          else
+            echo "No changes detected to sync."
+          fi
