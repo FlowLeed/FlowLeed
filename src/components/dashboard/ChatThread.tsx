@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { type ChatMessage } from "@/hooks/useDashboardChat";
 import { User, HeartHandshake, RotateCcw, History, ListPlus, ShieldCheck, CheckCircle2, Clock } from "lucide-react";
@@ -59,7 +58,6 @@ interface ChatThreadProps {
 
 export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory, onConfirmAction }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const [bulkIds, setBulkIds] = useState<string[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [handledActions, setHandledActions] = useState<Set<string>>(new Set());
