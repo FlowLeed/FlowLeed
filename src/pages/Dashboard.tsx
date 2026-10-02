@@ -75,6 +75,9 @@ const Dashboard = () => {
             </div>
           )}
 
+          {/* The daily care briefing is the opening message in the main AI conversation. */}
+          {!hasMessages && <CareBriefingThread onAsk={sendMessage} />}
+
           {/* Chat Input - hero state only */}
           {!hasMessages && (
             <AIChatInput
@@ -101,9 +104,6 @@ const Dashboard = () => {
               onClose={() => setSelectedCategory(null)}
             />
           )}
-
-          {/* The daily care briefing is part of the main AI conversation. */}
-          {!hasMessages && <CareBriefingThread onAsk={sendMessage} />}
 
           {/* Chat Thread */}
           <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} onConfirmAction={confirmAction} />
