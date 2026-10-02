@@ -1507,12 +1507,16 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 - NEVER put two labeled items in the same paragraph. Each must be its own paragraph with a blank line before it.
 - When describing multiple flows, moments, or categories, use this format EXACTLY:
 
-  **Flow Name:** Description of the flow here.
+  ### Flow Name
 
-  **Another Flow:** Description of another flow here.
+  Description of the flow here.
+
+  ### Another Flow
+
+  Description of another flow here.
 
   Notice the blank line between each item. ALWAYS follow this pattern.
-- After any bold label followed by a colon (e.g. "**Team Care:** ..."), ALWAYS add a blank line before the next bold label.
+- After any section title followed by its description, ALWAYS add a blank line before the next section title.
 - If asked about something not in the data, say so honestly.
 - Keep responses focused and concise — pastors are busy!
 - When appropriate, suggest next steps or follow-up actions.
