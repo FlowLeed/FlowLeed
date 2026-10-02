@@ -29,7 +29,7 @@ const formatAssistantMarkdown = (content: string) => {
   let text = content
     // Preserve markdown structure when a streamed heading arrives immediately
     // after the previous sentence.
-    .replace(/([^\n])(?=#{2,3}\s)/g, "$1\n\n")
+    .replace(/([^\n#])(?=#{2,3}\s)/g, "$1\n\n")
     // A bold-only line is a section title, not body text.
     .replace(/^[ \t]*\*\*([^*]+)\*\*[ \t]*$/gm, (_m, t: string) => `### ${t.trim().replace(/:$/, "")}\n\n`)
     // A bold title at the start of a line becomes a quiet heading; ordinary
@@ -251,7 +251,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                               keep their top margin so they never sit glued to an Approve button. */}
                           <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }}
                             className={`!h-auto font-sans text-sm font-normal leading-6
-                            ${sectionIndex === 0 ? "[&>*:first-child]:mt-0 " : ""}
+                            ${sectionIndex === 0
+                              ? "[&>*:first-child]:mt-0 "
+                              // MessageResponse always prepends mt-0 on the first child;
+                              // re-assert spacing so a heading after an Approve button keeps
+                              // breathing room instead of sitting glued to it.
+                              : "[&>*:first-child]:mt-6 "}
                             [&>*:last-child]:mb-0
                             [&_p]:!my-0 [&_p+p]:mt-4 [&_p:empty]:hidden
                             [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
