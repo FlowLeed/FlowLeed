@@ -70,7 +70,7 @@ const TOOL_REGISTRY = [
           },
           group_name: {
             type: "string",
-            description: "Restrict to members of a specific group by (partial) name.",
+            description: "Restrict to members of a church GROUP by its title (e.g. 'Youth', 'Choir', 'Women's Bible Study'). NEVER put a person's name here — use search_person for people.",
           },
           serving_min_days: {
             type: "number",
@@ -183,8 +183,38 @@ const TOOL_REGISTRY = [
           description: { type: "string", description: "Optional details." },
           person_name: { type: "string", description: "Optional exact name of a person the task is about." },
           due_date: { type: "string", description: "Optional due date in ISO format (YYYY-MM-DD)." },
+          assignee_name: { type: "string", description: "Optional name of another church leader to assign the task to. Omit to assign to the current user." },
         },
         required: ["title"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "update_task",
+      description: "Prepare a change to one of the user's open tasks: mark it done, or move it to a new due date. Never saves immediately; it creates a confirmation.",
+      parameters: {
+        type: "object",
+        properties: {
+          task_query: { type: "string", description: "Keywords or person name identifying the task, e.g. 'Sandra call'." },
+          complete: { type: "boolean", description: "True to mark the task done." },
+          due_date: { type: "string", description: "New due date (YYYY-MM-DD) when rescheduling." },
+        },
+        required: ["task_query"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "list_my_tasks",
+      description: "List the current user's tasks / to-dos (assigned to them). Use when the user asks what their tasks, to-dos or reminders are.",
+      parameters: {
+        type: "object",
+        properties: {
+          include_completed: { type: "boolean", description: "Also include completed tasks. Default false." },
+        },
       },
     },
   },
@@ -198,7 +228,36 @@ const TOOL_DEFAULTS: Record<string, boolean> = {
   create_contact_note: false,
   create_prayer_request: false,
   create_task: true,
+  update_task: true,
+  list_my_tasks: true,
 };
+
+async function executeListMyTasks(
+  adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
+): Promise<string> {
+  let q = adminClient.from("tasks")
+    .select("id, title, description, contact_id, due_at, completed_at")
+    .eq("organization_id", orgId).eq("assigned_to_user_id", userId)
+    .order("due_at", { ascending: true, nullsFirst: false }).limit(50);
+  if (!args?.include_completed) q = q.is("completed_at", null);
+  const { data, error } = await q;
+  if (error) return `Could not load tasks: ${error.message}`;
+  if (!data?.length) return "The user has no open tasks.";
+  const ids = [...new Set(data.map((t: any) => t.contact_id).filter(Boolean))];
+  const names = new Map<string, string>();
+  if (ids.length) {
+    const { data: cs } = await adminClient.from("contacts").select("id, first_name, last_name").in("id", ids);
+    (cs || []).forEach((c: any) => names.set(c.id, `${c.first_name || ""} ${c.last_name || ""}`.trim()));
+  }
+  const now = Date.now();
+  const lines = data.map((t: any) => {
+    const due = t.due_at ? new Date(t.due_at) : null;
+    const status = t.completed_at ? "completed" : due && due.getTime() < now ? "overdue" : "";
+    const who = t.contact_id && names.get(t.contact_id) ? ` — about [${names.get(t.contact_id)}](/contacts/${t.contact_id})` : "";
+    return `- ${t.title}${who}${due ? ` (due ${due.toISOString().split("T")[0]}${status ? `, ${status}` : ""})` : status ? ` (${status})` : ""}${t.description ? `: ${t.description}` : ""}`;
+  });
+  return `User's tasks (${data.length}). Full list at [Tasks](/tasks):\n${lines.join("\n")}`;
+}
 
 async function prepareTask(
   adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
@@ -222,17 +281,68 @@ async function prepareTask(
     if (!contacts || contacts.length !== 1) return contacts?.length ? `I found more than one person matching "${personName}". Please use their full name.` : `I couldn't find ${personName} in your church records.`;
     contact = contacts[0] as any;
   }
-  const summary = [title, contact ? `For: ${contact.name}` : null, dueAt ? `Due: ${dueAt.slice(0, 10)}` : null, description || null].filter(Boolean).join("\n");
+  let assignee: { id: string; name: string } | null = null;
+  const assigneeName = String(args?.assignee_name || "").trim();
+  if (assigneeName && !/^(me|myself)$/i.test(assigneeName)) {
+    const { data: members } = await adminClient.from("organization_members").select("user_id").eq("organization_id", orgId);
+    const ids = (members || []).map((m: any) => m.user_id);
+    const { data: profs } = ids.length ? await adminClient.from("profiles").select("user_id, full_name, email").in("user_id", ids) : { data: [] as any[] };
+    const needle = assigneeName.toLowerCase().replace(/^(pastor|ps\.?|rev\.?)\s+/, "");
+    const matches = (profs || []).filter((p: any) => (p.full_name || "").toLowerCase().includes(needle) || (p.email || "").toLowerCase().startsWith(needle));
+    if (matches.length !== 1) return matches.length ? `More than one leader matches "${assigneeName}": ${matches.map((p: any) => p.full_name || p.email).join(", ")}. Which one?` : `I couldn't find a leader named ${assigneeName} on your church team.`;
+    if (matches[0].user_id !== userId) assignee = { id: matches[0].user_id, name: matches[0].full_name || matches[0].email };
+  }
+  const summary = [title, contact ? `For: ${contact.name}` : null, assignee ? `Assigned to: ${assignee.name}` : null, dueAt ? `Due: ${dueAt.slice(0, 10)}` : null, description || null].filter(Boolean).join("\n");
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "create_task",
     summary, expires_at: expiresAt,
-    action_payload: { title, description: description || null, contact_id: contact?.id || null, contact_name: contact?.name || null, due_at: dueAt },
+    action_payload: { title, description: description || null, contact_id: contact?.id || null, contact_name: contact?.name || null, due_at: dueAt, assignee_user_id: assignee?.id || null },
   }).select("id").single();
   if (error || !request) throw error || new Error("Could not prepare task");
   await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "create_task", action_request_id: request.id, outcome: "prepared", affected_records: contact ? [{ type: "contact", id: contact.id }] : [] });
   return `Ready for review. Nothing has been saved yet.\n\n${actionMarker({ id: request.id, type: "create_task", summary, expires_at: expiresAt })}`;
 }
+
+async function prepareUpdateTask(
+  adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
+): Promise<string> {
+  const query = String(args?.task_query || "").trim().toLowerCase();
+  const complete = args?.complete === true;
+  const dueRaw = String(args?.due_date || "").trim();
+  if (!query) return "Which task do you mean?";
+  if (!complete && !dueRaw) return "Should I mark it done or move it to a new date?";
+  let dueAt: string | null = null;
+  if (!complete) {
+    const d = new Date(dueRaw.length === 10 ? `${dueRaw}T12:00:00Z` : dueRaw);
+    if (isNaN(d.getTime())) return `I couldn't understand the date "${dueRaw}".`;
+    dueAt = d.toISOString();
+  }
+  const { data: tasks } = await adminClient.from("tasks")
+    .select("id, title, description, due_at, contact:contacts(id, name)")
+    .eq("organization_id", orgId).is("completed_at", null)
+    .or(`assigned_to_user_id.eq.${userId},created_by_user_id.eq.${userId}`).limit(200);
+  const words = query.split(/\s+/).filter((w) => w.length > 1);
+  const matches = (tasks || []).filter((t: any) => {
+    const hay = `${t.title} ${t.description || ""} ${t.contact?.name || ""}`.toLowerCase();
+    return words.every((w) => hay.includes(w));
+  });
+  if (!matches.length) return `I couldn't find an open task matching "${args.task_query}".`;
+  if (matches.length > 1) return `Several open tasks match: ${matches.slice(0, 6).map((t: any) => `"${t.title}"${t.contact?.name ? ` (${t.contact.name})` : ""}`).join(", ")}. Ask the user which one.`;
+  const t: any = matches[0];
+  const summary = complete
+    ? `Mark done: ${t.title}${t.contact?.name ? `\nFor: ${t.contact.name}` : ""}`
+    : `Reschedule: ${t.title}${t.contact?.name ? `\nFor: ${t.contact.name}` : ""}\nFrom: ${t.due_at ? t.due_at.slice(0, 10) : "no date"} → ${dueAt!.slice(0, 10)}`;
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const { data: request, error } = await adminClient.from("ai_action_requests").insert({
+    organization_id: orgId, requested_by_user_id: userId, tool_key: "update_task",
+    summary, expires_at: expiresAt, action_payload: { task_id: t.id, complete, due_at: dueAt },
+  }).select("id").single();
+  if (error || !request) throw error || new Error("Could not prepare task change");
+  await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "update_task", action_request_id: request.id, outcome: "prepared", affected_records: [{ type: "task", id: t.id }] });
+  return `Ready for review. Nothing has been changed yet.\n\n${actionMarker({ id: request.id, type: "update_task", summary, expires_at: expiresAt })}`;
+}
+
 
 const actionMarker = (payload: Record<string, unknown>) =>
   `<!--flowleed:action=${JSON.stringify(payload).replace(/-->/g, "--\\u003e")}-->`;
@@ -329,6 +439,23 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
   const { data: setting } = await adminClient.from("ai_tool_settings").select("enabled").eq("organization_id", orgId).eq("tool_key", request.tool_key).maybeSingle();
   if (!(setting?.enabled ?? TOOL_DEFAULTS[request.tool_key] ?? false)) return { ok: false, message: "This AI action is disabled in Organization Settings." };
   const payload = request.action_payload as any;
+  if (request.tool_key === "update_task") {
+    const { data: existing } = await userClient.from("tasks").select("id, title, completed_at").eq("id", payload?.task_id).eq("organization_id", orgId).maybeSingle();
+    if (!existing) return { ok: false, message: "That task is no longer available." };
+    const patch: Record<string, unknown> = payload.complete ? { completed_at: new Date().toISOString() } : { due_at: payload.due_at };
+    if (!payload.complete && !payload.due_at) return { ok: false, message: "This change is no longer valid." };
+    const { data: updated, error } = await userClient.from("tasks").update(patch).eq("id", existing.id).select("id").maybeSingle();
+    if (error || !updated) {
+      const errorMessage = error?.message || "The task could not be updated.";
+      await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: errorMessage } }).eq("id", request.id).eq("status", "pending");
+      return { ok: false, message: "I couldn't update this task." };
+    }
+    const now = new Date().toISOString();
+    const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { task_id: existing.id } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
+    if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
+    await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "task", id: existing.id }] });
+    return { ok: true, message: payload.complete ? `Marked "${existing.title}" as done. [Tasks](/tasks)` : `Moved "${existing.title}" to ${String(payload.due_at).slice(0, 10)}. [Tasks](/tasks)` };
+  }
   if (request.tool_key === "create_task") {
     const title = String(payload?.title || "").trim();
     if (!title || title.length > 200) return { ok: false, message: "This task is no longer valid. Ask FlowLeed AI to prepare it again." };
@@ -338,7 +465,13 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
       if (!contact) return { ok: false, message: "This person is no longer available." };
       contactName = contact.name;
     }
-    const { data: task, error } = await userClient.from("tasks").insert({ organization_id: orgId, title, description: payload.description || null, contact_id: payload.contact_id || null, due_at: payload.due_at || null, assigned_to_user_id: userId, created_by_user_id: userId }).select("id").single();
+    let assigneeId = userId;
+    if (payload.assignee_user_id && payload.assignee_user_id !== userId) {
+      const { data: m } = await adminClient.from("organization_members").select("user_id").eq("organization_id", orgId).eq("user_id", payload.assignee_user_id).maybeSingle();
+      if (!m) return { ok: false, message: "That leader is no longer part of your church team." };
+      assigneeId = payload.assignee_user_id;
+    }
+    const { data: task, error } = await userClient.from("tasks").insert({ organization_id: orgId, title, description: payload.description || null, contact_id: payload.contact_id || null, due_at: payload.due_at || null, assigned_to_user_id: assigneeId, created_by_user_id: userId }).select("id").single();
     if (error || !task) {
       const errorMessage = error?.message || "The task could not be saved.";
       await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: errorMessage } }).eq("id", request.id).eq("status", "pending");
@@ -526,6 +659,34 @@ async function executeSearchPerson(
         .order("created_at", { ascending: false })
         .limit(15),
     ]);
+
+    // Groups the person belongs to (role + recent attendance)
+    try {
+      const { data: gm } = await adminClient
+        .from("group_members")
+        .select("*, groups(name)")
+        .eq("contact_id", contactId)
+        .limit(20);
+      const active = (gm || []).filter((m: any) => !m.left_at && m.status !== "inactive" && m.is_active !== false);
+      if (active.length > 0) {
+        lines.push(`\n**Groups (${active.length}):**`);
+        for (const m of active) {
+          lines.push(`- ${(m.groups as any)?.name || "Group"}${m.role ? ` — ${m.role}` : ""}`);
+        }
+      } else {
+        lines.push(`\n**Groups:** Not in any active group`);
+      }
+      const { data: att } = await adminClient
+        .from("group_attendance")
+        .select("*")
+        .eq("contact_id", contactId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (att && att.length) {
+        const attended = att.filter((a: any) => a.attended !== false).length;
+        lines.push(`- Recent group attendance: ${attended} of last ${att.length} meetings`);
+      }
+    } catch (_e) { /* ignore group lookup failures */ }
 
     // Demographics
     const demo = demographicsResult.data;
@@ -1314,7 +1475,7 @@ Deno.serve(async (req) => {
         if (!marker) continue;
         try {
           const pending = JSON.parse(marker[1]);
-          if (["add_people_to_flow", "create_contact_note", "create_prayer_request", "create_task"].includes(pending?.type) && typeof pending.id === "string") {
+          if (["add_people_to_flow", "create_contact_note", "create_prayer_request", "create_task", "update_task"].includes(pending?.type) && typeof pending.id === "string") {
             const result = await executePendingAction(adminClient, userClient, orgId, userId, pending.id);
             const encoder = new TextEncoder();
             const response = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: result.message } }] })}\n\ndata: [DONE]\n\n`)); controller.close(); } });
@@ -1450,12 +1611,15 @@ TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 
 ## Tools Available
 You have access to tools to look up detailed information about specific people and flows. USE THEM PROACTIVELY:
-- **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, etc.)
+- **search_person**: When the user mentions a person by name, or asks about someone specific, ALWAYS call this tool to get their full profile (demographics, family, tags, engagement, notes, flow moments, groups, etc.)
+- PICKING A PERSON: If you just asked "which person?" and the user replies with only a name (or clicks/points to one), they are choosing that person. Call search_person with that name and continue the conversation about them using their profile. Never pass a person's name to find_contacts_by_criteria (group_name is for group titles only).
 - **search_people_in_flow**: When the user asks who is in a specific flow or wants details about a flow's people, call this tool.
 - **find_contacts_by_criteria**: When the user wants a LIST of people meeting one or more conditions (e.g. "Fairfield women who were in a small group earlier this year but aren't in one now"), call this tool. Map EVERY part of the request to an argument: campus -> campus_name, women/men -> gender, "was in a group earlier this year" -> in_group_between {from: Jan 1 of this year, to: today}, "not in a group now" -> not_in_active_group: true, "Member" -> pc_membership, "served N months" -> serving_min_days = N*30. Set limit to 200 so counts are accurate.
 ${isEnabled("add_people_to_flow") ? '- **add_people_to_flow**: When the user clearly names one person, one Flow, and one step, prepare the exact action for confirmation. Never say it happened until the structured execution result confirms it.' : '- Adding people to a Flow is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_contact_note") ? '- **create_contact_note**: When the user asks to add or save a note about one person, prepare the exact note for confirmation. Preserve the user’s wording, default to a shared general note unless they request another type or privacy, and never say it was saved until execution confirms it.' : '- Adding profile notes is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
-${isEnabled("create_task") ? '- **create_task**: When the user asks to create a task, to-do, or reminder (optionally about one person, optionally with a due date), prepare it for confirmation. Resolve relative dates like "Friday" against today. Never say it was saved until execution confirms it.' : '- Creating tasks is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
+${isEnabled("create_task") ? '- **create_task**: When the user asks to create a task, to-do, or reminder (optionally about one person, optionally with a due date), prepare it for confirmation. Resolve relative dates like "Friday" against today. If the user wants it assigned to another leader ("assign Pastor Marcus to call John"), pass that leader\'s name as assignee_name. Never say it was saved until execution confirms it.' : '- Creating tasks is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
+${isEnabled("update_task") ? '- **update_task**: When the user says a task is done ("mark Sandra\'s task done", "I called Rachel") or wants to move/reschedule one ("move Sandra\'s call to Friday"), call this with a keyword or person name to identify the task and either complete=true or a new due_date. If several tasks match, ask which one. Never say it was changed until execution confirms it.' : ''}
+- **list_my_tasks**: When the user asks what their tasks, to-dos or reminders are (e.g. "what are my tasks?", "what's on my plate?"), ALWAYS call this tool and list them (overdue first), keeping the person links exactly as returned. Never say you can't see their tasks. Format the answer as a markdown bullet list: one task per line, each line starting with "- ", person name link first, then the task and due date. Never write the tasks as a run-on paragraph. Put any closing question on its own line after the list.
 ${isEnabled("create_prayer_request") ? '- **create_prayer_request**: When the user asks to create or save a prayer request for one person, prepare the person, title, and exact request details for confirmation. Never say it was saved until execution confirms it.' : '- Creating prayer requests is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
@@ -1494,29 +1658,53 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 - When mentioning a Flow name, ALWAYS wrap it in a markdown link using the lookup above, e.g. [New Family Follow-Up](/flows/abc-123).
 - When mentioning a person's name, ALWAYS wrap it in a markdown link, e.g. [John Smith](/contacts/def-456).
 - When listing people, format them clearly with relevant details.
+- CRITICAL: NEVER describe more than one person in the same paragraph. Each person gets their own paragraph: start the paragraph with the linked name, then an em dash, then 1-2 sentences about them. Put a blank line between people. Example:
+
+  [Alexa Yarmolatii](/contacts/abc-123) — She shared a prayer request today about being sick.
+
+  [Nick Sevier](/contacts/def-456) — No active prayer requests; a simple check-in would mean a lot.
 - When suggesting actions, be specific and actionable.
-- Use markdown formatting: use ## for section headers, **bold** for emphasis, and bullet lists for data.
-- CRITICAL FORMATTING RULE: Always start with a short greeting paragraph, then leave a BLANK LINE before the first section header. Every section header must have a blank line ABOVE it.
-- Use ## or ### for section titles. Every section must start with a header on its own line, preceded by a blank line.
-- Write in clear, well-spaced paragraphs. Each paragraph must be separated by a blank line.
-- NEVER put two bold-labeled items in the same paragraph. Each must be its own paragraph with a blank line before it.
+- Formatting: write plain prose. Reserve bold (**) for section titles ONLY - never put bold inside a paragraph, sentence, or list item. Use a short ### heading for each section title, on its own line, with a blank line before and after it.
+- Keep headings the same visual importance as body text. Do not use oversized or title-style headings in an answer.
+- Start directly with the answer. Use short, natural paragraphs of 1–3 sentences, separated by one blank line.
+- Every section title must be on its own line with a blank line above and below it. ALWAYS start a new paragraph after a title. Never join a heading, title, sentence, or list item to the next text.
+- NEVER place a person or flow link directly after a word. Always leave a space first: "household with [Lauchlan Jean](/contacts/def-456)."
+- Before finishing, verify there is whitespace after every period and that no words from separate sentences or sections are joined together.
+- NEVER put two labeled items in the same paragraph. Each must be its own paragraph with a blank line before it.
 - When describing multiple flows, moments, or categories, use this format EXACTLY:
 
-  **Flow Name:** Description of the flow here.
+  ### Flow Name
 
-  **Another Flow:** Description of another flow here.
+  Description of the flow here.
+
+  ### Another Flow
+
+  Description of another flow here.
 
   Notice the blank line between each item. ALWAYS follow this pattern.
-- After any bold label followed by a colon (e.g. "**Team Care:** ..."), ALWAYS add a blank line before the next bold label.
+- After any section title followed by its description, ALWAYS add a blank line before the next section title.
 - If asked about something not in the data, say so honestly.
 - Keep responses focused and concise — pastors are busy!
 - When appropriate, suggest next steps or follow-up actions.
 - Use emojis sparingly for warmth (🙏 ❤️ ✅).`;
 
     // Build the message list for the AI
+    // Earlier prepared items are stripped from the visible history (so the model
+    // never copies them into its reply) and summarized once in a system note.
+    const earlierPrepared: string[] = [];
+    const historyMessages = messages.map((m: any) => typeof m?.content === "string" && m.role === "assistant"
+      ? { ...m, content: m.content
+          .replace(/<!--flowleed:action=(\{.*?\})-->/g, (_x: string, j: string) => {
+            try { const a = JSON.parse(j); const s = String(a.summary ?? "").replace(/\s+/g, " ").slice(0, 160); if (s) earlierPrepared.push(s); } catch { /* ignore */ }
+            return "";
+          })
+          .replace(/\[Earlier prepared for confirmation:[^\]]*\]/g, "")
+          .replace(/<!--flowleed:[\s\S]*?-->/g, "") }
+      : m);
     const aiMessages = [
-      { role: "system", content: systemPrompt },
-      ...messages,
+      { role: "system", content: systemPrompt + "\n\nAction rule: only say something is prepared or ready to confirm when you called the matching tool in THIS turn. Earlier prepared items may have expired; if the user asks again, call the tool again. Never write hidden <!-- --> markers yourself. Never quote or list internal notes about earlier prepared items in your reply." +
+        (earlierPrepared.length ? `\n\nINTERNAL (do not repeat to the user): earlier in this chat you prepared: ${earlierPrepared.slice(-6).join("; ")}.` : "") },
+      ...historyMessages,
     ];
 
     // Tool call loop: make non-streaming calls until we get a final response, then stream it
@@ -1524,6 +1712,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     let toolRound = 0;
     let collectedContactIds: string[] | null = null;
     let lastFinderResult: string | null = null;
+    let pendingActionMarkers: string[] = [];
     let pendingActionMarker: string | null = null;
     // Every person id/name the tools actually returned. Anything else the model
     // writes is a fabrication and gets stripped before the user sees it.
@@ -1563,6 +1752,8 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
 
 
+    let lastDirectAnswer = "";
+    let lastToolResult = "";
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
       let toolCheckData: GlooChatCompletion;
@@ -1605,6 +1796,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       const toolCalls = glooToolCalls(toolCheckData);
 
       if (toolCalls.length === 0) {
+        if (typeof choice.message?.content === "string") lastDirectAnswer = choice.message.content;
         // No tool calls — model wants to respond directly.
         // If we already have tool results, stream the final response.
         // If this is the first round with no tool calls, also stream.
@@ -1642,16 +1834,21 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             }
           } else if (fnName === "add_people_to_flow") {
             result = await prepareAddToFlow(adminClient, orgId, userId, args);
-            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
           } else if (fnName === "create_contact_note") {
             result = await prepareContactNote(adminClient, orgId, userId, args);
-            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
+          } else if (fnName === "list_my_tasks") {
+            result = await executeListMyTasks(adminClient, orgId, userId, args);
           } else if (fnName === "create_task") {
             result = await prepareTask(adminClient, orgId, userId, args);
-            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
+          } else if (fnName === "update_task") {
+            result = await prepareUpdateTask(adminClient, orgId, userId, args);
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
           } else if (fnName === "create_prayer_request") {
             result = await preparePrayerRequest(adminClient, orgId, userId, args);
-            pendingActionMarker = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null;
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
           } else {
             result = `Unknown tool: ${fnName}`;
           }
@@ -1661,6 +1858,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         }
 
         registerPeople(result);
+        lastToolResult = result;
 
 
         aiMessages.push({
@@ -1714,7 +1912,12 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         let removedTotal = 0;
         let sentAnything = false;
         const clean = (chunk: string) => {
-          const { text: safe, removed } = sanitizePeopleMentions(chunk, allowedPeople);
+          const { text: safe0, removed } = sanitizePeopleMentions(chunk, allowedPeople);
+          // Markers are appended by the server; never let the model echo them
+          // (or the internal history notes about earlier prepared items).
+          const safe = safe0
+            .replace(/<!--flowleed:[\s\S]*?-->/g, "")
+            .replace(/\[?Earlier prepared[^\]\n]*\]?/gi, "");
           removedTotal += removed;
           if (pendingActionMarker) return safe;
           return safe.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
@@ -1779,16 +1982,31 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         // into plain language (the raw tool text contains internal instructions).
         if (!fullText.trim() && !sentAnything && lastFinderResult) {
           const fallback = clean(humanizeFinderResult(lastFinderResult)).trim();
-          if (fallback) send(fallback);
+          if (fallback) { send(fallback); sentAnything = true; }
+        }
+        // Never end with silence: fall back to the model's earlier answer, the
+        // last tool's plain message, or a short honest note.
+        if (!sentAnything) {
+          const toolText = lastToolResult
+            .replace(/<!--[\s\S]*?-->/g, "")
+            .split("\n").filter((l) => !/^(INSTRUCTION|NOTE|IMPORTANT|SYSTEM)\b/i.test(l.trim())).join("\n").trim();
+          const fb = clean(lastDirectAnswer).trim()
+            || (pendingActionMarker ? "Here's what I prepared. Please review it and confirm below." : "")
+            || (toolText && toolText.length < 600 ? toolText : "")
+            || "Sorry, I couldn't put together an answer for that. Could you say it another way, or tell me the person's full name?";
+          send(fb);
+          sentAnything = true;
         }
 
         if (removedTotal > 0) {
           console.log(`[chat] stripped ${removedTotal} unverified person link(s) from the answer`);
         }
-        if (collectedContactIds && collectedContactIds.length > 0) {
+        // The bulk "Review people" button is only for list requests; when this turn
+        // prepared a one-person action (task, note, prayer), show just that action.
+        if (collectedContactIds && collectedContactIds.length > 0 && pendingActionMarkers.length === 0) {
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
-        if (pendingActionMarker) send(`\n\n${pendingActionMarker}`);
+        if (pendingActionMarkers.length) send(`\n\n${pendingActionMarkers.join("")}`);
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },

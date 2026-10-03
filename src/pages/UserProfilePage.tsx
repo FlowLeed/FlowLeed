@@ -46,6 +46,7 @@ import { useCalls, CallRecord } from "@/hooks/useCalls";
 import { CallStatusDialog } from "@/components/calls/CallStatusDialog";
 import { resolveMessagingChannels } from "@/lib/messagingChannels";
 import { MessagingChannelIcon } from "@/components/contact/MessagingChannelLinks";
+import { SortableProfileBlocks } from "@/components/contact/SortableProfileBlocks";
 
 const getInitials = (name?: string | null) => {
   const parts = (name || "").trim().split(/\s+/).filter(Boolean);
@@ -734,9 +735,9 @@ const UserProfilePage = () => {
         showBackButton
         onBackClick={() => navigate(-1)}
       />
-      <div className="flex-1 overflow-y-auto overflow-x-hidden w-full p-4 md:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden w-full p-3 md:p-4 space-y-3">
         {/* Enhanced Header */}
-        <div className="space-y-4">
+        <div className="space-y-3">
 
         <LifeSeasonBanner contactId={contactId!} contactName={contact.name} />
 
@@ -1174,101 +1175,99 @@ const UserProfilePage = () => {
         </Card>
       </div>
 
-      {/* Active markers / signal */}
-      <ActiveMarkersCard contactId={contactId!} />
-
-      {/* Flow Moments */}
-      <FlowMomentsCard contactId={contactId!} />
-
-
-      {/* Planning Center custom fields (per-user) */}
-      <PcoCustomFieldsCard contactId={contactId!} />
-
-      {/* Attendance / Check-ins */}
-      <ContactCheckinsCard contactId={contactId!} />
-
-      {/* Groups */}
-      <ContactGroupsCard contactId={contactId!} />
-
-
-
-
-      {/* AI Suggestions Block */}
-      <AISuggestions 
-        contactId={contactId!}
-        contactName={contact?.name}
-        contactPhone={contact?.phone}
-        contactEmail={contact?.email}
-        currentPipelineId={pipelineId || undefined}
-        currentPipelineName={contactData?.flows?.find((f: any) => f.pipeline.id === pipelineId)?.pipeline?.name}
-        flows={contactData?.flows}
-      />
-
-      {/* Vertical Content Blocks */}
-      <div className="space-y-6">
-        {/* Flow Status Block */}
-        <ContactFlowStatus flows={flows} contactId={contactId!} />
-        
-        {/* Family Members Block (if any) */}
-        {familyMembers && familyMembers.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Family Members</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {familyMembers.map((member) => (
-                  <div key={member.id} className="flex justify-between items-center p-3 rounded-lg bg-muted/30">
-                    <div>
-                      <div className="font-medium">{member.name}</div>
-                      <div className="text-sm text-muted-foreground capitalize">{member.relationship}</div>
-                    </div>
-                    {member.birthday && (
-                      <div className="text-sm text-muted-foreground">
-                        Age {(() => {
-                          const today = new Date();
-                          const birthDate = new Date(member.birthday);
-                          let age = today.getFullYear() - birthDate.getFullYear();
-                          const monthDiff = today.getMonth() - birthDate.getMonth();
-                          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                            age--;
-                          }
-                          return age;
-                        })()}
+      <SortableProfileBlocks
+        blocks={[
+          { id: "signals", label: "Signals", node: <ActiveMarkersCard contactId={contactId!} /> },
+          { id: "moments", label: "Flow Moments", node: <FlowMomentsCard contactId={contactId!} /> },
+          { id: "pco-fields", label: "Pastoral Context", node: <PcoCustomFieldsCard contactId={contactId!} /> },
+          { id: "checkins", label: "Check-ins", node: <ContactCheckinsCard contactId={contactId!} /> },
+          { id: "groups", label: "Groups", node: <ContactGroupsCard contactId={contactId!} /> },
+          {
+            id: "ai",
+            label: "AI Suggestions",
+            node: (
+              <AISuggestions
+                contactId={contactId!}
+                contactName={contact?.name}
+                contactPhone={contact?.phone}
+                contactEmail={contact?.email}
+                currentPipelineId={pipelineId || undefined}
+                currentPipelineName={contactData?.flows?.find((f: any) => f.pipeline.id === pipelineId)?.pipeline?.name}
+                flows={contactData?.flows}
+              />
+            ),
+          },
+          { id: "flows", label: "Flows", node: <ContactFlowStatus flows={flows} contactId={contactId!} /> },
+          ...(familyMembers && familyMembers.length > 0
+            ? [{
+                id: "family",
+                label: "Family Members",
+                node: (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Family Members</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {familyMembers.map((member) => (
+                          <div key={member.id} className="flex justify-between items-center px-3 py-2 rounded-md bg-muted/30 text-sm">
+                            <div>
+                              <div className="font-medium">{member.name}</div>
+                              <div className="text-xs text-muted-foreground capitalize">{member.relationship}</div>
+                            </div>
+                            {member.birthday && (
+                              <div className="text-xs text-muted-foreground">
+                                Age {(() => {
+                                  const today = new Date();
+                                  const birthDate = new Date(member.birthday);
+                                  let age = today.getFullYear() - birthDate.getFullYear();
+                                  const m = today.getMonth() - birthDate.getMonth();
+                                  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+                                  return age;
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-        
-        {/* Recent Interactions Block */}
-        <InteractionTimeline
-          interactions={interactions}
-          onAddInteraction={() => toast({ title: "Add interaction feature coming soon" })}
-        />
-        
-        {/* Notes Block */}
-        <ContactNotes
-          notes={notes}
-          onAddNote={(content, noteType, isPrivate) => 
-            addNoteMutation.mutate({ content, noteType, isPrivate })
-          }
-        />
-        
-        {/* Prayer Requests Block */}
-        <PrayerRequestsList
-          prayerRequests={prayerRequests}
-          onAddPrayerRequest={(title, description) => 
-            addPrayerRequestMutation.mutate({ title, description })
-          }
-          onMarkAnswered={(id, answerDescription) => 
-            markPrayerAnsweredMutation.mutate({ id, answerDescription })
-          }
-        />
-      </div>
+                    </CardContent>
+                  </Card>
+                ),
+              }]
+            : []),
+          {
+            id: "interactions",
+            label: "Recent Interactions",
+            node: (
+              <InteractionTimeline
+                interactions={interactions}
+                onAddInteraction={() => toast({ title: "Add interaction feature coming soon" })}
+              />
+            ),
+          },
+          {
+            id: "notes",
+            label: "Notes",
+            node: (
+              <ContactNotes
+                notes={notes}
+                onAddNote={(content, noteType, isPrivate) => addNoteMutation.mutate({ content, noteType, isPrivate })}
+              />
+            ),
+          },
+          {
+            id: "prayer",
+            label: "Prayer Requests",
+            node: (
+              <PrayerRequestsList
+                prayerRequests={prayerRequests}
+                onAddPrayerRequest={(title, description) => addPrayerRequestMutation.mutate({ title, description })}
+                onMarkAnswered={(id, answerDescription) => markPrayerAnsweredMutation.mutate({ id, answerDescription })}
+              />
+            ),
+          },
+        ]}
+      />
 
       {/* Edit Contact Dialog */}
       <ContactFormDialog

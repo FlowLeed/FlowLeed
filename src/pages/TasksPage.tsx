@@ -27,13 +27,13 @@ const TaskRow = ({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
   const overdue = !done && task.due_at && isPast(new Date(task.due_at)) && !isToday(new Date(task.due_at));
   const meta = [task.contact?.name, task.due_at ? dueLabel(task.due_at) : null].filter(Boolean);
   return (
-    <div className="flex items-start gap-4 px-1 py-4">
-      <Checkbox checked={done} onCheckedChange={onToggle} className="mt-1 h-5 w-5 rounded-md" aria-label={done ? "Mark not done" : "Mark done"} />
+    <div className="flex items-start gap-3 px-1 py-2.5">
+      <Checkbox checked={done} onCheckedChange={onToggle} className="mt-0.5 h-4 w-4 rounded" aria-label={done ? "Mark not done" : "Mark done"} />
       <div className="min-w-0 flex-1">
-        <p className={cn("font-semibold leading-snug", done && "text-muted-foreground line-through")}>{task.title}</p>
-        {task.description && <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{task.description}</p>}
+        <p className={cn("text-sm font-medium leading-5", done && "text-muted-foreground line-through")}>{task.title}</p>
+        {task.description && <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{task.description}</p>}
         {meta.length > 0 && (
-          <p className={cn("mt-1 text-xs text-muted-foreground", overdue && "text-destructive")}>
+          <p className={cn("mt-0.5 text-xs text-muted-foreground", overdue && "text-destructive")}>
             {task.contact ? <Link to={`/contacts/${task.contact.id}`} className="hover:underline">{task.contact.name}</Link> : null}
             {task.contact && task.due_at ? " · " : null}
             {task.due_at ? (overdue ? `Overdue · ${dueLabel(task.due_at)}` : dueLabel(task.due_at)) : null}
@@ -42,7 +42,7 @@ const TaskRow = ({ task, onToggle, onDelete }: { task: Task; onToggle: () => voi
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label="Task options">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" aria-label="Task options">
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -61,6 +61,7 @@ const TasksPage = () => {
   const { data: tasks, isLoading } = useTasks(user?.id);
   const { toggle, remove, create } = useTaskMutations(user?.id);
   const [open, setOpen] = useState(false);
+  const [showDone, setShowDone] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [due, setDue] = useState("");
@@ -95,9 +96,9 @@ const TasksPage = () => {
     <div className="flex flex-col h-full">
       <Header title="Tasks" showFlowIcon={false} showAddButton={false} />
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="max-w-2xl mx-auto px-5 py-6 pb-24">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">My tasks {openTasks.length > 0 && <span className="text-muted-foreground font-normal">({openTasks.length})</span>}</h2>
+        <div className="max-w-2xl mx-auto px-5 py-4 pb-24">
+          <div className="mb-1 flex items-center justify-between">
+            <h2 className="text-sm font-semibold">My tasks {openTasks.length > 0 && <span className="text-muted-foreground font-normal">({openTasks.length})</span>}</h2>
             <Button size="sm" onClick={() => setOpen(true)}><Plus className="mr-1 h-4 w-4" />New task</Button>
           </div>
 
@@ -112,9 +113,16 @@ const TasksPage = () => {
             <>
               {openTasks.length > 0 ? renderList(openTasks) : <p className="py-8 text-center text-muted-foreground">All caught up.</p>}
               {doneTasks.length > 0 && (
-                <div className="mt-8">
-                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Completed</p>
-                  {renderList(doneTasks)}
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowDone((v) => !v)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    aria-expanded={showDone}
+                  >
+                    {showDone ? "Hide Completed" : `Show Completed (${doneTasks.length})`}
+                  </button>
+                  {showDone && <div className="mt-1">{renderList(doneTasks)}</div>}
                 </div>
               )}
             </>

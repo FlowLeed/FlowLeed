@@ -54,9 +54,8 @@ flowchart LR
     end
 
     subgraph Ext["External services"]
-        Gloo[[Gloo AI<br/>chat + tool calling]]
+        Gloo[[Gloo AI<br/>chat, tool calling, embeddings]]
         Supadata[[Supadata<br/>YouTube transcripts]]
-        Lovable[[Lovable AI Gateway<br/>embeddings, drafting]]
         PCO[[Planning Center]]
     end
 
@@ -68,7 +67,6 @@ flowchart LR
     Fn -->|tools, vector search| DB
     Fn --> Gloo
     ContentFn --> Supadata
-    ContentFn --> Lovable
     Cron --> Jobs
     Jobs --> DB
     Jobs --> PCO
@@ -85,7 +83,7 @@ flowchart LR
     class Auth,Api,Jobs api
     class Agent,SigAgent,ContentFn ai
     class DB,Cron data
-    class Gloo,Lovable,Supadata,PCO ext
+    class Gloo,Supadata,PCO ext
 ```
 
 How a chat message is handled:
@@ -117,10 +115,10 @@ Copy `supabase/functions/.env.example` as a starting point.
 | Variable | Required | Purpose |
 |---|---|---|
 | `GLOO_API_KEY` | Yes | Gloo AI API key, from **API Keys** in Gloo AI Studio. Used by the Care Agent, the Signal Agent, Content AI and AI suggestions. |
-| `LOVABLE_API_KEY` | Yes, for Content | Lovable AI Gateway key, for embeddings (semantic search) and the story drafter. |
 | `SITE_URL` | Yes | Base URL of the web app, used in email links. Locally: `http://localhost:3000`. |
 | `TOKEN_SALT` | Yes | Any long random value. Salts the password-reset and email-verification tokens. |
 | `SUPADATA_API_KEY` | No | Fetches YouTube transcripts when ingesting videos into Content. |
+| `YOUTUBE_INNERTUBE_KEY` | No | YouTube's public web-player key. Lets `content-ingest` read captions straight from YouTube when Supadata has none. Without it, only Supadata is used. |
 | `RESEND_API_KEY` | No | Sends email (invitations, digests, password resets). |
 | `PCO_OAUTH_CLIENT_ID`, `PCO_OAUTH_CLIENT_SECRET` | No | Lets a church connect its Planning Center account. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | No | Browser push notifications. |
@@ -154,7 +152,7 @@ supabase start
 
 1. Create `.env.local` in the project root with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
 2. Copy `supabase/functions/.env.example` to `supabase/functions/.env.local`.
-3. Fill in at least `GLOO_API_KEY`, `LOVABLE_API_KEY`, `SITE_URL` and `TOKEN_SALT`, and set `CRON_SECRET=local-cron-secret`.
+3. Fill in at least `GLOO_API_KEY`, `SITE_URL` and `TOKEN_SALT`, and set `CRON_SECRET=local-cron-secret`.
 4. Check that the AI keys work. This needs [Deno](https://deno.com/), and it never prints a key:
    ```bash
    deno run --allow-net --allow-env --allow-read --config supabase/functions/_shared/deno.json --env-file=supabase/functions/.env.local scripts/check-ai-providers.ts
@@ -286,8 +284,8 @@ Everything below was built during the hackathon.
 
 | Service | Used for |
 |---|---|
-| [Gloo AI](https://docs.gloo.com) | OpenAI-compatible chat completions with tool calling (model `gloo-google-gemini-3-flash`) on Gloo's guarded endpoint, called with the `openai` SDK and an API key. Powers the Care Agent, the Signal Agent, Content AI answers and analysis, contact suggestions and AI drafts. |
-| Lovable AI Gateway | Embeddings (`google/gemini-embedding-001`) for semantic search, and the story drafter. |
+| [Gloo AI](https://docs.gloo.com) | All AI, called with the `openai` SDK and one API key. Chat completions with tool calling on Gloo's guarded endpoint (`gloo-google-gemini-3-flash`, and `gloo-openai-gpt-6-astra` for the morning briefing and the story drafter), and embeddings (`gloo-google-gemini-embedding-001`, 384 dimensions) on its direct endpoint. Powers the Care Agent, the Signal Agent, the morning briefing, Content AI search, answers and analysis, contact suggestions and AI drafts. |
+| Browser speech recognition ([Web Speech API](https://developer.mozilla.org/docs/Web/API/Web_Speech_API)) | Voice notes in the AI chat, turned into text by the browser (Chrome, Edge, Safari). |
 | [Supabase](https://supabase.com) | Auth, Postgres, REST API with row-level security, Edge Functions (Deno), Storage, and the Postgres extensions `pgvector`, `pg_cron`, `pg_net` and Vault. |
 | [Planning Center](https://developer.planning.center) | Syncs people, groups, check-ins and serving history (OAuth). |
 | [Supadata](https://supadata.ai) | YouTube transcripts for Content. |

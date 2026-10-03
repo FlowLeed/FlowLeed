@@ -176,3 +176,8 @@ verify_jwt = false
 
 [functions.public-prayer-submit]
 verify_jwt = false
+
+# Called daily by pg_cron (checks the x-cron-secret header) and by signed-in leaders refreshing
+# their own briefing (checks their JWT itself).
+[functions.care-agent-run]
+verify_jwt = false

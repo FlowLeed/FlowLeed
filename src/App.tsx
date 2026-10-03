@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom
 import { useGoogleAnalyticsPageView } from "./hooks/useGoogleAnalyticsPageView";
 import { MainLayout } from "./components/layout/MainLayout";
 import { FlowProvider } from "./contexts/FlowContext";
+import FlowsIndexRedirect from "./pages/FlowsIndexRedirect";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { SuperAdminProtectedRoute } from "./components/admin/SuperAdminProtectedRoute";
@@ -125,6 +126,8 @@ const App = () => (
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/flows" element={<FlowsIndexRedirect />} />
+              <Route path="/pipelines" element={<FlowsIndexRedirect />} />
               <Route path="/flows/:flowId" element={<FlowPage />} />
               <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
               <Route path="/flows/:flowId/analytics" element={<FlowAnalyticsPage />} />

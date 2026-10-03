@@ -4,10 +4,18 @@
 
 import OpenAI from "openai";
 
+// Chat goes through Gloo's guarded pipeline; embeddings are only served on the direct endpoint.
 const GLOO_BASE_URL = "https://platform.ai.gloo.com/ai/v2/guarded";
+const GLOO_DIRECT_BASE_URL = "https://platform.ai.gloo.com/ai/v2/direct";
 
 // Default chat model — override per call if needed.
 export const DEFAULT_GLOO_MODEL = "gloo-google-gemini-3-flash";
+
+// Content embeddings: the model the Lovable AI Gateway served (google/gemini-embedding-001),
+// shortened to the 384 dimensions of the content tables' vector(384) columns. Changing either
+// means re-embedding all content.
+export const GLOO_EMBEDDING_MODEL = "gloo-google-gemini-embedding-001";
+export const EMBEDDING_DIMENSIONS = 384;
 
 export type GlooChatCompletion = OpenAI.Chat.Completions.ChatCompletion;
 export type GlooToolCall = OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall;
@@ -16,14 +24,16 @@ type WithOptionalModel<T> = Omit<T, "model"> & { model?: string };
 export type GlooChatParams = WithOptionalModel<OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming>;
 export type GlooStreamParams = WithOptionalModel<Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming, "stream">>;
 
-let client: OpenAI | null = null;
+const clients = new Map<string, OpenAI>();
 
-function glooClient(): OpenAI {
-  if (client) return client;
+function glooClient(baseURL = GLOO_BASE_URL): OpenAI {
+  const existing = clients.get(baseURL);
+  if (existing) return existing;
   const apiKey = Deno.env.get("GLOO_API_KEY");
   if (!apiKey) throw new Error("GLOO_API_KEY must be configured");
-  client = new OpenAI({ apiKey, baseURL: GLOO_BASE_URL });
-  return client;
+  const created = new OpenAI({ apiKey, baseURL });
+  clients.set(baseURL, created);
+  return created;
 }
 
 /** A chat completion. Throws on failure; use glooErrorStatus to read the HTTP status. */
@@ -42,6 +52,24 @@ export async function glooChatStream(params: GlooStreamParams): Promise<Readable
     .asResponse();
   if (!response.body) throw new Error("Gloo returned an empty stream");
   return response.body;
+}
+
+/**
+ * Embeddings for each text, in input order, each EMBEDDING_DIMENSIONS long.
+ * Throws if Gloo returns another size, since the content tables can't store it.
+ */
+export async function glooEmbed(texts: string[]): Promise<number[][]> {
+  const res = await glooClient(GLOO_DIRECT_BASE_URL).embeddings.create({
+    model: GLOO_EMBEDDING_MODEL,
+    input: texts,
+    dimensions: EMBEDDING_DIMENSIONS,
+    // The SDK otherwise asks for base64 and decodes it; plain floats keep the request simple.
+    encoding_format: "float",
+  });
+  const vectors = res.data.map((d) => d.embedding);
+  const wrong = vectors.find((v) => v.length !== EMBEDDING_DIMENSIONS);
+  if (wrong) throw new Error(`Gloo returned ${wrong.length}-dimension embeddings; the content tables need ${EMBEDDING_DIMENSIONS}`);
+  return vectors;
 }
 
 /** The function tool calls in the completion's first choice. */

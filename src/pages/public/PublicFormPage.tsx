@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { functionUrl } from "@/api/supabaseFunctions";
 
 interface FieldDef {
   id: string;
@@ -43,12 +44,11 @@ export default function PublicFormPage() {
     if (!slug) return;
     (async () => {
       try {
-        const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
         const anon = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
         const qs = new URLSearchParams({ slug });
         if (orgSlug) qs.set("org_slug", orgSlug);
         if (previewRequested) qs.set("preview", "1");
-        const url = `https://${projectId}.supabase.co/functions/v1/public-form-get?${qs.toString()}`;
+        const url = functionUrl("public-form-get", Object.fromEntries(qs));
         // For preview, send the logged-in user's session token so the edge function
         // can verify org membership. Fall back to anon key for public requests.
         let authToken = anon;
@@ -209,7 +209,15 @@ export default function PublicFormPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Powered by Flowleed
+          Powered by{" "}
+          <a
+            href="https://flowleed.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            FlowLeed
+          </a>
         </p>
       </div>
     </div>
