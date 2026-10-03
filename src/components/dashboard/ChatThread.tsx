@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { AiTracePopover, parseTrace } from "@/components/dashboard/AiTracePopover";
 
 const THINKING_MESSAGES = [
   "Looking at the whole picture...",
@@ -289,6 +290,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                       actionsAll.filter((action) => !assignedActionIds.has(action.id)),
                       `${i}-remaining-actions`,
                     )}
+                    {(() => { const t = parseTrace(msg.content); return t ? <AiTracePopover trace={t} /> : null; })()}
                   </div>
                 );
               })()

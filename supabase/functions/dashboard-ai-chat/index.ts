@@ -1713,6 +1713,23 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     // Tool call loop: make non-streaming calls until we get a final response, then stream it
     const MAX_TOOL_ROUNDS = 5;
     let toolRound = 0;
+    // Plain-language activity log shown behind the (i) button on each answer.
+    const turnStart = Date.now();
+    const trace: { label: string; detail?: string; ms: number; status: "ok" | "error" }[] = [];
+    const traceLabel = (fn: string, a: any): string => {
+      switch (fn) {
+        case "search_person": return a?.query ? `Looked up ${a.query}` : "Looked up a person";
+        case "search_people_in_flow": return a?.flow_name ? `Checked people in ${a.flow_name}` : "Checked people in a Flow";
+        case "find_contacts_by_criteria": return "Searched people matching your request";
+        case "add_people_to_flow": return "Prepared adding someone to a Flow";
+        case "create_contact_note": return "Prepared a private note";
+        case "list_my_tasks": return "Read your tasks";
+        case "create_task": return "Prepared a reminder";
+        case "update_task": return "Prepared a task update";
+        case "create_prayer_request": return "Prepared a prayer request";
+        default: return `Used ${fn.replace(/_/g, " ")}`;
+      }
+    };
     let collectedContactIds: string[] | null = null;
     let lastFinderResult: string | null = null;
     let pendingActionMarkers: string[] = [];
@@ -1759,6 +1776,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     let lastToolResult = "";
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
+      const roundStart = Date.now();
       const toolCheckResponse = await fetch(AI_GATEWAY, {
         method: "POST",
         headers: {
@@ -1798,6 +1816,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
 
       const toolCheckData = await toolCheckResponse.json();
       const choice = toolCheckData.choices?.[0];
+      trace.push({ label: toolRound === 0 ? "Read your question" : "Reviewed what it found", ms: Date.now() - roundStart, status: "ok" });
 
       if (!choice) {
         return new Response(JSON.stringify({ error: "No AI response" }), {
@@ -1829,6 +1848,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         }
 
         let result = "";
+        const toolStart = Date.now();
         try {
           if (fnName === "search_person") {
             result = await executeSearchPerson(adminClient, orgId, args.query || "", team);
@@ -1869,6 +1889,18 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           console.error(`Tool ${fnName} error:`, e);
           result = `Error executing ${fnName}: ${e instanceof Error ? e.message : "Unknown error"}`;
         }
+        {
+          const failed = /^(Error executing|Unknown tool)/.test(result);
+          const firstLine = result.replace(/<!--[\s\S]*?-->/g, "")
+            .split("\n").map((l) => l.replace(/[#*_`>]/g, "").trim())
+            .find((l) => l && !/^(INSTRUCTION|NOTE|IMPORTANT|SYSTEM)\b/i.test(l)) ?? "";
+          trace.push({
+            label: traceLabel(fnName, args),
+            detail: firstLine.length > 160 ? `${firstLine.slice(0, 157)}...` : firstLine || undefined,
+            ms: Date.now() - toolStart,
+            status: failed ? "error" : "ok",
+          });
+        }
 
         registerPeople(result);
         lastToolResult = result;
@@ -1885,6 +1917,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     }
 
     // Final streaming response (with tool results in context but no tools offered)
+    const streamStart = Date.now();
     const streamResponse = await fetch(AI_GATEWAY, {
       method: "POST",
       headers: {
@@ -2032,6 +2065,10 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
         if (pendingActionMarkers.length) send(`\n\n${pendingActionMarkers.join("")}`);
+        trace.push({ label: "Wrote the answer", ms: Date.now() - streamStart, status: "ok" });
+        if (removedTotal > 0) trace.push({ label: "Removed unverified names", detail: `${removedTotal} name(s) not found in your records were left out`, ms: 0, status: "ok" });
+        const traceJson = JSON.stringify({ total_ms: Date.now() - turnStart, steps: trace }).replace(/--/g, "\\u002d\\u002d");
+        send(`\n\n<!--flowleed:trace=${traceJson}-->`);
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },
