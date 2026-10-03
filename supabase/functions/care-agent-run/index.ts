@@ -1,8 +1,9 @@
 // FlowLeed Care Agent — Notice → Understand → Connect → Care → Continue.
 // Principles: never guess who; never widen the care circle without pastor
 // approval; AI prepares, pastors decide; care should feel personal.
-import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { corsHeaders } from "../_shared/cors.ts";
+import { rejectUnlessCron } from "../_shared/cron-auth.ts";
 
 const MAX_ORGS_PER_RUN = 10;
 const MAX_PER_PERSON = 5;
@@ -13,8 +14,13 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 
 type Signal = { contact_id: string; kind: "life_moment" | "faith_moment" | "drift" | "follow_up"; key: string; fact: string; at: string; urgency: number; sensitive?: boolean; follow_up_of?: string; for_user?: string };
 
-function subFromAuth(h: string | null): string | null {
-  try { const t = h?.replace(/^Bearer\s+/i, "") ?? ""; return JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub ?? null; } catch { return null; }
+// verify_jwt is off (the daily cron call has no user), so check the leader's token with Auth
+// instead of only decoding it.
+async function userIdFromAuth(admin: SupabaseClient, h: string | null): Promise<string | null> {
+  const token = h?.replace(/^Bearer\s+/i, "") ?? "";
+  if (!token) return null;
+  const { data, error } = await admin.auth.getUser(token);
+  return error ? null : data.user?.id ?? null;
 }
 
 Deno.serve(async (req) => {
@@ -26,7 +32,7 @@ Deno.serve(async (req) => {
   try {
     // Manual run: one signed-in leader refreshes their own briefing.
     if (body.source !== "cron") {
-      const userId = subFromAuth(req.headers.get("Authorization"));
+      const userId = await userIdFromAuth(admin, req.headers.get("Authorization"));
       const orgId = typeof body.organizationId === "string" ? body.organizationId : null;
       if (!userId || !orgId) return json({ error: "Please sign in again." }, 401);
       const { data: mem } = await admin.from("organization_members").select("role").eq("organization_id", orgId).eq("user_id", userId).maybeSingle();
@@ -35,7 +41,9 @@ Deno.serve(async (req) => {
       return json(r, r.error ? 503 : 200);
     }
 
-    // Daily cron: bounded batch of churches not yet run today.
+    // Daily cron: bounded batch of churches not yet run today. Only the scheduler may start it.
+    const unauthorized = rejectUnlessCron(req, corsHeaders);
+    if (unauthorized) return unauthorized;
     const today = new Date().toISOString().slice(0, 10);
     const { data: orgs } = await admin.from("organizations").select("id").limit(500);
     const { data: states } = await admin.from("care_agent_state").select("*");

@@ -1,6 +1,6 @@
 // Relays a recorded voice clip to the Lovable AI Gateway transcription endpoint
 // and streams the transcript (SSE) back unchanged.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.74.0";
+import { createClient } from "@supabase/supabase-js";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -84,7 +84,9 @@ Deno.serve(async (req) => {
 
     const headers: Record<string, string> = {
       ...cors,
-      "Content-Type": upstream.headers.get("content-type") ?? "application/json",
+      // A successful reply is always an event stream (stream=true above). Saying so explicitly lets
+      // supabase.functions.invoke hand the browser the raw stream instead of buffering it as text.
+      "Content-Type": upstream.ok ? "text/event-stream" : upstream.headers.get("content-type") ?? "application/json",
     };
     upstream.headers.forEach((v, k) => {
       if (k.toLowerCase().startsWith("x-lovable-aig-")) headers[k] = v;
