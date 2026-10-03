@@ -4,6 +4,10 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { corsHeaders } from "../_shared/cors.ts";
 import { rejectUnlessCron } from "../_shared/cron-auth.ts";
+import { glooChat, glooErrorStatus } from "../_shared/gloo.ts";
+
+// The same model the briefing used through the Lovable AI Gateway (openai/gpt-6-astra).
+const COPY_MODEL = "gloo-openai-gpt-6-astra";
 
 const MAX_ORGS_PER_RUN = 10;
 const MAX_PER_PERSON = 5;
@@ -300,26 +304,24 @@ function defaultHeadline(s: Signal, name: string) {
 
 // AI writes warm, factual copy. Facts only — never diagnose.
 async function writeCopy(items: { s: Signal; c: any }[]): Promise<{ items: { headline: string; why: string }[] } | { pause: string } | null> {
-  const key = Deno.env.get("LOVABLE_API_KEY"); if (!key) return null;
   const facts = items.map((x, i) => ({ i, name: x.c.name, type: x.s.kind, fact: x.s.sensitive ? "Submitted a private prayer request (details withheld)" : x.s.fact, known: x.c.known }));
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}`, "X-Lovable-AIG-SDK": "fetch" },
-    body: JSON.stringify({
-      model: "openai/gpt-6-astra", reasoning_effort: "low", stream: true, response_format: { type: "json_object" },
+  let out: string;
+  try {
+    const completion = await glooChat({
+      model: COPY_MODEL,
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: "You help a pastor notice people who may need care. For each item write a short headline (under 12 words, use the person's first name) and a 1–2 sentence 'why' stating only observable facts. Never diagnose, guess motives, or say things like 'falling away'. Warm, plain, personal. Return JSON {\"items\":[{\"i\":0,\"headline\":\"\",\"why\":\"\"}]}." },
         { role: "user", content: JSON.stringify(facts) },
       ],
-    }),
-  });
-  if (r.status === 402 || r.status === 403) return { pause: r.status === 402 ? "AI credits are used up" : "AI access is blocked for this workspace" };
-  if (!r.ok || !r.body) { console.error("gateway", r.status, await r.text()); return null; }
-  const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = "", out = "";
-  while (true) {
-    const { done, value } = await reader.read(); if (done) break;
-    buf += dec.decode(value, { stream: true }); const lines = buf.split("\n"); buf = lines.pop() ?? "";
-    for (const l of lines) { const t = l.trim(); if (!t.startsWith("data:")) continue; const d = t.slice(5).trim(); if (d === "[DONE]") continue; try { out += JSON.parse(d).choices?.[0]?.delta?.content ?? ""; } catch { /* partial */ } }
+    });
+    out = completion.choices[0]?.message?.content ?? "";
+  } catch (e) {
+    const status = glooErrorStatus(e);
+    if (status === 402 || status === 403) return { pause: status === 402 ? "AI credits are used up" : "AI access is blocked for this workspace" };
+    // Missing key or any other failure: fall back to the built-in headlines.
+    console.error("Gloo AI error:", status, e);
+    return null;
   }
   try {
     const p = JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1));
