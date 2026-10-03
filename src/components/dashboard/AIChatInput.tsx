@@ -1,7 +1,12 @@
+// ============= Full file contents =============
+
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Send, Square, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowUp, Square, Plus, Mic, X, Check, Loader2 } from "lucide-react";
+import { recordWav, type WavRecording } from "@/lib/recordWav";
+import { transcribeAudio } from "@/lib/transcribeAudio";
+
+const MAX_RECORDING_SECONDS = 120;
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
@@ -34,6 +39,12 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const triggerStartRef = useRef<number | null>(null);
   const { organization } = useProfile();
+  const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
+  const [elapsed, setElapsed] = useState(0);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+  const recordingRef = useRef<WavRecording | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const finishRecordingRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (!isLoading && textareaRef.current) {
@@ -196,49 +207,197 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     }
   };
 
+  // "+" opens the people picker: inserts a real "@" at the caret so the
+  // existing mention detection takes over naturally.
+  const handlePlusClick = () => {
+    const el = textareaRef.current;
+    if (!el || voiceState !== "idle") return;
+    el.focus();
+    const pos = el.selectionStart ?? input.length;
+    const before = input.slice(0, pos);
+    const after = input.slice(pos);
+    setInput(`${before}@${after}`);
+    triggerStartRef.current = pos;
+    setMentionQuery("");
+    requestAnimationFrame(() => {
+      el.setSelectionRange(pos + 1, pos + 1);
+    });
+  };
+
+  // ---- Voice input: record → transcribe → send automatically ----
+  const clearTimer = () => {
+    if (timerRef.current) window.clearInterval(timerRef.current);
+    timerRef.current = null;
+  };
+
+  const startRecording = async () => {
+    setVoiceError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setVoiceError("Voice recording isn't supported in this browser.");
+      return;
+    }
+    try {
+      recordingRef.current = await recordWav();
+      setElapsed(0);
+      setVoiceState("recording");
+      const started = Date.now();
+      timerRef.current = window.setInterval(() => {
+        const secs = Math.floor((Date.now() - started) / 1000);
+        setElapsed(secs);
+        if (secs >= MAX_RECORDING_SECONDS) finishRecordingRef.current();
+      }, 250);
+    } catch (e: any) {
+      const denied = e?.name === "NotAllowedError" || e?.name === "SecurityError";
+      setVoiceError(denied
+        ? "Microphone access is blocked. Allow it in your browser settings to record."
+        : "Couldn't start the microphone. Please try again.");
+    }
+  };
+
+  const cancelRecording = () => {
+    clearTimer();
+    recordingRef.current?.cancel();
+    recordingRef.current = null;
+    setVoiceState("idle");
+  };
+
+  const finishRecording = async () => {
+    const rec = recordingRef.current;
+    if (!rec) return;
+    recordingRef.current = null;
+    clearTimer();
+    setVoiceState("transcribing");
+    const base = input.trim() ? input.trimEnd() + " " : "";
+    try {
+      const file = await rec.stop();
+      const text = await transcribeAudio(file, (partial) => setInput(base + partial));
+      const finalText = (base + text).trim();
+      if (finalText && !isLoading) {
+        // Voice transcription is sent straight away — no review step.
+        onSubmit(finalText);
+        setInput("");
+        setMentions([]);
+        setMentionQuery(null);
+        if (textareaRef.current) textareaRef.current.style.height = "auto";
+      } else {
+        setVoiceError("I couldn't hear anything. Please try again.");
+      }
+    } catch (e: any) {
+      setInput(base.trimEnd());
+      setVoiceError(e?.message || "Transcription failed. Please try again.");
+    } finally {
+      setVoiceState("idle");
+    }
+  };
+  finishRecordingRef.current = finishRecording;
+
+  useEffect(() => () => { clearTimer(); recordingRef.current?.cancel(); }, []);
+
   const dropdownOpen = mentionQuery !== null && mentionResults.length > 0;
+
+  const iconBtn =
+    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50 disabled:pointer-events-none";
 
   return (
     <div className={`relative w-full ${hasMessages ? "max-w-3xl" : "max-w-2xl"} mx-auto`}>
-      <div className="relative rounded-2xl border-2 border-border bg-card shadow-lg transition-all focus-within:border-primary/50 focus-within:shadow-xl focus-within:shadow-primary/5">
-        <div className="flex items-center gap-2 px-4 pt-3 pb-1 text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-xs font-medium">FlowLeed AI</span>
-          <span className="hidden text-[10px] text-muted-foreground/60 ml-1 sm:inline">· type @ to mention a person</span>
-        </div>
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onInput={handleInput}
-          onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
-          placeholder="Ask about your people, tasks, church health..."
-          rows={1}
-          className="min-h-12 max-h-32 w-full resize-none bg-transparent px-4 py-2 text-base leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none md:text-sm"
-          disabled={isLoading}
-        />
-        <div className="flex items-center justify-end px-3 pb-3">
-          {isLoading ? (
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={onCancel}
-              className="rounded-xl gap-1.5"
-            >
-              <Square className="h-3 w-3" />
-              Stop
-            </Button>
+      <div className="relative rounded-full border border-border bg-card shadow-lg shadow-black/5 transition-all focus-within:border-primary/40 focus-within:shadow-xl focus-within:shadow-primary/5">
+        <div className="flex items-center gap-1 py-1.5 pl-1.5 pr-1.5">
+          {voiceState === "recording" ? (
+            <>
+              <div className="flex min-w-0 flex-1 items-center gap-2 pl-3 text-xs text-muted-foreground">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-60" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
+                </span>
+                <span className="font-medium tabular-nums text-foreground">
+                  {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}
+                </span>
+                <span className="hidden truncate sm:inline">Listening…</span>
+              </div>
+              <button
+                type="button"
+                onClick={cancelRecording}
+                className={iconBtn}
+                aria-label="Cancel recording"
+                title="Cancel recording"
+              >
+                <X className="h-[18px] w-[18px]" />
+              </button>
+              <button
+                type="button"
+                onClick={finishRecording}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
+                aria-label="Done recording"
+                title="Done recording"
+              >
+                <Check className="h-[18px] w-[18px]" />
+              </button>
+            </>
           ) : (
-            <Button
-              size="sm"
-              onClick={handleSubmit}
-              disabled={!input.trim()}
-              className="rounded-xl gap-1.5"
-            >
-              <Send className="h-3.5 w-3.5" />
-              Send
-            </Button>
+            <>
+              <button
+                type="button"
+                onClick={handlePlusClick}
+                className={iconBtn}
+                aria-label="Mention a person"
+                title="Mention a person"
+                disabled={isLoading}
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                onInput={handleInput}
+                onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
+                placeholder="Message"
+                rows={1}
+                disabled={isLoading}
+                className="min-h-9 max-h-32 w-full flex-1 resize-none bg-transparent px-1 py-2 text-sm leading-6 placeholder:text-muted-foreground/70 focus:outline-none"
+              />
+              <div className="flex shrink-0 items-center gap-1">
+                {isLoading ? (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive text-white transition-colors hover:bg-destructive/90"
+                    aria-label="Stop generating"
+                    title="Stop generating"
+                  >
+                    <Square className="h-3.5 w-3.5 fill-current" />
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      disabled={voiceState === "transcribing"}
+                      className={iconBtn}
+                      aria-label="Record a voice message"
+                      title="Record a voice message"
+                    >
+                      {voiceState === "transcribing"
+                        ? <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                        : <Mic className="h-[18px] w-[18px]" />}
+                    </button>
+                    {input.trim() && (
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={!input.trim() || voiceState === "transcribing"}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
+                        aria-label="Send message"
+                        title="Send message"
+                      >
+                        <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.5} />
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
           )}
         </div>
 
@@ -302,6 +461,9 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
           );
         })()}
       </div>
+      {voiceError && (
+        <div className="mt-1.5 px-2 text-xs text-destructive">{voiceError}</div>
+      )}
     </div>
   );
 };

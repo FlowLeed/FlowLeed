@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.restore_default_flows_after_demo_clear() FROM PUBLIC, anon, authenticated;

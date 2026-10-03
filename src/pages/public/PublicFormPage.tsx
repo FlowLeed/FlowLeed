@@ -209,7 +209,15 @@ export default function PublicFormPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Powered by Flowleed
+          Powered by{" "}
+          <a
+            href="https://flowleed.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-foreground transition-colors"
+          >
+            FlowLeed
+          </a>
         </p>
       </div>
     </div>

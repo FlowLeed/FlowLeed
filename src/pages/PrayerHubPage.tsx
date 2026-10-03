@@ -20,6 +20,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { UserPlus } from "lucide-react";
+import { LinkPersonDialog } from "@/components/prayer/LinkPersonDialog";
 
 type Stage = { id: string; name: string; color: string; stage_order: number; is_answered_step: boolean };
 type Req = {
@@ -50,6 +52,7 @@ export default function PrayerHubPage() {
   const [search, setSearch] = useState("");
   const [kindFilter, setKindFilter] = useState("all");
   const [stageFilter, setStageFilter] = useState("all");
+  const [linking, setLinking] = useState<Req | null>(null);
 
   const stagesQ = useQuery({
     queryKey: ["prayer-stages", orgId],
@@ -257,6 +260,11 @@ export default function PrayerHubPage() {
                               ? <Link to={`/contacts/${r.contact_id}`} className="hover:underline">{who}</Link>
                               : who}
                           </span>
+                          {!r.contact_id && (
+                            <button onClick={() => setLinking(r)} className="mt-0.5 flex items-center gap-1 text-xs text-primary hover:underline">
+                              <UserPlus className="h-3 w-3" />Link to person
+                            </button>
+                          )}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
                           <span className="line-clamp-2 whitespace-pre-wrap">{[r.title, r.description].filter(Boolean).join(" — ")}</span>
@@ -322,7 +330,7 @@ export default function PrayerHubPage() {
                             <Draggable key={r.id} draggableId={r.id} index={i}>
                               {(dp, ds) => (
                                 <div ref={dp.innerRef} {...dp.draggableProps} {...dp.dragHandleProps}>
-                                  <PrayerCard r={r} dragging={ds.isDragging} onPray={() => pray(r)} />
+                                  <PrayerCard r={r} dragging={ds.isDragging} onPray={() => pray(r)} onLink={() => setLinking(r)} />
                                 </div>
                               )}
                             </Draggable>
@@ -362,11 +370,12 @@ export default function PrayerHubPage() {
           <DialogFooter><Button onClick={saveStage}>Save</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+      <LinkPersonDialog request={linking} orgId={orgId} onClose={() => setLinking(null)} onLinked={refresh} />
     </div>
   );
 }
 
-function PrayerCard({ r, dragging, onPray }: { r: Req; dragging: boolean; onPray: () => void }) {
+function PrayerCard({ r, dragging, onPray, onLink }: { r: Req; dragging: boolean; onPray: () => void; onLink: () => void }) {
   const who = r.is_anonymous ? "Anonymous" : r.contactName || r.submitter_name || "Someone";
   const text = [r.title, r.description].filter(Boolean).join(" — ");
   return (
@@ -379,6 +388,11 @@ function PrayerCard({ r, dragging, onPray }: { r: Req; dragging: boolean; onPray
         {r.kind === "praise" && <span className="rounded-full bg-primary/10 px-1.5 text-[10px] text-primary">Praise</span>}
       </div>
       <p className="text-sm text-muted-foreground line-clamp-4 whitespace-pre-wrap">{text}</p>
+      {!r.contact_id && (
+        <button onClick={onLink} className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+          <UserPlus className="h-3.5 w-3.5" />Link to person
+        </button>
+      )}
       {r.answer_description && <p className="text-xs text-muted-foreground"><Sparkles className="inline h-3 w-3 mr-1" />{r.answer_description}</p>}
       <div className="flex items-center justify-between">
         <button onClick={onPray} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">

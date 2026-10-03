@@ -189,6 +189,13 @@ select cron.schedule('<job-name>', '<cron expression>',
 - [ ] Any new secret name is in `.env.example` (with no value), and you've told the developer.
 - [ ] The app type-checks and builds.
 
+## 7. Product design notes
+
+Decisions recorded by Lovable while building features. Keep them when changing these areas.
+
+- Care agent: `care-agent-run` edge function (cron, bounded batches, per-org lease in `care_agent_state`) writes per-leader rows to `care_recommendations`; the main AI conversation renders and acts on those rows directly under recipient-only RLS. Why: deterministic orchestration with AI used only for wording, without a separate briefing destination.
+- When demo data is cleared and an org has zero flows, a trigger on `organizations.demo_cleared_at` calls `create_default_pipelines`. Why: churches must never be left with an empty Flows list.
+
 ## More detail
 
 - [README.md](README.md): what the app does, environment variables, running it locally.

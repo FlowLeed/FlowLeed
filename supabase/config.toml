@@ -176,3 +176,6 @@ verify_jwt = false
 
 [functions.public-prayer-submit]
 verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
