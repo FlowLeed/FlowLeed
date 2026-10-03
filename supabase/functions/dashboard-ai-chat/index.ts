@@ -1977,9 +1977,22 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             .replace(/<!--flowleed:[\s\S]*?-->/g, "")
             .replace(/\[?Earlier prepared[^\]\n]*\]?/gi, "");
           removedTotal += removed;
-          if (pendingActionMarker) return safe;
-          return safe.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
+          // Deterministic guard: the model must never claim it saved anything.
+          // Writes only happen when the leader taps Approve, so any completion
+          // claim is false. Rewrite it to honest wording.
+          const claimRe = /\b(?:I(?:'ve| have| just)?|we(?:'ve| have)?)\s+(?:already\s+|now\s+|just\s+|gone ahead and\s+)?(?:added|created|saved|set up|setup|scheduled|written(?: down)?|wrote(?: down)?|noted|logged|recorded|made|put|sent|updated|assigned|completed|marked|booked|jotted(?: down)?)\b[^.!?\n]*[.!?]?/gi;
+          const doneRe = /\b(?:Done|All set|Reminder (?:added|set|created|saved)|Task (?:added|created|saved))\b[!.]?/g;
+          let out = safe;
+          if (claimRe.test(out) || doneRe.test(out)) {
+            claimRewrites++;
+            const replacement = pendingActionMarker
+              ? "I've prepared this for you — please review and tap Approve below to save it."
+              : "I haven't saved anything yet. Just say \"create the reminder\" and I'll prepare it for you to approve.";
+            out = out.replace(claimRe, replacement).replace(doneRe, "");
+          }
+          return out;
         };
+        let claimRewrites = 0;
 
         let raw = "";
         let pending = "";
@@ -2066,6 +2079,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         }
         if (pendingActionMarkers.length) send(`\n\n${pendingActionMarkers.join("")}`);
         trace.push({ label: "Wrote the answer", ms: Date.now() - streamStart, status: "ok" });
+        if (claimRewrites > 0) trace.push({ label: "Corrected a false \"saved\" claim", detail: pendingActionMarker ? "Nothing is saved until you tap Approve" : "No reminder or task was actually prepared", ms: 0, status: "error" });
         if (removedTotal > 0) trace.push({ label: "Removed unverified names", detail: `${removedTotal} name(s) not found in your records were left out`, ms: 0, status: "ok" });
         const traceJson = JSON.stringify({ total_ms: Date.now() - turnStart, steps: trace }).replace(/--/g, "\\u002d\\u002d");
         send(`\n\n<!--flowleed:trace=${traceJson}-->`);
