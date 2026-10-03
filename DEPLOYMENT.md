@@ -12,7 +12,7 @@ Three jobs run in order. A failed job stops the ones after it.
 |---|---|---|
 | 1 | **Build web app** | 1. Installs dependencies from `bun.lock`.<br/>2. Type-checks the app.<br/>3. Builds it with Vite, using the staging Supabase URL and key.<br/><br/>Nothing has been deployed yet, so a broken build leaves staging untouched. |
 | 2 | **Migrate database and deploy Edge Functions** | 1. Links the staging Supabase project.<br/>2. Runs `supabase db push`.<br/>3. Sets the Edge Function secrets.<br/>4. Runs `supabase functions deploy`. |
-| 3 | **Deploy web app to Cloudflare** | Publishes the build from job 1 to Cloudflare Workers with `wrangler deploy --env staging`. |
+| 3 | **Deploy web app to Cloudflare** | Publishes the build from job 1 to the Cloudflare Pages project `flowleed-staging-dns-proxy` with `wrangler pages deploy`. |
 
 The web app goes live last, so it never runs against a database that hasn't been migrated yet.
 
@@ -26,8 +26,9 @@ The web app goes live last, so it never runs against a database that hasn't been
 - Optional secrets that aren't set in GitHub are skipped, so a value already in Supabase stays.
 
 **Web app (job 3):**
-- Cloudflare serves the files in `dist/` (configured in [`wrangler.jsonc`](wrangler.jsonc)).
-- Unknown paths fall back to `index.html`, so client-side routes work on refresh.
+- Cloudflare Pages serves the files in `dist/`, at https://flowleed-staging-dns-proxy.pages.dev and any custom domain on the project.
+- The workflow asks Cloudflare for the project's production branch and deploys to it. Only that branch goes live on the main address and the custom domain; any other branch name would make a preview at `<branch>.flowleed-staging-dns-proxy.pages.dev`.
+- Unknown paths fall back to `index.html`, so client-side routes work on refresh. Pages does this as long as the build has no `404.html`.
 - [`public/_headers`](public/_headers) caches the hashed files in `/assets/` for a year.
 
 **What the pipeline does not do:**
@@ -64,13 +65,15 @@ In **Authentication → URL Configuration**:
 
 To have sign-up and password emails sent, set up SMTP (Resend) under **Authentication → Emails**.
 
-### 4. Create the Cloudflare API token
+### 4. Set up Cloudflare Pages
 
-1. In the Cloudflare dashboard, go to **My Profile → API Tokens → Create Token**.
-2. Use the **Edit Cloudflare Workers** template.
-3. Copy the **Account ID** from the account's **Workers & Pages** overview.
-
-The first deploy creates the Worker `flowleed-staging`. It's served at `https://flowleed-staging.<your-subdomain>.workers.dev`. To use your own domain, see the comment in `wrangler.jsonc`.
+1. **Project:** the Pages project `flowleed-staging-dns-proxy` already exists. To recreate it, run `npx wrangler@4 pages project create flowleed-staging-dns-proxy --production-branch dev`.
+2. **API token:** in **My Profile → API Tokens → Create Token**, create a custom token with the permission **Account → Cloudflare Pages → Edit**.
+3. **Account ID:** copy it from the account's **Workers & Pages** overview.
+4. **Custom domain (optional):**
+   - In the project, open **Custom domains → Set up a custom domain**, for example `staging.example.com`.
+   - At your DNS provider, add a CNAME from that name to `flowleed-staging-dns-proxy.pages.dev`. Unlike a Worker, a Pages project doesn't need the domain's DNS to be on Cloudflare.
+   - Then update the `SITE_URL` variable and the staging Auth URLs (step 3) to the new address.
 
 ### 5. Create the GitHub environment
 
@@ -89,8 +92,8 @@ All of these go on the **`staging`** environment.
 | Name | Required | Used for | Where to get it |
 |---|---|---|---|
 | `SUPABASE_ACCESS_TOKEN` | Yes | Supabase CLI login | Supabase dashboard → **Account → Access Tokens** |
-| `CLOUDFLARE_API_TOKEN` | Yes | `wrangler deploy` | Step 4 |
-| `CLOUDFLARE_ACCOUNT_ID` | Yes | `wrangler deploy` | Step 4 |
+| `CLOUDFLARE_API_TOKEN` | Yes | `wrangler pages deploy` | Step 4 |
+| `CLOUDFLARE_ACCOUNT_ID` | Yes | `wrangler pages deploy` | Step 4 |
 | `CRON_SECRET` | Yes | Edge Function secret; the cron-called functions and `send-push` check it | A long random value, identical to the `cron_secret` Vault secret (step 2) |
 | `TOKEN_SALT` | Yes | Edge Function secret; password-reset and email-verification tokens | A long random value |
 | `GLOO_API_KEY` | Yes | Edge Function secret; Gloo AI | Gloo AI Studio → **API Keys** |
@@ -110,7 +113,7 @@ All of these go on the **`staging`** environment.
 | `SUPABASE_PROJECT_REF` | Yes | Which project the CLI deploys to | The staging Reference ID (step 1) |
 | `VITE_SUPABASE_URL` | Yes | Built into the web app | `https://<staging-ref>.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Yes | Built into the web app | Staging **Project Settings → API Keys**, the publishable (or legacy anon) key |
-| `SITE_URL` | Yes | Edge Function secret for links in emails; also the environment link in GitHub | The staging web address, for example `https://flowleed-staging.<your-subdomain>.workers.dev` |
+| `SITE_URL` | Yes | Edge Function secret for links in emails; also the environment link in GitHub | The staging web address: `https://flowleed-staging-dns-proxy.pages.dev`, or the custom domain once it's set up |
 | `VITE_VAPID_PUBLIC_KEY` | No | Built into the web app; push notifications | Your VAPID public key, the same value as `VAPID_PUBLIC_KEY`. Without it, push notifications can't be turned on. |
 | `VAPID_PUBLIC_KEY` | No | Edge Function secret; push notifications | Your VAPID public key |
 | `VAPID_SUBJECT` | No | Edge Function secret; push notifications | For example `mailto:support@flowleed.com` |
@@ -131,7 +134,7 @@ You can use `npx web-push generate-vapid-keys` to generate the VAPID keys
 
 | What to roll back | How |
 |---|---|
-| **Web app** | Run `npx wrangler@4 rollback --env staging`, or pick an earlier version under **Workers & Pages → flowleed-staging → Deployments**. |
+| **Web app** | Under **Workers & Pages → flowleed-staging-dns-proxy → Deployments**, open an earlier production deployment and choose **Rollback to this deployment**. |
 | **Database** | Migrations only move forward. Undo a change with a new migration that reverses it. |
 | **Edge Functions** | Revert the commit and push to `dev`. The functions are redeployed from that code. |
 
@@ -146,7 +149,9 @@ You can use `npx web-push generate-vapid-keys` to generate the VAPID keys
 | Cron jobs fail in `cron.job_run_details` with "Vault secrets … are required" | Step 2 wasn't done. |
 | Cron calls get a 401 | The `cron_secret` Vault value and the `CRON_SECRET` secret are different. |
 | The site loads but the page is blank | The build ran without the `VITE_` variables. |
-| Refreshing a page gives a 404 | `not_found_handling` is missing from `wrangler.jsonc`. |
+| Refreshing a page gives a 404 | The build contains a `404.html`. Pages then serves it instead of `index.html` for unknown paths. |
+| The deploy succeeds but the site doesn't change | It went out as a preview. In the job log, check that "Deploy to Cloudflare Pages" used the project's production branch, and that you're looking at the main address rather than a `<branch>.` preview. |
+| "Could not read the production branch" | `CLOUDFLARE_API_TOKEN` lacks **Cloudflare Pages → Edit**, or `CLOUDFLARE_ACCOUNT_ID` is a different account. |
 
 ## Adding production
 
@@ -163,5 +168,5 @@ Then:
 3. Copy the workflow to `deploy-production.yml`:
    - trigger on `main`;
    - use `environment: production`;
-   - deploy with `wrangler deploy` (no `--env`). That creates the Worker `flowleed`.
-4. Move `app.flowleed.com` to the Worker, and update the Supabase Auth URLs and the `SITE_URL` variable.
+   - deploy to a separate Pages project for production (change `PAGES_PROJECT`).
+4. Add `app.flowleed.com` as that project's custom domain, and update the Supabase Auth URLs and the `SITE_URL` variable.
