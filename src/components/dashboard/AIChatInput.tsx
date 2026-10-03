@@ -206,7 +206,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     }
   };
 
-  // ---- Voice input: record → transcribe → drop text into the box for review ----
+  // ---- Voice input: record → transcribe → send automatically ----
   const clearTimer = () => {
     if (timerRef.current) window.clearInterval(timerRef.current);
     timerRef.current = null;
@@ -252,16 +252,18 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     const base = input.trim() ? input.trimEnd() + " " : "";
     try {
       const file = await rec.stop();
-      const text = await transcribeAudio(file, (partial) => setInput(base + partial));
-      setInput(base + text);
-      requestAnimationFrame(() => {
-        const el = textareaRef.current;
-        if (!el) return;
-        el.focus();
-        el.setSelectionRange(el.value.length, el.value.length);
-        el.style.height = "auto";
-        el.style.height = Math.min(el.scrollHeight, 160) + "px";
-      });
+      const text = await transcribeAudio(file);
+      const finalText = (base + text).trim();
+      if (finalText && !isLoading) {
+        // Voice transcription is sent straight away — no review step.
+        onSubmit(finalText);
+        setInput("");
+        setMentions([]);
+        setMentionQuery(null);
+        if (textareaRef.current) textareaRef.current.style.height = "auto";
+      } else {
+        setVoiceError("I couldn't hear anything. Please try again.");
+      }
     } catch (e: any) {
       setInput(base.trimEnd());
       setVoiceError(e?.message || "Transcription failed. Please try again.");
