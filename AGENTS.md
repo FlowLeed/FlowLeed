@@ -74,7 +74,7 @@ This also applies to secrets that look like test values.
 | `supabase/migrations_archive/**` | Historical record only. |
 | `supabase/seed.sql` | Local-only values, maintained by the developer. |
 | `supabase/config.toml` | You may only **add** a `[functions.<name>]` entry for a new function. |
-| `.github/**`, `wrangler.jsonc`, `public/_headers` | Deployment, maintained by the developer. |
+| `.github/**`, `public/_headers` | Deployment, maintained by the developer. |
 | `bun.lock` | Add packages the normal way and let `bun.lock` update itself. CI installs strictly from `bun.lock`. |
 
 Never run SQL against a hosted database, deploy Edge Functions, set secrets or publish the site. Don't offer to run SQL from the chat, and don't ask to connect Supabase.

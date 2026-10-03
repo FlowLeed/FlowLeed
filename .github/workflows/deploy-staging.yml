@@ -135,8 +135,20 @@ jobs:
         with:
           node-version: 22
 
-      - name: Deploy to Cloudflare Workers
-        run: npx --yes wrangler@4 deploy --env staging
+      # Cloudflare Pages serves index.html for unknown paths (there's no 404.html), so client-side
+      # routes work on refresh, and applies public/_headers.
+      - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PAGES_PROJECT: flowleed-staging-dns-proxy
+        run: |
+          # Only a deploy to the project's production branch goes live on its main address and
+          # custom domain; any other branch name makes a preview. Ask Cloudflare which branch that is.
+          production_branch=$(curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT" \
+            | jq -r '.result.production_branch // empty')
+          if [ -z "$production_branch" ]; then
+            echo "::error::Could not read the production branch of Pages project $PAGES_PROJECT"; exit 1
+          fi
+          npx --yes wrangler@4 pages deploy dist --project-name "$PAGES_PROJECT" --branch "$production_branch"
