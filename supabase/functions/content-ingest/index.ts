@@ -2,6 +2,7 @@
 // Creates the content_videos row, fetches metadata + transcript,
 // chunks, embeds, then analyzes. Runs sequentially inline.
 import { createClient } from "@supabase/supabase-js";
+import { glooEmbed } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,9 +14,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPADATA_API_KEY = Deno.env.get("SUPADATA_API_KEY");
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
-const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1";
 
 function extractYouTubeId(url: string): string | null {
   try {
@@ -173,25 +172,7 @@ function chunkSegments(segs: TranscriptSegment[], targetWords = 350): {
 }
 
 async function embedTexts(texts: string[]): Promise<number[][]> {
-  // Call Lovable AI Gateway embeddings, dimensions=384
-  const r = await fetch(`${AI_GATEWAY}/embeddings`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "google/gemini-embedding-001",
-      input: texts,
-      dimensions: 384,
-    }),
-  });
-  if (!r.ok) {
-    const body = await r.text();
-    throw new Error(`embeddings failed ${r.status}: ${body}`);
-  }
-  const data = await r.json();
-  return data.data.map((d: any) => d.embedding);
+  return glooEmbed(texts);
 }
 
 async function runIngestWorker(

@@ -2,7 +2,7 @@
 // Returns a short narrative answer with quoted snippets and a list of source
 // videos with timestamps, similar to a RAG-style answer card.
 import { createClient } from "@supabase/supabase-js";
-import { glooChat } from "../_shared/gloo.ts";
+import { glooChat, glooEmbed } from "../_shared/gloo.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,24 +13,10 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 async function embed(text: string): Promise<number[]> {
-  const r = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "google/gemini-embedding-001",
-      input: text,
-      dimensions: 384,
-    }),
-  });
-  if (!r.ok) throw new Error(`embed ${r.status}: ${await r.text()}`);
-  const data = await r.json();
-  return data.data[0].embedding;
+  const [vector] = await glooEmbed([text]);
+  return vector;
 }
 
 interface Source {
