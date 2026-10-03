@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Outlet, Navigate } from "react-router-dom
 import { useGoogleAnalyticsPageView } from "./hooks/useGoogleAnalyticsPageView";
 import { MainLayout } from "./components/layout/MainLayout";
 import { FlowProvider } from "./contexts/FlowContext";
+import FlowsIndexRedirect from "./pages/FlowsIndexRedirect";
 import { AuthProvider } from "./hooks/useAuth";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { SuperAdminProtectedRoute } from "./components/admin/SuperAdminProtectedRoute";
