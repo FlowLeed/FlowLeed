@@ -252,7 +252,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     const base = input.trim() ? input.trimEnd() + " " : "";
     try {
       const file = await rec.stop();
-      const text = await transcribeAudio(file);
+      const text = await transcribeAudio(file, (partial) => setInput(base + partial));
       const finalText = (base + text).trim();
       if (finalText && !isLoading) {
         // Voice transcription is sent straight away — no review step.
