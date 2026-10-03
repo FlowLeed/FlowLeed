@@ -2079,6 +2079,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         }
         if (pendingActionMarkers.length) send(`\n\n${pendingActionMarkers.join("")}`);
         trace.push({ label: "Wrote the answer", ms: Date.now() - streamStart, status: "ok" });
+        if (claimRewrites > 0) trace.push({ label: "Corrected a false \"saved\" claim", detail: pendingActionMarker ? "Nothing is saved until you tap Approve" : "No reminder or task was actually prepared", ms: 0, status: "error" });
         if (removedTotal > 0) trace.push({ label: "Removed unverified names", detail: `${removedTotal} name(s) not found in your records were left out`, ms: 0, status: "ok" });
         const traceJson = JSON.stringify({ total_ms: Date.now() - turnStart, steps: trace }).replace(/--/g, "\\u002d\\u002d");
         send(`\n\n<!--flowleed:trace=${traceJson}-->`);
