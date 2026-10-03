@@ -87,6 +87,22 @@ export function useCareBriefing() {
     },
   });
 
+  const undated = useQuery({
+    queryKey: ["care-briefing-todos", user?.id, organization?.id, "undated"],
+    enabled: !!user?.id && !!organization?.id,
+    queryFn: async (): Promise<number> => {
+      const { count, error } = await db
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("assigned_to_user_id", user!.id)
+        .eq("organization_id", organization!.id)
+        .is("completed_at", null)
+        .is("due_at", null);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const refresh = () => {
     qc.invalidateQueries({ queryKey: key });
     qc.invalidateQueries({ queryKey: ["tasks"] });
@@ -183,7 +199,7 @@ export function useCareBriefing() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  return { list, status, todos, run, takeCare, delegate, handled, snooze, dismiss, completeTodo };
+  return { list, status, todos, undated, run, takeCare, delegate, handled, snooze, dismiss, completeTodo };
 }
 
 export const OUTCOMES: Record<string, string> = {
