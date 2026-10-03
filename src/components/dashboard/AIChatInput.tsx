@@ -321,7 +321,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                 aria-label="Cancel recording"
                 title="Cancel recording"
               >
-                <X className="h-4.5 w-4.5" />
+                <X className="h-[18px] w-[18px]" />
               </button>
               <button
                 type="button"
@@ -330,7 +330,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                 aria-label="Done recording"
                 title="Done recording"
               >
-                <Check className="h-4.5 w-4.5" />
+                <Check className="h-[18px] w-[18px]" />
               </button>
             </>
           ) : (
@@ -379,8 +379,8 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                       title="Record a voice message"
                     >
                       {voiceState === "transcribing"
-                        ? <Loader2 className="h-4.5 w-4.5 animate-spin" />
-                        : <Mic className="h-4.5 w-4.5" />}
+                        ? <Loader2 className="h-[18px] w-[18px] animate-spin" />
+                        : <Mic className="h-[18px] w-[18px]" />}
                     </button>
                     {input.trim() && (
                       <button
@@ -391,7 +391,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                         aria-label="Send message"
                         title="Send message"
                       >
-                        <ArrowUp className="h-4.5 w-4.5" strokeWidth={2.5} />
+                        <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.5} />
                       </button>
                     )}
                   </>
