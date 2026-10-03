@@ -3,8 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUp, Square, Plus, Mic, X, Check, Loader2 } from "lucide-react";
-import { recordWav, type WavRecording } from "@/lib/recordWav";
-import { useTranscribeAudio } from "@/hooks/useTranscribeAudio";
+import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 
 const MAX_RECORDING_SECONDS = 120;
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,13 +38,16 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const triggerStartRef = useRef<number | null>(null);
   const { organization } = useProfile();
-  const transcription = useTranscribeAudio();
+  const speech = useSpeechRecognition();
   const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
   const [elapsed, setElapsed] = useState(0);
   const [voiceError, setVoiceError] = useState<string | null>(null);
-  const recordingRef = useRef<WavRecording | null>(null);
+  const [liveText, setLiveText] = useState("");
+  // Text already in the box when listening started; the voice transcript is appended to it.
+  const voiceBaseRef = useRef("");
+  const listeningRef = useRef(false);
   const timerRef = useRef<number | null>(null);
-  const finishRecordingRef = useRef<() => void>(() => {});
+  const finishRecordingRef = useRef<(endedText?: string, error?: string) => void>(() => {});
 
   useEffect(() => {
     if (!isLoading && textareaRef.current) {
@@ -225,74 +227,79 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     });
   };
 
-  // ---- Voice input: record → transcribe → send automatically ----
+  // ---- Voice input: the browser's speech recognition → send automatically ----
   const clearTimer = () => {
     if (timerRef.current) window.clearInterval(timerRef.current);
     timerRef.current = null;
   };
 
-  const startRecording = async () => {
+  const startRecording = () => {
     setVoiceError(null);
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setVoiceError("Voice recording isn't supported in this browser.");
+    if (!speech.supported) {
+      setVoiceError("Voice input isn't supported in this browser. Try Chrome, Edge or Safari.");
       return;
     }
+    voiceBaseRef.current = input.trim() ? input.trimEnd() + " " : "";
+    setLiveText("");
     try {
-      recordingRef.current = await recordWav();
-      setElapsed(0);
-      setVoiceState("recording");
-      const started = Date.now();
-      timerRef.current = window.setInterval(() => {
-        const secs = Math.floor((Date.now() - started) / 1000);
-        setElapsed(secs);
-        if (secs >= MAX_RECORDING_SECONDS) finishRecordingRef.current();
-      }, 250);
-    } catch (e: any) {
-      const denied = e?.name === "NotAllowedError" || e?.name === "SecurityError";
-      setVoiceError(denied
-        ? "Microphone access is blocked. Allow it in your browser settings to record."
-        : "Couldn't start the microphone. Please try again.");
+      speech.start({
+        onText: setLiveText,
+        // Recognition stopped on its own (long silence, the browser's limit, or an error).
+        onEnd: (text, error) => finishRecordingRef.current(text, error),
+      });
+    } catch {
+      setVoiceError("Couldn't start voice input. Please try again.");
+      return;
     }
+    listeningRef.current = true;
+    setElapsed(0);
+    setVoiceState("recording");
+    const started = Date.now();
+    timerRef.current = window.setInterval(() => {
+      const secs = Math.floor((Date.now() - started) / 1000);
+      setElapsed(secs);
+      if (secs >= MAX_RECORDING_SECONDS) finishRecordingRef.current();
+    }, 250);
   };
 
   const cancelRecording = () => {
     clearTimer();
-    recordingRef.current?.cancel();
-    recordingRef.current = null;
+    listeningRef.current = false;
+    speech.cancel();
+    setLiveText("");
     setVoiceState("idle");
   };
 
-  const finishRecording = async () => {
-    const rec = recordingRef.current;
-    if (!rec) return;
-    recordingRef.current = null;
+  const finishRecording = async (endedText?: string, error?: string) => {
+    if (!listeningRef.current) return;
+    listeningRef.current = false;
     clearTimer();
-    setVoiceState("transcribing");
-    const base = input.trim() ? input.trimEnd() + " " : "";
-    try {
-      const file = await rec.stop();
-      const text = await transcription.mutateAsync({ file, onText: (partial) => setInput(base + partial) });
-      const finalText = (base + text).trim();
-      if (finalText && !isLoading) {
-        // Voice transcription is sent straight away — no review step.
-        onSubmit(finalText);
-        setInput("");
-        setMentions([]);
-        setMentionQuery(null);
-        if (textareaRef.current) textareaRef.current.style.height = "auto";
-      } else {
-        setVoiceError("I couldn't hear anything. Please try again.");
-      }
-    } catch (e: any) {
-      setInput(base.trimEnd());
-      setVoiceError(e?.message || "Transcription failed. Please try again.");
-    } finally {
+    if (error === "not-allowed" || error === "service-not-allowed") {
       setVoiceState("idle");
+      setVoiceError("Microphone access is blocked. Allow it in your browser settings to record.");
+      return;
+    }
+    setVoiceState("transcribing");
+    const text = endedText ?? await speech.stop();
+    setLiveText("");
+    setVoiceState("idle");
+    const finalText = (voiceBaseRef.current + text).trim();
+    if (text.trim() && finalText && !isLoading) {
+      // Voice input is sent straight away — no review step.
+      onSubmit(finalText);
+      setInput("");
+      setMentions([]);
+      setMentionQuery(null);
+      if (textareaRef.current) textareaRef.current.style.height = "auto";
+    } else if (error && error !== "no-speech" && error !== "aborted") {
+      setVoiceError("Voice input stopped unexpectedly. Please try again.");
+    } else {
+      setVoiceError("I couldn't hear anything. Please try again.");
     }
   };
   finishRecordingRef.current = finishRecording;
 
-  useEffect(() => () => { clearTimer(); recordingRef.current?.cancel(); }, []);
+  useEffect(() => () => { clearTimer(); speech.cancel(); }, [speech.cancel]);
 
   const dropdownOpen = mentionQuery !== null && mentionResults.length > 0;
 
@@ -313,7 +320,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                 <span className="font-medium tabular-nums text-foreground">
                   {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}
                 </span>
-                <span className="hidden truncate sm:inline">Listening…</span>
+                <span className="hidden truncate sm:inline">{liveText || "Listening…"}</span>
               </div>
               <button
                 type="button"
@@ -326,7 +333,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
               </button>
               <button
                 type="button"
-                onClick={finishRecording}
+                onClick={() => finishRecording()}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
                 aria-label="Done recording"
                 title="Done recording"

@@ -181,6 +181,3 @@ verify_jwt = false
 # their own briefing (checks their JWT itself).
 [functions.care-agent-run]
 verify_jwt = false
-
-[functions.transcribe-audio]
-verify_jwt = true
