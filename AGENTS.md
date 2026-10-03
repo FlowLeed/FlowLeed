@@ -144,8 +144,9 @@ if (unauthorized) return unauthorized;
 
 | Provider | Used for | How to call it |
 |---|---|---|
-| **Gloo AI** | All chat and reasoning (Care Agent, Signal Agent, suggestions, Content answers) | Always through the helpers in `_shared/gloo.ts`, which wrap the `openai` SDK: `glooChat`, `glooChatStream` (raw SSE stream), `glooToolCalls` and `glooErrorStatus` (for 429 and 402). Never call Gloo's URL or create an `OpenAI` client elsewhere. The only credential is `GLOO_API_KEY`. |
-| **Lovable AI Gateway** | Embeddings and the story drafter | Key `LOVABLE_API_KEY`. Embeddings use `google/gemini-embedding-001` with 384 dimensions, matching the `vector(384)` column. Changing the model or the size means re-embedding all content, so ask first. |
+| **Gloo AI** | All AI: chat, reasoning and embeddings (Care Agent, morning briefing, Signal Agent, suggestions, Content search and answers, story drafter) | Always through the helpers in `_shared/gloo.ts`, which wrap the `openai` SDK: `glooChat`, `glooChatStream` (raw SSE stream), `glooToolCalls`, `glooErrorStatus` (for 429 and 402) and `glooEmbed`. Never call Gloo's URL or create an `OpenAI` client elsewhere. The only credential is `GLOO_API_KEY`. Don't add another AI provider, such as the Lovable AI Gateway. |
+| **Embeddings** | Content search | `glooEmbed` uses `GLOO_EMBEDDING_MODEL` at `EMBEDDING_DIMENSIONS` (384), matching the `vector(384)` columns. Changing the model or the size means re-embedding all content, so ask first. |
+| **Voice input** | Voice notes in the AI chat | The browser's speech recognition, through `src/hooks/useSpeechRecognition.tsx`. No server, no key. |
 | **Supadata** | YouTube transcripts | Key `SUPADATA_API_KEY`, sent in the `x-api-key` header. |
 
 **Logging.** Never log:
@@ -188,6 +189,13 @@ select cron.schedule('<job-name>', '<cron expression>',
 - [ ] Database changes are in a new migration, and new tables have RLS.
 - [ ] Any new secret name is in `.env.example` (with no value), and you've told the developer.
 - [ ] The app type-checks and builds.
+
+## 7. Product design notes
+
+Decisions recorded by Lovable while building features. Keep them when changing these areas.
+
+- Care agent: `care-agent-run` edge function (cron, bounded batches, per-org lease in `care_agent_state`) writes per-leader rows to `care_recommendations`; the main AI conversation renders and acts on those rows directly under recipient-only RLS. Why: deterministic orchestration with AI used only for wording, without a separate briefing destination.
+- When demo data is cleared and an org has zero flows, a trigger on `organizations.demo_cleared_at` calls `create_default_pipelines`. Why: churches must never be left with an empty Flows list.
 
 ## More detail
 

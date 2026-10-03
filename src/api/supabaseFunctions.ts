@@ -33,7 +33,9 @@ export async function invokeFunction<T>(
   if (error instanceof FunctionsHttpError) {
     const body = await error.context.json().catch(() => null);
     console.error("Edge Function failed", body);
-    const serverMessage = messages.useServerMessage === false ? null : body?.error;
+    // Functions send { error: "..." }; responses relayed from an AI gateway may send { error: { message } }.
+    const serverError = typeof body?.error === "string" ? body.error : body?.error?.message;
+    const serverMessage = messages.useServerMessage === false || typeof serverError !== "string" ? null : serverError;
     throw new ProviderError(serverMessage ?? messages.fallback, error);
   }
 

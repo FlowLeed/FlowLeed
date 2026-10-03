@@ -12,10 +12,11 @@ import { Sparkles, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PcoPersonalConnectPrompt } from "@/components/dashboard/PcoPersonalConnectPrompt";
 import { DemoHighlights } from "@/components/demo/DemoHighlights";
+import { CareBriefingThread } from "@/components/dashboard/CareBriefingThread";
 
 const Dashboard = () => {
   const { profile } = useProfile();
-  const { messages, isLoading, sendMessage, confirmAction, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
+  const { messages, isLoading, sendMessage, appendBriefing, confirmAction, cancelStream, clearChat, conversationId, loadConversation } = useDashboardChat();
   const chatHistory = useChatHistory();
   const [historyOpen, setHistoryOpen] = useState(false);
 
@@ -54,15 +55,12 @@ const Dashboard = () => {
           {/* AI Hero Section - shown when no messages */}
           {!hasMessages && (
             <div className="flex flex-col items-center justify-center pt-8 pb-4 space-y-6 relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleOpenHistory}
-                className="absolute top-2 right-0 text-xs text-muted-foreground gap-1.5"
-              >
-                <History className="h-3.5 w-3.5" />
-                History
-              </Button>
+              <div className="absolute top-2 right-0 flex gap-1">
+                <Button variant="ghost" size="sm" onClick={handleOpenHistory} className="text-xs text-muted-foreground gap-1.5">
+                  <History className="h-3.5 w-3.5" />
+                  History
+                </Button>
+              </div>
               <div className="flex flex-col items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-sm" aria-label="FlowLeed AI">
                   <Sparkles className="h-7 w-7 text-primary-foreground" />
@@ -76,6 +74,9 @@ const Dashboard = () => {
               </div>
             </div>
           )}
+
+          {/* The daily care briefing stays as the opening message in the main AI conversation. */}
+          <CareBriefingThread onAsk={sendMessage} onCheck={appendBriefing} />
 
           {/* Chat Input - hero state only */}
           {!hasMessages && (
@@ -105,7 +106,7 @@ const Dashboard = () => {
           )}
 
           {/* Chat Thread */}
-          <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} onConfirmAction={confirmAction} />
+          <ChatThread messages={messages} isLoading={isLoading} onClear={handleClearChat} onOpenHistory={handleOpenHistory} onConfirmAction={confirmAction} renderBriefing={() => <CareBriefingThread onAsk={sendMessage} inThread />} />
         </div>
       </div>
 

@@ -1,12 +1,12 @@
+import { Link } from "react-router-dom";
 import React, { useRef, useEffect, useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { type ChatMessage } from "@/hooks/useDashboardChat";
-import { User, Sparkles, RotateCcw, History, ListPlus, ShieldCheck, CheckCircle2, Clock } from "lucide-react";
+import { type ChatMessage, BRIEFING_MARKER } from "@/hooks/useDashboardChat";
+import { User, HeartHandshake, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 
 const THINKING_MESSAGES = [
   "Looking at the whole picture...",
@@ -20,6 +20,59 @@ const THINKING_MESSAGES = [
   "Keeping people at the center...",
   "Almost there...",
 ];
+
+/** Words that mark a section title rather than body text. */
+const TITLE_HINT =
+  /\b(?:Overview|Activity|History|Summary|Context|Connection|Engagement|Household|Groups?|Flows?|Journey|Milestones?|Profile|Serving|Family|Care|Spiritual|Recent|Leadership|Next Steps|Prayer|Notes|Demographics|Tags|Interactions)\b/;
+
+const formatAssistantMarkdown = (content: string) => {
+  let text = content
+    // Preserve markdown structure when a streamed heading arrives immediately
+    // after the previous sentence.
+    .replace(/([^\n#])(?=#{2,3}\s)/g, "$1\n\n")
+    // A bold-only line is a section title, not body text.
+    .replace(/^[ \t]*\*\*([^*]+)\*\*[ \t]*$/gm, (_m, t: string) => `### ${t.trim().replace(/:$/, "")}\n\n`)
+    // A bold title at the start of a line becomes a quiet heading; ordinary
+    // emphasized words just lose their bold so paragraphs stay plain.
+    .replace(/^([ \t]*)\*\*([^*]+?)\*\*[ \t]*/gm, (_m, sp: string, inner: string) => {
+      const title = inner.trim().replace(/:$/, "");
+      if (/:$/.test(inner.trim()) || TITLE_HINT.test(title)) {
+        return `${sp}### ${title}\n\n`;
+      }
+      return `${sp}${inner.trim()} `;
+    })
+    // Mid-line bold labels start their own quiet heading between paragraphs.
+    .replace(/([^\n*])\s*\*\*([^*]{1,60}?):\*\*(?=\s*\S)/g, (_m, before: string, label: string) =>
+      `${before}\n\n### ${label.trim()}\n\n`);
+  // Bold stays for titles only - paragraphs render as plain text.
+  text = text.replace(/\*\*([^*]+)\*\*/g, "$1");
+  return text
+    .replace(/(#{2,3} [^\n]+\n\n)[ \t]+/g, "$1")
+    // A heading glued to its first sentence ("Private NoteA private...").
+    .replace(/^(#{2,3} [^\n]*?[a-z])([A-Z])/gm, "$1\n\n$2")
+    // Keep person links readable when glued to a preceding word.
+    .replace(/(\S)(?=\[)/g, "$1 ")
+    // Each person gets their own paragraph: split "Name — " entries that were
+    // run together into one long paragraph.
+    .replace(/([.!?])\s+(?=\[[^\]]+\]\(\/contacts\/[^)]+\)\s+[—–-])/g, "$1\n\n")
+    .replace(/([a-z0-9)])\s+(?=\[[^\]]+\]\(\/contacts\/[^)]+\)\s+—)/g, "$1.\n\n")
+    // Repair common sentence boundaries lost by upstream streaming.
+    .replace(/([.!?])(?=[A-Z])/g, "$1 ")
+    .replace(/([:;])(?=[A-Z])/g, "$1 ")
+    // Repair common profile section headings joined to their first sentence.
+    .replace(/^(#{2,3}\s+.*(?:Overview|Activity|History|Summary|Context|Connections|Engagement|Household|Groups|Flows|Next Steps))(?=[A-Z])/gm, "$1\n\n");
+};
+
+/** In-app links (like /contacts/...) open inside FlowLeed, not as external sites. */
+const ChatLink = ({ href, children }: { href?: string; children?: React.ReactNode }) => {
+  // Only link to a person when the id looks like a real record id; the
+  // assistant must never send us to a made-up profile.
+  if (href?.startsWith("/contacts/") && !/^\/contacts\/[0-9a-fA-F-]{36}(\?|$)/.test(href)) {
+    return <span className="font-medium">{children}</span>;
+  }
+  if (href && href.startsWith("/")) return <Link to={href}>{children}</Link>;
+  return <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+};
 
 /** Rotating, human-centered status lines shown while FlowLeed AI thinks. */
 const ThinkingStatus = () => {
@@ -46,11 +99,17 @@ interface ChatThreadProps {
   onClear: () => void;
   onOpenHistory?: () => void;
   onConfirmAction?: (actionRequestId: string) => Promise<{ ok: boolean; message: string }>;
+  renderBriefing?: () => React.ReactNode;
 }
 
-export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory, onConfirmAction }) => {
+interface ActionRequestState {
+  id: string;
+  status: string;
+  expires_at: string;
+}
+
+export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onClear, onOpenHistory, onConfirmAction, renderBriefing }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const [bulkIds, setBulkIds] = useState<string[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [handledActions, setHandledActions] = useState<Set<string>>(new Set());
@@ -80,7 +139,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
         .select("id, status, expires_at")
         .in("id", actionIds);
       if (error) throw error;
-      return new Map((data ?? []).map((row: any) => [row.id as string, row]));
+      return new Map((data ?? []).map((row) => {
+        const state = row as ActionRequestState;
+        return [state.id, state] as const;
+      }));
     },
   });
 
@@ -89,41 +151,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const markdownComponents = useMemo(() => ({
-    // Same size as the headings and list items around it (prose-base), so a reply doesn't mix text sizes.
-    p: ({ children }: any) => <p className="font-sans font-normal">{children}</p>,
-    a: ({ href, children, ...props }: any) => {
-      const isInternal = href?.startsWith("/");
-      // Only link to a person when the id looks like a real record id; the
-      // assistant must never send us to a made-up profile.
-      const isPersonLink = /^\/contacts\/[0-9a-fA-F-]{36}$/.test(href || "");
-      const isBrokenPerson = href?.startsWith("/contacts/") && !isPersonLink;
-      if (isBrokenPerson) {
-        return <span className="font-medium">{children}</span>;
-      }
-      if (isInternal) {
-        return (
-          <button
-            className="text-primary font-medium underline underline-offset-2 hover:text-primary/80 transition-colors cursor-pointer"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate(href);
-            }}
-            {...props}
-          >
-            {children}
-          </button>
-        );
-      }
-
-      return (
-        <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline" {...props}>
-          {children}
-        </a>
-      );
-    },
-  }), [navigate]);
 
   if (messages.length === 0) return null;
 
@@ -141,21 +168,23 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
           New conversation
         </Button>
       </div>
-      {messages.map((msg, i) => (
-        <div key={i} className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+      {messages.map((msg, i) => msg.role === "assistant" && msg.content.startsWith(BRIEFING_MARKER) ? (
+        <div key={i}>{renderBriefing?.()}</div>
+      ) : (
+        <Message key={i} from={msg.role} className={`flex-row gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           {msg.role === "assistant" && (
             <div className="flex-shrink-0 mt-1">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
-                <Sparkles className="h-4 w-4 text-primary-foreground" />
+                <HeartHandshake className="h-4 w-4 text-primary-foreground" />
               </div>
             </div>
           )}
-          <div
+          <MessageContent
             className={`
-              rounded-2xl px-3.5 py-3 sm:px-5 sm:py-4 max-w-[92%] sm:max-w-[85%] text-base leading-relaxed min-w-0
+              max-w-[92%] min-w-0 text-sm leading-6 sm:max-w-[85%]
               ${msg.role === "user"
-                ? "bg-primary text-primary-foreground rounded-br-md"
-                : "bg-transparent rounded-bl-md"
+                ? "rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-primary-foreground sm:px-5"
+                : "bg-transparent px-0 py-1"
               }
             `}
           >
@@ -168,26 +197,91 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                   try { contactIds = JSON.parse(match[1]); } catch { /* ignore */ }
                 }
                 const cleanContent = msg.content.replace(/<!--flowleed:contact_ids=\[[^\]]*\]-->\s*/g, "").trimEnd();
-                const actionMatch = cleanContent.match(/<!--flowleed:action=({.*?})-->/);
-                let action: { id: string; type?: string; summary: string; expires_at: string } | null = null;
-                if (actionMatch) {
-                  try { action = JSON.parse(actionMatch[1]); } catch { /* ignore */ }
+                type ChatAction = { id: string; type?: string; summary: string; expires_at: string };
+                const actionsAll: ChatAction[] = [];
+                for (const m of cleanContent.matchAll(/<!--flowleed:action=(\{.*?\})-->/g)) {
+                  try {
+                    const a = JSON.parse(m[1]) as ChatAction;
+                    if (a?.id && !actionsAll.some((x) => x.id === a.id)) actionsAll.push(a);
+                  } catch { /* ignore */ }
                 }
-                const visibleContent = cleanContent.replace(/<!--flowleed:action={.*?}-->\s*/g, "").trimEnd();
+                const visibleContent = cleanContent.replace(/<!--flowleed:[\s\S]*?-->\s*/g, "").trimEnd();
+                const actionTitleType = (section: string) => {
+                  const heading = section.match(/^#{2,3}\s+([^\n]+)/m)?.[1]?.toLowerCase() ?? "";
+                  if (heading.includes("private note") || heading === "note" || heading === "notes") return "create_contact_note";
+                  if (heading.includes("reminder") || heading.includes("task")) return "create_task";
+                  if (heading.includes("prayer")) return "create_prayer_request";
+                  if (heading.includes("flow")) return "add_to_flow";
+                  return undefined;
+                };
+                const sections = formatAssistantMarkdown(visibleContent).split(/(?=^#{2,3}\s)/m).map((s) => s.trim()).filter(Boolean);
+                const assignedActionIds = new Set<string>();
+                const pendingActions = (actions: ChatAction[]) => actions.filter((action) => {
+                  if (handledActions.has(action.id)) return false;
+                  const state = actionStates?.get(action.id);
+                  const expiresAt = state?.expires_at ?? action.expires_at;
+                  return state?.status !== "completed" && state?.status !== "cancelled" && state?.status !== "failed" && new Date(expiresAt).getTime() > Date.now();
+                });
+                const approveActions = async (actions: ChatAction[], groupId: string) => {
+                  if (!onConfirmAction) return;
+                  setConfirmingId(groupId);
+                  const approvedIds: string[] = [];
+                  for (const action of actions) {
+                    const result = await onConfirmAction(action.id);
+                    if (result.ok) approvedIds.push(action.id);
+                  }
+                  setConfirmingId(null);
+                  if (approvedIds.length > 0) {
+                    setHandledActions((current) => new Set([...current, ...approvedIds]));
+                  }
+                };
+                const approvalButton = (actions: ChatAction[], groupId: string) => {
+                  const waiting = pendingActions(actions);
+                  if (waiting.length === 0) return null;
+                  waiting.forEach((action) => assignedActionIds.add(action.id));
+                  return (
+                    <Button
+                      size="sm"
+                      className="mt-2 h-7 px-2.5 text-xs"
+                      disabled={confirmingId === groupId}
+                      onClick={() => void approveActions(waiting, groupId)}
+                    >
+                      {confirmingId === groupId ? "Approving..." : "Approve"}
+                    </Button>
+                  );
+                };
                 return (
-                  <div className="prose prose-base dark:prose-invert max-w-none
-                    [&>*:first-child]:mt-0 [&>*:last-child]:mb-0
-                    [&_p+p]:mt-3
-                    prose-headings:font-semibold prose-headings:text-foreground
-                    prose-h2:text-lg prose-h2:mt-6 prose-h2:mb-3
-                    prose-h3:text-base prose-h3:mt-5 prose-h3:mb-2
-                    prose-p:mb-3 prose-p:leading-6
-                    prose-ul:my-3 prose-ol:my-3
-                    prose-li:my-1 prose-li:leading-6
-                    prose-strong:text-foreground
-                    [&_p_strong:first-child]:inline-block [&_p_strong:first-child]:mt-2
-                  ">
-                    <ReactMarkdown components={markdownComponents}>{visibleContent}</ReactMarkdown>
+                  <div className="max-w-none">
+                    {sections.map((section, sectionIndex) => {
+                      const type = actionTitleType(section);
+                      const sectionActions = type ? actionsAll.filter((action) => action.type === type) : [];
+                      const groupId = `${i}-${type ?? sectionIndex}`;
+                      return (
+                        <div key={groupId} className="not-prose">
+                          {/* !h-auto prevents controls after the text from being clipped.
+                              The first-section override is per-section: later section headings
+                              keep their top margin so they never sit glued to an Approve button. */}
+                          <MessageResponse linkSafety={{ enabled: false }} components={{ a: ChatLink }}
+                            className={`!h-auto font-sans text-sm font-normal leading-6
+                            ${sectionIndex === 0
+                              ? "[&>*:first-child]:mt-0 "
+                              // MessageResponse always prepends mt-0 on the first child;
+                              // re-assert spacing so a heading after an Approve button keeps
+                              // breathing room instead of sitting glued to it.
+                              : "[&>*:first-child]:mt-6 "}
+                            [&>*:last-child]:mb-0
+                            [&_p]:!my-0 [&_p+p]:mt-4 [&_p:empty]:hidden
+                            [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
+                            [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:leading-6
+                            [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_li]:leading-6
+                            [&_strong]:font-semibold [&_strong]:text-foreground
+                            [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2`}>
+                            {section}
+                          </MessageResponse>
+                          {approvalButton(sectionActions, groupId)}
+                        </div>
+                      );
+                    })}
                     {contactIds.length > 0 && (
                       <div className="not-prose mt-4 flex flex-wrap gap-2">
                         <Button size="sm" onClick={() => setBulkIds(contactIds)} className="gap-2">
@@ -196,47 +290,10 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         </Button>
                       </div>
                     )}
-                    {action && !handledActions.has(action.id) && (() => {
-                      const state = actionStates?.get(action.id) as { status?: string; expires_at?: string } | undefined;
-                      const status = state?.status;
-                      const expiresAt = state?.expires_at ?? action.expires_at;
-                      const expired = new Date(expiresAt).getTime() <= Date.now();
-                      const title = action.type === "create_contact_note" ? "note" : action.type === "create_prayer_request" ? "prayer request" : action.type === "create_task" ? "task" : "Flow change";
-
-                      if (status === "completed") {
-                        return (
-                          <div className="not-prose mt-4 flex items-start gap-3 rounded-md border bg-muted/30 p-4 text-sm">
-                            <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
-                            <p>This {title} was already saved.</p>
-                          </div>
-                        );
-                      }
-
-                      if (status === "cancelled" || status === "failed" || expired) {
-                        return (
-                          <div className="not-prose mt-4 flex items-start gap-3 rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-                            <Clock className="mt-0.5 h-5 w-5" />
-                            <p>
-                              {status === "failed"
-                                ? `This ${title} could not be saved. Ask FlowLeed AI again to try once more.`
-                                : `This ${title} is no longer waiting for you. Ask FlowLeed AI again if you still want it.`}
-                            </p>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="not-prose mt-4 rounded-md border bg-muted/30 p-4">
-                           <div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 text-primary" /><div><p className="font-medium">{action.type === "create_contact_note" ? "Confirm new note" : action.type === "create_prayer_request" ? "Confirm prayer request" : action.type === "create_task" ? "Confirm new task" : "Confirm Flow change"}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{action.summary}</p></div></div>
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            <Button size="sm" disabled={confirmingId === action.id} onClick={async () => { if (!onConfirmAction || !action) return; setConfirmingId(action.id); const result = await onConfirmAction(action.id); setConfirmingId(null); if (result.ok) setHandledActions((current) => new Set(current).add(action.id)); }}>
-                               {confirmingId === action.id ? "Confirming..." : action.type === "create_contact_note" ? "Save note" : action.type === "create_prayer_request" ? "Save prayer request" : action.type === "create_task" ? "Save task" : "Confirm add"}
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => setHandledActions((current) => new Set(current).add(action.id))}>Cancel</Button>
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    {approvalButton(
+                      actionsAll.filter((action) => !assignedActionIds.has(action.id)),
+                      `${i}-remaining-actions`,
+                    )}
                   </div>
                 );
               })()
@@ -248,7 +305,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     .replace(/\n*\[Referenced contacts:[^\]]*\]\s*$/i, "")
                     .trimEnd();
                   // Bold @mentions
-                  const parts = display.split(/(@\p{Lu}[\p{L}\p{M}\-\.']*(?:\s\p{Lu}[\p{L}\p{M}\-\.']*){0,2})/gu);
+                  const parts = display.split(/(@\p{Lu}[\p{L}\p{M}.'-]*(?:\s\p{Lu}[\p{L}\p{M}.'-]*){0,2})/gu);
                   return parts.map((part, idx) =>
                     part.startsWith("@") ? (
                       <strong key={idx} className="font-semibold">{part}</strong>
@@ -259,7 +316,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 })()}
               </p>
             )}
-          </div>
+          </MessageContent>
           {msg.role === "user" && (
             <div className="flex-shrink-0 mt-1">
               <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center">
@@ -267,13 +324,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
               </div>
             </div>
           )}
-        </div>
+        </Message>
       ))}
       {isLoading && messages[messages.length - 1]?.role === "user" && (
         <div className="flex gap-3 justify-start">
           <div className="flex-shrink-0 mt-1">
             <div className="flex h-7 w-7 animate-pulse items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
+              <HeartHandshake className="h-4 w-4 text-primary-foreground" />
             </div>
           </div>
           <div className="rounded-2xl rounded-bl-md px-5 py-4">
