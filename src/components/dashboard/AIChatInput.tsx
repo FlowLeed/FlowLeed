@@ -1,11 +1,12 @@
+// ============= Full file contents =============
+
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Send, Square, Sparkles, Mic, X, Check, Loader2 } from "lucide-react";
+import { ArrowUp, Square, Plus, Mic, X, Check, Loader2 } from "lucide-react";
 import { recordWav, type WavRecording } from "@/lib/recordWav";
 import { transcribeAudio } from "@/lib/transcribeAudio";
 
 const MAX_RECORDING_SECONDS = 120;
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
@@ -206,6 +207,23 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     }
   };
 
+  // "+" opens the people picker: inserts a real "@" at the caret so the
+  // existing mention detection takes over naturally.
+  const handlePlusClick = () => {
+    const el = textareaRef.current;
+    if (!el || voiceState !== "idle") return;
+    el.focus();
+    const pos = el.selectionStart ?? input.length;
+    const before = input.slice(0, pos);
+    const after = input.slice(pos);
+    setInput(`${before}@${after}`);
+    triggerStartRef.current = pos;
+    setMentionQuery("");
+    requestAnimationFrame(() => {
+      el.setSelectionRange(pos + 1, pos + 1);
+    });
+  };
+
   // ---- Voice input: record → transcribe → send automatically ----
   const clearTimer = () => {
     if (timerRef.current) window.clearInterval(timerRef.current);
@@ -277,83 +295,108 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
 
   const dropdownOpen = mentionQuery !== null && mentionResults.length > 0;
 
+  const iconBtn =
+    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50 disabled:pointer-events-none";
+
   return (
     <div className={`relative w-full ${hasMessages ? "max-w-3xl" : "max-w-2xl"} mx-auto`}>
-      <div className="relative rounded-2xl border-2 border-border bg-card shadow-lg transition-all focus-within:border-primary/50 focus-within:shadow-xl focus-within:shadow-primary/5">
-        <div className="flex items-center gap-2 px-4 pt-3 pb-1 text-muted-foreground">
-          <Sparkles className="h-4 w-4 text-primary" />
-          <span className="text-xs font-medium">FlowLeed AI</span>
-          <span className="hidden text-[10px] text-muted-foreground/60 ml-1 sm:inline">· type @ to mention a person</span>
-        </div>
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          onInput={handleInput}
-          onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
-          placeholder="Ask about your people, tasks, church health..."
-          rows={1}
-          className="min-h-12 max-h-32 w-full resize-none bg-transparent px-4 py-2 text-base leading-relaxed placeholder:text-muted-foreground/60 focus:outline-none md:text-sm"
-          disabled={isLoading}
-        />
-        {voiceError && (
-          <div className="px-4 pb-1 text-xs text-destructive">{voiceError}</div>
-        )}
-        <div className="flex items-center justify-end gap-2 px-3 pb-3">
+      <div className="relative rounded-full border border-border bg-card shadow-lg shadow-black/5 transition-all focus-within:border-primary/40 focus-within:shadow-xl focus-within:shadow-primary/5">
+        <div className="flex items-center gap-1 py-1.5 pl-1.5 pr-1.5">
           {voiceState === "recording" ? (
             <>
-              <div className="mr-auto flex items-center gap-2 pl-1 text-xs text-muted-foreground">
-                <span className="relative flex h-2.5 w-2.5">
+              <div className="flex min-w-0 flex-1 items-center gap-2 pl-3 text-xs text-muted-foreground">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-60" />
                   <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
                 </span>
-                <span className="tabular-nums font-medium text-foreground">
+                <span className="font-medium tabular-nums text-foreground">
                   {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}
                 </span>
-                <span className="hidden sm:inline">Listening…</span>
+                <span className="hidden truncate sm:inline">Listening…</span>
               </div>
-              <Button size="sm" variant="ghost" onClick={cancelRecording} className="rounded-xl gap-1.5" aria-label="Cancel recording">
-                <X className="h-3.5 w-3.5" />
-                Cancel
-              </Button>
-              <Button size="sm" onClick={finishRecording} className="rounded-xl gap-1.5" aria-label="Finish recording">
-                <Check className="h-3.5 w-3.5" />
-                Done
-              </Button>
+              <button
+                type="button"
+                onClick={cancelRecording}
+                className={iconBtn}
+                aria-label="Cancel recording"
+                title="Cancel recording"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+              <button
+                type="button"
+                onClick={finishRecording}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
+                aria-label="Done recording"
+                title="Done recording"
+              >
+                <Check className="h-4.5 w-4.5" />
+              </button>
             </>
-          ) : isLoading ? (
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={onCancel}
-              className="rounded-xl gap-1.5"
-            >
-              <Square className="h-3 w-3" />
-              Stop
-            </Button>
           ) : (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={startRecording}
-                disabled={voiceState === "transcribing"}
-                className="h-8 w-8 rounded-xl p-0 text-muted-foreground hover:text-foreground"
-                aria-label="Record a voice message"
-                title="Record a voice message"
+              <button
+                type="button"
+                onClick={handlePlusClick}
+                className={iconBtn}
+                aria-label="Mention a person"
+                title="Mention a person"
+                disabled={isLoading}
               >
-                {voiceState === "transcribing" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                disabled={!input.trim() || voiceState === "transcribing"}
-                className="rounded-xl gap-1.5"
-              >
-                <Send className="h-3.5 w-3.5" />
-                Send
-              </Button>
+                <Plus className="h-5 w-5" />
+              </button>
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                onInput={handleInput}
+                onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
+                placeholder="Message"
+                rows={1}
+                disabled={isLoading}
+                className="min-h-9 max-h-32 w-full flex-1 resize-none bg-transparent px-1 py-2 text-sm leading-6 placeholder:text-muted-foreground/70 focus:outline-none"
+              />
+              <div className="flex shrink-0 items-center gap-1">
+                {isLoading ? (
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive text-white transition-colors hover:bg-destructive/90"
+                    aria-label="Stop generating"
+                    title="Stop generating"
+                  >
+                    <Square className="h-3.5 w-3.5 fill-current" />
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      disabled={voiceState === "transcribing"}
+                      className={iconBtn}
+                      aria-label="Record a voice message"
+                      title="Record a voice message"
+                    >
+                      {voiceState === "transcribing"
+                        ? <Loader2 className="h-4.5 w-4.5 animate-spin" />
+                        : <Mic className="h-4.5 w-4.5" />}
+                    </button>
+                    {input.trim() && (
+                      <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={!input.trim() || voiceState === "transcribing"}
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
+                        aria-label="Send message"
+                        title="Send message"
+                      >
+                        <ArrowUp className="h-4.5 w-4.5" strokeWidth={2.5} />
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -418,6 +461,9 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
           );
         })()}
       </div>
+      {voiceError && (
+        <div className="mt-1.5 px-2 text-xs text-destructive">{voiceError}</div>
+      )}
     </div>
   );
 };
