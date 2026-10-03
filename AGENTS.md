@@ -4,12 +4,12 @@ These rules are for every coding agent working in this repository, including Lov
 
 ## How changes ship
 
-- Lovable edits the `lovable` branch only. Changes reach staging when the developer merges a pull request into `dev`.
+- Lovable works in a separate repository (`FlowLeed-Lovable`). The developer merges its changes into the `lovable` branch here and cleans them up (`scripts/lovable-sync-check.ts` lists what each batch needs). Changes reach staging when a pull request is merged into `dev`.
 - A GitHub Actions workflow then:
   1. applies the database migrations;
   2. deploys the Edge Functions;
   3. publishes the web app on Cloudflare.
-- Lovable is **not connected to Supabase**. Code in this repository is the only way anything reaches a database or a server.
+- Nothing in this repository is deployed by Lovable. The workflow is the only way code from here reaches a database or a server.
 
 ## 1. Never put a key, secret or credential in code
 
@@ -67,8 +67,7 @@ This also applies to secrets that look like test values.
 
 | Path | Why |
 |---|---|
-| `.env` | Holds staging's public Supabase URL and publishable key so the Lovable preview works. Maintained by the developer. |
-| `.env.*`, `supabase/functions/.env*` (except adding a name to `supabase/functions/.env.example`) | Local and per-environment values. |
+| `.env`, `.env.*`, `supabase/functions/.env*` (except adding a name to `supabase/functions/.env.example`) | Local and per-environment values. Never committed. |
 | `src/integrations/supabase/client.ts` | Reads its settings from env vars. Don't regenerate it or hard-code values. |
 | `supabase/migrations/20260930000000_baseline.sql` and every existing migration | Migrations may already have run on staging. Change the database with a new migration. |
 | `supabase/migrations_archive/**` | Historical record only. |
