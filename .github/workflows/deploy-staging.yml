@@ -89,6 +89,7 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           GLOO_API_KEY: ${{ secrets.GLOO_API_KEY }}
           SUPADATA_API_KEY: ${{ secrets.SUPADATA_API_KEY }}
+          YOUTUBE_INNERTUBE_KEY: ${{ secrets.YOUTUBE_INNERTUBE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           PCO_OAUTH_CLIENT_ID: ${{ secrets.PCO_OAUTH_CLIENT_ID }}
           PCO_OAUTH_CLIENT_SECRET: ${{ secrets.PCO_OAUTH_CLIENT_SECRET }}
@@ -99,7 +100,7 @@ jobs:
           TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
         run: |
           required="SITE_URL TOKEN_SALT CRON_SECRET GLOO_API_KEY"
-          optional="SUPADATA_API_KEY RESEND_API_KEY PCO_OAUTH_CLIENT_ID PCO_OAUTH_CLIENT_SECRET VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN"
+          optional="SUPADATA_API_KEY YOUTUBE_INNERTUBE_KEY RESEND_API_KEY PCO_OAUTH_CLIENT_ID PCO_OAUTH_CLIENT_SECRET VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN"
           args=()
           for name in $required; do
             if [ -z "${!name}" ]; then echo "::error::$name is not set on the staging environment"; exit 1; fi

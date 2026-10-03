@@ -118,6 +118,7 @@ Copy `supabase/functions/.env.example` as a starting point.
 | `SITE_URL` | Yes | Base URL of the web app, used in email links. Locally: `http://localhost:3000`. |
 | `TOKEN_SALT` | Yes | Any long random value. Salts the password-reset and email-verification tokens. |
 | `SUPADATA_API_KEY` | No | Fetches YouTube transcripts when ingesting videos into Content. |
+| `YOUTUBE_INNERTUBE_KEY` | No | YouTube's public web-player key. Lets `content-ingest` read captions straight from YouTube when Supadata has none. Without it, only Supadata is used. |
 | `RESEND_API_KEY` | No | Sends email (invitations, digests, password resets). |
 | `PCO_OAUTH_CLIENT_ID`, `PCO_OAUTH_CLIENT_SECRET` | No | Lets a church connect its Planning Center account. |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | No | Browser push notifications. |

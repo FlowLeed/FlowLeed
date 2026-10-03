@@ -95,6 +95,7 @@ All of these go on the **`staging`** environment.
 | `TOKEN_SALT` | Yes | Edge Function secret; password-reset and email-verification tokens | A long random value |
 | `GLOO_API_KEY` | Yes | Edge Function secret; Gloo AI | Gloo AI Studio → **API Keys** |
 | `SUPADATA_API_KEY` | No | Edge Function secret; YouTube transcripts | Supadata |
+| `YOUTUBE_INNERTUBE_KEY` | No | Edge Function secret; caption fallback in `content-ingest` when Supadata has no transcript | YouTube's public web-player key (the `INNERTUBE_API_KEY` value in youtube.com's page source) |
 | `RESEND_API_KEY` | No | Edge Function secret; email | Resend |
 | `PCO_OAUTH_CLIENT_ID` | No | Edge Function secret; Planning Center connect | Planning Center developer apps |
 | `PCO_OAUTH_CLIENT_SECRET` | No | Edge Function secret; Planning Center connect | Planning Center developer apps |

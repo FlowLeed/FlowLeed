@@ -14,6 +14,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SUPADATA_API_KEY = Deno.env.get("SUPADATA_API_KEY");
+// YouTube's web player key, for the Innertube caption fallback below. Optional: without it, only
+// Supadata is used.
+const YOUTUBE_INNERTUBE_KEY = Deno.env.get("YOUTUBE_INNERTUBE_KEY");
 
 
 function extractYouTubeId(url: string): string | null {
@@ -76,11 +79,14 @@ async function fetchTranscriptViaSupadata(youtubeId: string): Promise<Transcript
   }
 }
 
-// TODO: reconsider the decision to  a fallback to innertube,
-// Conside moving key to env
+// TODO: reconsider keeping the Innertube fallback at all (it relies on YouTube's private web API).
 async function fetchTranscriptViaInnertube(youtubeId: string): Promise<TranscriptSegment[] | null> {
   // Lightweight Innertube fallback: rotate through web client and parse caption tracks
   // We attempt the youtubei/v1/player endpoint and read captionTracks baseUrl.
+  if (!YOUTUBE_INNERTUBE_KEY) {
+    console.warn("[innertube] YOUTUBE_INNERTUBE_KEY is not set; skipping the caption fallback");
+    return null;
+  }
   const clients = [
     { clientName: "WEB", clientVersion: "2.20240101.00.00" },
     { clientName: "ANDROID", clientVersion: "19.09.37" },
@@ -89,7 +95,7 @@ async function fetchTranscriptViaInnertube(youtubeId: string): Promise<Transcrip
   for (const client of clients) {
     try {
       const r = await fetch(
-        `https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8`,
+        `https://www.youtube.com/youtubei/v1/player?key=${encodeURIComponent(YOUTUBE_INNERTUBE_KEY)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
