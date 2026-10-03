@@ -2,11 +2,9 @@ CREATE OR REPLACE FUNCTION public.notify_push_on_notification()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
   BEGIN
-    PERFORM net.http_post(
-      url := 'https://lghamvpolwebtjwaxned.supabase.co/functions/v1/send-push',
-      headers := jsonb_build_object('Content-Type', 'application/json'),
-      body := jsonb_build_object('notification_id', NEW.id)
-    );
+    -- send-push loads the notification itself, so only its id is sent. The helper reads
+    -- project_url and cron_secret from Vault, and send-push checks the cron secret.
+    PERFORM private.invoke_edge_function('send-push', jsonb_build_object('notification_id', NEW.id));
   EXCEPTION WHEN OTHERS THEN
     RAISE WARNING 'push dispatch failed: %', SQLERRM;
   END;

@@ -38,3 +38,6 @@ END $$;
 REVOKE EXECUTE ON FUNCTION public.tasks_due_reminder_sync() FROM PUBLIC, anon, authenticated;
 DROP TRIGGER IF EXISTS trg_tasks_due_reminder_sync ON public.tasks;
 CREATE TRIGGER trg_tasks_due_reminder_sync BEFORE UPDATE ON public.tasks FOR EACH ROW EXECUTE FUNCTION public.tasks_due_reminder_sync();
+
+-- Turn due tasks into notifications (and pushes) every minute, as in production. Plain SQL: no URL or key.
+SELECT cron.schedule('notify-due-tasks', '* * * * *', $$SELECT public.notify_due_tasks()$$);
