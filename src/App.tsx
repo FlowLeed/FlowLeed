@@ -125,6 +125,8 @@ const App = () => (
               {/* Regular app routes */}
               <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/flows" element={<FlowsIndexRedirect />} />
+              <Route path="/pipelines" element={<FlowsIndexRedirect />} />
               <Route path="/flows/:flowId" element={<FlowPage />} />
               <Route path="/flows/:flowId/documentation" element={<FlowDocumentationPage />} />
               <Route path="/flows/:flowId/analytics" element={<FlowAnalyticsPage />} />
