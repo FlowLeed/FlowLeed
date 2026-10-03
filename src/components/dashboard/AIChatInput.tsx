@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUp, Square, Plus, Mic, X, Check, Loader2 } from "lucide-react";
 import { recordWav, type WavRecording } from "@/lib/recordWav";
-import { transcribeAudio } from "@/lib/transcribeAudio";
+import { useTranscribeAudio } from "@/hooks/useTranscribeAudio";
 
 const MAX_RECORDING_SECONDS = 120;
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -39,6 +39,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const triggerStartRef = useRef<number | null>(null);
   const { organization } = useProfile();
+  const transcription = useTranscribeAudio();
   const [voiceState, setVoiceState] = useState<"idle" | "recording" | "transcribing">("idle");
   const [elapsed, setElapsed] = useState(0);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -270,7 +271,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     const base = input.trim() ? input.trimEnd() + " " : "";
     try {
       const file = await rec.stop();
-      const text = await transcribeAudio(file, (partial) => setInput(base + partial));
+      const text = await transcription.mutateAsync({ file, onText: (partial) => setInput(base + partial) });
       const finalText = (base + text).trim();
       if (finalText && !isLoading) {
         // Voice transcription is sent straight away — no review step.
