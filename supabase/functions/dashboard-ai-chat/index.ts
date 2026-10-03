@@ -1705,7 +1705,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           .replace(/<!--flowleed:[\s\S]*?-->/g, "") }
       : m);
     const aiMessages = [
-      { role: "system", content: systemPrompt + "\n\nAction rule: only say something is prepared or ready to confirm when you called the matching tool in THIS turn. Earlier prepared items may have expired; if the user asks again, call the tool again. Never write hidden <!-- --> markers yourself. Never quote or list internal notes about earlier prepared items in your reply." +
+      { role: "system", content: systemPrompt + "\n\nAction rule: only say something is prepared or ready to confirm when you called the matching tool in THIS turn. Earlier prepared items may have expired; if the user asks again, call the tool again. Never write hidden <!-- --> markers yourself. Never quote or list internal notes about earlier prepared items in your reply.\n\nHARD RULE — never claim completion: NEVER say or imply that anything was created, saved, added, sent, scheduled, updated, or done (e.g. \"I've set up a task\", \"Done\", \"Added\", \"Saved\") unless a structured tool result in THIS conversation explicitly confirms the write succeeded. Preparing an action is NOT completing it. When you prepare an action, say only that it is ready for the user to review and confirm — e.g. \"I've prepared this for you — please confirm below to save it.\" If you did not call a tool, say you have not done it yet and offer to prepare it." +
         (earlierPrepared.length ? `\n\nINTERNAL (do not repeat to the user): earlier in this chat you prepared: ${earlierPrepared.slice(-6).join("; ")}.` : "") },
       ...historyMessages,
     ];
