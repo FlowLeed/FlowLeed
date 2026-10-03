@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { functionUrl } from "@/api/supabaseFunctions";
 
 export default function PublicFormRedirect() {
   const { slug } = useParams();
@@ -10,9 +11,8 @@ export default function PublicFormRedirect() {
     if (!slug) return;
     (async () => {
       try {
-        const projectId = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
         const anon = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const url = `https://${projectId}.supabase.co/functions/v1/public-form-get?slug=${encodeURIComponent(slug)}`;
+        const url = functionUrl("public-form-get", { slug });
         const res = await fetch(url, { headers: { apikey: anon, Authorization: `Bearer ${anon}` } });
         if (!res.ok) {
           nav("/", { replace: true });

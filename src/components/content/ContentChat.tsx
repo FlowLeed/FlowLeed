@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatTimestamp } from "@/lib/contentUtils";
+import { functionUrl } from "@/api/supabaseFunctions";
 
 interface Citation {
   id: number;
@@ -57,8 +58,7 @@ export const ContentChat = ({ organizationId, videoId }: Props) => {
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
-      const projectRef = (import.meta as any).env.VITE_SUPABASE_PROJECT_ID;
-      const url = `https://${projectRef}.supabase.co/functions/v1/content-chat`;
+      const url = functionUrl("content-chat");
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
