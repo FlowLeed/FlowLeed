@@ -131,7 +131,7 @@ export function CareBriefingThread({ onAsk, onCheck, inThread = false }: { onAsk
               {checking.length > 0 && (
                 <div><p className="mb-1 text-sm font-semibold">Worth Checking On</p><ul className="list-disc pl-5">{checking.map(row)}</ul></div>
               )}
-              {currentDay && (overdueTasks.length > 0 || todayTasks.length > 0) && (
+              {currentDay && (overdueTasks.length > 0 || todayTasks.length > 0 || (care.undated.data ?? 0) > 0) && (
                 <div className="space-y-2">
                   <p className="flex items-center gap-1.5 text-sm font-semibold"><ListTodo className="h-4 w-4 text-primary" />Today’s To-Dos</p>
                   <ul className="space-y-1">
@@ -150,12 +150,23 @@ export function CareBriefingThread({ onAsk, onCheck, inThread = false }: { onAsk
                           >
                             <CircleCheck className="h-4 w-4" />
                           </Button>
-                          <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                          <span className="min-w-0 flex-1 truncate">
+                            {task.title}
+                            {task.contact?.id && task.contact.name && (
+                              <> · <Link to={`/contacts/${task.contact.id}`} className="text-primary hover:underline">{task.contact.name}</Link></>
+                            )}
+                          </span>
                           {overdue && <span className="shrink-0 text-xs font-medium text-destructive">Overdue</span>}
                         </li>
                       );
                     })}
                   </ul>
+                  {(care.undated.data ?? 0) > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      {care.undated.data} unscheduled {care.undated.data === 1 ? "task" : "tasks"} ·{" "}
+                      <Link to="/tasks" className="text-primary hover:underline">View on Tasks →</Link>
+                    </p>
+                  )}
                   <Button variant="link" size="sm" className="h-auto p-0 text-xs" asChild><Link to="/tasks">View all tasks</Link></Button>
                 </div>
               )}
