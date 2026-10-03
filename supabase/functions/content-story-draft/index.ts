@@ -1,5 +1,9 @@
 // Drafts a readable story (title, summary, blocks) from a video's transcript.
 import { createClient } from "@supabase/supabase-js";
+import { glooChat, glooErrorStatus } from "../_shared/gloo.ts";
+
+// The same model the drafter used through the Lovable AI Gateway (openai/gpt-6-astra).
+const DRAFT_MODEL = "gloo-openai-gpt-6-astra";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -62,48 +66,24 @@ Deno.serve(async (req) => {
     if (!chunks?.length) return json({ error: "This video has no transcript yet." }, 400);
     const transcript = chunks.map((c) => c.text).join("\n").slice(0, 60000);
 
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-6-astra",
-        reasoning_effort: "low",
-        stream: true,
+    let out: string;
+    try {
+      const completion = await glooChat({
+        model: DRAFT_MODEL,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM },
           { role: "user", content: `Video title: ${video.title ?? ""}${knownName ? `\nPerson/family name (use exactly): ${knownName}` : ""}${guidance ? `\n\nEditor guidance (high priority — follow it, e.g. pronouns, focus, tone; still never invent facts):\n${guidance}` : ""}\n\nTranscript:\n${transcript}` },
         ],
-      }),
-    });
-    if (!r.ok || !r.body) {
-      const t = await r.text();
-      console.error("gateway", r.status, t);
-      const msg = r.status === 429 ? "Too many requests — try again in a minute."
-        : r.status === 402 ? "AI credits are used up. Add credits in Settings → Plans & credits."
+      });
+      out = completion.choices[0]?.message?.content ?? "";
+    } catch (e) {
+      const status = glooErrorStatus(e);
+      console.error("Gloo AI error:", status, e);
+      const msg = status === 429 ? "Too many requests — try again in a minute."
+        : status === 402 ? "AI credits are used up."
         : "Couldn't draft the story right now.";
-      return json({ error: msg }, r.status === 429 || r.status === 402 ? r.status : 502);
-    }
-    // Accumulate SSE stream
-    const reader = r.body.getReader();
-    const dec = new TextDecoder();
-    let buf = "", out = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
-      const lines = buf.split("\n"); buf = lines.pop() ?? "";
-      for (const line of lines) {
-        const l = line.trim();
-        if (!l.startsWith("data:")) continue;
-        const d = l.slice(5).trim();
-        if (d === "[DONE]") continue;
-        try { out += JSON.parse(d).choices?.[0]?.delta?.content ?? ""; } catch { /* partial */ }
-      }
+      return json({ error: msg }, status === 429 || status === 402 ? status : 502);
     }
     let parsed: any = {};
     try { parsed = JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1)); } catch { /* ignore */ }
