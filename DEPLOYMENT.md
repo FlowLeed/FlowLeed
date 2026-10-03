@@ -94,7 +94,6 @@ All of these go on the **`staging`** environment.
 | `CRON_SECRET` | Yes | Edge Function secret; the cron-called functions and `send-push` check it | A long random value, identical to the `cron_secret` Vault secret (step 2) |
 | `TOKEN_SALT` | Yes | Edge Function secret; password-reset and email-verification tokens | A long random value |
 | `GLOO_API_KEY` | Yes | Edge Function secret; Gloo AI | Gloo AI Studio → **API Keys** |
-| `LOVABLE_API_KEY` | For Content | Edge Function secret; embeddings and the story drafter | Lovable |
 | `SUPADATA_API_KEY` | No | Edge Function secret; YouTube transcripts | Supadata |
 | `RESEND_API_KEY` | No | Edge Function secret; email | Resend |
 | `PCO_OAUTH_CLIENT_ID` | No | Edge Function secret; Planning Center connect | Planning Center developer apps |

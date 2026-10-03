@@ -187,7 +187,7 @@ select id, status_code, content, error_msg from net._http_response order by id d
 
 ## Testing the AI features
 
-The AI features use three providers. Each has its own Edge Function secrets:
+The AI features use two providers: Gloo AI (`GLOO_API_KEY`) for all AI, and Supadata (`SUPADATA_API_KEY`) for YouTube transcripts. Voice notes need no key, because the browser turns speech into text. The secrets go here:
 - **Locally,** put them in `supabase/functions/.env.local`, then restart `supabase functions serve`. A running server doesn't pick up new values.
 - **On staging,** add them to the `staging` GitHub environment. The next deploy sets them.
 
@@ -208,10 +208,12 @@ To check staging keys before adding them to GitHub, point `--env-file` at a temp
 | Gloo AI | Suggestions and message drafts for a person | A person's profile | `generate-contact-suggestions`, `generate-contact-message` |
 | Gloo AI | Flow and group description suggestions | Flow and group editors | `generate-flow-description`, `generate-group-description` |
 | Supadata (`SUPADATA_API_KEY`) | Video transcripts | **Content**: add a YouTube video | `content-ingest` |
-| Lovable AI (`LOVABLE_API_KEY`) | Embeddings | Ingesting a video, and **Content → Search** | `content-ingest`, `content-search` |
+| Gloo AI | Embeddings | Ingesting a video, and **Content → Search** | `content-ingest`, `content-search` |
 | Gloo AI | Transcript analysis | Runs on its own after an ingest | `content-analyze` |
-| Lovable AI and Gloo AI | Questions about content | A video's chat | `content-ask`, `content-chat`: embeddings from Lovable AI, answers from Gloo |
-| Lovable AI | Story drafter | A story: **Draft from transcript** | `content-story-draft` |
+| Gloo AI | Questions about content | A video's chat | `content-ask`, `content-chat` |
+| Gloo AI | Story drafter | A story: **Draft from transcript** | `content-story-draft` |
+| Gloo AI | Morning care briefing | Dashboard briefing (daily at 12:00–14:00 UTC, or refresh) | `care-agent-run` |
+| Browser (no key) | Voice notes | The microphone in the AI chat (Chrome, Edge, Safari) | none: `useSpeechRecognition` |
 
 **Where to look when something fails:**
 - **Locally:** the `supabase functions serve` terminal.

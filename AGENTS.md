@@ -144,8 +144,9 @@ if (unauthorized) return unauthorized;
 
 | Provider | Used for | How to call it |
 |---|---|---|
-| **Gloo AI** | All chat and reasoning (Care Agent, Signal Agent, suggestions, Content answers) | Always through the helpers in `_shared/gloo.ts`, which wrap the `openai` SDK: `glooChat`, `glooChatStream` (raw SSE stream), `glooToolCalls` and `glooErrorStatus` (for 429 and 402). Never call Gloo's URL or create an `OpenAI` client elsewhere. The only credential is `GLOO_API_KEY`. |
-| **Lovable AI Gateway** | Embeddings and the story drafter | Key `LOVABLE_API_KEY`. Embeddings use `google/gemini-embedding-001` with 384 dimensions, matching the `vector(384)` column. Changing the model or the size means re-embedding all content, so ask first. |
+| **Gloo AI** | All AI: chat, reasoning and embeddings (Care Agent, morning briefing, Signal Agent, suggestions, Content search and answers, story drafter) | Always through the helpers in `_shared/gloo.ts`, which wrap the `openai` SDK: `glooChat`, `glooChatStream` (raw SSE stream), `glooToolCalls`, `glooErrorStatus` (for 429 and 402) and `glooEmbed`. Never call Gloo's URL or create an `OpenAI` client elsewhere. The only credential is `GLOO_API_KEY`. Don't add another AI provider, such as the Lovable AI Gateway. |
+| **Embeddings** | Content search | `glooEmbed` uses `GLOO_EMBEDDING_MODEL` at `EMBEDDING_DIMENSIONS` (384), matching the `vector(384)` columns. Changing the model or the size means re-embedding all content, so ask first. |
+| **Voice input** | Voice notes in the AI chat | The browser's speech recognition, through `src/hooks/useSpeechRecognition.tsx`. No server, no key. |
 | **Supadata** | YouTube transcripts | Key `SUPADATA_API_KEY`, sent in the `x-api-key` header. |
 
 **Logging.** Never log:
