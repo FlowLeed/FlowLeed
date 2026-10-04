@@ -84,7 +84,7 @@ export default function FormsListPage() {
   });
 
   const publicUrl = (slug: string) =>
-    orgSlug ? `${window.location.origin}/${orgSlug}/f/${slug}` : `${window.location.origin}/f/${slug}`;
+    buildPublicUrl(orgSlug ? `/${orgSlug}/f/${slug}` : `/f/${slug}`);
 
   const copyLink = (slug: string) => {
     const url = publicUrl(slug);

@@ -531,9 +531,7 @@ export default function FormBuilderPage() {
   const editingField = editingCid ? fields.find((f) => f._cid === editingCid) : null;
 
   const publicUrl = form
-    ? orgSlug
-      ? `${window.location.origin}/${orgSlug}/f/${form.slug}`
-      : `${window.location.origin}/f/${form.slug}`
+    ? buildPublicUrl(orgSlug ? `/${orgSlug}/f/${form.slug}` : `/f/${form.slug}`)
     : "";
 
   const copyLink = () => {
