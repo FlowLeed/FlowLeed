@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Plus, ExternalLink, Copy, ClipboardList, Inbox } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/layout/Header";
+import { publicUrl as buildPublicUrl } from "@/lib/publicUrl";
 
 function slugify(v: string) {
   return v.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
