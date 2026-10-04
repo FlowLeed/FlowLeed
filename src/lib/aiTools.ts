@@ -20,6 +20,7 @@ export const AI_TOOLS: AiToolDefinition[] = [
   { key: "create_prayer_request", label: "Create a prayer request", description: "Add a reviewed prayer request to a verified person's profile.", safety: "act", defaultEnabled: false, confirmation: "Always asks for confirmation" },
   { key: "create_task", label: "Create a task", description: "Add a reviewed task to your Tasks list or another leader's, optionally about one person.", safety: "act", defaultEnabled: true, confirmation: "Always asks for confirmation" },
   { key: "update_task", label: "Complete or reschedule a task", description: "Mark one of your open tasks done or move it to a new date.", safety: "act", defaultEnabled: true, confirmation: "Always asks for confirmation" },
+  { key: "create_form", label: "Create a form", description: "The Form Builder agent designs a sign-up or response form, optionally linked to a Flow, for you to approve.", safety: "act", defaultEnabled: true, confirmation: "Always asks for confirmation" },
 ];
 
 export const AI_TOOL_GROUPS: Array<{ safety: AiToolSafety; label: string; description: string }> = [

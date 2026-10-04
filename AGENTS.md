@@ -73,7 +73,7 @@ This also applies to secrets that look like test values.
 | `supabase/migrations_archive/**` | Historical record only. |
 | `supabase/seed.sql` | Local-only values, maintained by the developer. |
 | `supabase/config.toml` | You may only **add** a `[functions.<name>]` entry for a new function. |
-| `.github/**`, `wrangler.jsonc`, `public/_headers` | Deployment, maintained by the developer. |
+| `.github/**`, `public/_headers` | Deployment, maintained by the developer. |
 | `bun.lock` | Add packages the normal way and let `bun.lock` update itself. CI installs strictly from `bun.lock`. |
 
 Never run SQL against a hosted database, deploy Edge Functions, set secrets or publish the site. Don't offer to run SQL from the chat, and don't ask to connect Supabase.
@@ -195,6 +195,8 @@ Decisions recorded by Lovable while building features. Keep them when changing t
 
 - Care agent: `care-agent-run` edge function (cron, bounded batches, per-org lease in `care_agent_state`) writes per-leader rows to `care_recommendations`; the main AI conversation renders and acts on those rows directly under recipient-only RLS. Why: deterministic orchestration with AI used only for wording, without a separate briefing destination.
 - When demo data is cleared and an org has zero flows, a trigger on `organizations.demo_cleared_at` calls `create_default_pipelines`. Why: churches must never be left with an empty Flows list.
+- create_form tool hands off to Form Builder specialist (_shared/formAgent.ts): separate focused AI call designs the blueprint, main agent only routes. Why: specialists stay small and controllable.
+- Form Builder uses a persistent field palette on larger screens and a bottom field picker on phones. Why: the editing canvas must remain full-width and touch-friendly on small screens.
 
 ## More detail
 
