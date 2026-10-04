@@ -218,8 +218,11 @@ const TOOL_REGISTRY = [
         type: "object",
         properties: {
           request: { type: "string", description: "The user's full description of the form: purpose, questions, choices and anything else they said." },
-          flow_name: { type: "string", description: "Optional Flow that people who submit should be placed into." },
+          flow_name: { type: "string", description: "Existing Flow that people who submit should be placed into." },
           step_name: { type: "string", description: "Optional step within that Flow. Defaults to the Flow's first step." },
+          no_flow: { type: "boolean", description: "True only when the user explicitly said submissions should NOT go into any Flow." },
+          new_flow_name: { type: "string", description: "Name of a NEW Flow to create together with the form, only after the user agreed to create one." },
+          new_flow_steps: { type: "array", items: { type: "string" }, description: "Ordered step names for the new Flow (3-7), agreed with the user. First step receives submissions." },
         },
         required: ["request"],
       },
@@ -332,25 +335,45 @@ async function prepareForm(
   if (!requestText) return "What should the form be for, and which questions should it ask?";
   let pipeline: { id: string; name: string } | null = null;
   let stage: { id: string; name: string } | null = null;
+  let newFlow: { name: string; steps: string[] } | null = null;
   const flowName = String(args?.flow_name || "").trim();
-  if (flowName) {
+  const newFlowName = String(args?.new_flow_name || "").trim().slice(0, 80);
+  const listFlows = async () => {
+    const { data } = await adminClient.from("pipelines").select("name").eq("organization_id", orgId).order("name").limit(40);
+    return (data || []).map((f: any) => f.name);
+  };
+  if (newFlowName) {
+    const steps = (Array.isArray(args?.new_flow_steps) ? args.new_flow_steps : []).map((s: unknown) => String(s).trim().slice(0, 60)).filter(Boolean).slice(0, 10);
+    if (steps.length < 2) return `Before preparing, agree with the user on the steps for the new Flow "${newFlowName}". Suggest 3-5 simple steps (e.g. New, Contacted, Scheduled, Completed), ask them to confirm or edit, then call create_form again with new_flow_steps.`;
+    const { data: clash } = await adminClient.from("pipelines").select("id").eq("organization_id", orgId).ilike("name", newFlowName).maybeSingle();
+    if (clash) return `A Flow named "${newFlowName}" already exists. Use flow_name="${newFlowName}" instead of creating a new one.`;
+    newFlow = { name: newFlowName, steps };
+  } else if (flowName) {
     const { data: flows } = await adminClient.from("pipelines").select("id, name").eq("organization_id", orgId).ilike("name", `%${flowName}%`).limit(5);
     const exact = (flows || []).filter((f: any) => f.name.toLowerCase() === flowName.toLowerCase());
     const pick = exact.length === 1 ? exact : (flows || []);
-    if (pick.length !== 1) return pick.length ? `Several Flows match "${flowName}": ${pick.map((f: any) => f.name).join(", ")}. Ask the user which one.` : `I couldn't find a Flow called "${flowName}". Ask the user which Flow, or create the form without one.`;
+    if (pick.length > 1) return `Several Flows match "${flowName}": ${pick.map((f: any) => f.name).join(", ")}. Ask the user which one.`;
+    if (!pick.length) {
+      const names = await listFlows();
+      return `There is no Flow called "${flowName}". Existing Flows: ${names.join(", ") || "none"}. Ask the user to pick one of these, or offer to create a new "${flowName}" Flow with them: suggest 3-5 steps, let them confirm, then call create_form with new_flow_name and new_flow_steps.`;
+    }
     pipeline = pick[0] as any;
     const { data: stages } = await adminClient.from("pipeline_stages").select("id, name, stage_order").eq("pipeline_id", pipeline!.id).order("stage_order");
     const stepName = String(args?.step_name || "").trim().toLowerCase();
     stage = ((stepName && (stages || []).find((s: any) => s.name.toLowerCase() === stepName)) || (stages || [])[0] || null) as any;
+  } else if (args?.no_flow !== true) {
+    const names = await listFlows();
+    return `Do not prepare the form yet. First ask the user where submissions should go. Offer these existing Flows as a short list: ${names.join(", ") || "(none yet)"}. Also offer: create a new Flow for it (you'll suggest steps together), or don't add people to any Flow. Then call create_form again with flow_name, new_flow_name + new_flow_steps, or no_flow=true.`;
   }
   const blueprint = await designForm(requestText);
   if (!blueprint) return "The Form Builder couldn't design this form. Ask the user for the form's purpose and questions.";
   const fieldLines = blueprint.fields.map((f) => `- ${f.label} (${f.field_type}${f.required ? ", required" : ""}${f.options?.length ? `: ${f.options.join(", ")}` : ""})`);
-  const summary = [`Form: ${blueprint.name}`, pipeline ? `Adds people to: ${pipeline.name}${stage ? ` → ${stage.name}` : ""}` : null, blueprint.description, "Questions:", ...fieldLines].filter(Boolean).join("\n");
+  const dest = newFlow ? `Creates new Flow: ${newFlow.name} (${newFlow.steps.join(" → ")}); submissions go to ${newFlow.steps[0]}` : pipeline ? `Adds people to: ${pipeline.name}${stage ? ` → ${stage.name}` : ""}` : "Not linked to a Flow";
+  const summary = [`Form: ${blueprint.name}`, dest, blueprint.description, "Questions:", ...fieldLines].filter(Boolean).join("\n");
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "create_form", summary, expires_at: expiresAt,
-    action_payload: { blueprint, pipeline_id: pipeline?.id || null, stage_id: stage?.id || null },
+    action_payload: { blueprint, pipeline_id: pipeline?.id || null, stage_id: stage?.id || null, new_flow: newFlow },
   }).select("id").single();
   if (error || !request) throw error || new Error("Could not prepare form");
   await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "create_form", action_request_id: request.id, outcome: "prepared", affected_records: [] });
@@ -512,9 +535,25 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
   if (request.tool_key === "create_form") {
     const blueprint = validateBlueprint(payload?.blueprint);
     if (!blueprint) return { ok: false, message: "This form is no longer valid. Ask FlowLeed AI to prepare it again." };
-    if (payload.pipeline_id) {
-      const { data: p } = await adminClient.from("pipelines").select("id").eq("id", payload.pipeline_id).eq("organization_id", orgId).maybeSingle();
+    let pipelineId: string | null = payload.pipeline_id || null;
+    let stageId: string | null = payload.stage_id || null;
+    let createdFlow: { id: string; name: string } | null = null;
+    if (pipelineId) {
+      const { data: p } = await adminClient.from("pipelines").select("id").eq("id", pipelineId).eq("organization_id", orgId).maybeSingle();
       if (!p) return { ok: false, message: "That Flow is no longer available." };
+    } else if (payload.new_flow?.name && Array.isArray(payload.new_flow.steps) && payload.new_flow.steps.length >= 2) {
+      const flowName = String(payload.new_flow.name).slice(0, 80);
+      const steps: string[] = payload.new_flow.steps.map((s: unknown) => String(s).slice(0, 60)).slice(0, 10);
+      const { count: flowCount } = await adminClient.from("pipelines").select("id", { count: "exact", head: true }).eq("organization_id", orgId);
+      const newId = crypto.randomUUID();
+      const { error: pErr } = await userClient.from("pipelines").insert({ id: newId, name: flowName, icon: "Workflow", organization_id: orgId, flow_type: "linear", flow_order: flowCount || 0 });
+      if (pErr) return { ok: false, message: "I couldn't create the new Flow, so nothing was created." };
+      await userClient.from("pipeline_team_members").upsert({ pipeline_id: newId, user_id: userId, role: "lead" }, { onConflict: "pipeline_id,user_id" });
+      const colors = ["#3B82F6", "#8B5CF6", "#F59E0B", "#10B981", "#EF4444", "#06B6D4", "#EC4899", "#84CC16", "#6366F1", "#14B8A6"];
+      const stageRows = steps.map((name, i) => ({ id: crypto.randomUUID(), pipeline_id: newId, name, color: colors[i % colors.length], stage_order: i, is_start_step: i === 0, is_end_step: i === steps.length - 1 }));
+      const { error: sErr } = await userClient.from("pipeline_stages").insert(stageRows);
+      if (sErr) { await userClient.from("pipelines").delete().eq("id", newId); return { ok: false, message: "I couldn't set up the new Flow's steps, so nothing was created." }; }
+      pipelineId = newId; stageId = stageRows[0].id; createdFlow = { id: newId, name: flowName };
     }
     const base = blueprint.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "form";
     let slug = base;
@@ -525,7 +564,7 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     }
     const { data: form, error } = await userClient.from("forms").insert({
       organization_id: orgId, name: blueprint.name, slug, description: blueprint.description, success_message: blueprint.success_message,
-      pipeline_id: payload.pipeline_id || null, stage_id: payload.stage_id || null, is_published: false, created_by: userId,
+      pipeline_id: pipelineId, stage_id: stageId, is_published: false, created_by: userId,
     }).select("id, slug").single();
     const fail = async (msg: string) => {
       await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: msg } }).eq("id", request.id).eq("status", "pending");
@@ -540,7 +579,7 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { form_id: form.id } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
     if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
     await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "form", id: form.id }] });
-    return { ok: true, message: `Created the form "${blueprint.name}" with ${count} questions. It's a draft until you publish it. [Open in Form Builder](/forms/${form.id})` };
+    return { ok: true, message: `Created the form "${blueprint.name}" with ${count} questions${createdFlow ? ` and the new Flow [${createdFlow.name}](/flows/${createdFlow.id})` : ""}. It's a draft until you publish it. [Open in Form Builder](/forms/${form.id})` };
   }
   if (request.tool_key === "create_task") {
     const title = String(payload?.title || "").trim();
@@ -1706,7 +1745,7 @@ ${isEnabled("create_contact_note") ? '- **create_contact_note**: When the user a
 ${isEnabled("create_task") ? '- **create_task**: When the user asks to create a task, to-do, or reminder (optionally about one person, optionally with a due date), prepare it for confirmation. Resolve relative dates like "Friday" against today. If the user wants it assigned to another leader ("assign Pastor Marcus to call John"), pass that leader\'s name as assignee_name. Never say it was saved until execution confirms it.' : '- Creating tasks is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("update_task") ? '- **update_task**: When the user says a task is done ("mark Sandra\'s task done", "I called Rachel") or wants to move/reschedule one ("move Sandra\'s call to Friday"), call this with a keyword or person name to identify the task and either complete=true or a new due_date. If several tasks match, ask which one. Never say it was changed until execution confirms it.' : ''}
 - **list_my_tasks**: When the user asks what their tasks, to-dos or reminders are (e.g. "what are my tasks?", "what's on my plate?"), ALWAYS call this tool and list them (overdue first), keeping the person links exactly as returned. Never say you can't see their tasks. Format the answer as a markdown bullet list: one task per line, each line starting with "- ", person name link first, then the task and due date. Never write the tasks as a run-on paragraph. Put any closing question on its own line after the list.
-${isEnabled("create_form") ? '- **create_form**: When the user asks to make a form (sign-up, registration, RSVP, interest), call this once with their full description in request, plus flow_name if they want submissions placed into a Flow. Show the returned preview under a "### Form" heading. Never say the form was created until execution confirms it.' : '- Creating forms is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
+${isEnabled("create_form") ? '- **create_form**: When the user asks to make a form (sign-up, registration, RSVP, interest), call it with their full description in request. Every form needs a destination: if the user has not said where submissions go, call create_form without flow fields and follow its instructions to ask them (existing Flow, a new Flow, or no Flow). If they want a new Flow, guide them: suggest 3-5 simple steps, let them confirm or edit, then call create_form with new_flow_name and new_flow_steps — the Flow and form are created together on Approve. Show the returned preview under a "### Form" heading. Never say the form was created until execution confirms it.' : '- Creating forms is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_prayer_request") ? '- **create_prayer_request**: When the user asks to create or save a prayer request for one person, prepare the person, title, and exact request details for confirmation. Never say it was saved until execution confirms it.' : '- Creating prayer requests is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
