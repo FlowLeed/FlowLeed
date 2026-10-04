@@ -75,30 +75,42 @@ for (const [path, status] of files) {
   add("Migrations", `${status} ${name}${notes.length ? notes.map((n) => `\n      - ${n}`).join("") : ": no issues"}`);
 }
 
-// Edge Functions
+// Edge Functions and _shared files. A new file is checked whole. A changed file is checked only on Lovable's
+// added lines: Lovable's copies always have the old imports, and those resolve to ours in the merge.
+const EDGE_RULES: [RegExp, string][] = [
+  [/esm\.sh|deno\.land\//, "URL imports (esm.sh / deno.land): use bare specifiers + deno.json"],
+  [/from ['"](std\/http|https:\/\/deno\.land\/std[^'"]*\/http)|^\s*serve\(/m, "std/http serve: use Deno.serve"],
+  [/['"]xhr['"]|deno\.land\/x\/xhr/, "xhr polyfill"],
+  [/getGlooAccessToken|GLOO_CLIENT_|platform\.ai\.gloo\.com|\bAI_GATEWAY\b/, "old Gloo auth, direct Gloo URL or AI_GATEWAY (ours has none): use the _shared/gloo.ts helpers"],
+  [/ai\.gateway\.lovable\.dev|LOVABLE_API_KEY/, "Lovable AI Gateway: we have no Lovable key; move it to Gloo (_shared/gloo.ts: glooChat, glooEmbed)"],
+];
+const edgeText = (path: string) => files.get(path) === "A" ? show(HEAD, path) : addedLines(path).join("\n");
+const edgeNotes = (text: string) => EDGE_RULES.filter(([re]) => re.test(text)).map(([, note]) => note);
+const report = (label: string, notes: string[]) =>
+  `${label}${notes.length ? notes.map((n) => `\n      - ${n}`).join("") : ": no issues"}`;
+
 const ourConfig = show(OURS, "supabase/config.toml");
 const functionNames = [...new Set([...files.keys()]
-  .map((p) => p.match(/^supabase\/functions\/([^_/][^/]*)\//)?.[1]).filter((n): n is string => !!n))].sort();
+  .map((p) => p.match(/^supabase\/functions\/([^_/.][^/]*)\//)?.[1]).filter((n): n is string => !!n))].sort();
 for (const fn of functionNames) {
-  const index = show(HEAD, `supabase/functions/${fn}/index.ts`);
-  if (!index) continue;
+  if (!show(HEAD, `supabase/functions/${fn}/index.ts`)) continue;
   const status = files.get(`supabase/functions/${fn}/index.ts`) ?? "M";
-  const notes: string[] = [];
+  const changed = [...files].filter(([p, s]) => p.startsWith(`supabase/functions/${fn}/`) && s !== "D").map(([p]) => p);
+  const notes = edgeNotes(changed.map(edgeText).join("\n"));
   if (!show(HEAD, `supabase/functions/${fn}/deno.json`) && !show(OURS, `supabase/functions/${fn}/deno.json`)) notes.push("no deno.json");
-  if (/esm\.sh|deno\.land\//.test(index)) notes.push("URL imports (esm.sh / deno.land): use bare specifiers + deno.json");
-  if (/from ['"](std\/http|https:\/\/deno\.land\/std[^'"]*\/http)/.test(index) || /^serve\(/m.test(index)) notes.push("std/http serve: use Deno.serve");
-  if (/['"]xhr['"]|deno\.land\/x\/xhr/.test(index)) notes.push("xhr polyfill");
-  if (/getGlooAccessToken|GLOO_CLIENT_|platform\.ai\.gloo\.com/.test(index)) notes.push("old Gloo auth or direct Gloo URL: use the _shared/gloo.ts helpers");
-  if (/ai\.gateway\.lovable\.dev|LOVABLE_API_KEY/.test(index)) notes.push("Lovable AI Gateway: we have no Lovable key; move it to Gloo (_shared/gloo.ts: glooChat, glooEmbed)");
   if (status === "A" && !ourConfig.includes(`[functions.${fn}]`)) notes.push(`new function with no [functions.${fn}] entry in our config.toml (copy Lovable's verify_jwt)`);
-  add("Edge Functions", `${status} ${fn}${notes.length ? notes.map((n) => `\n      - ${n}`).join("") : ": no issues"}`);
+  add("Edge Functions", report(`${status} ${fn}`, notes));
+}
+for (const [path, status] of files) {
+  if (!path.startsWith("supabase/functions/_shared/") || status === "D" || isProtected(path)) continue;
+  add("Edge Functions", report(`${status} ${path.slice("supabase/functions/".length)}`, edgeNotes(edgeText(path))));
 }
 
 // Hard-coded values in added lines. Matched lines are shortened so a real key is never printed whole.
 const HARD_CODED: [string, RegExp][] = [
   ["JWT", /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/],
   ["Supabase project URL", PROJECT_URL],
-  ["Lovable app address", /[\w-]+\.lovable(project)?\.(app|com)/],
+  ["app address", /[\w-]+\.lovable(project)?\.(app|com)|\bapp\.flowleed\.com\b/],
   ["API key", /\b(sk|rk|pk)_(live|test)_[A-Za-z0-9]{16,}|\bsk-[A-Za-z0-9_-]{20,}|\bre_[A-Za-z0-9_]{20,}|\bAIza[0-9A-Za-z_-]{35}\b/],
   ["secret assignment", /(secret|password|api[_-]?key|token)\w*\s*[:=]\s*['"][^'"\s${}]{12,}['"]/i],
 ];
