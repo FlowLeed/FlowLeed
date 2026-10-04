@@ -116,7 +116,9 @@ export function useCareBriefing() {
 
   const run = useMutation({
     mutationFn: async (_opts?: { silent?: boolean }) => {
-      const { data, error } = await supabase.functions.invoke("care-agent-run", { body: { organizationId: organization?.id } });
+      const d = new Date();
+      const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const { data, error } = await supabase.functions.invoke("care-agent-run", { body: { organizationId: organization?.id, localDate } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data;
