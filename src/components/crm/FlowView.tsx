@@ -75,6 +75,11 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const queryClient = useQueryClient();
   const { refreshFlows } = useFlowContext();
 
+  const allContactIds = useMemo(() =>
+    flow.stages.flatMap(s => s.contacts.map(c => c.id)),
+    [flow]
+  );
+
   const { data: formSubmissionsByContact = {} } = useQuery({
     queryKey: ['flow-form-submissions', flow.id, allContactIds.join(',')],
     queryFn: async () => {
@@ -136,11 +141,6 @@ export const FlowView: React.FC<FlowViewProps> = ({
 
 
   // Fetch engagement scores for all contacts in this flow when engagement filter is active
-  const allContactIds = useMemo(() => 
-    flow.stages.flatMap(s => s.contacts.map(c => c.id)),
-    [flow]
-  );
-
   const { data: engagementScores } = useQuery({
     queryKey: ['flow-engagement-scores', flow.id, allContactIds.length],
     queryFn: async () => {

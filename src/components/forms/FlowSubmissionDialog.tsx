@@ -53,7 +53,7 @@ export function FlowSubmissionDialog({ contactName, submissions }: FlowSubmissio
     const extraKeys = Object.keys(selected.data).filter((key) => !fieldLabels.has(key));
     return [...orderedKeys, ...extraKeys].map((key) => ({
       key,
-      label: fieldLabels.get(key) || key.replaceAll("_", " "),
+      label: fieldLabels.get(key) || key.split("_").join(" "),
       value: showValue(selected.data[key]),
     }));
   }, [selected]);
