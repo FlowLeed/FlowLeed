@@ -16,13 +16,14 @@ export function FormTabs({ formId, active, count, onSettings }: FormTabsProps) {
     queryKey: ["form-submission-count", formId],
     enabled: typeof count !== "number",
     queryFn: async () => {
-      const { count: c, error } = await supabase
+      const { data, error } = await supabase
         .from("form_submissions")
-        .select("id", { count: "exact", head: true })
+        .select("id")
         .eq("form_id", formId)
-        .eq("is_preview", false);
+        .eq("is_preview", false)
+        .limit(1000);
       if (error) throw error;
-      return c ?? 0;
+      return data?.length ?? 0;
     },
   });
   const shown = typeof count === "number" ? count : liveCount;
