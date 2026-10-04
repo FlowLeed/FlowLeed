@@ -593,6 +593,7 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     const { data: form, error } = await userClient.from("forms").insert({
       organization_id: orgId, name: blueprint.name, slug, description: blueprint.description, success_message: blueprint.success_message,
       pipeline_id: pipelineId, stage_id: stageId, is_published: false, created_by: userId,
+      email_settings: payload.email_settings || {},
     }).select("id, slug").single();
     const fail = async (msg: string) => {
       await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: msg } }).eq("id", request.id).eq("status", "pending");
