@@ -223,6 +223,13 @@ const TOOL_REGISTRY = [
           no_flow: { type: "boolean", description: "True only when the user explicitly said submissions should NOT go into any Flow." },
           new_flow_name: { type: "string", description: "Name of a NEW Flow to create together with the form, only after the user agreed to create one." },
           new_flow_steps: { type: "array", items: { type: "string" }, description: "Ordered step names for the new Flow (3-7), agreed with the user. First step receives submissions." },
+          emails_decided: { type: "boolean", description: "True only after the user answered whether to send a thank-you email and/or a team alert email." },
+          confirmation_email: { type: "boolean", description: "Send a thank-you email to the person who submits." },
+          from_name: { type: "string", description: "Sender name shown on the thank-you email (e.g. church name)." },
+          reply_to: { type: "string", description: "Email address replies should go to." },
+          confirmation_subject: { type: "string", description: "Thank-you email subject. May use {first_name}, {form_name}." },
+          confirmation_body: { type: "string", description: "Thank-you email message. May use {first_name}, {name}, {form_name}." },
+          notify_emails: { type: "array", items: { type: "string" }, description: "Team email addresses that get an alert for each submission." },
         },
         required: ["request"],
       },
@@ -365,15 +372,36 @@ async function prepareForm(
     const names = await listFlows();
     return `Do not prepare the form yet. First ask the user where submissions should go. Offer these existing Flows as a short list: ${names.join(", ") || "(none yet)"}. Also offer: create a new Flow for it (you'll suggest steps together), or don't add people to any Flow. Then call create_form again with flow_name, new_flow_name + new_flow_steps, or no_flow=true.`;
   }
+  if (args?.emails_decided !== true) {
+    return `Do not prepare the form yet. Ask the user about emails in one short message: (1) Should the person who submits get a thank-you email? If yes, ask the sender name (e.g. the church name), the reply-to email, the subject, and a short message — offer a warm suggested subject and message they can accept. (2) Should someone on the team get an email alert for each submission? If yes, which email address(es)? Then call create_form again with emails_decided=true plus the answers (leave fields empty for "no").`;
+  }
+  const emailRe = /^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/;
+  const notifyList = (Array.isArray(args?.notify_emails) ? args.notify_emails : String(args?.notify_emails || "").split(/[,;\s]+/))
+    .map((s: unknown) => String(s).trim()).filter((s: string) => emailRe.test(s)).slice(0, 10);
+  const replyTo = String(args?.reply_to || "").trim();
+  const emailSettings = {
+    confirmation: {
+      enabled: args?.confirmation_email === true,
+      from_name: String(args?.from_name || "").slice(0, 80),
+      reply_to: emailRe.test(replyTo) ? replyTo : "",
+      subject: String(args?.confirmation_subject || "").slice(0, 200),
+      body: String(args?.confirmation_body || "").slice(0, 3000),
+    },
+    notify: { enabled: notifyList.length > 0, recipients: notifyList.join(", "), subject: "" },
+  };
   const blueprint = await designForm(requestText);
   if (!blueprint) return "The Form Builder couldn't design this form. Ask the user for the form's purpose and questions.";
   const fieldLines = blueprint.fields.map((f) => `- ${f.label} (${f.field_type}${f.required ? ", required" : ""}${f.options?.length ? `: ${f.options.join(", ")}` : ""})`);
   const dest = newFlow ? `Creates new Flow: ${newFlow.name} (${newFlow.steps.join(" → ")}); submissions go to ${newFlow.steps[0]}` : pipeline ? `Adds people to: ${pipeline.name}${stage ? ` → ${stage.name}` : ""}` : "Not linked to a Flow";
-  const summary = [`Form: ${blueprint.name}`, dest, blueprint.description, "Questions:", ...fieldLines].filter(Boolean).join("\n");
+  const emailLines = [
+    emailSettings.confirmation.enabled ? `Thank-you email: from ${emailSettings.confirmation.from_name || "FlowLeed"}${emailSettings.confirmation.subject ? `, subject "${emailSettings.confirmation.subject}"` : ""}` : "Thank-you email: off",
+    notifyList.length ? `Team alert email: ${notifyList.join(", ")}` : "Team alert email: off",
+  ];
+  const summary = [`Form: ${blueprint.name}`, dest, blueprint.description, ...emailLines, "Questions:", ...fieldLines].filter(Boolean).join("\n");
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "create_form", summary, expires_at: expiresAt,
-    action_payload: { blueprint, pipeline_id: pipeline?.id || null, stage_id: stage?.id || null, new_flow: newFlow },
+    action_payload: { blueprint, pipeline_id: pipeline?.id || null, stage_id: stage?.id || null, new_flow: newFlow, email_settings: emailSettings },
   }).select("id").single();
   if (error || !request) throw error || new Error("Could not prepare form");
   await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "create_form", action_request_id: request.id, outcome: "prepared", affected_records: [] });
