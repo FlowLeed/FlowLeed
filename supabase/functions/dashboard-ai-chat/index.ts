@@ -535,9 +535,25 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
   if (request.tool_key === "create_form") {
     const blueprint = validateBlueprint(payload?.blueprint);
     if (!blueprint) return { ok: false, message: "This form is no longer valid. Ask FlowLeed AI to prepare it again." };
-    if (payload.pipeline_id) {
-      const { data: p } = await adminClient.from("pipelines").select("id").eq("id", payload.pipeline_id).eq("organization_id", orgId).maybeSingle();
+    let pipelineId: string | null = payload.pipeline_id || null;
+    let stageId: string | null = payload.stage_id || null;
+    let createdFlow: { id: string; name: string } | null = null;
+    if (pipelineId) {
+      const { data: p } = await adminClient.from("pipelines").select("id").eq("id", pipelineId).eq("organization_id", orgId).maybeSingle();
       if (!p) return { ok: false, message: "That Flow is no longer available." };
+    } else if (payload.new_flow?.name && Array.isArray(payload.new_flow.steps) && payload.new_flow.steps.length >= 2) {
+      const flowName = String(payload.new_flow.name).slice(0, 80);
+      const steps: string[] = payload.new_flow.steps.map((s: unknown) => String(s).slice(0, 60)).slice(0, 10);
+      const { count: flowCount } = await adminClient.from("pipelines").select("id", { count: "exact", head: true }).eq("organization_id", orgId);
+      const newId = crypto.randomUUID();
+      const { error: pErr } = await userClient.from("pipelines").insert({ id: newId, name: flowName, icon: "Workflow", organization_id: orgId, flow_type: "linear", flow_order: flowCount || 0 });
+      if (pErr) return { ok: false, message: "I couldn't create the new Flow, so nothing was created." };
+      await userClient.from("pipeline_team_members").upsert({ pipeline_id: newId, user_id: userId, role: "lead" }, { onConflict: "pipeline_id,user_id" });
+      const colors = ["#3B82F6", "#8B5CF6", "#F59E0B", "#10B981", "#EF4444", "#06B6D4", "#EC4899", "#84CC16", "#6366F1", "#14B8A6"];
+      const stageRows = steps.map((name, i) => ({ id: crypto.randomUUID(), pipeline_id: newId, name, color: colors[i % colors.length], stage_order: i, is_start_step: i === 0, is_end_step: i === steps.length - 1 }));
+      const { error: sErr } = await userClient.from("pipeline_stages").insert(stageRows);
+      if (sErr) { await userClient.from("pipelines").delete().eq("id", newId); return { ok: false, message: "I couldn't set up the new Flow's steps, so nothing was created." }; }
+      pipelineId = newId; stageId = stageRows[0].id; createdFlow = { id: newId, name: flowName };
     }
     const base = blueprint.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "form";
     let slug = base;
@@ -548,7 +564,7 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     }
     const { data: form, error } = await userClient.from("forms").insert({
       organization_id: orgId, name: blueprint.name, slug, description: blueprint.description, success_message: blueprint.success_message,
-      pipeline_id: payload.pipeline_id || null, stage_id: payload.stage_id || null, is_published: false, created_by: userId,
+      pipeline_id: pipelineId, stage_id: stageId, is_published: false, created_by: userId,
     }).select("id, slug").single();
     const fail = async (msg: string) => {
       await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: msg } }).eq("id", request.id).eq("status", "pending");
@@ -563,7 +579,7 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { form_id: form.id } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
     if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
     await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "form", id: form.id }] });
-    return { ok: true, message: `Created the form "${blueprint.name}" with ${count} questions. It's a draft until you publish it. [Open in Form Builder](/forms/${form.id})` };
+    return { ok: true, message: `Created the form "${blueprint.name}" with ${count} questions${createdFlow ? ` and the new Flow [${createdFlow.name}](/flow/${createdFlow.id})` : ""}. It's a draft until you publish it. [Open in Form Builder](/forms/${form.id})` };
   }
   if (request.tool_key === "create_task") {
     const title = String(payload?.title || "").trim();
