@@ -31,7 +31,13 @@ Deno.serve(async (req) => {
       if (!userId || !orgId) return json({ error: "Please sign in again." }, 401);
       const { data: mem } = await admin.from("organization_members").select("role").eq("organization_id", orgId).eq("user_id", userId).maybeSingle();
       if (!mem) return json({ error: "Forbidden" }, 403);
-      const r = await runOrg(admin, orgId, userId);
+      // Use the leader's own calendar day (UTC rolls over early for the Americas).
+      let localDate: string | null = null;
+      if (typeof body.localDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.localDate)) {
+        const diff = Math.abs(Date.parse(body.localDate + "T12:00:00Z") - Date.now());
+        if (diff < 40 * 3600000) localDate = body.localDate;
+      }
+      const r = await runOrg(admin, orgId, userId, localDate);
       return json(r, r.error ? 503 : 200);
     }
 
@@ -53,9 +59,9 @@ Deno.serve(async (req) => {
   }
 });
 
-async function runOrg(admin: any, orgId: string, onlyUser: string | null): Promise<any> {
+async function runOrg(admin: any, orgId: string, onlyUser: string | null, localDate: string | null = null): Promise<any> {
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
+  const today = localDate ?? now.toISOString().slice(0, 10);
   // Single-flight lease
   const { data: st } = await admin.from("care_agent_state").select("*").eq("organization_id", orgId).maybeSingle();
   if (st?.locked_until && new Date(st.locked_until) > now) return { skipped: "already running" };
