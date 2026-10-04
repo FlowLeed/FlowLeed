@@ -40,6 +40,9 @@
 ## Engagement scoring
 - [x] Add separately weighted recent group attendance without double-counting service attendance
 
+## Forms in Flows
+- [x] Show routed form submissions from both Flow cards and table rows in a centered dialog
+
 ## Public Story Library
 - [x] Rebuild the homepage as a mixed-media editorial mosaic
 - [x] Preserve public search, filters, playback, and story links
