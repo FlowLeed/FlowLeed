@@ -689,6 +689,112 @@ export default function FormBuilderPage() {
         )}
       </div>
 
+      {settingsOpen ? (
+        <div className="flex-1 min-h-0 overflow-y-auto bg-muted/10 p-3 pb-[max(env(safe-area-inset-bottom),1rem)] sm:p-6">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <h2 className="text-sm font-semibold">General</h2>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">Published</div>
+                  <div className="text-xs text-muted-foreground">When on, anyone with the link can fill it out</div>
+                </div>
+                <Switch checked={isPublished} onCheckedChange={setIsPublished} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Message after submitting</Label>
+                <Input value={successMessage} onChange={(e) => setSuccessMessage(e.target.value)} placeholder="Thanks! We'll be in touch." />
+              </div>
+            </section>
+
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold">Flow</h2>
+                <p className="text-xs text-muted-foreground">New submissions are added to this Flow and step.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Flow</Label>
+                  <Select value={pipelineId ?? "none"} onValueChange={(v) => { setPipelineId(v === "none" ? null : v); setStageId(null); }}>
+                    <SelectTrigger><SelectValue placeholder="Select flow" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {(pipelines || []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Step</Label>
+                  <Select value={stageId ?? ""} onValueChange={(v) => setStageId(v || null)} disabled={!pipelineId}>
+                    <SelectTrigger><SelectValue placeholder="Select step" /></SelectTrigger>
+                    <SelectContent>
+                      {(stages || []).map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold">Thank-you email</h2>
+                  <p className="text-xs text-muted-foreground">Sent to the person who filled out the form (needs an Email field).</p>
+                </div>
+                <Switch checked={!!emailSettings.confirmation?.enabled} onCheckedChange={(v) => setConfirm({ enabled: v })} />
+              </div>
+              {emailSettings.confirmation?.enabled && (
+                <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>From name</Label>
+                      <Input value={emailSettings.confirmation?.from_name ?? ""} onChange={(e) => setConfirm({ from_name: e.target.value })} placeholder="The Promise Center" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Replies go to</Label>
+                      <Input type="email" value={emailSettings.confirmation?.reply_to ?? ""} onChange={(e) => setConfirm({ reply_to: e.target.value })} placeholder="pastor@yourchurch.org" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Subject</Label>
+                    <Input value={emailSettings.confirmation?.subject ?? ""} onChange={(e) => setConfirm({ subject: e.target.value })} placeholder={`Thanks for signing up, {first_name}!`} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Message</Label>
+                    <Textarea rows={5} value={emailSettings.confirmation?.body ?? ""} onChange={(e) => setConfirm({ body: e.target.value })} placeholder={`Hi {first_name},\n\nThanks for filling out ${name || "our form"}. We'll be in touch soon.`} />
+                    <div className="text-xs text-muted-foreground">Use {"{first_name}"}, {"{name}"} or {"{form_name}"} to personalize. A copy of their answers is included.</div>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold">Team alert email</h2>
+                  <p className="text-xs text-muted-foreground">Let someone on your team know each time a form comes in.</p>
+                </div>
+                <Switch checked={!!emailSettings.notify?.enabled} onCheckedChange={(v) => setNotify({ enabled: v })} />
+              </div>
+              {emailSettings.notify?.enabled && (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label>Send to</Label>
+                    <Input value={emailSettings.notify?.recipients ?? ""} onChange={(e) => setNotify({ recipients: e.target.value })} placeholder="pastor@yourchurch.org, office@yourchurch.org" />
+                    <div className="text-xs text-muted-foreground">Separate several emails with commas.</div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Subject</Label>
+                    <Input value={emailSettings.notify?.subject ?? ""} onChange={(e) => setNotify({ subject: e.target.value })} placeholder={`New submission: {form_name} from {name}`} />
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <Button onClick={() => save.mutate()} disabled={save.isPending}>Save settings</Button>
+          </div>
+        </div>
+      ) : (
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -870,80 +976,6 @@ export default function FormBuilderPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Form settings sheet */}
-      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent className="w-full max-w-full overflow-y-auto sm:w-[420px] sm:max-w-[420px]">
-          <SheetHeader>
-            <SheetTitle>Form settings</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <div className="text-sm font-medium">Published</div>
-                <div className="text-xs text-muted-foreground">
-                  When on, the form is publicly accessible
-                </div>
-              </div>
-              <Switch checked={isPublished} onCheckedChange={setIsPublished} />
-            </div>
-            <div>
-              <Label>Success message</Label>
-              <Input
-                value={successMessage}
-                onChange={(e) => setSuccessMessage(e.target.value)}
-                placeholder="Thanks! We'll be in touch."
-              />
-            </div>
-            <div className="pt-2 border-t">
-              <div className="text-sm font-medium">Automations</div>
-              <div className="text-xs text-muted-foreground mb-2">New submissions are added to this Flow and step.</div>
-              <div className="space-y-3">
-                <div>
-                  <Label>Flow</Label>
-                  <Select
-                    value={pipelineId ?? "none"}
-                    onValueChange={(v) => {
-                      setPipelineId(v === "none" ? null : v);
-                      setStageId(null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select flow" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {(pipelines || []).map((p: any) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Stage</Label>
-                  <Select
-                    value={stageId ?? ""}
-                    onValueChange={(v) => setStageId(v || null)}
-                    disabled={!pipelineId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select stage" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(stages || []).map((s: any) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
