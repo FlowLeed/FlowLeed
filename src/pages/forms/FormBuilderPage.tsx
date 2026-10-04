@@ -680,11 +680,11 @@ export default function FormBuilderPage() {
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          {id && <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} count={form?.submission_count ?? null} onSettings={() => setSettingsOpen(true)} />}
+          {id && <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} onSettings={() => setSettingsOpen(true)} />}
         </div>
         {id && (
           <div className="sm:hidden mt-1">
-            <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} count={form?.submission_count ?? null} onSettings={() => setSettingsOpen(true)} />
+            <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} onSettings={() => setSettingsOpen(true)} />
           </div>
         )}
       </div>

@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FormTabsProps {
   formId: string;
@@ -10,6 +12,20 @@ interface FormTabsProps {
 
 /** Shared Form / Submissions / Settings tab bar for a single form. */
 export function FormTabs({ formId, active, count, onSettings }: FormTabsProps) {
+  const { data: liveCount } = useQuery({
+    queryKey: ["form-submission-count", formId],
+    enabled: typeof count !== "number",
+    queryFn: async () => {
+      const { count: c, error } = await supabase
+        .from("form_submissions")
+        .select("id", { count: "exact", head: true })
+        .eq("form_id", formId)
+        .eq("is_preview", false);
+      if (error) throw error;
+      return c ?? 0;
+    },
+  });
+  const shown = typeof count === "number" ? count : liveCount;
   const base = "px-3 py-2 text-sm border-b-2 -mb-px transition-colors whitespace-nowrap";
   const cls = (k: string) =>
     cn(base, active === k ? "border-primary text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground");
@@ -17,7 +33,7 @@ export function FormTabs({ formId, active, count, onSettings }: FormTabsProps) {
     <nav className="flex items-center gap-1 overflow-x-auto">
       <Link to={`/forms/${formId}`} className={cls("form")}>Form</Link>
       <Link to={`/forms/${formId}/submissions`} className={cls("submissions")}>
-        Submissions{typeof count === "number" ? ` (${count})` : ""}
+        Submissions{typeof shown === "number" ? ` (${shown})` : ""}
       </Link>
       {onSettings ? (
         <button type="button" onClick={onSettings} className={cls("settings")}>Settings</button>
