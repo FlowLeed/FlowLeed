@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { type GlooChatCompletion, glooChat, glooChatStream, glooErrorStatus, glooToolCalls } from "../_shared/gloo.ts";
+import { designForm, validateBlueprint } from "../_shared/formAgent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -208,6 +209,25 @@ const TOOL_REGISTRY = [
   {
     type: "function" as const,
     function: {
+      name: "create_form",
+      description: "Hand off to the Form Builder specialist to design a new church form (sign-up, registration, interest, RSVP). Never saves immediately; it prepares a preview for approval.",
+      parameters: {
+        type: "object",
+        properties: {
+          request: { type: "string", description: "The user's full description of the form: purpose, questions, choices and anything else they said." },
+          flow_name: { type: "string", description: "Existing Flow that people who submit should be placed into." },
+          step_name: { type: "string", description: "Optional step within that Flow. Defaults to the Flow's first step." },
+          no_flow: { type: "boolean", description: "True only when the user explicitly said submissions should NOT go into any Flow." },
+          new_flow_name: { type: "string", description: "Name of a NEW Flow to create together with the form, only after the user agreed to create one." },
+          new_flow_steps: { type: "array", items: { type: "string" }, description: "Ordered step names for the new Flow (3-7), agreed with the user. First step receives submissions." },
+        },
+        required: ["request"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "list_my_tasks",
       description: "List the current user's tasks / to-dos (assigned to them). Use when the user asks what their tasks, to-dos or reminders are.",
       parameters: {
@@ -230,6 +250,7 @@ const TOOL_DEFAULTS: Record<string, boolean> = {
   create_task: true,
   update_task: true,
   list_my_tasks: true,
+  create_form: true,
 };
 
 async function executeListMyTasks(
@@ -302,6 +323,58 @@ async function prepareTask(
   if (error || !request) throw error || new Error("Could not prepare task");
   await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "create_task", action_request_id: request.id, outcome: "prepared", affected_records: contact ? [{ type: "contact", id: contact.id }] : [] });
   return `Ready for review. Nothing has been saved yet.\n\n${actionMarker({ id: request.id, type: "create_task", summary, expires_at: expiresAt })}`;
+}
+
+async function prepareForm(
+  adminClient: ReturnType<typeof createClient>, orgId: string, userId: string, args: any,
+): Promise<string> {
+  const requestText = String(args?.request || "").trim();
+  if (!requestText) return "What should the form be for, and which questions should it ask?";
+  let pipeline: { id: string; name: string } | null = null;
+  let stage: { id: string; name: string } | null = null;
+  let newFlow: { name: string; steps: string[] } | null = null;
+  const flowName = String(args?.flow_name || "").trim();
+  const newFlowName = String(args?.new_flow_name || "").trim().slice(0, 80);
+  const listFlows = async () => {
+    const { data } = await adminClient.from("pipelines").select("name").eq("organization_id", orgId).order("name").limit(40);
+    return (data || []).map((f: any) => f.name);
+  };
+  if (newFlowName) {
+    const steps = (Array.isArray(args?.new_flow_steps) ? args.new_flow_steps : []).map((s: unknown) => String(s).trim().slice(0, 60)).filter(Boolean).slice(0, 10);
+    if (steps.length < 2) return `Before preparing, agree with the user on the steps for the new Flow "${newFlowName}". Suggest 3-5 simple steps (e.g. New, Contacted, Scheduled, Completed), ask them to confirm or edit, then call create_form again with new_flow_steps.`;
+    const { data: clash } = await adminClient.from("pipelines").select("id").eq("organization_id", orgId).ilike("name", newFlowName).maybeSingle();
+    if (clash) return `A Flow named "${newFlowName}" already exists. Use flow_name="${newFlowName}" instead of creating a new one.`;
+    newFlow = { name: newFlowName, steps };
+  } else if (flowName) {
+    const { data: flows } = await adminClient.from("pipelines").select("id, name").eq("organization_id", orgId).ilike("name", `%${flowName}%`).limit(5);
+    const exact = (flows || []).filter((f: any) => f.name.toLowerCase() === flowName.toLowerCase());
+    const pick = exact.length === 1 ? exact : (flows || []);
+    if (pick.length > 1) return `Several Flows match "${flowName}": ${pick.map((f: any) => f.name).join(", ")}. Ask the user which one.`;
+    if (!pick.length) {
+      const names = await listFlows();
+      return `There is no Flow called "${flowName}". Existing Flows: ${names.join(", ") || "none"}. Ask the user to pick one of these, or offer to create a new "${flowName}" Flow with them: suggest 3-5 steps, let them confirm, then call create_form with new_flow_name and new_flow_steps.`;
+    }
+    pipeline = pick[0] as any;
+    const { data: stages } = await adminClient.from("pipeline_stages").select("id, name, stage_order").eq("pipeline_id", pipeline!.id).order("stage_order");
+    const stepName = String(args?.step_name || "").trim().toLowerCase();
+    stage = ((stepName && (stages || []).find((s: any) => s.name.toLowerCase() === stepName)) || (stages || [])[0] || null) as any;
+  } else if (args?.no_flow !== true) {
+    const names = await listFlows();
+    return `Do not prepare the form yet. First ask the user where submissions should go. Offer these existing Flows as a short list: ${names.join(", ") || "(none yet)"}. Also offer: create a new Flow for it (you'll suggest steps together), or don't add people to any Flow. Then call create_form again with flow_name, new_flow_name + new_flow_steps, or no_flow=true.`;
+  }
+  const blueprint = await designForm(requestText);
+  if (!blueprint) return "The Form Builder couldn't design this form. Ask the user for the form's purpose and questions.";
+  const fieldLines = blueprint.fields.map((f) => `- ${f.label} (${f.field_type}${f.required ? ", required" : ""}${f.options?.length ? `: ${f.options.join(", ")}` : ""})`);
+  const dest = newFlow ? `Creates new Flow: ${newFlow.name} (${newFlow.steps.join(" → ")}); submissions go to ${newFlow.steps[0]}` : pipeline ? `Adds people to: ${pipeline.name}${stage ? ` → ${stage.name}` : ""}` : "Not linked to a Flow";
+  const summary = [`Form: ${blueprint.name}`, dest, blueprint.description, "Questions:", ...fieldLines].filter(Boolean).join("\n");
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const { data: request, error } = await adminClient.from("ai_action_requests").insert({
+    organization_id: orgId, requested_by_user_id: userId, tool_key: "create_form", summary, expires_at: expiresAt,
+    action_payload: { blueprint, pipeline_id: pipeline?.id || null, stage_id: stage?.id || null, new_flow: newFlow },
+  }).select("id").single();
+  if (error || !request) throw error || new Error("Could not prepare form");
+  await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "create_form", action_request_id: request.id, outcome: "prepared", affected_records: [] });
+  return `Ready for review. Nothing has been created yet. Show the user this preview under a "### Form" heading:\n${summary}\n\n${actionMarker({ id: request.id, type: "create_form", summary, expires_at: expiresAt })}`;
 }
 
 async function prepareUpdateTask(
@@ -455,6 +528,58 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
     await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "task", id: existing.id }] });
     return { ok: true, message: payload.complete ? `Marked "${existing.title}" as done. [Tasks](/tasks)` : `Moved "${existing.title}" to ${String(payload.due_at).slice(0, 10)}. [Tasks](/tasks)` };
+  }
+  if (request.tool_key === "create_form") {
+    const blueprint = validateBlueprint(payload?.blueprint);
+    if (!blueprint) return { ok: false, message: "This form is no longer valid. Ask FlowLeed AI to prepare it again." };
+    let pipelineId: string | null = payload.pipeline_id || null;
+    let stageId: string | null = payload.stage_id || null;
+    let createdFlow: { id: string; name: string } | null = null;
+    if (pipelineId) {
+      const { data: p } = await adminClient.from("pipelines").select("id").eq("id", pipelineId).eq("organization_id", orgId).maybeSingle();
+      if (!p) return { ok: false, message: "That Flow is no longer available." };
+    } else if (payload.new_flow?.name && Array.isArray(payload.new_flow.steps) && payload.new_flow.steps.length >= 2) {
+      const flowName = String(payload.new_flow.name).slice(0, 80);
+      const steps: string[] = payload.new_flow.steps.map((s: unknown) => String(s).slice(0, 60)).slice(0, 10);
+      const { count: flowCount } = await adminClient.from("pipelines").select("id", { count: "exact", head: true }).eq("organization_id", orgId);
+      const newId = crypto.randomUUID();
+      const { error: pErr } = await userClient.from("pipelines").insert({ id: newId, name: flowName, icon: "Workflow", organization_id: orgId, flow_type: "linear", flow_order: flowCount || 0 });
+      if (pErr) return { ok: false, message: "I couldn't create the new Flow, so nothing was created." };
+      await userClient.from("pipeline_team_members").upsert({ pipeline_id: newId, user_id: userId, role: "lead" }, { onConflict: "pipeline_id,user_id" });
+      const colors = ["#3B82F6", "#8B5CF6", "#F59E0B", "#10B981", "#EF4444", "#06B6D4", "#EC4899", "#84CC16", "#6366F1", "#14B8A6"];
+      const stageRows = steps.map((name, i) => ({ id: crypto.randomUUID(), pipeline_id: newId, name, color: colors[i % colors.length], stage_order: i, is_start_step: i === 0, is_end_step: i === steps.length - 1 }));
+      const { error: sErr } = await userClient.from("pipeline_stages").insert(stageRows);
+      if (sErr) { await userClient.from("pipelines").delete().eq("id", newId); return { ok: false, message: "I couldn't set up the new Flow's steps, so nothing was created." }; }
+      pipelineId = newId; stageId = stageRows[0].id; createdFlow = { id: newId, name: flowName };
+    }
+    const base = blueprint.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) || "form";
+    let slug = base;
+    for (let n = 2; n < 50; n++) {
+      const { data: clash } = await adminClient.from("forms").select("id").eq("organization_id", orgId).eq("slug", slug).maybeSingle();
+      if (!clash) break;
+      slug = `${base}-${n}`;
+    }
+    const { data: form, error } = await userClient.from("forms").insert({
+      organization_id: orgId, name: blueprint.name, slug, description: blueprint.description, success_message: blueprint.success_message,
+      pipeline_id: pipelineId, stage_id: stageId, is_published: false, created_by: userId,
+    }).select("id, slug").single();
+    const fail = async (msg: string) => {
+      await adminClient.from("ai_action_requests").update({ status: "failed", completed_at: new Date().toISOString(), result_payload: { error: msg } }).eq("id", request.id).eq("status", "pending");
+      await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "failed", affected_records: [], error_message: msg });
+    };
+    if (error || !form) { await fail(error?.message || "Form insert failed"); return { ok: false, message: "I couldn't create this form." }; }
+    const { error: fErr } = await userClient.from("form_fields").insert(blueprint.fields.map((f, idx) => ({ ...f, form_id: form.id, sort_order: idx })));
+    if (fErr) { await userClient.from("forms").delete().eq("id", form.id); await fail(fErr.message); return { ok: false, message: "I couldn't add the form's questions, so nothing was created." }; }
+    const { count } = await userClient.from("form_fields").select("id", { count: "exact", head: true }).eq("form_id", form.id);
+    if (!count) return { ok: false, message: "The form could not be verified, so I won't report it as created." };
+    const now = new Date().toISOString();
+    const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { form_id: form.id } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
+    if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
+    await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "form", id: form.id }] });
+    const { data: orgRow } = await adminClient.from("organizations").select("slug").eq("id", orgId).maybeSingle();
+    const formPath = orgRow?.slug ? `/${orgRow.slug}/f/${form.slug}` : null;
+    const formMarker = formPath ? `\n\n<!--flowleed:form=${JSON.stringify({ id: form.id, path: formPath })}-->` : "";
+    return { ok: true, message: `Created the form "${blueprint.name}" with ${count} questions${createdFlow ? ` and the new Flow [${createdFlow.name}](/flows/${createdFlow.id})` : ""}. It's a draft until you publish it. Preview it, then publish it when you're ready. [Open in Form Builder](/forms/${form.id})${formMarker}` };
   }
   if (request.tool_key === "create_task") {
     const title = String(payload?.title || "").trim();
@@ -1475,7 +1600,7 @@ Deno.serve(async (req) => {
         if (!marker) continue;
         try {
           const pending = JSON.parse(marker[1]);
-          if (["add_people_to_flow", "create_contact_note", "create_prayer_request", "create_task", "update_task"].includes(pending?.type) && typeof pending.id === "string") {
+          if (["add_people_to_flow", "create_contact_note", "create_prayer_request", "create_task", "update_task", "create_form"].includes(pending?.type) && typeof pending.id === "string") {
             const result = await executePendingAction(adminClient, userClient, orgId, userId, pending.id);
             const encoder = new TextEncoder();
             const response = new ReadableStream({ start(controller) { controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: result.message } }] })}\n\ndata: [DONE]\n\n`)); controller.close(); } });
@@ -1620,6 +1745,7 @@ ${isEnabled("create_contact_note") ? '- **create_contact_note**: When the user a
 ${isEnabled("create_task") ? '- **create_task**: When the user asks to create a task, to-do, or reminder (optionally about one person, optionally with a due date), prepare it for confirmation. Resolve relative dates like "Friday" against today. If the user wants it assigned to another leader ("assign Pastor Marcus to call John"), pass that leader\'s name as assignee_name. Never say it was saved until execution confirms it.' : '- Creating tasks is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("update_task") ? '- **update_task**: When the user says a task is done ("mark Sandra\'s task done", "I called Rachel") or wants to move/reschedule one ("move Sandra\'s call to Friday"), call this with a keyword or person name to identify the task and either complete=true or a new due_date. If several tasks match, ask which one. Never say it was changed until execution confirms it.' : ''}
 - **list_my_tasks**: When the user asks what their tasks, to-dos or reminders are (e.g. "what are my tasks?", "what's on my plate?"), ALWAYS call this tool and list them (overdue first), keeping the person links exactly as returned. Never say you can't see their tasks. Format the answer as a markdown bullet list: one task per line, each line starting with "- ", person name link first, then the task and due date. Never write the tasks as a run-on paragraph. Put any closing question on its own line after the list.
+${isEnabled("create_form") ? '- **create_form**: When the user asks to make a form (sign-up, registration, RSVP, interest), call it with their full description in request. Every form needs a destination: if the user has not said where submissions go, call create_form without flow fields and follow its instructions to ask them (existing Flow, a new Flow, or no Flow). If they want a new Flow, guide them: suggest 3-5 simple steps, let them confirm or edit, then call create_form with new_flow_name and new_flow_steps — the Flow and form are created together on Approve. Show the returned preview under a "### Form" heading. Never say the form was created until execution confirms it.' : '- Creating forms is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_prayer_request") ? '- **create_prayer_request**: When the user asks to create or save a prayer request for one person, prepare the person, title, and exact request details for confirmation. Never say it was saved until execution confirms it.' : '- Creating prayer requests is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
@@ -1702,7 +1828,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           .replace(/<!--flowleed:[\s\S]*?-->/g, "") }
       : m);
     const aiMessages = [
-      { role: "system", content: systemPrompt + "\n\nAction rule: only say something is prepared or ready to confirm when you called the matching tool in THIS turn. Earlier prepared items may have expired; if the user asks again, call the tool again. Never write hidden <!-- --> markers yourself. Never quote or list internal notes about earlier prepared items in your reply." +
+      { role: "system", content: systemPrompt + "\n\nAction rule: only say something is prepared or ready to confirm when you called the matching tool in THIS turn. Earlier prepared items may have expired; if the user asks again, call the tool again. Never write hidden <!-- --> markers yourself. Never quote or list internal notes about earlier prepared items in your reply.\n\nHARD RULE — never claim completion: NEVER say or imply that anything was created, saved, added, sent, scheduled, updated, or done (e.g. \"I've set up a task\", \"Done\", \"Added\", \"Saved\") unless a structured tool result in THIS conversation explicitly confirms the write succeeded. Preparing an action is NOT completing it. When you prepare an action, say only that it is ready for the user to review and confirm — e.g. \"I've prepared this for you — please confirm below to save it.\" If you did not call a tool, say you have not done it yet and offer to prepare it." +
         (earlierPrepared.length ? `\n\nINTERNAL (do not repeat to the user): earlier in this chat you prepared: ${earlierPrepared.slice(-6).join("; ")}.` : "") },
       ...historyMessages,
     ];
@@ -1710,6 +1836,24 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     // Tool call loop: make non-streaming calls until we get a final response, then stream it
     const MAX_TOOL_ROUNDS = 5;
     let toolRound = 0;
+    // Plain-language activity log shown behind the (i) button on each answer.
+    const turnStart = Date.now();
+    const trace: { label: string; detail?: string; ms: number; status: "ok" | "error" }[] = [];
+    const traceLabel = (fn: string, a: any): string => {
+      switch (fn) {
+        case "search_person": return a?.query ? `Looked up ${a.query}` : "Looked up a person";
+        case "search_people_in_flow": return a?.flow_name ? `Checked people in ${a.flow_name}` : "Checked people in a Flow";
+        case "find_contacts_by_criteria": return "Searched people matching your request";
+        case "add_people_to_flow": return "Prepared adding someone to a Flow";
+        case "create_contact_note": return "Prepared a private note";
+        case "list_my_tasks": return "Read your tasks";
+        case "create_task": return "Prepared a reminder";
+        case "create_form": return "Asked the Form Builder to design a form";
+        case "update_task": return "Prepared a task update";
+        case "create_prayer_request": return "Prepared a prayer request";
+        default: return `Used ${fn.replace(/_/g, " ")}`;
+      }
+    };
     let collectedContactIds: string[] | null = null;
     let lastFinderResult: string | null = null;
     let pendingActionMarkers: string[] = [];
@@ -1756,6 +1900,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     let lastToolResult = "";
     while (toolRound < MAX_TOOL_ROUNDS) {
       // Make a non-streaming call to check for tool calls
+      const roundStart = Date.now();
       let toolCheckData: GlooChatCompletion;
       try {
         toolCheckData = await glooChat({
@@ -1785,6 +1930,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
       }
 
       const choice = toolCheckData.choices[0];
+      trace.push({ label: toolRound === 0 ? "Read your question" : "Reviewed what it found", ms: Date.now() - roundStart, status: "ok" });
 
       if (!choice) {
         return new Response(JSON.stringify({ error: "No AI response" }), {
@@ -1816,6 +1962,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         }
 
         let result = "";
+        const toolStart = Date.now();
         try {
           if (fnName === "search_person") {
             result = await executeSearchPerson(adminClient, orgId, args.query || "", team);
@@ -1846,6 +1993,9 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           } else if (fnName === "update_task") {
             result = await prepareUpdateTask(adminClient, orgId, userId, args);
             { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
+          } else if (fnName === "create_form") {
+            result = await prepareForm(adminClient, orgId, userId, args);
+            { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
           } else if (fnName === "create_prayer_request") {
             result = await preparePrayerRequest(adminClient, orgId, userId, args);
             { const mk = result.match(/<!--flowleed:action=({.*?})-->/)?.[0] || null; if (mk) { pendingActionMarkers.push(mk); pendingActionMarker = mk; } }
@@ -1855,6 +2005,18 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
         } catch (e) {
           console.error(`Tool ${fnName} error:`, e);
           result = `Error executing ${fnName}: ${e instanceof Error ? e.message : "Unknown error"}`;
+        }
+        {
+          const failed = /^(Error executing|Unknown tool)/.test(result);
+          const firstLine = result.replace(/<!--[\s\S]*?-->/g, "")
+            .split("\n").map((l) => l.replace(/[#*_`>]/g, "").trim())
+            .find((l) => l && !/^(INSTRUCTION|NOTE|IMPORTANT|SYSTEM)\b/i.test(l)) ?? "";
+          trace.push({
+            label: traceLabel(fnName, args),
+            detail: firstLine.length > 160 ? `${firstLine.slice(0, 157)}...` : firstLine || undefined,
+            ms: Date.now() - toolStart,
+            status: failed ? "error" : "ok",
+          });
         }
 
         registerPeople(result);
@@ -1872,6 +2034,7 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
     }
 
     // Final streaming response (with tool results in context but no tools offered)
+    const streamStart = Date.now();
     let upstream: ReadableStream<Uint8Array>;
     try {
       upstream = await glooChatStream({ messages: aiMessages });
@@ -1919,9 +2082,22 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
             .replace(/<!--flowleed:[\s\S]*?-->/g, "")
             .replace(/\[?Earlier prepared[^\]\n]*\]?/gi, "");
           removedTotal += removed;
-          if (pendingActionMarker) return safe;
-          return safe.replace(/\b(?:I(?:'ve| have)?|we(?:'ve| have)?)\s+added\b[^.!?]*[.!?]?/gi, "The change has not been made yet.");
+          // Deterministic guard: the model must never claim it saved anything.
+          // Writes only happen when the leader taps Approve, so any completion
+          // claim is false. Rewrite it to honest wording.
+          const claimRe = /\b(?:I(?:'ve| have| just)?|we(?:'ve| have)?)\s+(?:already\s+|now\s+|just\s+|gone ahead and\s+)?(?:added|created|saved|set up|setup|scheduled|written(?: down)?|wrote(?: down)?|noted|logged|recorded|made|put|sent|updated|assigned|completed|marked|booked|jotted(?: down)?)\b[^.!?\n]*[.!?]?/gi;
+          const doneRe = /\b(?:Done|All set|Reminder (?:added|set|created|saved)|Task (?:added|created|saved))\b[!.]?/g;
+          let out = safe;
+          if (claimRe.test(out) || doneRe.test(out)) {
+            claimRewrites++;
+            const replacement = pendingActionMarker
+              ? "I've prepared this for you — please review and tap Approve below to save it."
+              : "I haven't saved anything yet. Just say \"create the reminder\" and I'll prepare it for you to approve.";
+            out = out.replace(claimRe, replacement).replace(doneRe, "");
+          }
+          return out;
         };
+        let claimRewrites = 0;
 
         let raw = "";
         let pending = "";
@@ -2007,6 +2183,11 @@ You can answer questions like "which groups have open spots?", "who leads X?", o
           send(`\n\n<!--flowleed:contact_ids=${JSON.stringify(collectedContactIds)}-->`);
         }
         if (pendingActionMarkers.length) send(`\n\n${pendingActionMarkers.join("")}`);
+        trace.push({ label: "Wrote the answer", ms: Date.now() - streamStart, status: "ok" });
+        if (claimRewrites > 0) trace.push({ label: "Corrected a false \"saved\" claim", detail: pendingActionMarker ? "Nothing is saved until you tap Approve" : "No reminder or task was actually prepared", ms: 0, status: "error" });
+        if (removedTotal > 0) trace.push({ label: "Removed unverified names", detail: `${removedTotal} name(s) not found in your records were left out`, ms: 0, status: "ok" });
+        const traceJson = JSON.stringify({ total_ms: Date.now() - turnStart, steps: trace }).replace(/--/g, "\\u002d\\u002d");
+        send(`\n\n<!--flowleed:trace=${traceJson}-->`);
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
         controller.close();
       },

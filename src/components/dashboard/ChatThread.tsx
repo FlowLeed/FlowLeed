@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { AiTracePopover, parseTrace } from "@/components/dashboard/AiTracePopover";
+import { ChatFormCard } from "@/components/dashboard/ChatFormCard";
 
 const THINKING_MESSAGES = [
   "Looking at the whole picture...",
@@ -210,6 +212,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                   const heading = section.match(/^#{2,3}\s+([^\n]+)/m)?.[1]?.toLowerCase() ?? "";
                   if (heading.includes("private note") || heading === "note" || heading === "notes") return "create_contact_note";
                   if (heading.includes("reminder") || heading.includes("task")) return "create_task";
+                  if (heading.includes("form")) return "create_form";
                   if (heading.includes("prayer")) return "create_prayer_request";
                   if (heading.includes("flow")) return "add_to_flow";
                   return undefined;
@@ -235,18 +238,29 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     setHandledActions((current) => new Set([...current, ...approvedIds]));
                   }
                 };
-                const approvalButton = (actions: ChatAction[], groupId: string) => {
+                const pendingGroups: { actions: ChatAction[]; groupId: string; type?: string }[] = [];
+                const actionLabel = (type?: string) => {
+                  switch (type) {
+                    case "create_contact_note": return "Approve note";
+                    case "create_task": return "Approve task";
+                    case "create_form": return "Approve form";
+                    case "create_prayer_request": return "Approve prayer request";
+                    case "add_to_flow": return "Approve flow update";
+                    default: return "Approve";
+                  }
+                };
+                const approvalButton = (actions: ChatAction[], groupId: string, type?: string) => {
                   const waiting = pendingActions(actions);
                   if (waiting.length === 0) return null;
                   waiting.forEach((action) => assignedActionIds.add(action.id));
                   return (
                     <Button
                       size="sm"
-                      className="mt-2 h-7 px-2.5 text-xs"
+                      className="h-7 px-2.5 text-xs"
                       disabled={confirmingId === groupId}
                       onClick={() => void approveActions(waiting, groupId)}
                     >
-                      {confirmingId === groupId ? "Approving..." : "Approve"}
+                      {confirmingId === groupId ? "Approving..." : actionLabel(type)}
                     </Button>
                   );
                 };
@@ -256,6 +270,11 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                       const type = actionTitleType(section);
                       const sectionActions = type ? actionsAll.filter((action) => action.type === type) : [];
                       const groupId = `${i}-${type ?? sectionIndex}`;
+                      const waiting = pendingActions(sectionActions);
+                      if (waiting.length > 0) {
+                        waiting.forEach((action) => assignedActionIds.add(action.id));
+                        pendingGroups.push({ actions: waiting, groupId, type });
+                      }
                       return (
                         <div key={groupId} className="not-prose">
                           {/* !h-auto prevents controls after the text from being clipped.
@@ -278,7 +297,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                             [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2`}>
                             {section}
                           </MessageResponse>
-                          {approvalButton(sectionActions, groupId)}
                         </div>
                       );
                     })}
@@ -290,10 +308,25 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         </Button>
                       </div>
                     )}
-                    {approvalButton(
-                      actionsAll.filter((action) => !assignedActionIds.has(action.id)),
-                      `${i}-remaining-actions`,
-                    )}
+                    {(() => {
+                      const remaining = pendingActions(actionsAll.filter((action) => !assignedActionIds.has(action.id)));
+                      if (remaining.length > 0) {
+                        pendingGroups.push({ actions: remaining, groupId: `${i}-remaining-actions` });
+                      }
+                      if (pendingGroups.length === 0) return null;
+                      const multi = pendingGroups.length > 1;
+                      return (
+                        <div className="not-prose mt-4 flex flex-col items-start gap-2">
+                          {pendingGroups.map(({ actions, groupId, type }) => approvalButton(actions, groupId, multi ? type : undefined))}
+                        </div>
+                      );
+                    })()}
+                    {(() => {
+                      const fm = msg.content.match(/<!--flowleed:form=(\{.*?\})-->/);
+                      if (!fm) return null;
+                      try { const f = JSON.parse(fm[1]); return f?.id && f?.path ? <ChatFormCard id={f.id} path={f.path} /> : null; } catch { return null; }
+                    })()}
+                    {(() => { const t = parseTrace(msg.content); return t ? <AiTracePopover trace={t} /> : null; })()}
                   </div>
                 );
               })()
