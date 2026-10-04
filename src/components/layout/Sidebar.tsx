@@ -531,12 +531,8 @@ export const Sidebar = () => {
     } catch {}
   }, [STORAGE_KEY, showAllFlows, showPinnedOnly, teamMemberFilter]);
   
+  const aiEnabled = isFeatureEnabled("flowleed_ai");
   const hubItems: SidebarItem[] = ([{
-    title: "FlowLeed AI",
-    icon: Sparkles,
-    path: "/",
-    featureKey: "flowleed_ai" as const,
-  }, {
     title: "People",
     icon: Users,
     path: "/contacts"
@@ -756,20 +752,36 @@ export const Sidebar = () => {
     </Button>
   ) : null;
 
+  const aiActive = location.pathname === "/";
+  const aiLink = aiEnabled ? (
+    <Link
+      to="/"
+      className={`flex min-h-11 md:min-h-9 items-center gap-3 rounded-full px-[10px] py-2 md:py-1 text-sm transition-colors ${aiActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}
+    >
+      <Sparkles className="h-5 w-5" />
+      <span className="font-extralight">FlowLeed AI</span>
+    </Link>
+  ) : null;
+
+  const flowsSection = (
+    <SidebarSection
+      title="Flows"
+      items={displayedFlowItems}
+      onSettingsClick={() => setShowFlowsManagement(true)}
+      pinnedFlowIds={pinnedFlowIds}
+      onPin={togglePin}
+      filterControl={flowsFilterControl}
+      footerControl={flowsToggleControl}
+    />
+  );
+
   const sidebarContent = (
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
+        {aiLink}
         <SidebarSection title="HUB" items={hubItems} />
-        <SidebarSection
-          title="Flows"
-          items={displayedFlowItems}
-          onSettingsClick={() => setShowFlowsManagement(true)}
-          pinnedFlowIds={pinnedFlowIds}
-          onPin={togglePin}
-          filterControl={flowsFilterControl}
-          footerControl={flowsToggleControl}
-        />
+        {flowsSection}
         {marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
         <SidebarSection title="Settings" items={settingsItems} />
       </div>
@@ -789,11 +801,116 @@ export const Sidebar = () => {
     );
   }
 
-  return <>
-      <div className="h-full w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] flex-shrink-0 flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
-        {sidebarContent}
+  return (
+    <DesktopRail
+      aiLink={aiEnabled}
+      aiActive={aiActive}
+      hubItems={hubItems}
+      marketingItems={marketingItems}
+      settingsItems={settingsItems}
+      flowsSection={flowsSection}
+      flowsBadge={allFlowItems.length}
+      pathname={location.pathname}
+      flowsManagement={<FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />}
+    />
+  );
+};
+
+type RailSection = "hub" | "flows" | "marketing" | "settings";
+const RAIL_WIDTH = 56;
+const DRAWER_WIDTH = 240;
+const DRAWER_KEY = "flowleed-nav-drawer";
+
+const DesktopRail = ({
+  aiLink, aiActive, hubItems, marketingItems, settingsItems, flowsSection, flowsBadge, pathname, flowsManagement,
+}: {
+  aiLink: boolean; aiActive: boolean; hubItems: SidebarItem[]; marketingItems: SidebarItem[]; settingsItems: SidebarItem[];
+  flowsSection: React.ReactNode; flowsBadge: number; pathname: string; flowsManagement: React.ReactNode;
+}) => {
+  const matches = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
+  const routeSection: RailSection = pathname.startsWith("/flows") ? "flows"
+    : matches(marketingItems) ? "marketing"
+    : matches(settingsItems) ? "settings" : "hub";
+
+  const [open, setOpen] = useState<boolean>(() => {
+    try { return localStorage.getItem(DRAWER_KEY) !== "closed"; } catch { return true; }
+  });
+  const [section, setSection] = useState<RailSection>(routeSection);
+
+  useEffect(() => { setSection(routeSection); }, [routeSection]);
+  useEffect(() => {
+    try { localStorage.setItem(DRAWER_KEY, open ? "open" : "closed"); } catch {}
+    const width = RAIL_WIDTH + (open ? DRAWER_WIDTH : 0);
+    document.documentElement.style.setProperty("--sidebar-width", `${width}px`);
+  }, [open]);
+
+  const choose = (s: RailSection) => {
+    if (open && section === s) setOpen(false);
+    else { setSection(s); setOpen(true); }
+  };
+
+  const railButton = (s: RailSection, Icon: LucideIcon, label: string, badge?: number) => {
+    const active = section === s && open;
+    const current = routeSection === s && !aiActive;
+    return (
+      <button
+        key={s}
+        type="button"
+        onClick={() => choose(s)}
+        title={label}
+        aria-label={label}
+        aria-expanded={active}
+        className={`relative flex h-11 w-11 flex-col items-center justify-center rounded-xl transition-colors ${active ? "bg-sidebar-accent text-sidebar-foreground" : current ? "text-primary hover:bg-sidebar-accent/50" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
+      >
+        <Icon className="h-5 w-5" />
+        <span className="mt-0.5 text-[9px] leading-none">{label}</span>
+        {badge ? <span className="absolute -right-0.5 -top-0.5 rounded-full bg-primary px-1 text-[9px] leading-4 text-primary-foreground">{badge}</span> : null}
+      </button>
+    );
+  };
+
+  const titles: Record<RailSection, string> = { hub: "HUB", flows: "Flows", marketing: "Marketing", settings: "Settings" };
+
+  return (
+    <>
+      <div className="flex h-full flex-shrink-0" style={{ width: `var(--sidebar-width)` }}>
+        <nav className="flex h-full w-14 flex-shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-3">
+          <img src={flowleedMark} alt="FlowLeed" className="mb-2 h-6 w-6 object-contain object-left" />
+          {aiLink && (
+            <Link
+              to="/"
+              title="FlowLeed AI"
+              aria-label="FlowLeed AI"
+              className={`mb-2 flex h-11 w-11 items-center justify-center rounded-full transition-colors ${aiActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-primary/10 text-primary hover:bg-primary/20"}`}
+            >
+              <Sparkles className="h-5 w-5" />
+            </Link>
+          )}
+          <div className="my-1 h-px w-8 bg-sidebar-border" />
+          {railButton("hub", LayoutDashboard, "Hub")}
+          {railButton("flows", RefreshCw, "Flows", flowsBadge)}
+          {marketingItems.length > 0 && railButton("marketing", Film, "Market")}
+          <div className="mt-auto" />
+          {railButton("settings", Settings, "Settings")}
+        </nav>
+        {open && (
+          <div className="flex h-full min-w-0 flex-1 flex-col bg-sidebar animate-in slide-in-from-left-2 duration-200">
+            <div className="flex items-center justify-between px-4 pb-1 pt-4">
+              <span className="text-sm font-semibold text-sidebar-foreground">{titles[section]}</span>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)} title="Collapse menu" aria-label="Collapse menu">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto px-3 py-2 sidebar-scroll [&_h3]:hidden">
+              {section === "hub" && <SidebarSection title="HUB" items={hubItems} />}
+              {section === "flows" && flowsSection}
+              {section === "marketing" && <SidebarSection title="Marketing" items={marketingItems} />}
+              {section === "settings" && <SidebarSection title="Settings" items={settingsItems} />}
+            </div>
+          </div>
+        )}
       </div>
-      
-      <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
-    </>;
+      {flowsManagement}
+    </>
+  );
 };
