@@ -30,6 +30,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { publicUrl as buildPublicUrl } from "@/lib/publicUrl";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
+type EmailSettings = {
+  confirmation?: { enabled?: boolean; from_name?: string; reply_to?: string; subject?: string; body?: string };
+  notify?: { enabled?: boolean; recipients?: string; subject?: string };
+};
 import { Header } from "@/components/layout/Header";
 import { FormTabs } from "@/components/forms/FormTabs";
 import { useToast } from "@/hooks/use-toast";
@@ -362,6 +367,11 @@ export default function FormBuilderPage() {
     () => new URLSearchParams(window.location.search).get("tab") === "settings",
   );
   const [fieldPickerOpen, setFieldPickerOpen] = useState(false);
+  const [emailSettings, setEmailSettings] = useState<EmailSettings>({});
+  const setConfirm = (p: Partial<NonNullable<EmailSettings["confirmation"]>>) =>
+    setEmailSettings((s) => ({ ...s, confirmation: { ...s.confirmation, ...p } }));
+  const setNotify = (p: Partial<NonNullable<EmailSettings["notify"]>>) =>
+    setEmailSettings((s) => ({ ...s, notify: { ...s.notify, ...p } }));
   const [dragging, setDragging] = useState<
     | { source: "palette"; fieldType: FieldType }
     | { source: "canvas"; cid: string }
@@ -377,6 +387,7 @@ export default function FormBuilderPage() {
       setSuccessMessage(form.success_message || "");
       setPipelineId(form.pipeline_id);
       setStageId(form.stage_id);
+      setEmailSettings(((form as any).email_settings as EmailSettings) || {});
     }
   }, [form]);
 
@@ -438,6 +449,7 @@ export default function FormBuilderPage() {
           success_message: successMessage,
           pipeline_id: pipelineId,
           stage_id: stageId,
+          email_settings: emailSettings as any,
         })
         .eq("id", id);
       if (fErr) throw fErr;
@@ -660,7 +672,7 @@ export default function FormBuilderPage() {
           <Button variant="outline" size="sm" className="min-w-0 flex-1 gap-1.5" onClick={() => setFieldPickerOpen(true)}>
             <Plus className="h-4 w-4" /> Add field
           </Button>
-          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setSettingsOpen(true)} aria-label="Form settings">
+          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setSettingsOpen((o) => !o)} aria-label="Form settings">
             <Settings2 className="h-4 w-4" />
           </Button>
           {form && (
@@ -680,11 +692,11 @@ export default function FormBuilderPage() {
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          {id && <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} onSettings={() => setSettingsOpen(true)} />}
+          {id && <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} onSettings={() => setSettingsOpen(true)} onForm={() => setSettingsOpen(false)} />}
         </div>
         {id && (
           <div className="sm:hidden mt-1">
-            <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} onSettings={() => setSettingsOpen(true)} />
+            <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} onSettings={() => setSettingsOpen(true)} onForm={() => setSettingsOpen(false)} />
           </div>
         )}
       </div>
@@ -863,6 +875,7 @@ export default function FormBuilderPage() {
           <DragOverlayContent />
         </DragOverlay>
       </DndContext>
+      )}
 
       <Sheet open={fieldPickerOpen} onOpenChange={setFieldPickerOpen}>
         <SheetContent side="bottom" className="max-h-[78dvh] overflow-y-auto rounded-t-lg px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-5 sm:hidden">
