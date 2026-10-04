@@ -8,10 +8,11 @@ interface FormTabsProps {
   active: "form" | "submissions" | "settings";
   count?: number | null;
   onSettings?: () => void;
+  onForm?: () => void;
 }
 
 /** Shared Form / Submissions / Settings tab bar for a single form. */
-export function FormTabs({ formId, active, count, onSettings }: FormTabsProps) {
+export function FormTabs({ formId, active, count, onSettings, onForm }: FormTabsProps) {
   const { data: liveCount } = useQuery({
     queryKey: ["form-submission-count", formId],
     enabled: typeof count !== "number",
@@ -32,7 +33,11 @@ export function FormTabs({ formId, active, count, onSettings }: FormTabsProps) {
     cn(base, active === k ? "border-primary text-foreground font-medium" : "border-transparent text-muted-foreground hover:text-foreground");
   return (
     <nav className="flex items-center gap-1 overflow-x-auto">
-      <Link to={`/forms/${formId}`} className={cls("form")}>Form</Link>
+      {onForm ? (
+        <button type="button" onClick={onForm} className={cls("form")}>Form</button>
+      ) : (
+        <Link to={`/forms/${formId}`} className={cls("form")}>Form</Link>
+      )}
       <Link to={`/forms/${formId}/submissions`} className={cls("submissions")}>
         Submissions{typeof shown === "number" ? ` (${shown})` : ""}
       </Link>

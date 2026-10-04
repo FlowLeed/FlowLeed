@@ -1,0 +1,1 @@
+ALTER TABLE public.forms ADD COLUMN IF NOT EXISTS email_settings jsonb NOT NULL DEFAULT '{}'::jsonb;
