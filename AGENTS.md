@@ -3,3 +3,4 @@
 - create_form tool hands off to Form Builder specialist (_shared/formAgent.ts): separate focused AI call designs the blueprint, main agent only routes. Why: specialists stay small and controllable.
 - Form Builder uses a persistent field palette on larger screens and a bottom field picker on phones. Why: the editing canvas must remain full-width and touch-friendly on small screens.
 - Flow form-submission details are loaded once at the Flow level and shared by card and table views. Why: both views must show identical answers without per-person request waterfalls.
+- Primary navigation is grouped into HUB, Flows, Marketing, and Settings; the Flow list stays compact until explicitly expanded. Why: large churches need quick daily navigation without rendering every Flow at once.
