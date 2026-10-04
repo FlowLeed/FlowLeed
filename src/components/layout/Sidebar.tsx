@@ -562,7 +562,6 @@ export const Sidebar = () => {
     title: "Prayer",
     icon: HandHeart,
     path: "/prayer"
-  }, {
   }] as (SidebarItem & { featureKey?: "flowleed_ai" | "signals" })[])
     .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
