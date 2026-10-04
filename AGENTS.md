@@ -2,3 +2,4 @@
 - When demo data is cleared and an org has zero flows, a trigger on `organizations.demo_cleared_at` calls `create_default_pipelines`. Why: churches must never be left with an empty Flows list.
 - create_form tool hands off to Form Builder specialist (_shared/formAgent.ts): separate focused AI call designs the blueprint, main agent only routes. Why: specialists stay small and controllable.
 - Form Builder uses a persistent field palette on larger screens and a bottom field picker on phones. Why: the editing canvas must remain full-width and touch-friendly on small screens.
+- Flow form-submission details are loaded once at the Flow level and shared by card and table views. Why: both views must show identical answers without per-person request waterfalls.

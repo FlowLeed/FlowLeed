@@ -29,6 +29,7 @@ import { useBulkActions } from "@/hooks/useBulkActions";
 import { toCsv, downloadCsv, sanitizeFilename } from "@/lib/csvExport";
 import { usePausedContactIds } from "@/hooks/useLifeSeason";
 import { useFlowContext } from "@/contexts/FlowContext";
+import { FlowFormSubmission } from "@/components/forms/FlowSubmissionDialog";
 
 interface TeamMember {
   id: string;
@@ -73,6 +74,50 @@ export const FlowView: React.FC<FlowViewProps> = ({
   const { organization } = useProfile();
   const queryClient = useQueryClient();
   const { refreshFlows } = useFlowContext();
+
+  const { data: formSubmissionsByContact = {} } = useQuery({
+    queryKey: ['flow-form-submissions', flow.id, allContactIds.join(',')],
+    queryFn: async () => {
+      if (allContactIds.length === 0) return {} as Record<string, FlowFormSubmission[]>;
+
+      const { data, error } = await supabase
+        .from('form_submissions')
+        .select('id, contact_id, created_at, data, forms!inner(id, name, pipeline_id, form_fields(field_key, label, field_type, sort_order))')
+        .in('contact_id', allContactIds)
+        .eq('forms.pipeline_id', flow.id)
+        .eq('is_preview', false)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const grouped: Record<string, FlowFormSubmission[]> = {};
+      for (const row of data || []) {
+        if (!row.contact_id) continue;
+        const form = row.forms as unknown as {
+          id: string;
+          name: string;
+          form_fields: Array<{ field_key: string; label: string; field_type: string; sort_order: number }>;
+        };
+        const fields = (form.form_fields || [])
+          .filter((field) => !['heading', 'paragraph', 'divider'].includes(field.field_type))
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((field) => ({ key: field.field_key, label: field.label, sortOrder: field.sort_order }));
+        const submission: FlowFormSubmission = {
+          id: row.id,
+          formId: form.id,
+          formName: form.name,
+          contactId: row.contact_id,
+          createdAt: row.created_at,
+          data: (row.data && typeof row.data === 'object' && !Array.isArray(row.data) ? row.data : {}) as Record<string, unknown>,
+          fields,
+        };
+        grouped[row.contact_id] = [...(grouped[row.contact_id] || []), submission];
+      }
+      return grouped;
+    },
+    enabled: allContactIds.length > 0,
+    staleTime: 60 * 1000,
+  });
 
   // Save view mode preference
   useEffect(() => {
@@ -754,6 +799,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
                   isSelectMode={isSelectMode}
                   selectedContacts={selectedContacts}
                   onToggleContact={handleToggleContact}
+                  formSubmissionsByContact={formSubmissionsByContact}
                 />
               ))}
             </div>
@@ -768,6 +814,7 @@ export const FlowView: React.FC<FlowViewProps> = ({
             isSelectMode={isSelectMode}
             selectedContacts={selectedContacts}
             onToggleContact={handleToggleContact}
+            formSubmissionsByContact={formSubmissionsByContact}
           />
         )}
       </div>
