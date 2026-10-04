@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { publicUrl as buildPublicUrl } from "@/lib/publicUrl";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Header } from "@/components/layout/Header";
+import { FormTabs } from "@/components/forms/FormTabs";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/useProfile";
 import {
@@ -357,7 +358,9 @@ export default function FormBuilderPage() {
   const [fields, setFields] = useState<Field[]>([]);
   const [selectedCid, setSelectedCid] = useState<string | null>(null);
   const [editingCid, setEditingCid] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(
+    () => new URLSearchParams(window.location.search).get("tab") === "settings",
+  );
   const [fieldPickerOpen, setFieldPickerOpen] = useState(false);
   const [dragging, setDragging] = useState<
     | { source: "palette"; fieldType: FieldType }
@@ -671,11 +674,19 @@ export default function FormBuilderPage() {
             <Save className="h-4 w-4" />
           </Button>
         </div>
-        <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-          <Link to="/forms">
-            <ArrowLeft className="h-4 w-4 mr-1" /> All forms
-          </Link>
-        </Button>
+        <div className="hidden sm:flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild className="h-9 w-9" aria-label="All forms">
+            <Link to="/forms">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          {id && <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} count={form?.submission_count ?? null} onSettings={() => setSettingsOpen(true)} />}
+        </div>
+        {id && (
+          <div className="sm:hidden mt-1">
+            <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} count={form?.submission_count ?? null} onSettings={() => setSettingsOpen(true)} />
+          </div>
+        )}
       </div>
 
       <DndContext
@@ -884,7 +895,8 @@ export default function FormBuilderPage() {
               />
             </div>
             <div className="pt-2 border-t">
-              <div className="text-sm font-medium mb-2">Route submissions</div>
+              <div className="text-sm font-medium">Automations</div>
+              <div className="text-xs text-muted-foreground mb-2">New submissions are added to this Flow and step.</div>
               <div className="space-y-3">
                 <div>
                   <Label>Flow</Label>
