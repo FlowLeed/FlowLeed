@@ -233,18 +233,29 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     setHandledActions((current) => new Set([...current, ...approvedIds]));
                   }
                 };
-                const approvalButton = (actions: ChatAction[], groupId: string) => {
+                const pendingGroups: { actions: ChatAction[]; groupId: string; type?: string }[] = [];
+                const actionLabel = (type?: string) => {
+                  switch (type) {
+                    case "create_contact_note": return "Approve note";
+                    case "create_task": return "Approve task";
+                    case "create_form": return "Approve form";
+                    case "create_prayer_request": return "Approve prayer request";
+                    case "add_to_flow": return "Approve flow update";
+                    default: return "Approve";
+                  }
+                };
+                const approvalButton = (actions: ChatAction[], groupId: string, type?: string) => {
                   const waiting = pendingActions(actions);
                   if (waiting.length === 0) return null;
                   waiting.forEach((action) => assignedActionIds.add(action.id));
                   return (
                     <Button
                       size="sm"
-                      className="mt-2 h-7 px-2.5 text-xs"
+                      className="h-7 px-2.5 text-xs"
                       disabled={confirmingId === groupId}
                       onClick={() => void approveActions(waiting, groupId)}
                     >
-                      {confirmingId === groupId ? "Approving..." : "Approve"}
+                      {confirmingId === groupId ? "Approving..." : actionLabel(type)}
                     </Button>
                   );
                 };
@@ -254,6 +265,11 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                       const type = actionTitleType(section);
                       const sectionActions = type ? actionsAll.filter((action) => action.type === type) : [];
                       const groupId = `${i}-${type ?? sectionIndex}`;
+                      const waiting = pendingActions(sectionActions);
+                      if (waiting.length > 0) {
+                        waiting.forEach((action) => assignedActionIds.add(action.id));
+                        pendingGroups.push({ actions: waiting, groupId, type });
+                      }
                       return (
                         <div key={groupId} className="not-prose">
                           {/* !h-auto prevents controls after the text from being clipped.
@@ -276,7 +292,6 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                             [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2`}>
                             {section}
                           </MessageResponse>
-                          {approvalButton(sectionActions, groupId)}
                         </div>
                       );
                     })}
@@ -288,10 +303,19 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         </Button>
                       </div>
                     )}
-                    {approvalButton(
-                      actionsAll.filter((action) => !assignedActionIds.has(action.id)),
-                      `${i}-remaining-actions`,
-                    )}
+                    {(() => {
+                      const remaining = pendingActions(actionsAll.filter((action) => !assignedActionIds.has(action.id)));
+                      if (remaining.length > 0) {
+                        pendingGroups.push({ actions: remaining, groupId: `${i}-remaining-actions` });
+                      }
+                      if (pendingGroups.length === 0) return null;
+                      const multi = pendingGroups.length > 1;
+                      return (
+                        <div className="not-prose mt-4 flex flex-col items-start gap-2">
+                          {pendingGroups.map(({ actions, groupId, type }) => approvalButton(actions, groupId, multi ? type : undefined))}
+                        </div>
+                      );
+                    })()}
                     {(() => {
                       const fm = msg.content.match(/<!--flowleed:form=(\{.*?\})-->/);
                       if (!fm) return null;
