@@ -8,7 +8,7 @@ const PRODUCTION_BASE = "https://app.flowleed.com";
 
 export function publicBaseUrl(): string {
   const host = window.location.hostname;
-  if (host === "localhost" || host.startsWith("id-preview--")) {
+  if (host === "localhost" || host.startsWith("id-preview--") || host.endsWith(".lovableproject.com")) {
     return PRODUCTION_BASE;
   }
   return window.location.origin;

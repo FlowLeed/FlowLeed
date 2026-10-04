@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { publicUrl } from "@/lib/publicUrl";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { UserPlus } from "lucide-react";
@@ -175,7 +176,7 @@ export default function PrayerHubPage() {
   };
 
   const copyLink = () => {
-    const url = `${window.location.origin}/${(organization as any)?.slug}/pray`;
+    const url = publicUrl(`/${(organization as any)?.slug}/pray`);
     navigator.clipboard.writeText(url);
     toast.success("Prayer form link copied", { description: url });
   };
