@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { publicUrl as buildPublicUrl } from "@/lib/publicUrl";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Header } from "@/components/layout/Header";
 import { useToast } from "@/hooks/use-toast";
@@ -531,9 +532,7 @@ export default function FormBuilderPage() {
   const editingField = editingCid ? fields.find((f) => f._cid === editingCid) : null;
 
   const publicUrl = form
-    ? orgSlug
-      ? `${window.location.origin}/${orgSlug}/f/${form.slug}`
-      : `${window.location.origin}/f/${form.slug}`
+    ? buildPublicUrl(orgSlug ? `/${orgSlug}/f/${form.slug}` : `/f/${form.slug}`)
     : "";
 
   const copyLink = () => {

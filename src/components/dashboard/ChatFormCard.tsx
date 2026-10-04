@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Globe, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { publicUrl } from "@/lib/publicUrl";
 import { toast } from "sonner";
 
 /** Preview / Publish / Copy-link controls for a form FlowLeed AI just created. */
@@ -17,7 +18,7 @@ export const ChatFormCard = ({ id, path }: { id: string; path: string }) => {
       return data;
     },
   });
-  const url = `${window.location.origin}${path}`;
+  const url = publicUrl(path);
   if (form === null) return null;
 
   const publish = async () => {
@@ -38,7 +39,7 @@ export const ChatFormCard = ({ id, path }: { id: string; path: string }) => {
     <div className="not-prose mt-3 rounded-lg border border-border bg-card p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <Button asChild size="sm" variant="outline" className="h-7 gap-1.5 px-2.5 text-xs">
-          <a href={`${path}?preview=1`} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" />Preview</a>
+          <a href={`${publicUrl(path)}?preview=1`} target="_blank" rel="noopener noreferrer"><Eye className="h-3.5 w-3.5" />Preview</a>
         </Button>
         {form?.is_published ? (
           <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Globe className="h-3.5 w-3.5" />Published</span>
