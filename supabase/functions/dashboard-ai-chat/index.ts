@@ -218,8 +218,11 @@ const TOOL_REGISTRY = [
         type: "object",
         properties: {
           request: { type: "string", description: "The user's full description of the form: purpose, questions, choices and anything else they said." },
-          flow_name: { type: "string", description: "Optional Flow that people who submit should be placed into." },
+          flow_name: { type: "string", description: "Existing Flow that people who submit should be placed into." },
           step_name: { type: "string", description: "Optional step within that Flow. Defaults to the Flow's first step." },
+          no_flow: { type: "boolean", description: "True only when the user explicitly said submissions should NOT go into any Flow." },
+          new_flow_name: { type: "string", description: "Name of a NEW Flow to create together with the form, only after the user agreed to create one." },
+          new_flow_steps: { type: "array", items: { type: "string" }, description: "Ordered step names for the new Flow (3-7), agreed with the user. First step receives submissions." },
         },
         required: ["request"],
       },
@@ -332,25 +335,45 @@ async function prepareForm(
   if (!requestText) return "What should the form be for, and which questions should it ask?";
   let pipeline: { id: string; name: string } | null = null;
   let stage: { id: string; name: string } | null = null;
+  let newFlow: { name: string; steps: string[] } | null = null;
   const flowName = String(args?.flow_name || "").trim();
-  if (flowName) {
+  const newFlowName = String(args?.new_flow_name || "").trim().slice(0, 80);
+  const listFlows = async () => {
+    const { data } = await adminClient.from("pipelines").select("name").eq("organization_id", orgId).order("name").limit(40);
+    return (data || []).map((f: any) => f.name);
+  };
+  if (newFlowName) {
+    const steps = (Array.isArray(args?.new_flow_steps) ? args.new_flow_steps : []).map((s: unknown) => String(s).trim().slice(0, 60)).filter(Boolean).slice(0, 10);
+    if (steps.length < 2) return `Before preparing, agree with the user on the steps for the new Flow "${newFlowName}". Suggest 3-5 simple steps (e.g. New, Contacted, Scheduled, Completed), ask them to confirm or edit, then call create_form again with new_flow_steps.`;
+    const { data: clash } = await adminClient.from("pipelines").select("id").eq("organization_id", orgId).ilike("name", newFlowName).maybeSingle();
+    if (clash) return `A Flow named "${newFlowName}" already exists. Use flow_name="${newFlowName}" instead of creating a new one.`;
+    newFlow = { name: newFlowName, steps };
+  } else if (flowName) {
     const { data: flows } = await adminClient.from("pipelines").select("id, name").eq("organization_id", orgId).ilike("name", `%${flowName}%`).limit(5);
     const exact = (flows || []).filter((f: any) => f.name.toLowerCase() === flowName.toLowerCase());
     const pick = exact.length === 1 ? exact : (flows || []);
-    if (pick.length !== 1) return pick.length ? `Several Flows match "${flowName}": ${pick.map((f: any) => f.name).join(", ")}. Ask the user which one.` : `I couldn't find a Flow called "${flowName}". Ask the user which Flow, or create the form without one.`;
+    if (pick.length > 1) return `Several Flows match "${flowName}": ${pick.map((f: any) => f.name).join(", ")}. Ask the user which one.`;
+    if (!pick.length) {
+      const names = await listFlows();
+      return `There is no Flow called "${flowName}". Existing Flows: ${names.join(", ") || "none"}. Ask the user to pick one of these, or offer to create a new "${flowName}" Flow with them: suggest 3-5 steps, let them confirm, then call create_form with new_flow_name and new_flow_steps.`;
+    }
     pipeline = pick[0] as any;
     const { data: stages } = await adminClient.from("pipeline_stages").select("id, name, stage_order").eq("pipeline_id", pipeline!.id).order("stage_order");
     const stepName = String(args?.step_name || "").trim().toLowerCase();
     stage = ((stepName && (stages || []).find((s: any) => s.name.toLowerCase() === stepName)) || (stages || [])[0] || null) as any;
+  } else if (args?.no_flow !== true) {
+    const names = await listFlows();
+    return `Do not prepare the form yet. First ask the user where submissions should go. Offer these existing Flows as a short list: ${names.join(", ") || "(none yet)"}. Also offer: create a new Flow for it (you'll suggest steps together), or don't add people to any Flow. Then call create_form again with flow_name, new_flow_name + new_flow_steps, or no_flow=true.`;
   }
   const blueprint = await designForm(requestText);
   if (!blueprint) return "The Form Builder couldn't design this form. Ask the user for the form's purpose and questions.";
   const fieldLines = blueprint.fields.map((f) => `- ${f.label} (${f.field_type}${f.required ? ", required" : ""}${f.options?.length ? `: ${f.options.join(", ")}` : ""})`);
-  const summary = [`Form: ${blueprint.name}`, pipeline ? `Adds people to: ${pipeline.name}${stage ? ` → ${stage.name}` : ""}` : null, blueprint.description, "Questions:", ...fieldLines].filter(Boolean).join("\n");
+  const dest = newFlow ? `Creates new Flow: ${newFlow.name} (${newFlow.steps.join(" → ")}); submissions go to ${newFlow.steps[0]}` : pipeline ? `Adds people to: ${pipeline.name}${stage ? ` → ${stage.name}` : ""}` : "Not linked to a Flow";
+  const summary = [`Form: ${blueprint.name}`, dest, blueprint.description, "Questions:", ...fieldLines].filter(Boolean).join("\n");
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "create_form", summary, expires_at: expiresAt,
-    action_payload: { blueprint, pipeline_id: pipeline?.id || null, stage_id: stage?.id || null },
+    action_payload: { blueprint, pipeline_id: pipeline?.id || null, stage_id: stage?.id || null, new_flow: newFlow },
   }).select("id").single();
   if (error || !request) throw error || new Error("Could not prepare form");
   await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: "create_form", action_request_id: request.id, outcome: "prepared", affected_records: [] });
