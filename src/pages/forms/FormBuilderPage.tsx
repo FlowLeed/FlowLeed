@@ -774,7 +774,7 @@ export default function FormBuilderPage() {
                   <div className="space-y-1.5">
                     <Label>Message</Label>
                     <Textarea rows={5} value={emailSettings.confirmation?.body ?? ""} onChange={(e) => setConfirm({ body: e.target.value })} placeholder={`Hi {first_name},\n\nThanks for filling out ${name || "our form"}. We'll be in touch soon.`} />
-                    <div className="text-xs text-muted-foreground">Use {"{first_name}"}, {"{name}"} or {"{form_name}"} to personalize. A copy of their answers is included.</div>
+                    <div className="text-xs text-muted-foreground">Use {"{first_name}"}, {"{name}"}, {"{form_name}"} or {"{org_name}"} to personalize. Sender name defaults to your church name. A copy of their answers is included.</div>
                   </div>
                 </div>
               )}
@@ -797,7 +797,7 @@ export default function FormBuilderPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>Subject</Label>
-                    <Input value={emailSettings.notify?.subject ?? ""} onChange={(e) => setNotify({ subject: e.target.value })} placeholder={`New submission: {form_name} from {name}`} />
+                    <Input value={emailSettings.notify?.subject ?? ""} onChange={(e) => setNotify({ subject: e.target.value })} placeholder={`New submission: {form_name} from {name} ({org_name})`} />
                   </div>
                 </div>
               )}

@@ -13,12 +13,13 @@ const clean = (s: unknown, max: number) => String(s ?? '').replace(/[\r\n]+/g, '
 async function sendFormEmails(opts: {
   settings: any;
   formName: string;
+  orgName: string;
   fields: { field_key: string; label: string; field_type: string }[];
   data: Record<string, any>;
   name: string;
   email: string | null;
 }) {
-  const { settings, formName, fields, data, name, email } = opts;
+  const { settings, formName, orgName, fields, data, name, email } = opts;
   const conf = settings?.confirmation;
   const notify = settings?.notify;
   if (!conf?.enabled && !notify?.enabled) return;
@@ -27,7 +28,7 @@ async function sendFormEmails(opts: {
 
   const firstName = clean(data.first_name, 100) || name.split(' ')[0] || 'there';
   const fill = (t: string) =>
-    t.replaceAll('{first_name}', firstName).replaceAll('{name}', name).replaceAll('{form_name}', formName);
+    t.replaceAll('{first_name}', firstName).replaceAll('{name}', name).replaceAll('{form_name}', formName).replaceAll('{org_name}', orgName);
 
   const skip = new Set(['heading', 'paragraph', 'divider']);
   const rows = fields
@@ -51,11 +52,12 @@ async function sendFormEmails(opts: {
     if (!r.ok) console.error('Resend error', r.status, await r.text());
   };
 
-  const fromName = clean(conf?.from_name, 80).replace(/[<>"]/g, '') || 'FlowLeed';
+  const orgFrom = clean(orgName, 80).replace(/[<>"]/g, '') || 'FlowLeed';
+  const fromName = clean(conf?.from_name, 80).replace(/[<>"]/g, '') || orgFrom;
   const from = `${fromName} <noreply@flowleed.com>`;
 
   if (conf?.enabled && email && EMAIL_RE.test(email)) {
-    const subject = clean(fill(conf.subject || `Thanks for filling out ${formName}`), 200);
+    const subject = clean(fill(conf.subject || `{org_name}: Thanks for filling out {form_name}`), 200);
     const body = fill(String(conf.body || `Hi {first_name},\n\nThanks for filling out ${formName}. We'll be in touch soon.`)).slice(0, 5000);
     const html = wrap(
       esc(body).split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('') +
@@ -72,9 +74,9 @@ async function sendFormEmails(opts: {
       .filter((s: string) => EMAIL_RE.test(s))
       .slice(0, 10);
     if (to.length) {
-      const subject = clean(fill(notify.subject || `New submission: {form_name} from {name}`), 200);
+      const subject = clean(fill(notify.subject || `New submission: {form_name} from {name} ({org_name})`), 200);
       const html = wrap(`<p><strong>${esc(name)}</strong> just filled out <strong>${esc(formName)}</strong>.</p>${answers}`);
-      await send({ from: 'FlowLeed <noreply@flowleed.com>', to, subject, html, ...(email && EMAIL_RE.test(email) ? { reply_to: email } : {}) });
+      await send({ from: `${orgFrom} <noreply@flowleed.com>`, to, subject, html, ...(email && EMAIL_RE.test(email) ? { reply_to: email } : {}) });
     }
   }
 }
@@ -362,7 +364,9 @@ Deno.serve(async (req) => {
 
 
     try {
+      const { data: orgRow } = await supabase.from('organizations').select('name').eq('id', form.organization_id).maybeSingle();
       await sendFormEmails({
+        orgName: (orgRow as any)?.name || 'FlowLeed',
         settings: (form as any).email_settings || {},
         formName: (form as any).name || 'Form',
         fields: fields || [],
