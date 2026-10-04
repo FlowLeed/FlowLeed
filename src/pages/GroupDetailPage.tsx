@@ -98,7 +98,7 @@ const GroupDetailPage = () => {
 
   const copySignupLink = async () => {
     if (!group?.public_signup_token) return;
-    const link = `${window.location.origin}/groups/join/${group.public_signup_token}`;
+    const link = publicUrl(`/groups/join/${group.public_signup_token}`);
     
     try {
       await navigator.clipboard.writeText(link);

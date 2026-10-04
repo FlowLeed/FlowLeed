@@ -175,7 +175,7 @@ export default function PrayerHubPage() {
   };
 
   const copyLink = () => {
-    const url = `${window.location.origin}/${(organization as any)?.slug}/pray`;
+    const url = publicUrl(`/${(organization as any)?.slug}/pray`);
     navigator.clipboard.writeText(url);
     toast.success("Prayer form link copied", { description: url });
   };

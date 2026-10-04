@@ -91,7 +91,7 @@ export const EditGroupDialog = ({ group, open, onOpenChange }: EditGroupDialogPr
 
   const getSignupLink = () => {
     if (!group.public_signup_token) return "";
-    return `${window.location.origin}/groups/join/${group.public_signup_token}`;
+    return publicUrl(`/groups/join/${group.public_signup_token}`);
   };
 
   const copySignupLink = async () => {
