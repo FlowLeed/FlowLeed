@@ -75,8 +75,9 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* The daily care briefing stays as the opening message in the main AI conversation. */}
-          <CareBriefingThread onAsk={sendMessage} onCheck={appendBriefing} />
+          {/* The daily care briefing is the entry point on the empty home screen;
+              once the conversation starts it lives inside the thread instead. */}
+          {!hasMessages && <CareBriefingThread onAsk={sendMessage} onCheck={appendBriefing} />}
 
           {/* Chat Input - hero state only */}
           {!hasMessages && (
