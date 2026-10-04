@@ -491,6 +491,7 @@ export const Sidebar = () => {
     flows
   } = useFlowContext();
   const { user } = useAuth();
+  const location = useLocation();
   const { data: myFlows } = useMyFlows(user?.id);
   const { pinnedFlowIds, togglePin } = useFlowPreferences(user?.id);
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
@@ -678,7 +679,6 @@ export const Sidebar = () => {
 
   const isMobile = useIsMobile();
   const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
-  const location = useLocation();
 
   // Auto-close mobile sheet on route change
   useEffect(() => {
