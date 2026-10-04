@@ -300,8 +300,10 @@ function CanvasDropZone({
     >
       {empty ? (
         <div className="h-64 flex flex-col items-center justify-center text-center text-muted-foreground">
-          <div className="text-sm font-medium">Drag a field here to get started</div>
-          <div className="text-xs mt-1">Pick from the palette on the left</div>
+          <div className="text-sm font-medium sm:hidden">Add your first field</div>
+          <div className="mt-1 text-xs sm:hidden">Use Add field above</div>
+          <div className="hidden text-sm font-medium sm:block">Drag a field here to get started</div>
+          <div className="mt-1 hidden text-xs sm:block">Pick from the palette on the left</div>
         </div>
       ) : (
         <div className="space-y-3">{children}</div>

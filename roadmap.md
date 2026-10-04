@@ -11,6 +11,7 @@
 - [x] Improve FlowLeed AI long answers, composer, and review flow
 - [x] Add phone-native lists for People and Flows
 - [x] Optimize Tasks, Signals, Groups, Analytics, and profiles
+- [x] Replace the Form Builder's fixed two-column phone layout with a touch-friendly field picker and canvas
 - [ ] Verify major workflows at 320, 360, 390, and 430px
 
 ## FlowLeed AI tools
