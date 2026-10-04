@@ -13,6 +13,7 @@ import { GroupImageUpload } from "./GroupImageUpload";
 import { LeaderSelector } from "./LeaderSelector";
 import { AIGroupDescriptionSuggestions } from "./AIGroupDescriptionSuggestions";
 import { useGroupTypes } from "@/hooks/useGroupTypes";
+import { publicUrl } from "@/lib/publicUrl";
 
 interface EditGroupDialogProps {
   group: Group;
