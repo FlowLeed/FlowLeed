@@ -361,6 +361,19 @@ Deno.serve(async (req) => {
     }
 
 
+    try {
+      await sendFormEmails({
+        settings: (form as any).email_settings || {},
+        formName: (form as any).name || 'Form',
+        fields: fields || [],
+        data,
+        name,
+        email,
+      });
+    } catch (e) {
+      console.error('form email error', e);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
