@@ -5,7 +5,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
 import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Sparkles, Film, HandHeart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
+import { DropdownMenuCheckboxItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { useFlowTeamMemberships } from "@/hooks/useFlowTeamMemberships";
@@ -54,6 +54,7 @@ interface SidebarSectionProps {
   pinnedFlowIds?: Set<string>;
   onPin?: (flowId: string) => void;
   filterControl?: React.ReactNode;
+  footerControl?: React.ReactNode;
 }
 const NavItem = ({
   item,
@@ -119,6 +120,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   pinnedFlowIds,
   onPin,
   filterControl,
+  footerControl,
 }) => {
   const location = useLocation();
   const {
@@ -469,8 +471,14 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
       
       
       <div className="space-y-0.5">
-        {items.map(item => <NavItem key={item.flowId ?? item.path ?? item.title} item={item} isActive={location.pathname === item.path} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />)}
+        {items.map(item => {
+          const isActive = item.path === "/"
+            ? location.pathname === "/"
+            : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+          return <NavItem key={item.flowId ?? item.path ?? item.title} item={item} isActive={isActive} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />;
+        })}
       </div>
+      {footerControl}
       
     </div>;
 };
@@ -522,7 +530,7 @@ export const Sidebar = () => {
     } catch {}
   }, [STORAGE_KEY, showAllFlows, showPinnedOnly, teamMemberFilter]);
   
-  const pageItems: SidebarItem[] = ([{
+  const hubItems: SidebarItem[] = ([{
     title: "FlowLeed AI",
     icon: Sparkles,
     path: "/",
@@ -554,18 +562,7 @@ export const Sidebar = () => {
     icon: HandHeart,
     path: "/prayer"
   }, {
-    title: "Content",
-    icon: Film,
-    path: "/content",
-    beta: true,
-    featureKey: "content" as const,
-  }, {
-    title: "Forms",
-    icon: CheckSquare,
-    path: "/forms",
-    beta: true,
-    featureKey: "forms" as const,
-  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "forms" })[])
+  }] as (SidebarItem & { featureKey?: "flowleed_ai" | "signals" })[])
     .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
 
@@ -606,16 +603,25 @@ export const Sidebar = () => {
   // Build my flow IDs set from useMyFlows data
   const myFlowIds = new Set<string>(myFlows?.map((f: any) => f.id).filter(Boolean) || []);
 
-  // Filtering logic
+  // Keep the everyday Flow list compact. Favorites appear first, while the
+  // current Flow is always retained so navigation never loses context.
   let displayedFlowItems: SidebarItem[];
   if (showAllFlows) {
     displayedFlowItems = allFlowItems;
   } else {
-    // My flows: show flows where user is a team member + pinned flows
-    displayedFlowItems = allFlowItems.filter(item =>
+    const preferredFlowItems = allFlowItems.filter(item =>
       (item.flowId && myFlowIds.has(item.flowId)) ||
       (item.flowId && pinnedFlowIds.has(item.flowId))
     );
+    const compactCandidates = preferredFlowItems.length > 0 ? preferredFlowItems : allFlowItems;
+    const pinnedFirst = [...compactCandidates].sort((a, b) =>
+      Number(!!b.flowId && pinnedFlowIds.has(b.flowId)) - Number(!!a.flowId && pinnedFlowIds.has(a.flowId))
+    );
+    displayedFlowItems = pinnedFirst.slice(0, 6);
+    const activeFlow = allFlowItems.find(item => item.path === location.pathname);
+    if (activeFlow && !displayedFlowItems.some(item => item.flowId === activeFlow.flowId)) {
+      displayedFlowItems = [...displayedFlowItems.slice(0, 5), activeFlow];
+    }
   }
   if (showPinnedOnly) {
     displayedFlowItems = displayedFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
@@ -624,12 +630,24 @@ export const Sidebar = () => {
     const memberFlows = flowsByMember.get(teamMemberFilter) ?? new Set<string>();
     displayedFlowItems = displayedFlowItems.filter(item => item.flowId && memberFlows.has(item.flowId));
   }
-  const filtersActive = showAllFlows || showPinnedOnly || !!teamMemberFilter;
+  const filtersActive = showPinnedOnly || !!teamMemberFilter;
   
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
   
-  const connectItems: SidebarItem[] = ([{
+  const marketingItems: SidebarItem[] = ([{
+    title: "Content & Stories",
+    icon: Film,
+    path: "/content",
+    beta: true,
+    featureKey: "content" as const,
+  }, {
+    title: "Forms",
+    icon: CheckSquare,
+    path: "/forms",
+    beta: true,
+    featureKey: "forms" as const,
+  }, {
     title: "Messages",
     icon: MessageSquare,
     path: "/messages",
@@ -641,7 +659,7 @@ export const Sidebar = () => {
     path: "/calls",
     comingSoon: true,
     featureKey: "calling" as const,
-  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" })[])
+  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "content" | "forms" })[])
     .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
   const settingsItems: SidebarItem[] = [{
@@ -680,12 +698,6 @@ export const Sidebar = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
-        <DropdownMenuLabel>View</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={showAllFlows ? "all" : "my"} onValueChange={(v) => setShowAllFlows(v === "all")}>
-          <DropdownMenuRadioItem value="my">My flows</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="all">All flows</DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
         <DropdownMenuLabel>Show</DropdownMenuLabel>
         <DropdownMenuCheckboxItem checked={showPinnedOnly} onCheckedChange={(c) => setShowPinnedOnly(!!c)}>
           <Star className="h-3.5 w-3.5 mr-2" />
@@ -734,11 +746,22 @@ export const Sidebar = () => {
     </DropdownMenu>
   );
 
+  const flowsToggleControl = allFlowItems.length > 6 ? (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="mt-1 h-9 w-full justify-start px-[10px] text-xs font-normal text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+      onClick={() => setShowAllFlows(current => !current)}
+    >
+      {showAllFlows ? "Show fewer" : `Show all ${allFlowItems.length}`}
+    </Button>
+  ) : null;
+
   const sidebarContent = (
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
-        <SidebarSection title="HUB" items={pageItems} />
+        <SidebarSection title="HUB" items={hubItems} />
         <SidebarSection
           title="Flows"
           items={displayedFlowItems}
@@ -746,8 +769,9 @@ export const Sidebar = () => {
           pinnedFlowIds={pinnedFlowIds}
           onPin={togglePin}
           filterControl={flowsFilterControl}
+          footerControl={flowsToggleControl}
         />
-        {connectItems.length > 0 && <SidebarSection title="Connect" items={connectItems} />}
+        {marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
         <SidebarSection title="Settings" items={settingsItems} />
       </div>
     </>

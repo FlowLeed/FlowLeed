@@ -29,6 +29,7 @@
 
 ## Navigation visibility
 - [x] Hide Connect when Messages and Calls are unavailable
+- [x] Group navigation into HUB, Flows, Marketing, and Settings with a compact Show all Flows control
 
 ## Life Seasons (engagement pause)
 - [x] Database table, RLS, frozen scores
