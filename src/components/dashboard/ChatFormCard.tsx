@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Globe, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { publicUrl } from "@/lib/publicUrl";
 import { toast } from "sonner";
 
 /** Preview / Publish / Copy-link controls for a form FlowLeed AI just created. */
@@ -17,7 +18,7 @@ export const ChatFormCard = ({ id, path }: { id: string; path: string }) => {
       return data;
     },
   });
-  const url = `${window.location.origin}${path}`;
+  const url = publicUrl(path);
   if (form === null) return null;
 
   const publish = async () => {
