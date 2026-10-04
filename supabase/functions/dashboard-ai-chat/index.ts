@@ -579,7 +579,10 @@ async function executePendingAction(adminClient: ReturnType<typeof createClient>
     const statusUpdate = await adminClient.from("ai_action_requests").update({ status: "completed", confirmed_at: now, completed_at: now, result_payload: { form_id: form.id } }).eq("id", request.id).eq("status", "pending").select("id").maybeSingle();
     if (!statusUpdate.data) return { ok: false, message: "This action was already handled." };
     await adminClient.from("ai_tool_audit_logs").insert({ organization_id: orgId, requested_by_user_id: userId, tool_key: request.tool_key, action_request_id: request.id, outcome: "completed", affected_records: [{ type: "form", id: form.id }] });
-    return { ok: true, message: `Created the form "${blueprint.name}" with ${count} questions${createdFlow ? ` and the new Flow [${createdFlow.name}](/flows/${createdFlow.id})` : ""}. It's a draft until you publish it. [Open in Form Builder](/forms/${form.id})` };
+    const { data: orgRow } = await adminClient.from("organizations").select("slug").eq("id", orgId).maybeSingle();
+    const formPath = orgRow?.slug ? `/${orgRow.slug}/f/${form.slug}` : null;
+    const formMarker = formPath ? `\n\n<!--flowleed:form=${JSON.stringify({ id: form.id, path: formPath })}-->` : "";
+    return { ok: true, message: `Created the form "${blueprint.name}" with ${count} questions${createdFlow ? ` and the new Flow [${createdFlow.name}](/flows/${createdFlow.id})` : ""}. It's a draft until you publish it. Preview it, then publish it when you're ready. [Open in Form Builder](/forms/${form.id})${formMarker}` };
   }
   if (request.tool_key === "create_task") {
     const title = String(payload?.title || "").trim();
