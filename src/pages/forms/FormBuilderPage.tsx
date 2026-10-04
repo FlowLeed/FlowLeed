@@ -50,6 +50,7 @@ import {
   CircleDot,
   CheckSquare,
   Settings2,
+  Save,
 } from "lucide-react";
 
 type FieldType =
@@ -122,6 +123,27 @@ function PaletteItem({ type, label, hint, Icon }: (typeof PALETTE)[number]) {
         <div className="text-xs text-muted-foreground truncate">{hint}</div>
       </div>
     </div>
+  );
+}
+
+function MobilePaletteItem({
+  type,
+  label,
+  Icon,
+  onAdd,
+}: (typeof PALETTE)[number] & { onAdd: (type: FieldType) => void }) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="h-auto min-h-14 justify-start gap-3 px-3 py-2 text-left"
+      onClick={() => onAdd(type)}
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </span>
+      <span className="min-w-0 truncate text-sm font-medium">{label}</span>
+    </Button>
   );
 }
 
@@ -207,7 +229,7 @@ function CanvasField({
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
-      className={`group relative rounded-lg border bg-card p-4 pl-8 transition cursor-pointer ${
+      className={`group relative rounded-lg border bg-card p-3 pl-9 pr-20 transition cursor-pointer sm:p-4 sm:pl-8 ${
         selected ? "border-primary ring-2 ring-primary/40" : "hover:border-primary/40"
       } ${isDragging ? "opacity-50" : ""}`}
     >
@@ -217,18 +239,18 @@ function CanvasField({
         {...attributes}
         {...listeners}
         onClick={(e) => e.stopPropagation()}
-        className="absolute left-1.5 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing"
+        className="absolute left-1 top-1/2 flex h-9 w-7 -translate-y-1/2 items-center justify-center rounded text-muted-foreground cursor-grab active:cursor-grabbing sm:left-1.5 sm:h-auto sm:w-auto sm:p-1 sm:opacity-0 sm:group-hover:opacity-100"
         aria-label="Drag to reorder"
       >
         <GripVertical className="h-4 w-4" />
       </button>
 
       {/* Actions */}
-      <div className="absolute right-2 top-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+      <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 transition sm:right-2 sm:top-2 sm:gap-1 sm:opacity-0 sm:group-hover:opacity-100">
         <Button
           size="icon"
           variant="ghost"
-          className="h-7 w-7"
+          className="h-9 w-9 sm:h-7 sm:w-7"
           onClick={(e) => {
             e.stopPropagation();
             onEdit();
@@ -239,7 +261,7 @@ function CanvasField({
         <Button
           size="icon"
           variant="ghost"
-          className="h-7 w-7 text-destructive hover:text-destructive"
+          className="h-9 w-9 text-destructive hover:text-destructive sm:h-7 sm:w-7"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
@@ -272,7 +294,7 @@ function CanvasDropZone({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-xl border-2 border-dashed p-4 min-h-[300px] transition ${
+      className={`rounded-xl border-2 border-dashed p-2 min-h-[300px] transition sm:p-4 ${
         isOver ? "border-primary bg-primary/5" : "border-border/60"
       }`}
     >
@@ -333,6 +355,7 @@ export default function FormBuilderPage() {
   const [selectedCid, setSelectedCid] = useState<string | null>(null);
   const [editingCid, setEditingCid] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [fieldPickerOpen, setFieldPickerOpen] = useState(false);
   const [dragging, setDragging] = useState<
     | { source: "palette"; fieldType: FieldType }
     | { source: "canvas"; cid: string }
@@ -485,6 +508,7 @@ export default function FormBuilderPage() {
       return next;
     });
     setSelectedCid(newField._cid);
+    setFieldPickerOpen(false);
   };
 
   const updateFieldByCid = (cid: string, patch: Partial<Field>) => {
@@ -622,8 +646,31 @@ export default function FormBuilderPage() {
         }
       />
 
-      <div className="border-b bg-background/50 px-6 py-2">
-        <Button variant="ghost" size="sm" asChild>
+      <div className="border-b bg-background/50 px-2 py-2 sm:px-6">
+        <div className="flex items-center gap-1 sm:hidden">
+          <Button variant="ghost" size="icon" asChild className="h-10 w-10 shrink-0" aria-label="All forms">
+            <Link to="/forms">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" className="min-w-0 flex-1 gap-1.5" onClick={() => setFieldPickerOpen(true)}>
+            <Plus className="h-4 w-4" /> Add field
+          </Button>
+          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setSettingsOpen(true)} aria-label="Form settings">
+            <Settings2 className="h-4 w-4" />
+          </Button>
+          {form && (
+            <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" asChild aria-label="Preview form">
+              <a href={`${publicUrl}?preview=1`} target="_blank" rel="noreferrer">
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </Button>
+          )}
+          <Button size="icon" className="h-10 w-10 shrink-0" onClick={() => save.mutate()} disabled={save.isPending} aria-label="Save form">
+            <Save className="h-4 w-4" />
+          </Button>
+        </div>
+        <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
           <Link to="/forms">
             <ArrowLeft className="h-4 w-4 mr-1" /> All forms
           </Link>
@@ -641,9 +688,9 @@ export default function FormBuilderPage() {
           setCanvasOver(false);
         }}
       >
-        <div className="flex-1 min-h-0 grid grid-cols-[280px_1fr] gap-0">
+        <div className="flex-1 min-h-0 grid grid-cols-1 gap-0 sm:grid-cols-[280px_1fr]">
           {/* Palette */}
-          <aside className="border-r bg-muted/20 overflow-y-auto p-4">
+          <aside className="hidden border-r bg-muted/20 overflow-y-auto p-4 sm:block">
             <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">
               Add Fields
             </div>
@@ -655,7 +702,7 @@ export default function FormBuilderPage() {
           </aside>
 
           {/* Canvas */}
-          <main className="overflow-y-auto p-6 bg-muted/10">
+          <main className="overflow-y-auto bg-muted/10 p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:p-6">
             <div className="max-w-2xl mx-auto space-y-4">
               <div>
                 <Input
@@ -699,9 +746,22 @@ export default function FormBuilderPage() {
         </DragOverlay>
       </DndContext>
 
+      <Sheet open={fieldPickerOpen} onOpenChange={setFieldPickerOpen}>
+        <SheetContent side="bottom" className="max-h-[78dvh] overflow-y-auto rounded-t-lg px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-5 sm:hidden">
+          <SheetHeader className="text-left">
+            <SheetTitle>Add a field</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {PALETTE.map((item) => (
+              <MobilePaletteItem key={item.type} {...item} onAdd={addField} />
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Field editor sheet */}
       <Sheet open={!!editingField} onOpenChange={(o) => !o && setEditingCid(null)}>
-        <SheetContent className="w-[420px] sm:max-w-[420px] overflow-y-auto">
+        <SheetContent className="w-full max-w-full overflow-y-auto sm:w-[420px] sm:max-w-[420px]">
           <SheetHeader>
             <SheetTitle>Edit field</SheetTitle>
           </SheetHeader>
@@ -800,7 +860,7 @@ export default function FormBuilderPage() {
 
       {/* Form settings sheet */}
       <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent className="w-[420px] sm:max-w-[420px] overflow-y-auto">
+        <SheetContent className="w-full max-w-full overflow-y-auto sm:w-[420px] sm:max-w-[420px]">
           <SheetHeader>
             <SheetTitle>Form settings</SheetTitle>
           </SheetHeader>
