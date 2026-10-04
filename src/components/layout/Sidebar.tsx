@@ -875,7 +875,7 @@ const DesktopRail = ({
     <>
       <div className="flex h-full flex-shrink-0" style={{ width: `var(--sidebar-width)` }}>
         <nav className="flex h-full w-14 flex-shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-3">
-          <img src={flowleedMark} alt="FlowLeed" className="mb-2 h-6 w-6 object-contain object-left" />
+          <img src={flowleedLogo} alt="FlowLeed" className="mb-2 h-6 w-6 object-cover object-left" />
           {aiLink && (
             <Link
               to="/"
@@ -895,13 +895,13 @@ const DesktopRail = ({
         </nav>
         {open && (
           <div className="flex h-full min-w-0 flex-1 flex-col bg-sidebar animate-in slide-in-from-left-2 duration-200">
-            <div className="flex items-center justify-between px-4 pb-1 pt-4">
-              <span className="text-sm font-semibold text-sidebar-foreground">{titles[section]}</span>
+            <div className="flex items-center justify-end px-3 pt-3">
+              <span className="sr-only">{titles[section]}</span>
               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)} title="Collapse menu" aria-label="Collapse menu">
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex-1 overflow-auto px-3 py-2 sidebar-scroll [&_h3]:hidden">
+            <div className="flex-1 overflow-auto px-3 py-2 sidebar-scroll">
               {section === "hub" && <SidebarSection title="HUB" items={hubItems} />}
               {section === "flows" && flowsSection}
               {section === "marketing" && <SidebarSection title="Marketing" items={marketingItems} />}
