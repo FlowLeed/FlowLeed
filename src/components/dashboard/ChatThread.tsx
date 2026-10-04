@@ -206,6 +206,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                   const heading = section.match(/^#{2,3}\s+([^\n]+)/m)?.[1]?.toLowerCase() ?? "";
                   if (heading.includes("private note") || heading === "note" || heading === "notes") return "create_contact_note";
                   if (heading.includes("reminder") || heading.includes("task")) return "create_task";
+                  if (heading.includes("form")) return "create_form";
                   if (heading.includes("prayer")) return "create_prayer_request";
                   if (heading.includes("flow")) return "add_to_flow";
                   return undefined;
