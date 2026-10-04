@@ -233,7 +233,8 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                     setHandledActions((current) => new Set([...current, ...approvedIds]));
                   }
                 };
-                const approvalButton = (actions: ChatAction[], groupId: string) => {
+                const pendingGroups: { actions: ChatAction[]; groupId: string; type?: string }[] = [];
+                const approvalButton = (actions: ChatAction[], groupId: string, type?: string) => {
                   const waiting = pendingActions(actions);
                   if (waiting.length === 0) return null;
                   waiting.forEach((action) => assignedActionIds.add(action.id));
@@ -254,6 +255,11 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                       const type = actionTitleType(section);
                       const sectionActions = type ? actionsAll.filter((action) => action.type === type) : [];
                       const groupId = `${i}-${type ?? sectionIndex}`;
+                      const waiting = pendingActions(sectionActions);
+                      if (waiting.length > 0) {
+                        waiting.forEach((action) => assignedActionIds.add(action.id));
+                        pendingGroups.push({ actions: waiting, groupId, type });
+                      }
                       return (
                         <div key={groupId} className="not-prose">
                           {/* !h-auto prevents controls after the text from being clipped.
