@@ -409,19 +409,26 @@ export default function FormBuilderPage() {
     }
   }, [initialFields]);
 
-  const { data: pipelines } = useQuery({
-    queryKey: ["pipelines-for-form", form?.organization_id],
-    enabled: !!form?.organization_id,
+  const flowOrgId = form?.organization_id ?? organization?.id;
+  const { data: pipelines, error: pipelinesError } = useQuery({
+    queryKey: ["pipelines-for-form", flowOrgId],
+    enabled: !!flowOrgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pipelines")
         .select("id, name")
-        .eq("organization_id", form!.organization_id)
+        .eq("organization_id", flowOrgId!)
         .order("name");
-      if (error) throw error;
+      if (error) {
+        console.error("[FormBuilder] failed to load flows", error);
+        throw error;
+      }
       return data;
     },
   });
+  useEffect(() => {
+    if (pipelinesError) console.error("[FormBuilder] flows error", pipelinesError);
+  }, [pipelinesError]);
 
   const { data: stages } = useQuery({
     queryKey: ["stages-for-form", pipelineId],
