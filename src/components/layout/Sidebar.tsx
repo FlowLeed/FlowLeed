@@ -814,7 +814,7 @@ export const Sidebar = () => {
       setMobileOpen(true);
     };
     const tabClass = (active: boolean) =>
-      `flex h-full w-full flex-col items-center justify-center transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
+      `flex h-14 w-full flex-col items-center justify-center transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
     const iconClass = (active: boolean) => `h-[22px] w-[22px] ${active ? "stroke-[2]" : "stroke-[1.7]"}`;
 
     return (
@@ -827,7 +827,7 @@ export const Sidebar = () => {
         <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
         <nav
           aria-label="Primary"
-          className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-bottom))] items-stretch border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+          className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-bottom))] items-start border-t border-sidebar-border bg-sidebar/95 backdrop-blur"
         >
           {aiEnabled && (
             <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
