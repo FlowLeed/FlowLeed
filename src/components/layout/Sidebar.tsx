@@ -842,6 +842,11 @@ export const Sidebar = () => {
             <Menu className={iconClass(settingsActive)} />
           </button>
         </nav>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetContent side="left" className="w-[280px] p-0 overflow-y-auto">
+            {mobileSheetContent}
+          </SheetContent>
+        </Sheet>
       </>
     );
   }
