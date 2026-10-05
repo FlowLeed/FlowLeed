@@ -27,6 +27,9 @@ const THINKING_MESSAGES = [
 const TITLE_HINT =
   /\b(?:Overview|Activity|History|Summary|Context|Connection|Engagement|Household|Groups?|Flows?|Journey|Milestones?|Profile|Serving|Family|Care|Spiritual|Recent|Leadership|Next Steps|Prayer|Notes|Demographics|Tags|Interactions)\b/;
 
+/** A markdown list item: "-", "*", "+" or "1." / "1)" followed by a space. */
+const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s/;
+
 const formatAssistantMarkdown = (content: string) => {
   let text = content
     // Preserve markdown structure when a streamed heading arrives immediately
@@ -44,8 +47,12 @@ const formatAssistantMarkdown = (content: string) => {
       return `${sp}${inner.trim()} `;
     })
     // Mid-line bold labels start their own quiet heading between paragraphs.
-    .replace(/([^\n*])\s*\*\*([^*]{1,60}?):\*\*(?=\s*\S)/g, (_m, before: string, label: string) =>
-      `${before}\n\n### ${label.trim()}\n\n`);
+    // List items keep their label ("*   **Availability:** When...") - splitting
+    // one would leave an empty bullet above a heading.
+    .replace(/^.*$/gm, (line) => LIST_ITEM.test(line)
+      ? line
+      : line.replace(/([^\n*])\s*\*\*([^*]{1,60}?):\*\*(?=\s*\S)/g, (_m, before: string, label: string) =>
+        `${before}\n\n### ${label.trim()}\n\n`));
   // Bold stays for titles only - paragraphs render as plain text.
   text = text.replace(/\*\*([^*]+)\*\*/g, "$1");
   return text
@@ -293,6 +300,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                             [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
                             [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:leading-6
                             [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_li]:leading-6
+                            [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:list-outside [&_ol]:list-outside [&_ul]:pl-5 [&_ol]:pl-5
                             [&_strong]:font-semibold [&_strong]:text-foreground
                             [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2`}>
                             {section}
