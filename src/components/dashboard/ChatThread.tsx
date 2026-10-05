@@ -236,11 +236,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 const pendingGroups: { actions: ChatAction[]; groupId: string; type?: string }[] = [];
                 const actionLabel = (type?: string) => {
                   switch (type) {
-                    case "create_contact_note": return "Approve note";
-                    case "create_task": return "Approve task";
+                    case "create_contact_note": return "Approve adding note";
+                    case "create_task": return "Approve adding task";
                     case "create_form": return "Approve form";
-                    case "create_prayer_request": return "Approve prayer request";
+                    case "create_prayer_request": return "Approve adding prayer request";
                     case "add_to_flow": return "Approve flow update";
+                    case "update_task": return "Approve task update";
                     default: return "Approve";
                   }
                 };

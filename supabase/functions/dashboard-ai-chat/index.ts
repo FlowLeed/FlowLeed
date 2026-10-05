@@ -324,7 +324,7 @@ async function prepareTask(
     if (matches[0].user_id !== userId) assignee = { id: matches[0].user_id, name: matches[0].full_name || matches[0].email };
   }
   const summary = [title, contact ? `For: ${contact.name}` : null, assignee ? `Assigned to: ${assignee.name}` : null, dueAt ? `Due: ${dueAt.slice(0, 10)}` : null, description || null].filter(Boolean).join("\n");
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "create_task",
     summary, expires_at: expiresAt,
@@ -437,7 +437,7 @@ async function prepareUpdateTask(
   const summary = complete
     ? `Mark done: ${t.title}${t.contact?.name ? `\nFor: ${t.contact.name}` : ""}`
     : `Reschedule: ${t.title}${t.contact?.name ? `\nFor: ${t.contact.name}` : ""}\nFrom: ${t.due_at ? t.due_at.slice(0, 10) : "no date"} → ${dueAt!.slice(0, 10)}`;
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "update_task",
     summary, expires_at: expiresAt, action_payload: { task_id: t.id, complete, due_at: dueAt },
@@ -469,7 +469,7 @@ async function prepareAddToFlow(
   const contact = contacts[0];
   const step = matchingSteps[0];
   const summary = `${contact.name} → ${flow.name} → ${step.name}`;
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "add_people_to_flow",
     summary, expires_at: expiresAt,
@@ -496,7 +496,7 @@ async function prepareContactNote(
   const contact = contacts[0];
   const privacyLabel = isPrivate ? "Private" : "Shared";
   const summary = `${contact.name} • ${noteType} • ${privacyLabel}\n\n${content}`;
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "create_contact_note",
     summary, expires_at: expiresAt,
@@ -522,7 +522,7 @@ async function preparePrayerRequest(
   if (!contacts || contacts.length !== 1) return contacts?.length ? `I found more than one person matching "${personName}". Please use their full name.` : `I couldn't find ${personName} in your church records.`;
   const contact = contacts[0];
   const summary = `${contact.name} • ${title}\n\n${description}`;
-  const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString();
   const { data: request, error } = await adminClient.from("ai_action_requests").insert({
     organization_id: orgId, requested_by_user_id: userId, tool_key: "create_prayer_request",
     summary, expires_at: expiresAt,
