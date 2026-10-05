@@ -5,7 +5,7 @@ import { useId } from "react";
  * heart-swirl mark, traced from the brand artwork.
  * Renders at any size via className (defaults to h-5 w-5).
  */
-const AiBrandIcon = ({ className = "h-5 w-5" }: { className?: string }) => {
+const AiBrandIcon = ({ className = "h-5 w-5", ...props }: React.SVGProps<SVGSVGElement> & { className?: string }) => {
   const maskId = useId().replace(/[:]/g, "");
   return (
     <svg
@@ -14,6 +14,7 @@ const AiBrandIcon = ({ className = "h-5 w-5" }: { className?: string }) => {
       fill="none"
       aria-hidden="true"
       focusable="false"
+      {...props}
     >
       <defs>
         <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="560" height="560">
