@@ -30,7 +30,7 @@ import { useMyFlows } from "@/hooks/useMyFlows";
 import { useFlowPreferences } from "@/hooks/useFlowPreferences";
 import { useOrgFeatures } from "@/hooks/useOrgFeatures";
 import type { LucideIcon } from "lucide-react";
-import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 interface SidebarItem {
   title: string;
   icon: LucideIcon;
@@ -761,7 +761,7 @@ export const Sidebar = () => {
       to="/"
       className={`flex min-h-11 md:min-h-9 items-center gap-3 rounded-full px-[10px] py-2 md:py-1 text-sm transition-colors ${aiActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}
     >
-      <AiSparkleIcon className="h-5 w-5 shrink-0" />
+      <AiBrandIcon className="h-5 w-5 shrink-0" />
       <span className="font-extralight">FlowLeed AI</span>
     </Link>
   ) : null;
@@ -831,7 +831,7 @@ export const Sidebar = () => {
         >
           {aiEnabled && (
             <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
-              <AiSparkleIcon className="h-[24px] w-[24px] shrink-0" />
+              <AiBrandIcon className="h-[24px] w-[24px] shrink-0" />
             </Link>
           )}
           <button type="button" aria-label="HUB" aria-expanded={mobileOpen && mobileSection === "hub"} onClick={() => openSheet("hub")} className={tabClass(hubActive)}>
@@ -942,7 +942,7 @@ const DesktopRail = ({
                       aria-label="FlowLeed AI"
                       className={`flex h-10 w-10 items-center justify-center rounded-lg transition-opacity ${aiActive ? "opacity-100" : "opacity-80 hover:opacity-100"}`}
                     >
-                      <AiSparkleIcon className="h-[26px] w-[26px] shrink-0" />
+                      <AiBrandIcon className="h-[26px] w-[26px] shrink-0" />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={10}>FlowLeed AI</TooltipContent>
