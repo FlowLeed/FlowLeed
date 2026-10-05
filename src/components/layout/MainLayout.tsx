@@ -15,7 +15,7 @@ export const MainLayout = () => {
         <DemoModeBanner />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 max-w-full">
+          <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0 max-w-full pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0">
             <Outlet />
           </div>
         </div>
