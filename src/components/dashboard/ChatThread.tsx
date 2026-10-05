@@ -236,11 +236,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 const pendingGroups: { actions: ChatAction[]; groupId: string; type?: string }[] = [];
                 const actionLabel = (type?: string) => {
                   switch (type) {
-                    case "create_contact_note": return "Approve note";
-                    case "create_task": return "Approve task";
+                    case "create_contact_note": return "Approve adding note";
+                    case "create_task": return "Approve adding task";
                     case "create_form": return "Approve form";
-                    case "create_prayer_request": return "Approve prayer request";
+                    case "create_prayer_request": return "Approve adding prayer request";
                     case "add_to_flow": return "Approve flow update";
+                    case "update_task": return "Approve task update";
                     default: return "Approve";
                   }
                 };
@@ -309,10 +310,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         pendingGroups.push({ actions: remaining, groupId: `${i}-remaining-actions` });
                       }
                       if (pendingGroups.length === 0) return null;
-                      const multi = pendingGroups.length > 1;
+                      // One button per action: approving one must never remove the others.
+                      const individual = pendingGroups.flatMap(({ actions, type }) =>
+                        actions.map((action) => ({ action, type: type ?? action.type }))
+                      );
                       return (
                         <div className="not-prose mt-4 flex flex-col items-start gap-2">
-                          {pendingGroups.map(({ actions, groupId, type }) => approvalButton(actions, groupId, multi ? type : undefined))}
+                          {individual.map(({ action, type }) => approvalButton([action], action.id, type))}
                         </div>
                       );
                     })()}
