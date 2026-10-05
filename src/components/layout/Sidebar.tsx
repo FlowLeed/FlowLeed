@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Film, HandHeart, TrendingUp, Menu } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Film, HandHeart, TrendingUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenuCheckboxItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
@@ -485,7 +485,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
     </div>;
 };
 import flowleedLogo from "@/assets/flowleed_logo_new.png";
-const Logo = () => <div className="px-8 py-6 flex items-center">
+const Logo = () => <div className="px-6 pt-6 pb-3 flex items-center">
     <img src={flowleedLogo} alt="Flowleed" className="h-5 w-auto" />
   </div>;
 export const Sidebar = () => {
@@ -676,7 +676,7 @@ export const Sidebar = () => {
 
   const isMobile = useIsMobile();
   const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
-  const [mobileSection, setMobileSection] = useState<"all" | "hub" | "flows" | "marketing" | "settings">("all");
+  const [mobileSection, setMobileSection] = useState<"hub" | "flows" | "marketing" | "settings">("hub");
 
   // Auto-close mobile sheet on route change
   useEffect(() => {
@@ -782,22 +782,10 @@ export const Sidebar = () => {
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
-        {mobileSection === "all" ? (
-          <>
-            {aiLink}
-            <SidebarSection title="HUB" items={hubItems} />
-            {flowsSection}
-            {marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
-            <SidebarSection title="Settings" items={settingsItems} />
-          </>
-        ) : (
-          <>
-            {mobileSection === "hub" && <SidebarSection title="HUB" items={hubItems} />}
-            {mobileSection === "flows" && flowsSection}
-            {mobileSection === "marketing" && marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
-            {mobileSection === "settings" && <SidebarSection title="Settings" items={settingsItems} />}
-          </>
-        )}
+        {mobileSection === "hub" && <SidebarSection title="HUB" items={hubItems} />}
+        {mobileSection === "flows" && flowsSection}
+        {mobileSection === "marketing" && marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
+        {mobileSection === "settings" && <SidebarSection title="Settings" items={settingsItems} />}
       </div>
     </>
   );
@@ -809,7 +797,7 @@ export const Sidebar = () => {
     const flowsActive = pathname.startsWith("/flows");
     const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
     const settingsActive = matchesItems(settingsItems);
-    const openSheet = (section: "all" | "hub" | "flows" | "marketing") => {
+    const openSheet = (section: "hub" | "flows" | "marketing" | "settings") => {
       setMobileSection(section);
       setMobileOpen(true);
     };
@@ -838,12 +826,12 @@ export const Sidebar = () => {
               <TrendingUp className={iconClass(marketingActive)} />
             </button>
           )}
-          <button type="button" aria-label="More" aria-expanded={mobileOpen && mobileSection === "all"} onClick={() => openSheet("all")} className={tabClass(settingsActive)}>
-            <Menu className={iconClass(settingsActive)} />
+          <button type="button" aria-label="Settings" aria-expanded={mobileOpen && mobileSection === "settings"} onClick={() => openSheet("settings")} className={tabClass(settingsActive)}>
+            <Settings className={iconClass(settingsActive)} />
           </button>
         </nav>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="w-[280px] p-0 overflow-y-auto">
+          <SheetContent side="bottom" className="max-h-[75dvh] rounded-t-2xl p-0 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
             {mobileSheetContent}
           </SheetContent>
         </Sheet>
