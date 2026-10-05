@@ -3,4 +3,4 @@
 - create_form tool hands off to Form Builder specialist (_shared/formAgent.ts): separate focused AI call designs the blueprint, main agent only routes. Why: specialists stay small and controllable.
 - Form Builder uses a persistent field palette on larger screens and a bottom field picker on phones. Why: the editing canvas must remain full-width and touch-friendly on small screens.
 - Flow form-submission details are loaded once at the Flow level and shared by card and table views. Why: both views must show identical answers without per-person request waterfalls.
-- Desktop navigation is a 56px icon rail (standalone AI button on top, then HUB, Flows, Marketing, Settings) with a collapsible section drawer that updates `--sidebar-width`; phones keep the grouped sheet. Why: wide boards get space while large churches keep quick navigation.
+- Desktop navigation is a label-free 56px icon rail (standalone AI button on top, then HUB, Flows, Marketing, Settings) with tooltips and a collapsible section drawer that updates `--sidebar-width`; phones keep the grouped sheet. Why: wide boards get space while large churches keep quick navigation.

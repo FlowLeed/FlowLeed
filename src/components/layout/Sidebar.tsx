@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { calculateFlowContactCount } from "@/lib/utils";
 import { useFlowContext } from "@/contexts/FlowContext";
@@ -809,7 +810,6 @@ export const Sidebar = () => {
       marketingItems={marketingItems}
       settingsItems={settingsItems}
       flowsSection={flowsSection}
-      flowsBadge={allFlowItems.length}
       pathname={location.pathname}
       flowsManagement={<FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />}
     />
@@ -822,10 +822,10 @@ const DRAWER_WIDTH = 240;
 const DRAWER_KEY = "flowleed-nav-drawer";
 
 const DesktopRail = ({
-  aiLink, aiActive, hubItems, marketingItems, settingsItems, flowsSection, flowsBadge, pathname, flowsManagement,
+  aiLink, aiActive, hubItems, marketingItems, settingsItems, flowsSection, pathname, flowsManagement,
 }: {
   aiLink: boolean; aiActive: boolean; hubItems: SidebarItem[]; marketingItems: SidebarItem[]; settingsItems: SidebarItem[];
-  flowsSection: React.ReactNode; flowsBadge: number; pathname: string; flowsManagement: React.ReactNode;
+  flowsSection: React.ReactNode; pathname: string; flowsManagement: React.ReactNode;
 }) => {
   const matches = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
   const routeSection: RailSection = pathname.startsWith("/flows") ? "flows"
@@ -849,23 +849,26 @@ const DesktopRail = ({
     else { setSection(s); setOpen(true); }
   };
 
-  const railButton = (s: RailSection, Icon: LucideIcon, label: string, badge?: number) => {
+  const railButton = (s: RailSection, Icon: LucideIcon, label: string) => {
     const active = section === s && open;
     const current = routeSection === s && !aiActive;
     return (
-      <button
-        key={s}
-        type="button"
-        onClick={() => choose(s)}
-        title={label}
-        aria-label={label}
-        aria-expanded={active}
-        className={`relative flex h-11 w-11 flex-col items-center justify-center rounded-xl transition-colors ${active ? "bg-sidebar-accent text-sidebar-foreground" : current ? "text-primary hover:bg-sidebar-accent/50" : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"}`}
-      >
-        <Icon className="h-5 w-5" />
-        <span className="mt-0.5 text-[9px] leading-none">{label}</span>
-        {badge ? <span className="absolute -right-0.5 -top-0.5 rounded-full bg-primary px-1 text-[9px] leading-4 text-primary-foreground">{badge}</span> : null}
-      </button>
+      <Tooltip key={s} delayDuration={350}>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => choose(s)}
+            aria-label={label}
+            aria-expanded={active}
+            className={`h-10 w-10 rounded-lg transition-colors ${active ? "bg-sidebar-accent text-sidebar-foreground" : current ? "text-primary hover:bg-sidebar-accent" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}
+          >
+            <Icon className="h-[21px] w-[21px] stroke-[1.7]" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={10}>{label}</TooltipContent>
+      </Tooltip>
     );
   };
 
@@ -874,25 +877,31 @@ const DesktopRail = ({
   return (
     <>
       <div className="flex h-full flex-shrink-0" style={{ width: `var(--sidebar-width)` }}>
-        <nav className="flex h-full w-14 flex-shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-3">
-          <img src={flowleedLogo} alt="FlowLeed" className="mb-2 h-6 w-6 object-cover object-left" />
-          {aiLink && (
-            <Link
-              to="/"
-              title="FlowLeed AI"
-              aria-label="FlowLeed AI"
-              className={`mb-2 flex h-11 w-11 items-center justify-center rounded-full transition-colors ${aiActive ? "bg-primary text-primary-foreground shadow-sm" : "bg-primary/10 text-primary hover:bg-primary/20"}`}
-            >
-              <Sparkles className="h-5 w-5" />
-            </Link>
-          )}
-          <div className="my-1 h-px w-8 bg-sidebar-border" />
-          {railButton("hub", LayoutDashboard, "Hub")}
-          {railButton("flows", RefreshCw, "Flows", flowsBadge)}
-          {marketingItems.length > 0 && railButton("marketing", Film, "Market")}
-          <div className="mt-auto" />
-          {railButton("settings", Settings, "Settings")}
-        </nav>
+        <TooltipProvider>
+          <nav className="flex h-full w-14 flex-shrink-0 flex-col items-center gap-2 border-r border-sidebar-border bg-sidebar py-3">
+            <img src={flowleedLogo} alt="FlowLeed" className="mb-1 h-5 w-5 object-cover object-left" />
+            {aiLink && (
+              <Tooltip delayDuration={350}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/"
+                    aria-label="FlowLeed AI"
+                    className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${aiActive ? "bg-sidebar-accent text-primary" : "text-primary hover:bg-sidebar-accent"}`}
+                  >
+                    <Sparkles className="h-[22px] w-[22px] stroke-[1.7]" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>FlowLeed AI</TooltipContent>
+              </Tooltip>
+            )}
+            <div className="my-1 h-px w-7 bg-sidebar-border" />
+            {railButton("hub", LayoutDashboard, "Hub")}
+            {railButton("flows", RefreshCw, "Flows")}
+            {marketingItems.length > 0 && railButton("marketing", Film, "Marketing")}
+            <div className="mt-auto" />
+            {railButton("settings", Settings, "Settings")}
+          </nav>
+        </TooltipProvider>
         {open && (
           <div className="flex h-full min-w-0 flex-1 flex-col bg-sidebar animate-in slide-in-from-left-2 duration-200">
             <div className="flex items-center justify-end px-3 pt-3">
