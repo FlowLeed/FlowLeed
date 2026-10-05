@@ -815,8 +815,11 @@ export const Sidebar = () => {
     };
     const tabClass = (active: boolean) =>
       `flex h-11 w-full flex-col items-center justify-center transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
-    ...
+    return (
+      <>
+        <nav
           className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(2.75rem+env(safe-area-inset-bottom)*0.6)] items-start border-t border-sidebar-border bg-sidebar/95 backdrop-blur"
+        >
         >
           {aiEnabled && (
             <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
