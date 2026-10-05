@@ -1,4 +1,4 @@
-import { useId } from "react";
+import React, { useId } from "react";
 
 /**
  * FlowLeed AI brand icon — a purple rounded tile with the white
@@ -12,7 +12,6 @@ const AiBrandIcon = ({ className = "h-5 w-5", ...props }: React.SVGProps<SVGSVGE
       viewBox="0 0 560 560"
       className={className}
       fill="none"
-      aria-hidden="true"
       focusable="false"
       {...props}
     >
