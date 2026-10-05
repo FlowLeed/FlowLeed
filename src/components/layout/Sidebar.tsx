@@ -820,7 +820,6 @@ export const Sidebar = () => {
         <nav
           className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(2.75rem+env(safe-area-inset-bottom)*0.6)] items-start border-t border-sidebar-border bg-sidebar/95 backdrop-blur"
         >
-        >
           {aiEnabled && (
             <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
               <AiBrandIcon className="h-[24px] w-[24px] shrink-0" />
