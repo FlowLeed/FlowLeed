@@ -815,6 +815,8 @@ export const Sidebar = () => {
     };
     const tabClass = (active: boolean) =>
       `flex h-11 w-full flex-col items-center justify-center transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
+    const iconClass = (active: boolean) =>
+      `h-[22px] w-[22px] ${active ? "stroke-[2]" : "stroke-[1.7]"}`;
     return (
       <>
         <nav
