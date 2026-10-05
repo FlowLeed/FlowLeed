@@ -761,7 +761,7 @@ export const Sidebar = () => {
       to="/"
       className={`flex min-h-11 md:min-h-9 items-center gap-3 rounded-full px-[10px] py-2 md:py-1 text-sm transition-colors ${aiActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}
     >
-      <Sparkles className="h-5 w-5" />
+      <AiBrandIcon className="h-5 w-5" />
       <span className="font-extralight">FlowLeed AI</span>
     </Link>
   ) : null;

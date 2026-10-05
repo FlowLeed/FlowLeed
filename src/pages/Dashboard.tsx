@@ -62,9 +62,7 @@ const Dashboard = () => {
                 </Button>
               </div>
               <div className="flex flex-col items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-sm" aria-label="FlowLeed AI">
-                  <Sparkles className="h-7 w-7 text-primary-foreground" />
-                </div>
+                <AiBrandIcon className="h-12 w-12 rounded-xl shadow-sm" aria-label="FlowLeed AI" />
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
                   How can I help you today?
                 </h2>
