@@ -74,7 +74,7 @@ const NavItem = ({
       <div className="flex min-h-11 md:min-h-9 w-full items-center gap-3 rounded-full px-4 py-2 md:py-1 text-sm font-medium opacity-50 cursor-not-allowed min-w-0">
         <item.icon className="h-[18px] w-[18px] stroke-[1.7] flex-shrink-0 text-muted-foreground" />
         <span className="font-extralight truncate whitespace-nowrap min-w-0">{item.title}</span>
-        <Badge variant="secondary" className="ml-auto text-xs">Coming Soon</Badge>
+        <span className="ml-auto shrink-0 text-[10px] leading-none text-muted-foreground/70 whitespace-nowrap">Soon</span>
       </div>
     );
   }
