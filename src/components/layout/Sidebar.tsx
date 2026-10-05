@@ -676,7 +676,7 @@ export const Sidebar = () => {
 
   const isMobile = useIsMobile();
   const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
-  const [mobileSection, setMobileSection] = useState<"all" | "hub" | "flows" | "marketing" | "settings">("all");
+  const [mobileSection, setMobileSection] = useState<"hub" | "flows" | "marketing" | "settings">("hub");
 
   // Auto-close mobile sheet on route change
   useEffect(() => {
@@ -782,22 +782,10 @@ export const Sidebar = () => {
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
-        {mobileSection === "all" ? (
-          <>
-            {aiLink}
-            <SidebarSection title="HUB" items={hubItems} />
-            {flowsSection}
-            {marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
-            <SidebarSection title="Settings" items={settingsItems} />
-          </>
-        ) : (
-          <>
-            {mobileSection === "hub" && <SidebarSection title="HUB" items={hubItems} />}
-            {mobileSection === "flows" && flowsSection}
-            {mobileSection === "marketing" && marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
-            {mobileSection === "settings" && <SidebarSection title="Settings" items={settingsItems} />}
-          </>
-        )}
+        {mobileSection === "hub" && <SidebarSection title="HUB" items={hubItems} />}
+        {mobileSection === "flows" && flowsSection}
+        {mobileSection === "marketing" && marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
+        {mobileSection === "settings" && <SidebarSection title="Settings" items={settingsItems} />}
       </div>
     </>
   );
