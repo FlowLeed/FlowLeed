@@ -797,7 +797,7 @@ export const Sidebar = () => {
     const flowsActive = pathname.startsWith("/flows");
     const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
     const settingsActive = matchesItems(settingsItems);
-    const openSheet = (section: "all" | "hub" | "flows" | "marketing") => {
+    const openSheet = (section: "hub" | "flows" | "marketing" | "settings") => {
       setMobileSection(section);
       setMobileOpen(true);
     };
@@ -826,12 +826,12 @@ export const Sidebar = () => {
               <TrendingUp className={iconClass(marketingActive)} />
             </button>
           )}
-          <button type="button" aria-label="More" aria-expanded={mobileOpen && mobileSection === "all"} onClick={() => openSheet("all")} className={tabClass(settingsActive)}>
-            <Menu className={iconClass(settingsActive)} />
+          <button type="button" aria-label="Settings" aria-expanded={mobileOpen && mobileSection === "settings"} onClick={() => openSheet("settings")} className={tabClass(settingsActive)}>
+            <Settings className={iconClass(settingsActive)} />
           </button>
         </nav>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="w-[280px] p-0 overflow-y-auto">
+          <SheetContent side="bottom" className="max-h-[75dvh] rounded-t-2xl p-0 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
             {mobileSheetContent}
           </SheetContent>
         </Sheet>
