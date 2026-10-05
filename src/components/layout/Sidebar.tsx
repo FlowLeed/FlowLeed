@@ -900,7 +900,7 @@ const DesktopRail = ({
               <div className="my-1 h-px w-7 bg-sidebar-border" />
               {railButton("hub", LayoutDashboard, "Hub")}
               {railButton("flows", RefreshCw, "Flows")}
-              {marketingItems.length > 0 && railButton("marketing", Film, "Marketing")}
+              {marketingItems.length > 0 && railButton("marketing", TrendingUp, "Marketing")}
             </div>
             <div className="mt-auto flex flex-col items-center border-t border-sidebar-border pt-2">
               {railButton("settings", Settings, "Settings")}
