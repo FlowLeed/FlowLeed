@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Loader2, Play, Search, X } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
-import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 import { PublicStoryVideo, StoryMosaic } from "@/components/content/StoryMosaic";
 import { YouTubePlayer } from "@/components/content/YouTubePlayer";
 import { Button } from "@/components/ui/button";
@@ -159,7 +159,7 @@ export default function PublicContentPage() {
         {mobileSearchOpen && (
           <form onSubmit={(event) => { event.preventDefault(); void runAISearch(query); setMobileSearchOpen(false); }} className="border-t border-story-border px-4 py-3 md:hidden">
             <div className="mx-auto flex max-w-7xl items-center gap-2">
-              <AiSparkleIcon className="h-5 w-5 shrink-0 text-primary" />
+              <AiBrandIcon className="h-5 w-5 shrink-0 text-primary" />
               <Input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="What kind of story do you need?" className="h-11 border-0 bg-transparent px-1 text-base shadow-none focus-visible:ring-0" />
               <Button type="submit" size="sm" disabled={searching || !query.trim()} className="h-10 px-4">Search</Button>
             </div>
@@ -225,11 +225,11 @@ export default function PublicContentPage() {
 
             <section id="discover" className="border-y border-story-border bg-story-paper px-4 py-12 md:px-6 md:py-16">
               <div className="mx-auto max-w-3xl text-center">
-                <AiSparkleIcon className="mx-auto h-6 w-6 text-primary" />
+                <AiBrandIcon className="mx-auto h-6 w-6 text-primary" />
                 <h2 className="mt-4 text-3xl font-semibold text-foreground md:text-4xl">What story do you need today?</h2>
                 <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Search by a season of life, a question, or something you are walking through.</p>
                 <form onSubmit={(event) => { event.preventDefault(); void runAISearch(query); }} className="mx-auto mt-7 flex max-w-2xl items-center gap-2 border border-story-border bg-story-background p-2 shadow-sm">
-                  <AiSparkleIcon className="ml-2 h-5 w-5 shrink-0 text-primary" />
+                  <AiBrandIcon className="ml-2 h-5 w-5 shrink-0 text-primary" />
                   <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="I'm looking for stories about…" className="h-11 min-w-0 border-0 bg-transparent px-2 text-base shadow-none focus-visible:ring-0" />
                   <Button type="submit" disabled={searching || !query.trim()} className="h-10 shrink-0 px-5">
                     {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}

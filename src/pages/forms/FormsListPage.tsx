@@ -33,11 +33,16 @@ export default function FormsListPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("forms")
-        .select("id, name, slug, is_published, submission_count, updated_at")
+        .select("id, name, slug, is_published, updated_at, form_submissions(count)")
         .eq("organization_id", orgId!)
+        .eq("form_submissions.is_preview", false)
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      return data;
+      // Count real (non-preview) submissions live — the stored counter isn't reliable.
+      return (data || []).map((f: any) => ({
+        ...f,
+        submission_count: f.form_submissions?.[0]?.count ?? 0,
+      }));
     },
   });
 

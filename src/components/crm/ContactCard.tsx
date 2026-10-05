@@ -10,6 +10,7 @@ import { differenceInDays } from "date-fns";
 import { useEngagementScore } from "@/hooks/useCheckinData";
 import { EngagementBadge } from "@/components/contact/EngagementBadge";
 import { MessagingChannelLinks } from "@/components/contact/MessagingChannelLinks";
+import { FlowFormSubmission, FlowSubmissionDialog } from "@/components/forms/FlowSubmissionDialog";
 
 // Helper function to calculate days in current stage
 const getDaysInStage = (stageEnteredAt?: string): number => {
@@ -31,6 +32,7 @@ interface ContactCardProps {
   isSelected?: boolean;
   onToggleSelect?: () => void;
   isCompleted?: boolean;
+  formSubmissions?: FlowFormSubmission[];
 }
 export const ContactCard: React.FC<ContactCardProps> = ({
   contact,
@@ -40,7 +42,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({
   isSelectMode = false,
   isSelected = false,
   onToggleSelect,
-  isCompleted = false
+  isCompleted = false,
+  formSubmissions = []
 }) => {
   const {
     name,
@@ -152,6 +155,9 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             <span className="text-xs text-gray-500">Unassigned</span>
           </div>}
         <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
+          {formSubmissions.length > 0 && (
+            <FlowSubmissionDialog contactName={name} submissions={formSubmissions} />
+          )}
           <MessagingChannelLinks contact={contact} />
           {phone && <a href={`sms:${phone}`} className="action-button p-1 hover:bg-gray-100 rounded-full" title="Send text message">
               <MessageSquare className="h-3.5 w-3.5" />

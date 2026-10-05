@@ -197,6 +197,9 @@ Decisions recorded by Lovable while building features. Keep them when changing t
 - When demo data is cleared and an org has zero flows, a trigger on `organizations.demo_cleared_at` calls `create_default_pipelines`. Why: churches must never be left with an empty Flows list.
 - create_form tool hands off to Form Builder specialist (_shared/formAgent.ts): separate focused AI call designs the blueprint, main agent only routes. Why: specialists stay small and controllable.
 - Form Builder uses a persistent field palette on larger screens and a bottom field picker on phones. Why: the editing canvas must remain full-width and touch-friendly on small screens.
+- Flow form-submission details are loaded once at the Flow level and shared by card and table views. Why: both views must show identical answers without per-person request waterfalls.
+- Desktop navigation is a label-free 56px icon rail (standalone AI button on top, then HUB, Flows, Marketing, Settings) with tooltips and a collapsible section drawer that updates `--sidebar-width`; phones keep the grouped sheet. Why: wide boards get space while large churches keep quick navigation.
+- The FlowLeed AI icon is the purple rounded tile with a white sparkle mark in src/components/content/AiBrandIcon.tsx — use it wherever the AI appears (nav rail, mobile tab bar, dashboard hero, content pages). The outline sparkle (AiSparkleIcon.tsx) was tried and rejected by the user; keep the file but do not use it. All other icons stay thin-outline Lucide (strokeWidth ~1.7-2, h-5 w-5, muted-foreground). Why: the user confirmed the purple sparkle tile as the brand AI mark.
 
 ## More detail
 

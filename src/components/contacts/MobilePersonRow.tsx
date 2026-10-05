@@ -13,12 +13,13 @@ interface MobilePersonRowProps {
   onOpen: () => void;
   status?: React.ReactNode;
   details?: React.ReactNode;
+  actions?: React.ReactNode;
 }
 
 const initials = (name: string) =>
   name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 
-export const MobilePersonRow = ({ name, avatar, email, phone, campus, selected, onSelect, onOpen, status, details }: MobilePersonRowProps) => (
+export const MobilePersonRow = ({ name, avatar, email, phone, campus, selected, onSelect, onOpen, status, details, actions }: MobilePersonRowProps) => (
   <div className={`flex min-h-16 items-start gap-3 px-3 py-3 transition-colors active:bg-muted/60 ${selected ? "bg-primary/5" : ""}`}>
     {onSelect && (
       <div className="flex h-10 w-10 shrink-0 items-center justify-center" onClick={(event) => event.stopPropagation()}>
@@ -42,5 +43,6 @@ export const MobilePersonRow = ({ name, avatar, email, phone, campus, selected, 
         </span>
       </span>
     </button>
+    {actions && <div className="flex h-10 shrink-0 items-center">{actions}</div>}
   </div>
 );
