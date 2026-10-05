@@ -391,7 +391,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                         aria-label="Send message"
                         title="Send message"
                       >
-                        <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.5} />
+                        <ArrowUp className="h-[18px] w-[18px]" />
                       </button>
                     )}
                   </>
