@@ -72,7 +72,7 @@ const NavItem = ({
   if (item.comingSoon) {
     return (
       <div className="flex min-h-11 md:min-h-9 w-full items-center gap-3 rounded-full px-4 py-2 md:py-1 text-sm font-medium opacity-50 cursor-not-allowed min-w-0">
-        <item.icon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+        <item.icon className="h-[18px] w-[18px] stroke-[1.7] flex-shrink-0 text-muted-foreground" />
         <span className="font-extralight truncate whitespace-nowrap min-w-0">{item.title}</span>
         <Badge variant="secondary" className="ml-auto text-xs">Coming Soon</Badge>
       </div>
@@ -82,7 +82,7 @@ const NavItem = ({
   return <div className="group flex items-center">
     <Link to={item.path} className={`flex min-h-11 md:min-h-9 flex-1 items-center gap-3 py-2 md:py-1 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0 px-[10px]`}>
       <div className="relative flex-shrink-0">
-        <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
+        <item.icon className={`h-[18px] w-[18px] stroke-[1.7] ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
           <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white rounded-full p-0.5">
             <RefreshCw className="h-2 w-2" />
