@@ -878,28 +878,31 @@ const DesktopRail = ({
     <>
       <div className="flex h-full flex-shrink-0" style={{ width: `var(--sidebar-width)` }}>
         <TooltipProvider>
-          <nav className="flex h-full w-14 flex-shrink-0 flex-col items-center gap-2 border-r border-sidebar-border bg-sidebar py-3">
-            <img src={flowleedLogo} alt="FlowLeed" className="mb-1 h-5 w-5 object-cover object-left" />
-            {aiLink && (
-              <Tooltip delayDuration={350}>
-                <TooltipTrigger asChild>
-                  <Link
-                    to="/"
-                    aria-label="FlowLeed AI"
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${aiActive ? "bg-sidebar-accent text-primary" : "text-primary hover:bg-sidebar-accent"}`}
-                  >
-                    <Sparkles className="h-[22px] w-[22px] stroke-[1.7]" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={10}>FlowLeed AI</TooltipContent>
-              </Tooltip>
-            )}
-            <div className="my-1 h-px w-7 bg-sidebar-border" />
-            {railButton("hub", LayoutDashboard, "Hub")}
-            {railButton("flows", RefreshCw, "Flows")}
-            {marketingItems.length > 0 && railButton("marketing", Film, "Marketing")}
-            <div className="mt-auto" />
-            {railButton("settings", Settings, "Settings")}
+          <nav className="flex h-full w-14 flex-shrink-0 flex-col border-r border-sidebar-border bg-sidebar py-3">
+            <div className="flex justify-center">
+              <img src={flowleedLogo} alt="FlowLeed" className="h-5 w-5 object-cover object-left" />
+            </div>
+            <div className="flex flex-1 flex-col items-center justify-center gap-2">
+              {aiLink && (
+                <Tooltip delayDuration={350}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/"
+                      aria-label="FlowLeed AI"
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${aiActive ? "bg-sidebar-accent text-primary" : "text-primary hover:bg-sidebar-accent"}`}
+                    >
+                      <Sparkles className="h-[22px] w-[22px] stroke-[1.7]" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={10}>FlowLeed AI</TooltipContent>
+                </Tooltip>
+              )}
+              <div className="my-1 h-px w-7 bg-sidebar-border" />
+              {railButton("hub", LayoutDashboard, "Hub")}
+              {railButton("flows", RefreshCw, "Flows")}
+              {marketingItems.length > 0 && railButton("marketing", Film, "Marketing")}
+              {railButton("settings", Settings, "Settings")}
+            </div>
           </nav>
         </TooltipProvider>
         {open && (
