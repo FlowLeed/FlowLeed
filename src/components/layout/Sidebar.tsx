@@ -802,6 +802,7 @@ export const Sidebar = () => {
   );
 
   if (isMobile) {
+    const pathname = location.pathname;
     const matchesItems = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
     const hubActive = matchesItems(hubItems);
     const flowsActive = pathname.startsWith("/flows");
