@@ -9,7 +9,7 @@ import { useDashboardChat } from "@/hooks/useDashboardChat";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { ChatHistoryDrawer } from "@/components/dashboard/ChatHistoryDrawer";
 import { History } from "lucide-react";
-import AiBrandIcon from "@/components/content/AiBrandIcon";
+import { AiSparkleIcon } from "@/components/content/AiSparkleIcon";
 import { Button } from "@/components/ui/button";
 import { PcoPersonalConnectPrompt } from "@/components/dashboard/PcoPersonalConnectPrompt";
 import { DemoHighlights } from "@/components/demo/DemoHighlights";
@@ -63,7 +63,7 @@ const Dashboard = () => {
                 </Button>
               </div>
               <div className="flex flex-col items-center gap-3">
-                <AiBrandIcon className="h-12 w-12 rounded-xl shadow-sm" aria-label="FlowLeed AI" />
+                <AiSparkleIcon className="h-12 w-12 text-primary" aria-label="FlowLeed AI" />
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
                   How can I help you today?
                 </h2>
