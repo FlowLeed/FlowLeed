@@ -810,7 +810,6 @@ export const Sidebar = () => {
       marketingItems={marketingItems}
       settingsItems={settingsItems}
       flowsSection={flowsSection}
-      flowsBadge={allFlowItems.length}
       pathname={location.pathname}
       flowsManagement={<FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />}
     />
@@ -823,10 +822,10 @@ const DRAWER_WIDTH = 240;
 const DRAWER_KEY = "flowleed-nav-drawer";
 
 const DesktopRail = ({
-  aiLink, aiActive, hubItems, marketingItems, settingsItems, flowsSection, flowsBadge, pathname, flowsManagement,
+  aiLink, aiActive, hubItems, marketingItems, settingsItems, flowsSection, pathname, flowsManagement,
 }: {
   aiLink: boolean; aiActive: boolean; hubItems: SidebarItem[]; marketingItems: SidebarItem[]; settingsItems: SidebarItem[];
-  flowsSection: React.ReactNode; flowsBadge: number; pathname: string; flowsManagement: React.ReactNode;
+  flowsSection: React.ReactNode; pathname: string; flowsManagement: React.ReactNode;
 }) => {
   const matches = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
   const routeSection: RailSection = pathname.startsWith("/flows") ? "flows"
