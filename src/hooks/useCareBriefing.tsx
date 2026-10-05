@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { runCareBriefing } from "@/api/careBriefing";
 
 export type CareKind = "life_moment" | "faith_moment" | "drift" | "follow_up";
 export type CareConnection = { user_id: string; name: string; role: string; why: string; confidence: string } | null;
@@ -116,14 +117,10 @@ export function useCareBriefing() {
 
   const run = useMutation({
     mutationFn: async (_opts?: { silent?: boolean }) => {
-      const d = new Date();
-      const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const { data, error } = await supabase.functions.invoke("care-agent-run", { body: { organizationId: organization?.id, localDate } });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+      if (!organization?.id) throw new Error("Your account is not ready yet.");
+      return runCareBriefing(organization.id);
     },
-    onSuccess: (d: any, opts) => {
+    onSuccess: (d, opts) => {
       refresh();
       if (opts?.silent) return;
       if (d?.skipped) toast.message("Today's briefing is already being prepared.");
