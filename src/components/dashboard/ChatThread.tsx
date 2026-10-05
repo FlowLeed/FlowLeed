@@ -310,10 +310,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         pendingGroups.push({ actions: remaining, groupId: `${i}-remaining-actions` });
                       }
                       if (pendingGroups.length === 0) return null;
-                      const multi = pendingGroups.length > 1;
+                      // One button per action: approving one must never remove the others.
+                      const individual = pendingGroups.flatMap(({ actions, type }) =>
+                        actions.map((action) => ({ action, type: type ?? action.type }))
+                      );
                       return (
                         <div className="not-prose mt-4 flex flex-col items-start gap-2">
-                          {pendingGroups.map(({ actions, groupId, type }) => approvalButton(actions, groupId, multi ? type : undefined))}
+                          {individual.map(({ action, type }) => approvalButton([action], action.id, type))}
                         </div>
                       );
                     })()}
