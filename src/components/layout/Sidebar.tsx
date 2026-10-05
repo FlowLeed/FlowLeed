@@ -827,7 +827,7 @@ export const Sidebar = () => {
         <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
         <nav
           aria-label="Primary"
-          className="fixed inset-x-0 bottom-0 z-40 flex h-14 items-stretch border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+          className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-bottom))] items-stretch border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
         >
           {aiEnabled && (
             <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
