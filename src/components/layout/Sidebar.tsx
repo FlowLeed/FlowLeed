@@ -776,28 +776,76 @@ export const Sidebar = () => {
     />
   );
 
-  const sidebarContent = (
+  const mobileSheetContent = (
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
-        {aiLink}
-        <SidebarSection title="HUB" items={hubItems} />
-        {flowsSection}
-        {marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
-        <SidebarSection title="Settings" items={settingsItems} />
+        {mobileSection === "all" ? (
+          <>
+            {aiLink}
+            <SidebarSection title="HUB" items={hubItems} />
+            {flowsSection}
+            {marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
+            <SidebarSection title="Settings" items={settingsItems} />
+          </>
+        ) : (
+          <>
+            {mobileSection === "hub" && <SidebarSection title="HUB" items={hubItems} />}
+            {mobileSection === "flows" && flowsSection}
+            {mobileSection === "marketing" && marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
+            {mobileSection === "settings" && <SidebarSection title="Settings" items={settingsItems} />}
+          </>
+        )}
       </div>
     </>
   );
 
   if (isMobile) {
+    const matchesItems = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
+    const hubActive = matchesItems(hubItems);
+    const flowsActive = pathname.startsWith("/flows");
+    const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
+    const settingsActive = matchesItems(settingsItems);
+    const openSheet = (section: "all" | "hub" | "flows" | "marketing") => {
+      setMobileSection(section);
+      setMobileOpen(true);
+    };
+    const tabClass = (active: boolean) =>
+      `flex h-full w-full flex-col items-center justify-center transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
+    const iconClass = (active: boolean) => `h-[22px] w-[22px] ${active ? "stroke-[2]" : "stroke-[1.7]"}`;
+
     return (
       <>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="left" className="flex w-[min(280px,84vw)] flex-col bg-sidebar p-0">
-            {sidebarContent}
+            {mobileSheetContent}
           </SheetContent>
         </Sheet>
         <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
+        <nav
+          aria-label="Primary"
+          className="fixed inset-x-0 bottom-0 z-40 flex h-14 items-stretch border-t border-sidebar-border bg-sidebar/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+        >
+          {aiEnabled && (
+            <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
+              <Sparkles className={`${iconClass(aiActive)} ${aiActive ? "fill-current" : ""}`} />
+            </Link>
+          )}
+          <button type="button" aria-label="HUB" aria-expanded={mobileOpen && mobileSection === "hub"} onClick={() => openSheet("hub")} className={tabClass(hubActive)}>
+            <LayoutDashboard className={iconClass(hubActive)} />
+          </button>
+          <button type="button" aria-label="Flows" aria-expanded={mobileOpen && mobileSection === "flows"} onClick={() => openSheet("flows")} className={tabClass(flowsActive)}>
+            <RefreshCw className={iconClass(flowsActive)} />
+          </button>
+          {marketingItems.length > 0 && (
+            <button type="button" aria-label="Marketing" aria-expanded={mobileOpen && mobileSection === "marketing"} onClick={() => openSheet("marketing")} className={tabClass(marketingActive)}>
+              <TrendingUp className={iconClass(marketingActive)} />
+            </button>
+          )}
+          <button type="button" aria-label="More" aria-expanded={mobileOpen && mobileSection === "all"} onClick={() => openSheet("all")} className={tabClass(settingsActive)}>
+            <Menu className={iconClass(settingsActive)} />
+          </button>
+        </nav>
       </>
     );
   }
