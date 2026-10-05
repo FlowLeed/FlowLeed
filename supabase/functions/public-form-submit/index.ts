@@ -5,6 +5,83 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const EMAIL_RE = /^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/;
+const esc = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+const clean = (s: unknown, max: number) => String(s ?? '').replace(/[\r\n]+/g, ' ').trim().slice(0, max);
+
+async function sendFormEmails(opts: {
+  settings: any;
+  formName: string;
+  orgName: string;
+  fields: { field_key: string; label: string; field_type: string }[];
+  data: Record<string, any>;
+  name: string;
+  email: string | null;
+}) {
+  const { settings, formName, orgName, fields, data, name, email } = opts;
+  const conf = settings?.confirmation;
+  const notify = settings?.notify;
+  if (!conf?.enabled && !notify?.enabled) return;
+  const key = Deno.env.get('RESEND_API_KEY');
+  if (!key) { console.error('RESEND_API_KEY missing'); return; }
+
+  const firstName = clean(data.first_name, 100) || name.split(' ')[0] || 'there';
+  const fill = (t: string) =>
+    t.replaceAll('{first_name}', firstName).replaceAll('{name}', name).replaceAll('{form_name}', formName).replaceAll('{org_name}', orgName);
+
+  const skip = new Set(['heading', 'paragraph', 'divider']);
+  const rows = fields
+    .filter((f) => !skip.has(f.field_type))
+    .map((f) => {
+      const v = data[f.field_key];
+      const val = Array.isArray(v) ? v.join(', ') : v === true ? 'Yes' : v === false ? 'No' : String(v ?? '');
+      return `<tr><td style="padding:6px 12px 6px 0;color:#666;vertical-align:top">${esc(f.label)}</td><td style="padding:6px 0;color:#111">${esc(val) || '—'}</td></tr>`;
+    })
+    .join('');
+  const answers = `<table style="border-collapse:collapse;font-size:14px;margin-top:12px">${rows}</table>`;
+  const wrap = (inner: string) =>
+    `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;font-size:15px;line-height:1.6">${inner}<p style="margin-top:32px;color:#999;font-size:12px">Sent by FlowLeed</p></div>`;
+
+  const send = async (payload: Record<string, unknown>) => {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) console.error('Resend error', r.status, await r.text());
+  };
+
+  const orgFrom = clean(orgName, 80).replace(/[<>"]/g, '') || 'FlowLeed';
+  const fromName = clean(conf?.from_name, 80).replace(/[<>"]/g, '') || orgFrom;
+  const from = `${fromName} <noreply@flowleed.com>`;
+
+  if (conf?.enabled && email && EMAIL_RE.test(email)) {
+    const subject = clean(fill(conf.subject || `{org_name}: Thanks for filling out {form_name}`), 200);
+    const body = fill(String(conf.body || `Hi {first_name},\n\nThanks for filling out ${formName}. We'll be in touch soon.`)).slice(0, 5000);
+    const html = wrap(
+      esc(body).split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('') +
+        `<p style="margin-top:24px;font-weight:600">Your answers</p>${answers}`,
+    );
+    const replyTo = clean(conf.reply_to, 255);
+    await send({ from, to: [email], subject, html, ...(EMAIL_RE.test(replyTo) ? { reply_to: replyTo } : {}) });
+  }
+
+  if (notify?.enabled) {
+    const to = String(notify.recipients || '')
+      .split(/[,;\s]+/)
+      .map((s: string) => s.trim())
+      .filter((s: string) => EMAIL_RE.test(s))
+      .slice(0, 10);
+    if (to.length) {
+      const subject = clean(fill(notify.subject || `New submission: {form_name} from {name} ({org_name})`), 200);
+      const html = wrap(`<p><strong>${esc(name)}</strong> just filled out <strong>${esc(formName)}</strong>.</p>${answers}`);
+      await send({ from: `${orgFrom} <noreply@flowleed.com>`, to, subject, html, ...(email && EMAIL_RE.test(email) ? { reply_to: email } : {}) });
+    }
+  }
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (req.method !== 'POST') {
@@ -64,7 +141,7 @@ Deno.serve(async (req) => {
     // Load form + fields (no is_published filter yet — preview may bypass).
     let formQuery = supabase
       .from('forms')
-      .select('id, organization_id, pipeline_id, stage_id, is_published, success_message, redirect_url')
+      .select('id, name, organization_id, pipeline_id, stage_id, is_published, success_message, redirect_url, email_settings')
       .eq('slug', slug);
     if (orgId) formQuery = formQuery.eq('organization_id', orgId);
 
@@ -285,6 +362,21 @@ Deno.serve(async (req) => {
       }
     }
 
+
+    try {
+      const { data: orgRow } = await supabase.from('organizations').select('name').eq('id', form.organization_id).maybeSingle();
+      await sendFormEmails({
+        orgName: (orgRow as any)?.name || 'FlowLeed',
+        settings: (form as any).email_settings || {},
+        formName: (form as any).name || 'Form',
+        fields: fields || [],
+        data,
+        name,
+        email,
+      });
+    } catch (e) {
+      console.error('form email error', e);
+    }
 
     return new Response(
       JSON.stringify({

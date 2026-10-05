@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
 import { MobilePersonRow } from "@/components/contacts/MobilePersonRow";
+import { FlowFormSubmission, FlowSubmissionDialog } from "@/components/forms/FlowSubmissionDialog";
 
 interface FlowTableViewProps {
   flow: Flow;
@@ -35,6 +36,7 @@ interface FlowTableViewProps {
   isSelectMode?: boolean;
   selectedContacts?: Set<string>;
   onToggleContact?: (contactId: string) => void;
+  formSubmissionsByContact?: Record<string, FlowFormSubmission[]>;
 }
 
 type SortField = 'name' | 'stage' | 'email' | 'phone' | 'assignedTo' | 'date';
@@ -54,7 +56,8 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
   onFlowChange,
   isSelectMode = false,
   selectedContacts = new Set(),
-  onToggleContact
+  onToggleContact,
+  formSubmissionsByContact = {}
 }) => {
   const navigate = useNavigate();
   const [sortField, setSortField] = useState<SortField>('date');
@@ -276,6 +279,9 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                   onOpen={() => isSelectMode ? onToggleContact?.(contact.id) : navigate(`/contacts/${contact.id}?pipelineId=${flow.id}`)}
                   status={contact.completedEndAt ? <Badge variant="secondary" className="gap-1 text-xs"><CheckCircle2 className="h-3 w-3" />Done</Badge> : undefined}
                   details={contact.assignedTo?.name ? <span>With {contact.assignedTo.name}</span> : undefined}
+                  actions={(formSubmissionsByContact[contact.id]?.length || 0) > 0 ? (
+                    <FlowSubmissionDialog contactName={contact.name} submissions={formSubmissionsByContact[contact.id]} />
+                  ) : undefined}
                 />
               ))}
               <button
@@ -365,6 +371,9 @@ export const FlowTableView: React.FC<FlowTableViewProps> = ({
                               </AvatarFallback>
                             </Avatar>
                             <span className="font-light">{contact.name}</span>
+                            {(formSubmissionsByContact[contact.id]?.length || 0) > 0 && (
+                              <FlowSubmissionDialog contactName={contact.name} submissions={formSubmissionsByContact[contact.id]} />
+                            )}
                             {contact.completedEndAt && (
                               <Badge variant="secondary" className="text-xs gap-1 py-0 h-5">
                                 <CheckCircle2 className="h-3 w-3" />

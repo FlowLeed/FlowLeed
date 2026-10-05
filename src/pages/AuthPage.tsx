@@ -465,7 +465,7 @@ const AuthPage = () => {
           {signUpBenefits.map((benefit) => (
             <li key={benefit.title} className="flex items-start gap-4">
               <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <Check className="w-4 h-4 text-primary" strokeWidth={3} />
+                <Check className="w-4 h-4 text-primary" />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 <span className="font-semibold text-foreground">{benefit.title}: </span>

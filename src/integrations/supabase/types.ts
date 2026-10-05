@@ -2665,6 +2665,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          email_settings: Json
           id: string
           is_published: boolean
           logo_url: string | null
@@ -2684,6 +2685,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          email_settings?: Json
           id?: string
           is_published?: boolean
           logo_url?: string | null
@@ -2703,6 +2705,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          email_settings?: Json
           id?: string
           is_published?: boolean
           logo_url?: string | null

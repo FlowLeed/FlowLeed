@@ -1,6 +1,6 @@
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Loader2, StopCircle } from "lucide-react";
+import { Loader2, StopCircle, Check, X } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -290,9 +290,7 @@ export function SyncProgressDisplay({
     return (
       <div className="space-y-3 py-4">
         <div className="flex items-center justify-center gap-2 text-sm text-primary">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+          <Check className="h-5 w-5" />
           <span className="font-medium">Sync completed successfully!</span>
         </div>
         
@@ -336,9 +334,7 @@ export function SyncProgressDisplay({
     return (
       <div className="space-y-2 py-4">
         <div className="flex items-center justify-center gap-2 text-sm text-destructive">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="h-5 w-5" />
           <span className="font-medium">Sync failed</span>
         </div>
         <p className="text-xs text-center text-muted-foreground">
