@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Sparkles, Film, HandHeart, TrendingUp, Menu } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Film, HandHeart, TrendingUp, Menu } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenuCheckboxItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
@@ -30,6 +30,7 @@ import { useMyFlows } from "@/hooks/useMyFlows";
 import { useFlowPreferences } from "@/hooks/useFlowPreferences";
 import { useOrgFeatures } from "@/hooks/useOrgFeatures";
 import type { LucideIcon } from "lucide-react";
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 interface SidebarItem {
   title: string;
   icon: LucideIcon;
@@ -760,7 +761,7 @@ export const Sidebar = () => {
       to="/"
       className={`flex min-h-11 md:min-h-9 items-center gap-3 rounded-full px-[10px] py-2 md:py-1 text-sm transition-colors ${aiActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}
     >
-      <Sparkles className="h-5 w-5" />
+      <AiBrandIcon className="h-5 w-5" />
       <span className="font-extralight">FlowLeed AI</span>
     </Link>
   ) : null;
@@ -830,7 +831,7 @@ export const Sidebar = () => {
         >
           {aiEnabled && (
             <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
-              <Sparkles className={`${iconClass(aiActive)} ${aiActive ? "fill-current" : ""}`} />
+              <AiBrandIcon className="h-[24px] w-[24px]" />
             </Link>
           )}
           <button type="button" aria-label="HUB" aria-expanded={mobileOpen && mobileSection === "hub"} onClick={() => openSheet("hub")} className={tabClass(hubActive)}>
@@ -939,9 +940,9 @@ const DesktopRail = ({
                     <Link
                       to="/"
                       aria-label="FlowLeed AI"
-                      className={`flex h-10 w-10 items-center justify-center rounded-lg transition-colors ${aiActive ? "bg-sidebar-accent text-primary" : "text-primary hover:bg-sidebar-accent"}`}
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg transition-opacity ${aiActive ? "opacity-100" : "opacity-80 hover:opacity-100"}`}
                     >
-                      <Sparkles className="h-[22px] w-[22px] stroke-[1.7]" />
+                      <AiBrandIcon className="h-[26px] w-[26px]" />
                     </Link>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={10}>FlowLeed AI</TooltipContent>

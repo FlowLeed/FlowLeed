@@ -8,7 +8,8 @@ import { ChatThread } from "@/components/dashboard/ChatThread";
 import { useDashboardChat } from "@/hooks/useDashboardChat";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { ChatHistoryDrawer } from "@/components/dashboard/ChatHistoryDrawer";
-import { Sparkles, History } from "lucide-react";
+import { History } from "lucide-react";
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 import { Button } from "@/components/ui/button";
 import { PcoPersonalConnectPrompt } from "@/components/dashboard/PcoPersonalConnectPrompt";
 import { DemoHighlights } from "@/components/demo/DemoHighlights";
@@ -62,9 +63,7 @@ const Dashboard = () => {
                 </Button>
               </div>
               <div className="flex flex-col items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-sm" aria-label="FlowLeed AI">
-                  <Sparkles className="h-7 w-7 text-primary-foreground" />
-                </div>
+                <AiBrandIcon className="h-12 w-12 rounded-xl shadow-sm" aria-label="FlowLeed AI" />
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
                   How can I help you today?
                 </h2>
