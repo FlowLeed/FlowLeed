@@ -6,6 +6,7 @@ import { ColumnSettingsDialog } from "./ColumnSettingsDialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Droppable, Draggable } from "react-beautiful-dnd";
+import { FlowFormSubmission } from "@/components/forms/FlowSubmissionDialog";
 interface FlowStageProps {
   stage: FlowStageType;
   onAddContact?: (stageId: string) => void;
@@ -17,6 +18,7 @@ interface FlowStageProps {
   isSelectMode?: boolean;
   selectedContacts?: Set<string>;
   onToggleContact?: (contactId: string) => void;
+  formSubmissionsByContact?: Record<string, FlowFormSubmission[]>;
 }
 
 // Default colors for different stages
@@ -48,7 +50,8 @@ export const FlowStage: React.FC<FlowStageProps> = ({
   pipelineId,
   isSelectMode = false,
   selectedContacts = new Set(),
-  onToggleContact
+  onToggleContact,
+  formSubmissionsByContact = {}
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const stageColor = stage.color || getStageColor(stage.name);
@@ -108,7 +111,7 @@ export const FlowStage: React.FC<FlowStageProps> = ({
           {(provided, snapshot) => <div className={`space-y-3 min-h-[200px] flex-1 p-2 rounded-lg transition-colors ${snapshot.isDraggingOver ? "bg-blue-50" : ""}`} ref={provided.innerRef} {...provided.droppableProps}>
               {stage.contacts.map((contact, index) => <Draggable key={contact.id} draggableId={contact.id} index={index} isDragDisabled={!!contact.completedEndAt}>
                   {(provided, snapshot) => <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} className={`transition-shadow ${snapshot.isDragging ? "shadow-lg" : ""}`}>
-                      <ContactCard contact={contact} onEdit={() => onEditContact?.(contact)} onDelete={() => onDeleteContact?.(contact.id, stage.id)} pipelineId={pipelineId} isSelectMode={isSelectMode} isSelected={selectedContacts.has(contact.id)} onToggleSelect={() => onToggleContact?.(contact.id)} isCompleted={!!contact.completedEndAt} />
+                      <ContactCard contact={contact} onEdit={() => onEditContact?.(contact)} onDelete={() => onDeleteContact?.(contact.id, stage.id)} pipelineId={pipelineId} isSelectMode={isSelectMode} isSelected={selectedContacts.has(contact.id)} onToggleSelect={() => onToggleContact?.(contact.id)} isCompleted={!!contact.completedEndAt} formSubmissions={formSubmissionsByContact[contact.id] || []} />
                     </div>}
                 </Draggable>)}
               {provided.placeholder}

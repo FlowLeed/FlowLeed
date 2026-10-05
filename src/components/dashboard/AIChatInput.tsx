@@ -307,9 +307,9 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
     "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50 disabled:pointer-events-none";
 
   return (
-    <div className={`relative w-full ${hasMessages ? "max-w-3xl" : "max-w-2xl"} mx-auto`}>
-      <div className="relative rounded-full border border-border bg-card shadow-lg shadow-black/5 transition-all focus-within:border-primary/40 focus-within:shadow-xl focus-within:shadow-primary/5">
-        <div className="flex items-center gap-1 py-1.5 pl-1.5 pr-1.5">
+    <div className={`relative mx-auto w-full min-w-0 max-w-full ${hasMessages ? "md:max-w-3xl" : "md:max-w-2xl"}`}>
+      <div className="relative min-w-0 overflow-hidden rounded-full border border-border bg-card shadow-lg shadow-black/5 transition-all focus-within:border-primary/40 focus-within:shadow-xl focus-within:shadow-primary/5">
+        <div className="flex min-w-0 items-center gap-1 py-1.5 pl-1.5 pr-1.5">
           {voiceState === "recording" ? (
             <>
               <div className="flex min-w-0 flex-1 items-center gap-2 pl-3 text-xs text-muted-foreground">
@@ -363,7 +363,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                 placeholder="Message"
                 rows={1}
                 disabled={isLoading}
-                className="min-h-9 max-h-32 w-full flex-1 resize-none bg-transparent px-1 py-2 text-sm leading-6 placeholder:text-muted-foreground/70 focus:outline-none"
+                className="min-h-9 max-h-32 w-0 min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-base leading-6 placeholder:text-muted-foreground/70 focus:outline-none sm:text-sm"
               />
               <div className="flex shrink-0 items-center gap-1">
                 {isLoading ? (
@@ -399,7 +399,7 @@ export const AIChatInput: React.FC<AIChatInputProps> = ({ onSubmit, isLoading, o
                         aria-label="Send message"
                         title="Send message"
                       >
-                        <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.5} />
+                        <ArrowUp className="h-[18px] w-[18px]" />
                       </button>
                     )}
                   </>

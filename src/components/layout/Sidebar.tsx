@@ -3,9 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Sparkles, Film, HandHeart } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Film, HandHeart, TrendingUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
+import { DropdownMenuCheckboxItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
 import { useOrgMembers } from "@/hooks/useOrgMembers";
 import { useFlowTeamMemberships } from "@/hooks/useFlowTeamMemberships";
@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { calculateFlowContactCount } from "@/lib/utils";
 import { useFlowContext } from "@/contexts/FlowContext";
@@ -29,6 +30,7 @@ import { useMyFlows } from "@/hooks/useMyFlows";
 import { useFlowPreferences } from "@/hooks/useFlowPreferences";
 import { useOrgFeatures } from "@/hooks/useOrgFeatures";
 import type { LucideIcon } from "lucide-react";
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 interface SidebarItem {
   title: string;
   icon: LucideIcon;
@@ -54,6 +56,7 @@ interface SidebarSectionProps {
   pinnedFlowIds?: Set<string>;
   onPin?: (flowId: string) => void;
   filterControl?: React.ReactNode;
+  footerControl?: React.ReactNode;
 }
 const NavItem = ({
   item,
@@ -69,9 +72,9 @@ const NavItem = ({
   if (item.comingSoon) {
     return (
       <div className="flex min-h-11 md:min-h-9 w-full items-center gap-3 rounded-full px-4 py-2 md:py-1 text-sm font-medium opacity-50 cursor-not-allowed min-w-0">
-        <item.icon className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+        <item.icon className="h-[18px] w-[18px] stroke-[1.7] flex-shrink-0 text-muted-foreground" />
         <span className="font-extralight truncate whitespace-nowrap min-w-0">{item.title}</span>
-        <Badge variant="secondary" className="ml-auto text-xs">Coming Soon</Badge>
+        <span className="ml-auto shrink-0 text-[10px] leading-none text-muted-foreground/70 whitespace-nowrap">Soon</span>
       </div>
     );
   }
@@ -79,7 +82,7 @@ const NavItem = ({
   return <div className="group flex items-center">
     <Link to={item.path} className={`flex min-h-11 md:min-h-9 flex-1 items-center gap-3 py-2 md:py-1 rounded-full text-sm font-medium transition-colors ${isActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"} min-w-0 px-[10px]`}>
       <div className="relative flex-shrink-0">
-        <item.icon className={`h-5 w-5 ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
+        <item.icon className={`h-[18px] w-[18px] stroke-[1.7] ${isActive ? "text-white" : "text-sidebar-foreground"}`} />
         {item.flow_type === 'recurring' && (
           <span className="absolute -top-0.5 -right-0.5 bg-green-500 text-white rounded-full p-0.5">
             <RefreshCw className="h-2 w-2" />
@@ -119,6 +122,7 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
   pinnedFlowIds,
   onPin,
   filterControl,
+  footerControl,
 }) => {
   const location = useLocation();
   const {
@@ -469,13 +473,19 @@ const SidebarSection: React.FC<SidebarSectionProps> = ({
       
       
       <div className="space-y-0.5">
-        {items.map(item => <NavItem key={item.flowId ?? item.path ?? item.title} item={item} isActive={location.pathname === item.path} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />)}
+        {items.map(item => {
+          const isActive = item.path === "/"
+            ? location.pathname === "/"
+            : location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+          return <NavItem key={item.flowId ?? item.path ?? item.title} item={item} isActive={isActive} isPinned={pinnedFlowIds?.has(item.flowId || '')} onPin={title === "Flows" ? onPin : undefined} />;
+        })}
       </div>
+      {footerControl}
       
     </div>;
 };
 import flowleedLogo from "@/assets/flowleed_logo_new.png";
-const Logo = () => <div className="px-8 py-6 flex items-center">
+const Logo = () => <div className="px-6 pt-6 pb-3 flex items-center">
     <img src={flowleedLogo} alt="Flowleed" className="h-5 w-auto" />
   </div>;
 export const Sidebar = () => {
@@ -483,6 +493,7 @@ export const Sidebar = () => {
     flows
   } = useFlowContext();
   const { user } = useAuth();
+  const location = useLocation();
   const { data: myFlows } = useMyFlows(user?.id);
   const { pinnedFlowIds, togglePin } = useFlowPreferences(user?.id);
   const [showFlowsManagement, setShowFlowsManagement] = useState(false);
@@ -522,12 +533,8 @@ export const Sidebar = () => {
     } catch {}
   }, [STORAGE_KEY, showAllFlows, showPinnedOnly, teamMemberFilter]);
   
-  const pageItems: SidebarItem[] = ([{
-    title: "FlowLeed AI",
-    icon: Sparkles,
-    path: "/",
-    featureKey: "flowleed_ai" as const,
-  }, {
+  const aiEnabled = isFeatureEnabled("flowleed_ai");
+  const hubItems: SidebarItem[] = ([{
     title: "People",
     icon: Users,
     path: "/contacts"
@@ -553,19 +560,7 @@ export const Sidebar = () => {
     title: "Prayer",
     icon: HandHeart,
     path: "/prayer"
-  }, {
-    title: "Content",
-    icon: Film,
-    path: "/content",
-    beta: true,
-    featureKey: "content" as const,
-  }, {
-    title: "Forms",
-    icon: CheckSquare,
-    path: "/forms",
-    beta: true,
-    featureKey: "forms" as const,
-  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" | "content" | "forms" })[])
+  }] as (SidebarItem & { featureKey?: "flowleed_ai" | "signals" })[])
     .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
 
@@ -606,16 +601,25 @@ export const Sidebar = () => {
   // Build my flow IDs set from useMyFlows data
   const myFlowIds = new Set<string>(myFlows?.map((f: any) => f.id).filter(Boolean) || []);
 
-  // Filtering logic
+  // Keep the everyday Flow list compact. Favorites appear first, while the
+  // current Flow is always retained so navigation never loses context.
   let displayedFlowItems: SidebarItem[];
   if (showAllFlows) {
     displayedFlowItems = allFlowItems;
   } else {
-    // My flows: show flows where user is a team member + pinned flows
-    displayedFlowItems = allFlowItems.filter(item =>
+    const preferredFlowItems = allFlowItems.filter(item =>
       (item.flowId && myFlowIds.has(item.flowId)) ||
       (item.flowId && pinnedFlowIds.has(item.flowId))
     );
+    const compactCandidates = preferredFlowItems.length > 0 ? preferredFlowItems : allFlowItems;
+    const pinnedFirst = [...compactCandidates].sort((a, b) =>
+      Number(!!b.flowId && pinnedFlowIds.has(b.flowId)) - Number(!!a.flowId && pinnedFlowIds.has(a.flowId))
+    );
+    displayedFlowItems = pinnedFirst.slice(0, 6);
+    const activeFlow = allFlowItems.find(item => item.path === location.pathname);
+    if (activeFlow && !displayedFlowItems.some(item => item.flowId === activeFlow.flowId)) {
+      displayedFlowItems = [...displayedFlowItems.slice(0, 5), activeFlow];
+    }
   }
   if (showPinnedOnly) {
     displayedFlowItems = displayedFlowItems.filter(item => item.flowId && pinnedFlowIds.has(item.flowId));
@@ -624,12 +628,24 @@ export const Sidebar = () => {
     const memberFlows = flowsByMember.get(teamMemberFilter) ?? new Set<string>();
     displayedFlowItems = displayedFlowItems.filter(item => item.flowId && memberFlows.has(item.flowId));
   }
-  const filtersActive = showAllFlows || showPinnedOnly || !!teamMemberFilter;
+  const filtersActive = showPinnedOnly || !!teamMemberFilter;
   
   // Calculate total unread messages
   const totalUnreadMessages = mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
   
-  const connectItems: SidebarItem[] = ([{
+  const marketingItems: SidebarItem[] = ([{
+    title: "Content & Stories",
+    icon: Film,
+    path: "/content",
+    beta: true,
+    featureKey: "content" as const,
+  }, {
+    title: "Forms",
+    icon: CheckSquare,
+    path: "/forms",
+    beta: true,
+    featureKey: "forms" as const,
+  }, {
     title: "Messages",
     icon: MessageSquare,
     path: "/messages",
@@ -641,7 +657,7 @@ export const Sidebar = () => {
     path: "/calls",
     comingSoon: true,
     featureKey: "calling" as const,
-  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "flowleed_ai" | "signals" })[])
+  }] as (SidebarItem & { featureKey?: "texting" | "calling" | "content" | "forms" })[])
     .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
 
   const settingsItems: SidebarItem[] = [{
@@ -660,7 +676,7 @@ export const Sidebar = () => {
 
   const isMobile = useIsMobile();
   const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
-  const location = useLocation();
+  const [mobileSection, setMobileSection] = useState<"hub" | "flows" | "marketing" | "settings">("hub");
 
   // Auto-close mobile sheet on route change
   useEffect(() => {
@@ -680,12 +696,6 @@ export const Sidebar = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 bg-popover z-50">
-        <DropdownMenuLabel>View</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={showAllFlows ? "all" : "my"} onValueChange={(v) => setShowAllFlows(v === "all")}>
-          <DropdownMenuRadioItem value="my">My flows</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="all">All flows</DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
         <DropdownMenuLabel>Show</DropdownMenuLabel>
         <DropdownMenuCheckboxItem checked={showPinnedOnly} onCheckedChange={(c) => setShowPinnedOnly(!!c)}>
           <Star className="h-3.5 w-3.5 mr-2" />
@@ -734,43 +744,224 @@ export const Sidebar = () => {
     </DropdownMenu>
   );
 
-  const sidebarContent = (
+  const flowsToggleControl = allFlowItems.length > 6 ? (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="mt-1 h-9 w-full justify-start px-[10px] text-xs font-normal text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+      onClick={() => setShowAllFlows(current => !current)}
+    >
+      {showAllFlows ? "Show fewer" : `Show all ${allFlowItems.length}`}
+    </Button>
+  ) : null;
+
+  const aiActive = location.pathname === "/";
+  const aiLink = aiEnabled ? (
+    <Link
+      to="/"
+      className={`flex min-h-11 md:min-h-9 items-center gap-3 rounded-full px-[10px] py-2 md:py-1 text-sm transition-colors ${aiActive ? "bg-primary text-primary-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50"}`}
+    >
+      <AiBrandIcon className="h-5 w-5 shrink-0" />
+      <span className="font-extralight">FlowLeed AI</span>
+    </Link>
+  ) : null;
+
+  const flowsSection = (
+    <SidebarSection
+      title="Flows"
+      items={displayedFlowItems}
+      onSettingsClick={() => setShowFlowsManagement(true)}
+      pinnedFlowIds={pinnedFlowIds}
+      onPin={togglePin}
+      filterControl={flowsFilterControl}
+      footerControl={flowsToggleControl}
+    />
+  );
+
+  const mobileSheetContent = (
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
-        <SidebarSection title="HUB" items={pageItems} />
-        <SidebarSection
-          title="Flows"
-          items={displayedFlowItems}
-          onSettingsClick={() => setShowFlowsManagement(true)}
-          pinnedFlowIds={pinnedFlowIds}
-          onPin={togglePin}
-          filterControl={flowsFilterControl}
-        />
-        {connectItems.length > 0 && <SidebarSection title="Connect" items={connectItems} />}
-        <SidebarSection title="Settings" items={settingsItems} />
+        {mobileSection === "hub" && <SidebarSection title="HUB" items={hubItems} />}
+        {mobileSection === "flows" && flowsSection}
+        {mobileSection === "marketing" && marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
+        {mobileSection === "settings" && <SidebarSection title="Settings" items={settingsItems} />}
       </div>
     </>
   );
 
   if (isMobile) {
+    const pathname = location.pathname;
+    const matchesItems = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
+    const hubActive = matchesItems(hubItems);
+    const flowsActive = pathname.startsWith("/flows");
+    const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
+    const settingsActive = matchesItems(settingsItems);
+    const openSheet = (section: "hub" | "flows" | "marketing" | "settings") => {
+      setMobileSection(section);
+      setMobileOpen(true);
+    };
+    const tabClass = (active: boolean) =>
+      `flex h-11 w-full flex-col items-center justify-center transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
+    const iconClass = (active: boolean) =>
+      `h-[22px] w-[22px] ${active ? "stroke-[2]" : "stroke-[1.7]"}`;
     return (
       <>
+        <nav
+          className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(2.75rem+env(safe-area-inset-bottom)*0.6)] items-start border-t border-sidebar-border bg-sidebar/95 backdrop-blur"
+        >
+          {aiEnabled && (
+            <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
+              <AiBrandIcon className="h-[24px] w-[24px] shrink-0" />
+            </Link>
+          )}
+          <button type="button" aria-label="HUB" aria-expanded={mobileOpen && mobileSection === "hub"} onClick={() => openSheet("hub")} className={tabClass(hubActive)}>
+            <LayoutDashboard className={iconClass(hubActive)} />
+          </button>
+          <button type="button" aria-label="Flows" aria-expanded={mobileOpen && mobileSection === "flows"} onClick={() => openSheet("flows")} className={tabClass(flowsActive)}>
+            <RefreshCw className={iconClass(flowsActive)} />
+          </button>
+          {marketingItems.length > 0 && (
+            <button type="button" aria-label="Marketing" aria-expanded={mobileOpen && mobileSection === "marketing"} onClick={() => openSheet("marketing")} className={tabClass(marketingActive)}>
+              <TrendingUp className={iconClass(marketingActive)} />
+            </button>
+          )}
+          <button type="button" aria-label="Settings" aria-expanded={mobileOpen && mobileSection === "settings"} onClick={() => openSheet("settings")} className={tabClass(settingsActive)}>
+            <Settings className={iconClass(settingsActive)} />
+          </button>
+        </nav>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetContent side="left" className="flex w-[min(280px,84vw)] flex-col bg-sidebar p-0">
-            {sidebarContent}
+          <SheetContent side="bottom" className="max-h-[75dvh] rounded-t-2xl p-0 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
+            {mobileSheetContent}
           </SheetContent>
         </Sheet>
-        <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
       </>
     );
   }
 
-  return <>
-      <div className="h-full w-[var(--sidebar-width)] min-w-[var(--sidebar-width)] flex-shrink-0 flex flex-col" style={{ backgroundColor: '#FAFAFA' }}>
-        {sidebarContent}
+  return (
+    <DesktopRail
+      aiLink={aiEnabled}
+      aiActive={aiActive}
+      hubItems={hubItems}
+      marketingItems={marketingItems}
+      settingsItems={settingsItems}
+      flowsSection={flowsSection}
+      pathname={location.pathname}
+      flowsManagement={<FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />}
+    />
+  );
+};
+
+type RailSection = "hub" | "flows" | "marketing" | "settings";
+const RAIL_WIDTH = 56;
+const DRAWER_WIDTH = 240;
+const DRAWER_KEY = "flowleed-nav-drawer";
+
+const DesktopRail = ({
+  aiLink, aiActive, hubItems, marketingItems, settingsItems, flowsSection, pathname, flowsManagement,
+}: {
+  aiLink: boolean; aiActive: boolean; hubItems: SidebarItem[]; marketingItems: SidebarItem[]; settingsItems: SidebarItem[];
+  flowsSection: React.ReactNode; pathname: string; flowsManagement: React.ReactNode;
+}) => {
+  const matches = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
+  const routeSection: RailSection = pathname.startsWith("/flows") ? "flows"
+    : matches(marketingItems) ? "marketing"
+    : matches(settingsItems) ? "settings" : "hub";
+
+  const [open, setOpen] = useState<boolean>(() => {
+    try { return localStorage.getItem(DRAWER_KEY) !== "closed"; } catch { return true; }
+  });
+  const [section, setSection] = useState<RailSection>(routeSection);
+
+  useEffect(() => { setSection(routeSection); }, [routeSection]);
+  useEffect(() => {
+    try { localStorage.setItem(DRAWER_KEY, open ? "open" : "closed"); } catch {}
+    const width = RAIL_WIDTH + (open ? DRAWER_WIDTH : 0);
+    document.documentElement.style.setProperty("--sidebar-width", `${width}px`);
+  }, [open]);
+
+  const choose = (s: RailSection) => {
+    if (open && section === s) setOpen(false);
+    else { setSection(s); setOpen(true); }
+  };
+
+  const railButton = (s: RailSection, Icon: LucideIcon, label: string) => {
+    const active = section === s && open;
+    const current = routeSection === s && !aiActive;
+    return (
+      <Tooltip key={s} delayDuration={350}>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => choose(s)}
+            aria-label={label}
+            aria-expanded={active}
+            className={`h-10 w-10 rounded-lg transition-colors ${active ? "bg-sidebar-accent text-sidebar-foreground" : current ? "text-primary hover:bg-sidebar-accent" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}
+          >
+            <Icon className="h-[21px] w-[21px] stroke-[1.7]" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={10}>{label}</TooltipContent>
+      </Tooltip>
+    );
+  };
+
+  const titles: Record<RailSection, string> = { hub: "HUB", flows: "Flows", marketing: "Marketing", settings: "Settings" };
+
+  return (
+    <>
+      <div className="flex h-full flex-shrink-0" style={{ width: `var(--sidebar-width)` }}>
+        <TooltipProvider>
+          <nav className="flex h-full w-14 flex-shrink-0 flex-col border-r border-sidebar-border bg-sidebar py-3">
+            <div className="flex justify-center">
+              <img src={flowleedLogo} alt="FlowLeed" className="h-5 w-5 object-cover object-left" />
+            </div>
+            <div className="flex flex-1 flex-col items-center justify-center gap-2">
+              {aiLink && (
+                <Tooltip delayDuration={350}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/"
+                      aria-label="FlowLeed AI"
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg transition-opacity ${aiActive ? "opacity-100" : "opacity-80 hover:opacity-100"}`}
+                    >
+                      <AiBrandIcon className="h-[26px] w-[26px] shrink-0" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={10}>FlowLeed AI</TooltipContent>
+                </Tooltip>
+              )}
+              <div className="my-1 h-px w-7 bg-sidebar-border" />
+              {railButton("hub", LayoutDashboard, "Hub")}
+              {railButton("flows", RefreshCw, "Flows")}
+              {marketingItems.length > 0 && railButton("marketing", TrendingUp, "Marketing")}
+            </div>
+            <div className="mt-auto flex flex-col items-center border-t border-sidebar-border pt-2">
+              {railButton("settings", Settings, "Settings")}
+            </div>
+          </nav>
+        </TooltipProvider>
+        {open && (
+          <div className="flex h-full min-w-0 flex-1 flex-col bg-sidebar animate-in slide-in-from-left-2 duration-200">
+            <div className="flex items-center justify-end px-3 pt-3">
+              <span className="sr-only">{titles[section]}</span>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setOpen(false)} title="Collapse menu" aria-label="Collapse menu">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto px-3 py-2 sidebar-scroll">
+              {section === "hub" && <SidebarSection title="HUB" items={hubItems} />}
+              {section === "flows" && flowsSection}
+              {section === "marketing" && <SidebarSection title="Marketing" items={marketingItems} />}
+              {section === "settings" && <SidebarSection title="Settings" items={settingsItems} />}
+            </div>
+          </div>
+        )}
       </div>
-      
-      <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
-    </>;
+      {flowsManagement}
+    </>
+  );
 };

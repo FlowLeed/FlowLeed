@@ -30,7 +30,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { publicUrl as buildPublicUrl } from "@/lib/publicUrl";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
+type EmailSettings = {
+  confirmation?: { enabled?: boolean; from_name?: string; reply_to?: string; subject?: string; body?: string };
+  notify?: { enabled?: boolean; recipients?: string; subject?: string };
+};
 import { Header } from "@/components/layout/Header";
+import { FormTabs } from "@/components/forms/FormTabs";
 import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/useProfile";
 import {
@@ -357,8 +363,15 @@ export default function FormBuilderPage() {
   const [fields, setFields] = useState<Field[]>([]);
   const [selectedCid, setSelectedCid] = useState<string | null>(null);
   const [editingCid, setEditingCid] = useState<string | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(
+    () => new URLSearchParams(window.location.search).get("tab") === "settings",
+  );
   const [fieldPickerOpen, setFieldPickerOpen] = useState(false);
+  const [emailSettings, setEmailSettings] = useState<EmailSettings>({});
+  const setConfirm = (p: Partial<NonNullable<EmailSettings["confirmation"]>>) =>
+    setEmailSettings((s) => ({ ...s, confirmation: { ...s.confirmation, ...p } }));
+  const setNotify = (p: Partial<NonNullable<EmailSettings["notify"]>>) =>
+    setEmailSettings((s) => ({ ...s, notify: { ...s.notify, ...p } }));
   const [dragging, setDragging] = useState<
     | { source: "palette"; fieldType: FieldType }
     | { source: "canvas"; cid: string }
@@ -374,6 +387,7 @@ export default function FormBuilderPage() {
       setSuccessMessage(form.success_message || "");
       setPipelineId(form.pipeline_id);
       setStageId(form.stage_id);
+      setEmailSettings(((form as any).email_settings as EmailSettings) || {});
     }
   }, [form]);
 
@@ -395,19 +409,26 @@ export default function FormBuilderPage() {
     }
   }, [initialFields]);
 
-  const { data: pipelines } = useQuery({
-    queryKey: ["pipelines-for-form", form?.organization_id],
-    enabled: !!form?.organization_id,
+  const flowOrgId = form?.organization_id ?? organization?.id;
+  const { data: pipelines, error: pipelinesError } = useQuery({
+    queryKey: ["pipelines-for-form", flowOrgId],
+    enabled: !!flowOrgId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("pipelines")
         .select("id, name")
-        .eq("organization_id", form!.organization_id)
+        .eq("organization_id", flowOrgId!)
         .order("name");
-      if (error) throw error;
+      if (error) {
+        console.error("[FormBuilder] failed to load flows", error);
+        throw error;
+      }
       return data;
     },
   });
+  useEffect(() => {
+    if (pipelinesError) console.error("[FormBuilder] flows error", pipelinesError);
+  }, [pipelinesError]);
 
   const { data: stages } = useQuery({
     queryKey: ["stages-for-form", pipelineId],
@@ -435,6 +456,7 @@ export default function FormBuilderPage() {
           success_message: successMessage,
           pipeline_id: pipelineId,
           stage_id: stageId,
+          email_settings: emailSettings as any,
         })
         .eq("id", id);
       if (fErr) throw fErr;
@@ -657,7 +679,7 @@ export default function FormBuilderPage() {
           <Button variant="outline" size="sm" className="min-w-0 flex-1 gap-1.5" onClick={() => setFieldPickerOpen(true)}>
             <Plus className="h-4 w-4" /> Add field
           </Button>
-          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setSettingsOpen(true)} aria-label="Form settings">
+          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0" onClick={() => setSettingsOpen((o) => !o)} aria-label="Form settings">
             <Settings2 className="h-4 w-4" />
           </Button>
           {form && (
@@ -671,13 +693,127 @@ export default function FormBuilderPage() {
             <Save className="h-4 w-4" />
           </Button>
         </div>
-        <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-          <Link to="/forms">
-            <ArrowLeft className="h-4 w-4 mr-1" /> All forms
-          </Link>
-        </Button>
+        <div className="hidden sm:flex items-center gap-2">
+          <Button variant="ghost" size="icon" asChild className="h-9 w-9" aria-label="All forms">
+            <Link to="/forms">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          {id && <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} onSettings={() => setSettingsOpen(true)} onForm={() => setSettingsOpen(false)} />}
+        </div>
+        {id && (
+          <div className="sm:hidden mt-1">
+            <FormTabs formId={id} active={settingsOpen ? "settings" : "form"} onSettings={() => setSettingsOpen(true)} onForm={() => setSettingsOpen(false)} />
+          </div>
+        )}
       </div>
 
+      {settingsOpen ? (
+        <div className="flex-1 min-h-0 overflow-y-auto bg-muted/10 p-3 pb-[max(env(safe-area-inset-bottom),1rem)] sm:p-6">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <h2 className="text-sm font-semibold">General</h2>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-medium">Published</div>
+                  <div className="text-xs text-muted-foreground">When on, anyone with the link can fill it out</div>
+                </div>
+                <Switch checked={isPublished} onCheckedChange={setIsPublished} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Message after submitting</Label>
+                <Input value={successMessage} onChange={(e) => setSuccessMessage(e.target.value)} placeholder="Thanks! We'll be in touch." />
+              </div>
+            </section>
+
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold">Flow</h2>
+                <p className="text-xs text-muted-foreground">New submissions are added to this Flow and step.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>Flow</Label>
+                  <Select value={pipelineId ?? "none"} onValueChange={(v) => { setPipelineId(v === "none" ? null : v); setStageId(null); }}>
+                    <SelectTrigger><SelectValue placeholder="Select flow" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {(pipelines || []).map((p: any) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Step</Label>
+                  <Select value={stageId ?? ""} onValueChange={(v) => setStageId(v || null)} disabled={!pipelineId}>
+                    <SelectTrigger><SelectValue placeholder="Select step" /></SelectTrigger>
+                    <SelectContent>
+                      {(stages || []).map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold">Thank-you email</h2>
+                  <p className="text-xs text-muted-foreground">Sent to the person who filled out the form (needs an Email field).</p>
+                </div>
+                <Switch checked={!!emailSettings.confirmation?.enabled} onCheckedChange={(v) => setConfirm({ enabled: v })} />
+              </div>
+              {emailSettings.confirmation?.enabled && (
+                <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label>From name</Label>
+                      <Input value={emailSettings.confirmation?.from_name ?? ""} onChange={(e) => setConfirm({ from_name: e.target.value })} placeholder="The Promise Center" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Replies go to</Label>
+                      <Input type="email" value={emailSettings.confirmation?.reply_to ?? ""} onChange={(e) => setConfirm({ reply_to: e.target.value })} placeholder="pastor@yourchurch.org" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Subject</Label>
+                    <Input value={emailSettings.confirmation?.subject ?? ""} onChange={(e) => setConfirm({ subject: e.target.value })} placeholder={`Thanks for signing up, {first_name}!`} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Message</Label>
+                    <Textarea rows={5} value={emailSettings.confirmation?.body ?? ""} onChange={(e) => setConfirm({ body: e.target.value })} placeholder={`Hi {first_name},\n\nThanks for filling out ${name || "our form"}. We'll be in touch soon.`} />
+                    <div className="text-xs text-muted-foreground">Use {"{first_name}"}, {"{name}"}, {"{form_name}"} or {"{org_name}"} to personalize. Sender name defaults to your church name. A copy of their answers is included.</div>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="rounded-lg border bg-background p-4 space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold">Team alert email</h2>
+                  <p className="text-xs text-muted-foreground">Let someone on your team know each time a form comes in.</p>
+                </div>
+                <Switch checked={!!emailSettings.notify?.enabled} onCheckedChange={(v) => setNotify({ enabled: v })} />
+              </div>
+              {emailSettings.notify?.enabled && (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label>Send to</Label>
+                    <Input value={emailSettings.notify?.recipients ?? ""} onChange={(e) => setNotify({ recipients: e.target.value })} placeholder="pastor@yourchurch.org, office@yourchurch.org" />
+                    <div className="text-xs text-muted-foreground">Separate several emails with commas.</div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Subject</Label>
+                    <Input value={emailSettings.notify?.subject ?? ""} onChange={(e) => setNotify({ subject: e.target.value })} placeholder={`New submission: {form_name} from {name} ({org_name})`} />
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <Button onClick={() => save.mutate()} disabled={save.isPending}>Save settings</Button>
+          </div>
+        </div>
+      ) : (
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -746,6 +882,7 @@ export default function FormBuilderPage() {
           <DragOverlayContent />
         </DragOverlay>
       </DndContext>
+      )}
 
       <Sheet open={fieldPickerOpen} onOpenChange={setFieldPickerOpen}>
         <SheetContent side="bottom" className="max-h-[78dvh] overflow-y-auto rounded-t-lg px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-5 sm:hidden">
@@ -859,79 +996,6 @@ export default function FormBuilderPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Form settings sheet */}
-      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent className="w-full max-w-full overflow-y-auto sm:w-[420px] sm:max-w-[420px]">
-          <SheetHeader>
-            <SheetTitle>Form settings</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <div className="text-sm font-medium">Published</div>
-                <div className="text-xs text-muted-foreground">
-                  When on, the form is publicly accessible
-                </div>
-              </div>
-              <Switch checked={isPublished} onCheckedChange={setIsPublished} />
-            </div>
-            <div>
-              <Label>Success message</Label>
-              <Input
-                value={successMessage}
-                onChange={(e) => setSuccessMessage(e.target.value)}
-                placeholder="Thanks! We'll be in touch."
-              />
-            </div>
-            <div className="pt-2 border-t">
-              <div className="text-sm font-medium mb-2">Route submissions</div>
-              <div className="space-y-3">
-                <div>
-                  <Label>Flow</Label>
-                  <Select
-                    value={pipelineId ?? "none"}
-                    onValueChange={(v) => {
-                      setPipelineId(v === "none" ? null : v);
-                      setStageId(null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select flow" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {(pipelines || []).map((p: any) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Stage</Label>
-                  <Select
-                    value={stageId ?? ""}
-                    onValueChange={(v) => setStageId(v || null)}
-                    disabled={!pipelineId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select stage" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(stages || []).map((s: any) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

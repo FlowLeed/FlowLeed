@@ -29,6 +29,7 @@
 
 ## Navigation visibility
 - [x] Hide Connect when Messages and Calls are unavailable
+- [x] Group navigation into HUB, Flows, Marketing, and Settings with a compact Show all Flows control
 
 ## Life Seasons (engagement pause)
 - [x] Database table, RLS, frozen scores
@@ -39,6 +40,9 @@
 
 ## Engagement scoring
 - [x] Add separately weighted recent group attendance without double-counting service attendance
+
+## Forms in Flows
+- [x] Show routed form submissions from both Flow cards and table rows in a centered dialog
 
 ## Public Story Library
 - [x] Rebuild the homepage as a mixed-media editorial mosaic
