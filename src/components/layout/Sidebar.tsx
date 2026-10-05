@@ -901,6 +901,8 @@ const DesktopRail = ({
               {railButton("hub", LayoutDashboard, "Hub")}
               {railButton("flows", RefreshCw, "Flows")}
               {marketingItems.length > 0 && railButton("marketing", Film, "Marketing")}
+            </div>
+            <div className="mt-auto flex flex-col items-center border-t border-sidebar-border pt-2">
               {railButton("settings", Settings, "Settings")}
             </div>
           </nav>
