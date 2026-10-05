@@ -744,7 +744,7 @@ export const Sidebar = () => {
     </DropdownMenu>
   );
 
-  const flowsToggleControl = allFlowItems.length > 6 ? (
+  const flowsToggleControl = allFlowItems.length > displayedFlowItems.length ? (
     <Button
       variant="ghost"
       size="sm"
@@ -835,6 +835,7 @@ export const Sidebar = () => {
             {mobileSheetContent}
           </SheetContent>
         </Sheet>
+        <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
       </>
     );
   }
