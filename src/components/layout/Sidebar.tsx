@@ -675,6 +675,7 @@ export const Sidebar = () => {
 
   const isMobile = useIsMobile();
   const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
+  const [mobileSection, setMobileSection] = useState<"all" | "hub" | "flows" | "marketing" | "settings">("all");
 
   // Auto-close mobile sheet on route change
   useEffect(() => {
