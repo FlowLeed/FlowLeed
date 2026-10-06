@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
+import { PasswordInput } from '@/components/ui/password-input';
 
 export default function SuperAdminAuthPage() {
   const [email, setEmail] = useState('');
@@ -72,9 +73,8 @@ export default function SuperAdminAuthPage() {
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
