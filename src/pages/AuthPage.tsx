@@ -98,11 +98,17 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
 
-    const { error } = await signUp(email, password);
+    const { error, needsEmailConfirmation } = await signUp(email, password);
 
     if (error) {
       setError(error.message);
       setLoading(false);
+      return;
+    }
+
+    if (needsEmailConfirmation) {
+      // The address goes in navigation state, not the URL, so it stays out of history and logs.
+      navigate('/auth/check-email', { state: { email } });
       return;
     }
 

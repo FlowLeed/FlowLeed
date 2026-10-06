@@ -33,6 +33,7 @@ const IntegrationAdvancedSettingsPage = lazy(() => import("./pages/IntegrationAd
 const ChurchOnlineAdvancedPage = lazy(() => import("./pages/ChurchOnlineAdvancedPage"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
 const AuthVerifyPage = lazy(() => import("./pages/AuthVerifyPage"));
+const CheckEmailPage = lazy(() => import("./pages/CheckEmailPage"));
 const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 const InvitePage = lazy(() => import("./pages/InvitePage"));
 const AnalyticsPage = lazy(() => import("./pages/AnalyticsPage"));
@@ -102,6 +103,7 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/verify" element={<AuthVerifyPage />} />
+              <Route path="/auth/check-email" element={<CheckEmailPage />} />
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/invite/:token" element={<InvitePage />} />
               <Route path="/groups/directory" element={<GroupDirectoryPage />} />
