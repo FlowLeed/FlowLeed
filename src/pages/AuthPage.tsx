@@ -11,6 +11,7 @@ import { supabase, setRememberMe, getRememberMe } from '@/integrations/supabase/
 import { Checkbox } from '@/components/ui/checkbox';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
 import { Loader2, Check } from 'lucide-react';
+import { PasswordInput } from '@/components/ui/password-input';
 
 const LEGAL_URL = 'http://flowleed.com/legal';
 
@@ -279,9 +280,8 @@ const AuthPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="signin-password">Password</Label>
-                <Input
+                <PasswordInput
                   id="signin-password"
-                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -426,9 +426,8 @@ const AuthPage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Create password</Label>
-                  <Input
+                  <PasswordInput
                     id="signup-password"
-                    type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -514,9 +513,8 @@ const AuthPage = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="new-password">New Password</Label>
-                <Input
+                <PasswordInput
                   id="new-password"
-                  type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
@@ -526,9 +524,8 @@ const AuthPage = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
+                <PasswordInput
                   id="confirm-password"
-                  type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
