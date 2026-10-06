@@ -1,7 +1,8 @@
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { format, parseISO, isToday, isBefore, startOfToday } from "date-fns";
-import { HeartHandshake, RefreshCw, UserRound, Loader2, Sun, MessageCircle, CircleCheck, ListTodo } from "lucide-react";
+import { RefreshCw, UserRound, Loader2, Sun, MessageCircle, CircleCheck, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -76,7 +77,7 @@ export function CareBriefingThread({ onAsk, onCheck, inThread = false }: { onAsk
 
       {care.list.isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /> : days.length === 0 ? (
         <div className="flex gap-3">
-          <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI"><HeartHandshake className="h-4 w-4 text-primary-foreground" /></div>
+          <AiBrandIcon className="mt-1 flex-shrink-0 h-7 w-7" aria-label="FlowLeed AI" />
           <div className="py-2 text-sm text-muted-foreground">
             Every morning I'll bring the 3–5 people who most need your attention into this conversation. Tap <b>Check for today</b> to look now.
           </div>
@@ -121,7 +122,7 @@ export function CareBriefingThread({ onAsk, onCheck, inThread = false }: { onAsk
         };
         return (
           <div key={date} className="flex gap-2 sm:gap-3">
-            <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI"><HeartHandshake className="h-4 w-4 text-primary-foreground" /></div>
+            <AiBrandIcon className="mt-1 flex-shrink-0 h-7 w-7" aria-label="FlowLeed AI" />
             <section className="min-w-0 flex-1 space-y-4 py-2">
               <h3 className="flex items-center gap-2 text-base font-semibold"><Sun className="h-4 w-4 text-primary" />Morning briefing — {format(parseISO(date), "EEEE, MMM d")}</h3>
               <p className="text-sm font-semibold">Who needs you {isToday(parseISO(date)) ? "today" : "that day"}?</p>

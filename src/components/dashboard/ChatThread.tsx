@@ -1,8 +1,9 @@
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 import { Link } from "react-router-dom";
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type ChatMessage, BRIEFING_MARKER } from "@/hooks/useDashboardChat";
-import { User, HeartHandshake, RotateCcw, History, ListPlus } from "lucide-react";
+import { User, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
@@ -171,9 +172,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
         <Message key={i} from={msg.role} className={`flex-row gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           {msg.role === "assistant" && (
             <div className="flex-shrink-0 mt-1">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
-                <HeartHandshake className="h-4 w-4 text-primary-foreground" />
-              </div>
+              <AiBrandIcon className="h-7 w-7" aria-label="FlowLeed AI" />
             </div>
           )}
           <MessageContent
@@ -361,9 +360,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
       {isLoading && messages[messages.length - 1]?.role === "user" && (
         <div className="flex gap-3 justify-start">
           <div className="flex-shrink-0 mt-1">
-            <div className="flex h-7 w-7 animate-pulse items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
-              <HeartHandshake className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <AiBrandIcon className="animate-pulse h-7 w-7" aria-label="FlowLeed AI" />
           </div>
           <div className="rounded-2xl rounded-bl-md px-5 py-4">
             <div className="flex items-center gap-3">
