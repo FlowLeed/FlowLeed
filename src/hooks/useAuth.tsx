@@ -8,7 +8,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, fullName?: string, organizationName?: string) => Promise<{ error: any }>;
+  /** needsEmailConfirmation is true when the account exists but can't sign in until its email is confirmed. */
+  signUp: (email: string, password: string, fullName?: string, organizationName?: string) => Promise<{ error: any; needsEmailConfirmation?: boolean }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: any }>;
@@ -121,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (fullName) metadata.full_name = fullName;
     if (organizationName) metadata.organization_name = organizationName;
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -134,7 +135,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return { error };
     }
 
-    return { error: null };
+    // With email confirmation on, Supabase creates the account but returns no session.
+    return { error: null, needsEmailConfirmation: !data.session };
   };
 
   const signInWithGoogle = async () => {
