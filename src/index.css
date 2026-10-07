@@ -177,7 +177,10 @@
 }
 
 .mobile-glass-tab.is-active {
-  background: hsl(var(--mobile-nav-active));
+  /* Inset the grey active pill a few px from the bar's top/bottom edges */
+  background: hsl(var(--mobile-nav-active)) content-box;
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
 @media (max-width: 767px) {
