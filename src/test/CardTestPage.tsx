@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/hooks/useAuth';
+import { MemoryRouter } from 'react-router-dom';
 import { ContactCard } from '@/components/crm/ContactCard';
 
 const contactId = 'test-contact-1';
@@ -26,7 +27,7 @@ const qc = new QueryClient({
 qc.setQueryData(['engagement-score', contactId], score);
 
 const App = () => (
-  <AuthProvider>
+  <AuthProvider><MemoryRouter>
     <QueryClientProvider client={qc}>
       <div style={{ width: 280, padding: 8 }}>
         <ContactCard
@@ -46,7 +47,7 @@ const App = () => (
         />
       </div>
     </QueryClientProvider>
-  </AuthProvider>
+  </MemoryRouter></AuthProvider>
 );
 
 createRoot(document.getElementById('root')!).render(<App />);
