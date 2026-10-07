@@ -347,11 +347,11 @@ export const Header: React.FC<HeaderProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={toggleMobileSidebar}
+            onClick={openMobileMenu}
             className="h-11 w-11 md:hidden flex-shrink-0"
             aria-label="Open menu"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-[22px] w-[22px] stroke-[1.7]" />
           </Button>
           {showBackButton && onBackClick && (
             <Button variant="ghost" size="icon" onClick={onBackClick} className="h-11 w-11 flex-shrink-0">
