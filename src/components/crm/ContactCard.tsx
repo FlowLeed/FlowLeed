@@ -1,7 +1,7 @@
 import React from "react";
 import { Contact } from "@/types/crm";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MoreVertical, MessageSquare, Mail, Phone, UserX, CheckCircle2, Building2 } from "lucide-react";
+import { MoreVertical, MessageSquare, Mail, Phone, UserX, CheckCircle2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -84,19 +84,17 @@ export const ContactCard: React.FC<ContactCardProps> = ({
               {isCompleted ? (
                 <span className="inline-flex shrink-0 items-center gap-1"><CheckCircle2 className="h-3 w-3" strokeWidth={1.7} />Done</span>
               ) : (
-                <span className="shrink-0">{getDaysInStage(stageEnteredAt)}d in stage</span>
+                <span className="shrink-0" title={`In stage for ${getDaysInStage(stageEnteredAt)} days`}>{getDaysInStage(stageEnteredAt)}d</span>
               )}
-              {campusName && <span className="inline-flex min-w-0 items-center gap-1" title={campusName}>
-                  <span className="shrink-0">·</span>
-                  <Building2 className="h-3 w-3 shrink-0" strokeWidth={1.7} />
-                  <span className="truncate">{campusName}</span>
+              {campusName && <span className="shrink-0 truncate" title={campusName}>
+                  · {campusName}
                 </span>}
-              {tags?.length > 0 && <span className="min-w-0 truncate text-primary" title={tags.join(", ")}>· {tags.join(", ")}</span>}
+              {tags?.length > 0 && <span className="min-w-0 shrink-[10] truncate text-primary" title={tags.join(", ")}>· {tags.join(", ")}</span>}
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {campusName && !isSelectMode && <EngagementBadge score={engagementScore} compact />}
+        <div className="flex shrink-0 items-center gap-1">
+          {campusName && !isSelectMode && <EngagementBadge score={engagementScore} mini />}
           {!isSelectMode && <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full text-muted-foreground" aria-label={`Actions for ${name}`} onClick={e => e.stopPropagation()}>
