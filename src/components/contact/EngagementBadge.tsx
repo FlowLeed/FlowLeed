@@ -55,9 +55,12 @@ export function EngagementBadge({ score, compact = false, mini = false, contactI
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge variant="outline" className={`${className} gap-1 text-xs cursor-default`}>
-            {season ? <PauseCircle className="h-3 w-3" /> : <Activity className="h-3 w-3" />}
-            {compact ? score.score : label}
+          <Badge
+            variant="outline"
+            className={`${className} ${mini ? 'h-5 gap-0.5 rounded-full px-1.5 text-[10px] font-medium' : 'gap-1 text-xs'} cursor-default`}
+          >
+            {season ? <PauseCircle className={mini ? 'h-2.5 w-2.5' : 'h-3 w-3'} /> : <Activity className={mini ? 'h-2.5 w-2.5' : 'h-3 w-3'} />}
+            {compact || mini ? score.score : label}
           </Badge>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs space-y-1">
