@@ -335,7 +335,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
     return 'U';
   })();
-  const { toggle: toggleMobileSidebar } = useMobileSidebar();
+  const { openAll: openMobileMenu } = useMobileSidebar();
   const hasToolbarActions = !!(onSettingsClick || (viewMode && onViewModeChange) || onToggleSelectMode || (contactCounts && onFilterChange) || onDocsClick || onAnalyticsClick);
   const hasActiveFilter = !!(selectedFilter || showCompleted || selectedEngagementFilter || selectedCampusFilter);
 
