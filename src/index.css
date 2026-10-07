@@ -57,6 +57,10 @@
     --story-scrim-soft: linear-gradient(to top, hsl(222 22% 8% / 0.58), transparent 58%);
 
     /* Layout tokens */
+    --mobile-nav-surface: 0 0% 100% / 0.72;
+    --mobile-nav-border: 0 0% 100% / 0.85;
+    --mobile-nav-active: 220 10% 20% / 0.08;
+    --mobile-nav-shadow: 0 6px 24px hsl(222 30% 12% / 0.12), inset 0 1px 0 hsl(0 0% 100% / 0.8);
     --sidebar-width: 18rem; /* 72 * 0.25rem */
   }
 
@@ -111,6 +115,10 @@
     --story-scrim-soft: linear-gradient(to top, hsl(222 22% 5% / 0.62), transparent 58%);
 
     /* Layout tokens */
+    --mobile-nav-surface: 222 20% 12% / 0.76;
+    --mobile-nav-border: 0 0% 100% / 0.14;
+    --mobile-nav-active: 0 0% 100% / 0.12;
+    --mobile-nav-shadow: 0 6px 24px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.12);
     --sidebar-width: 18rem;
   }
 }
@@ -157,6 +165,25 @@
 
 .contact-card {
   @apply relative bg-white p-4 rounded-md shadow-sm border border-crm-border;
+}
+
+.mobile-glass-nav {
+  bottom: max(8px, calc(env(safe-area-inset-bottom) * 0.6));
+  border: 1px solid hsl(var(--mobile-nav-border));
+  background: hsl(var(--mobile-nav-surface));
+  box-shadow: var(--mobile-nav-shadow);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+}
+
+.mobile-glass-tab.is-active {
+  background: hsl(var(--mobile-nav-active));
+}
+
+@media (max-width: 767px) {
+  .mobile-navigation-content {
+    padding-bottom: calc(3.25rem + max(8px, env(safe-area-inset-bottom) * 0.6));
+  }
 }
 
 .contact-card:hover {
