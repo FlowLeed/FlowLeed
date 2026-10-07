@@ -10,6 +10,8 @@ import { lifeSeasonLabel } from '@/lib/lifeSeasons';
 interface EngagementBadgeProps {
   score: (EngagementScore & { score_breakdown?: any; consecutive_streak_weeks?: number }) | null | undefined;
   compact?: boolean;
+  /** Extra-small score-only pill, for tight card layouts. */
+  mini?: boolean;
   /** When provided, a pause mark shows if this person is in a life season. */
   contactId?: string;
 }
@@ -23,7 +25,7 @@ const levelClassName: Record<string, string> = {
   new: 'bg-muted text-muted-foreground border-border',
 };
 
-export function EngagementBadge({ score, compact = false, contactId }: EngagementBadgeProps) {
+export function EngagementBadge({ score, compact = false, mini = false, contactId }: EngagementBadgeProps) {
   const { settings } = useEngagementSettings();
   const { data: seasons } = useActiveLifeSeasons();
   const season = contactId ? (seasons ?? []).find((s) => s.contact_id === contactId) : undefined;
@@ -53,9 +55,12 @@ export function EngagementBadge({ score, compact = false, contactId }: Engagemen
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Badge variant="outline" className={`${className} gap-1 text-xs cursor-default`}>
-            {season ? <PauseCircle className="h-3 w-3" /> : <Activity className="h-3 w-3" />}
-            {compact ? score.score : label}
+          <Badge
+            variant="outline"
+            className={`${className} ${mini ? 'h-5 gap-0.5 rounded-full px-1.5 text-[10px] font-medium' : 'gap-1 text-xs'} cursor-default`}
+          >
+            {season ? <PauseCircle className={mini ? 'h-2.5 w-2.5' : 'h-3 w-3'} /> : <Activity className={mini ? 'h-2.5 w-2.5' : 'h-3 w-3'} />}
+            {compact || mini ? score.score : label}
           </Badge>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs space-y-1">
