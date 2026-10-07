@@ -94,7 +94,7 @@ const ThinkingStatus = () => {
 interface ChatThreadProps {
   messages: ChatMessage[];
   isLoading: boolean;
-  onClear: () => void;
+  onClear?: () => void;
   onOpenHistory?: () => void;
   onConfirmAction?: (actionRequestId: string) => Promise<{ ok: boolean; message: string }>;
   renderBriefing?: () => React.ReactNode;
@@ -154,18 +154,18 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4 mt-6">
-      <div className="flex justify-end gap-1 mb-2">
+      {(onClear || onOpenHistory) && <div className="flex justify-end gap-1 mb-2">
         {onOpenHistory && (
           <Button variant="ghost" size="sm" onClick={onOpenHistory} className="text-xs text-muted-foreground gap-1.5">
             <History className="h-3 w-3" />
             History
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={onClear} className="text-xs text-muted-foreground gap-1.5">
+        {onClear && <Button variant="ghost" size="sm" onClick={onClear} className="text-xs text-muted-foreground gap-1.5">
           <RotateCcw className="h-3 w-3" />
           New conversation
-        </Button>
-      </div>
+        </Button>}
+      </div>}
       {messages.map((msg, i) => msg.role === "assistant" && msg.content.startsWith(BRIEFING_MARKER) ? (
         <div key={i}>{renderBriefing?.()}</div>
       ) : (
