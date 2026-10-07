@@ -17,13 +17,15 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/dashboard-ai
 const TITLE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-chat-title`;
 const ACTIVE_CONV_KEY = "flowleed:active-conversation-id";
 
-export const useDashboardChat = () => {
+export const useDashboardChat = (opts?: { storageKey?: string; persistent?: boolean }) => {
+  const convKey = opts?.storageKey ?? ACTIVE_CONV_KEY;
+  const store = () => (opts?.persistent ? localStorage : sessionStorage);
   const { user } = useAuth();
   const { organization } = useProfile();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(
-    typeof window !== "undefined" ? sessionStorage.getItem(ACTIVE_CONV_KEY) : null
+    typeof window !== "undefined" ? (opts?.persistent ? localStorage : sessionStorage).getItem(opts?.storageKey ?? ACTIVE_CONV_KEY) : null
   );
   const abortRef = useRef<AbortController | null>(null);
   const titleGeneratedRef = useRef(false);
@@ -252,7 +254,7 @@ export const useDashboardChat = () => {
   const clearChat = useCallback(() => {
     setMessages([]);
     setConversationId(null);
-    sessionStorage.removeItem(ACTIVE_CONV_KEY);
+    store().removeItem(convKey);
     titleGeneratedRef.current = false;
   }, []);
 
@@ -273,13 +275,14 @@ export const useDashboardChat = () => {
 
   // Keep the active conversation across navigation (e.g. opening a person's profile)
   useEffect(() => {
-    if (conversationId) sessionStorage.setItem(ACTIVE_CONV_KEY, conversationId);
-  }, [conversationId]);
+    if (conversationId) store().setItem(convKey, conversationId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, convKey]);
 
   const restoredRef = useRef(false);
   useEffect(() => {
     if (restoredRef.current || !user?.id) return;
-    const saved = sessionStorage.getItem(ACTIVE_CONV_KEY);
+    const saved = store().getItem(convKey);
     if (!saved || messages.length > 0) return;
     restoredRef.current = true;
     loadConversation(saved);
