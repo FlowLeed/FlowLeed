@@ -675,7 +675,7 @@ export const Sidebar = () => {
   }];
 
   const isMobile = useIsMobile();
-  const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
+  const { open: mobileOpen, setOpen: setMobileOpen, showAll: mobileShowAll } = useMobileSidebar();
   const [mobileSection, setMobileSection] = useState<"hub" | "flows" | "marketing" | "settings">("hub");
 
   // Auto-close mobile sheet on route change
@@ -778,7 +778,25 @@ export const Sidebar = () => {
     />
   );
 
-  const mobileSheetContent = (
+  const mobileSheetContent = mobileShowAll ? (
+    <>
+      <Logo />
+      <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
+        {aiLink && <div className="px-0">{aiLink}</div>}
+        <SidebarSection title="HUB" items={hubItems} />
+        {flowsSection}
+        <SidebarSection
+          title="Quick links"
+          items={[
+            { title: "Tasks", icon: CheckSquare, path: "/tasks" },
+            { title: "Prayer Hub", icon: HeartHandshake, path: "/prayer" },
+          ]}
+        />
+        {marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
+        <SidebarSection title="Settings" items={settingsItems} />
+      </div>
+    </>
+  ) : (
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
