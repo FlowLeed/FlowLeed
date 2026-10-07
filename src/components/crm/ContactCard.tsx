@@ -84,7 +84,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
               {isCompleted ? (
                 <span className="inline-flex shrink-0 items-center gap-1"><CheckCircle2 className="h-3 w-3" strokeWidth={1.7} />Done</span>
               ) : (
-                <span className="shrink-0">{getDaysInStage(stageEnteredAt)}d in stage</span>
+                <span className="shrink-0" title={`In stage for ${getDaysInStage(stageEnteredAt)} days`}>{getDaysInStage(stageEnteredAt)}d</span>
               )}
               {campusName && <span className="shrink-0 truncate" title={campusName}>
                   · {campusName}
