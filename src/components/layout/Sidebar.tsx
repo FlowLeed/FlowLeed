@@ -893,6 +893,7 @@ const DesktopRail = ({
 }) => {
   const matches = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
   const prayerActive = pathname === "/prayer" || pathname.startsWith("/prayer/");
+  const tasksActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
   const routeSection: RailSection = pathname.startsWith("/flows") ? "flows"
     : matches(marketingItems) ? "marketing"
     : matches(settingsItems) ? "settings" : "hub";
@@ -965,6 +966,16 @@ const DesktopRail = ({
               <div className="my-1 h-px w-7 bg-sidebar-border" />
               {railButton("hub", LayoutDashboard, "Hub")}
               {railButton("flows", RefreshCw, "Flows")}
+              <Tooltip delayDuration={350}>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon" className={`h-10 w-10 rounded-lg transition-colors ${tasksActive ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
+                    <Link to="/tasks" aria-label="Tasks" aria-current={tasksActive ? "page" : undefined} onClick={() => setOpen(false)}>
+                      <CheckSquare className="h-[21px] w-[21px] stroke-[1.7]" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>Tasks</TooltipContent>
+              </Tooltip>
               <Tooltip delayDuration={350}>
                 <TooltipTrigger asChild>
                   <Button asChild variant="ghost" size="icon" className={`h-10 w-10 rounded-lg transition-colors ${prayerActive ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
