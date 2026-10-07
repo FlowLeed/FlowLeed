@@ -893,6 +893,7 @@ const DesktopRail = ({
 }) => {
   const matches = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
   const prayerActive = pathname === "/prayer" || pathname.startsWith("/prayer/");
+  const tasksActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
   const routeSection: RailSection = pathname.startsWith("/flows") ? "flows"
     : matches(marketingItems) ? "marketing"
     : matches(settingsItems) ? "settings" : "hub";
