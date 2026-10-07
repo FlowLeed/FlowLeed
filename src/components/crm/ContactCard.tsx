@@ -89,7 +89,7 @@ export const ContactCard: React.FC<ContactCardProps> = ({
               {campusName && <span className="shrink-0 truncate" title={campusName}>
                   · {campusName}
                 </span>}
-              {tags?.length > 0 && <span className="min-w-0 truncate text-primary" title={tags.join(", ")}>· {tags.join(", ")}</span>}
+              {tags?.length > 0 && <span className="min-w-0 shrink-[10] truncate text-primary" title={tags.join(", ")}>· {tags.join(", ")}</span>}
             </div>
           </div>
         </div>
