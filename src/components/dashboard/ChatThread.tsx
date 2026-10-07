@@ -1,8 +1,9 @@
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 import { Link } from "react-router-dom";
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type ChatMessage, BRIEFING_MARKER } from "@/hooks/useDashboardChat";
-import { User, HeartHandshake, RotateCcw, History, ListPlus } from "lucide-react";
+import { User, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
@@ -105,7 +106,7 @@ const ThinkingStatus = () => {
 interface ChatThreadProps {
   messages: ChatMessage[];
   isLoading: boolean;
-  onClear: () => void;
+  onClear?: () => void;
   onOpenHistory?: () => void;
   onConfirmAction?: (actionRequestId: string) => Promise<{ ok: boolean; message: string }>;
   renderBriefing?: () => React.ReactNode;
@@ -165,27 +166,25 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4 mt-6">
-      <div className="flex justify-end gap-1 mb-2">
+      {(onClear || onOpenHistory) && <div className="flex justify-end gap-1 mb-2">
         {onOpenHistory && (
           <Button variant="ghost" size="sm" onClick={onOpenHistory} className="text-xs text-muted-foreground gap-1.5">
             <History className="h-3 w-3" />
             History
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={onClear} className="text-xs text-muted-foreground gap-1.5">
+        {onClear && <Button variant="ghost" size="sm" onClick={onClear} className="text-xs text-muted-foreground gap-1.5">
           <RotateCcw className="h-3 w-3" />
           New conversation
-        </Button>
-      </div>
+        </Button>}
+      </div>}
       {messages.map((msg, i) => msg.role === "assistant" && msg.content.startsWith(BRIEFING_MARKER) ? (
         <div key={i}>{renderBriefing?.()}</div>
       ) : (
         <Message key={i} from={msg.role} className={`flex-row gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           {msg.role === "assistant" && (
             <div className="flex-shrink-0 mt-1">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
-                <HeartHandshake className="h-4 w-4 text-primary-foreground" />
-              </div>
+              <AiBrandIcon className="h-7 w-7" aria-label="FlowLeed AI" />
             </div>
           )}
           <MessageContent
@@ -248,11 +247,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 const pendingGroups: { actions: ChatAction[]; groupId: string; type?: string }[] = [];
                 const actionLabel = (type?: string) => {
                   switch (type) {
-                    case "create_contact_note": return "Approve note";
-                    case "create_task": return "Approve task";
+                    case "create_contact_note": return "Approve adding note";
+                    case "create_task": return "Approve adding task";
                     case "create_form": return "Approve form";
-                    case "create_prayer_request": return "Approve prayer request";
+                    case "create_prayer_request": return "Approve adding prayer request";
                     case "add_to_flow": return "Approve flow update";
+                    case "update_task": return "Approve task update";
                     default: return "Approve";
                   }
                 };
@@ -322,10 +322,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         pendingGroups.push({ actions: remaining, groupId: `${i}-remaining-actions` });
                       }
                       if (pendingGroups.length === 0) return null;
-                      const multi = pendingGroups.length > 1;
+                      // One button per action: approving one must never remove the others.
+                      const individual = pendingGroups.flatMap(({ actions, type }) =>
+                        actions.map((action) => ({ action, type: type ?? action.type }))
+                      );
                       return (
                         <div className="not-prose mt-4 flex flex-col items-start gap-2">
-                          {pendingGroups.map(({ actions, groupId, type }) => approvalButton(actions, groupId, multi ? type : undefined))}
+                          {individual.map(({ action, type }) => approvalButton([action], action.id, type))}
                         </div>
                       );
                     })()}
@@ -370,9 +373,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
       {isLoading && messages[messages.length - 1]?.role === "user" && (
         <div className="flex gap-3 justify-start">
           <div className="flex-shrink-0 mt-1">
-            <div className="flex h-7 w-7 animate-pulse items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
-              <HeartHandshake className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <AiBrandIcon className="animate-pulse h-7 w-7" aria-label="FlowLeed AI" />
           </div>
           <div className="rounded-2xl rounded-bl-md px-5 py-4">
             <div className="flex items-center gap-3">

@@ -335,7 +335,7 @@ export const Header: React.FC<HeaderProps> = ({
     }
     return 'U';
   })();
-  const { toggle: toggleMobileSidebar } = useMobileSidebar();
+  const { openAll: openMobileMenu } = useMobileSidebar();
   const hasToolbarActions = !!(onSettingsClick || (viewMode && onViewModeChange) || onToggleSelectMode || (contactCounts && onFilterChange) || onDocsClick || onAnalyticsClick);
   const hasActiveFilter = !!(selectedFilter || showCompleted || selectedEngagementFilter || selectedCampusFilter);
 
@@ -347,11 +347,11 @@ export const Header: React.FC<HeaderProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={toggleMobileSidebar}
+            onClick={openMobileMenu}
             className="h-11 w-11 md:hidden flex-shrink-0"
             aria-label="Open menu"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-[22px] w-[22px] stroke-[1.7]" />
           </Button>
           {showBackButton && onBackClick && (
             <Button variant="ghost" size="icon" onClick={onBackClick} className="h-11 w-11 flex-shrink-0">
@@ -582,14 +582,14 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="hidden border-l border-border h-6 mx-1 sm:block" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex h-11 w-11 items-center justify-center gap-2 rounded-lg hover:bg-accent">
+              <Button variant="ghost" size="icon" aria-label="Profile and settings" className="h-11 w-11 rounded-lg">
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={profile?.avatar_url || ""} alt={displayName} />
                   <AvatarFallback>
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>
@@ -605,6 +605,14 @@ export const Header: React.FC<HeaderProps> = ({
               <DropdownMenuItem onClick={() => navigate('/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/team')}>
+                <Users className="mr-2 h-4 w-4" strokeWidth={1.7} />
+                My Organization
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/integrations')}>
+                <Settings className="mr-2 h-4 w-4" strokeWidth={1.7} />
+                Integrations
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>

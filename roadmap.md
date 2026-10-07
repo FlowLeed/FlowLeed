@@ -51,3 +51,4 @@
 - [x] Add adaptive individual Story pages with one contextual next step
 - [x] Add staff Story authoring for written, video-led, and mixed-media stories
 - [ ] Verify published Story pages and staff authoring on desktop and mobile
+- [x] Add Tasks icon to desktop left navigation rail
