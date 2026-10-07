@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Film, HandHeart, TrendingUp } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Film, HandHeart, TrendingUp, HeartHandshake } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenuCheckboxItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
@@ -794,6 +794,7 @@ export const Sidebar = () => {
     const pathname = location.pathname;
     const matchesItems = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
     const tasksActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
+    const prayerActive = pathname.startsWith("/prayer");
     const hubActive = !tasksActive && matchesItems(hubItems);
     const flowsActive = pathname.startsWith("/flows");
     const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
@@ -830,8 +831,10 @@ export const Sidebar = () => {
             </Link>
           </Button>
           {marketingItems.length > 0 && (
-            <Button variant="ghost" aria-label="Marketing" aria-expanded={mobileOpen && mobileSection === "marketing"} onClick={() => openSheet("marketing")} className={tabClass(mobileOpen ? mobileSection === "marketing" : marketingActive)}>
-              <TrendingUp className={iconClass(marketingActive)} />
+            <Button asChild variant="ghost" className={tabClass(prayerActive && !mobileOpen)}>
+              <Link to="/prayer" aria-label="Prayer" aria-current={prayerActive ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+                <HeartHandshake className={iconClass(prayerActive)} />
+              </Link>
             </Button>
           )}
         </nav>
