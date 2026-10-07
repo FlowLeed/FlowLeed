@@ -967,6 +967,16 @@ const DesktopRail = ({
               {railButton("flows", RefreshCw, "Flows")}
               <Tooltip delayDuration={350}>
                 <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon" className={`h-10 w-10 rounded-lg transition-colors ${tasksActive ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
+                    <Link to="/tasks" aria-label="Tasks" aria-current={tasksActive ? "page" : undefined} onClick={() => setOpen(false)}>
+                      <CheckSquare className="h-[21px] w-[21px] stroke-[1.7]" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>Tasks</TooltipContent>
+              </Tooltip>
+              <Tooltip delayDuration={350}>
+                <TooltipTrigger asChild>
                   <Button asChild variant="ghost" size="icon" className={`h-10 w-10 rounded-lg transition-colors ${prayerActive ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
                     <Link to="/prayer" aria-label="Prayer" aria-current={prayerActive ? "page" : undefined} onClick={() => setOpen(false)}>
                       <HeartHandshake className="h-[21px] w-[21px] stroke-[1.7]" />
