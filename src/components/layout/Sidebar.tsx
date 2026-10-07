@@ -793,42 +793,47 @@ export const Sidebar = () => {
   if (isMobile) {
     const pathname = location.pathname;
     const matchesItems = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
-    const hubActive = matchesItems(hubItems);
+    const tasksActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
+    const hubActive = !tasksActive && matchesItems(hubItems);
     const flowsActive = pathname.startsWith("/flows");
     const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
-    const settingsActive = matchesItems(settingsItems);
     const openSheet = (section: "hub" | "flows" | "marketing" | "settings") => {
       setMobileSection(section);
       setMobileOpen(true);
     };
     const tabClass = (active: boolean) =>
-      `flex h-11 w-full flex-col items-center justify-center transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
+      `mobile-glass-tab h-11 min-w-0 w-full rounded-full p-0 [&_svg]:size-[22px] ${active ? "is-active text-foreground" : "text-muted-foreground hover:text-foreground"}`;
     const iconClass = (active: boolean) =>
       `h-[22px] w-[22px] ${active ? "stroke-[2]" : "stroke-[1.7]"}`;
     return (
       <>
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(2.75rem+env(safe-area-inset-bottom)*0.6)] items-start border-t border-sidebar-border bg-sidebar/95 backdrop-blur"
+          aria-label="Main navigation"
+          className="mobile-glass-nav fixed inset-x-3 z-40 mx-auto flex h-11 max-w-md items-center rounded-full"
         >
-          {aiEnabled && (
-            <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
-              <AiBrandIcon className="h-[24px] w-[24px] shrink-0" />
-            </Link>
-          )}
-          <button type="button" aria-label="HUB" aria-expanded={mobileOpen && mobileSection === "hub"} onClick={() => openSheet("hub")} className={tabClass(hubActive)}>
+          <Button variant="ghost" aria-label="HUB" aria-expanded={mobileOpen && mobileSection === "hub"} onClick={() => openSheet("hub")} className={tabClass(mobileOpen ? mobileSection === "hub" : hubActive)}>
             <LayoutDashboard className={iconClass(hubActive)} />
-          </button>
-          <button type="button" aria-label="Flows" aria-expanded={mobileOpen && mobileSection === "flows"} onClick={() => openSheet("flows")} className={tabClass(flowsActive)}>
+          </Button>
+          <Button variant="ghost" aria-label="Flows" aria-expanded={mobileOpen && mobileSection === "flows"} onClick={() => openSheet("flows")} className={tabClass(mobileOpen ? mobileSection === "flows" : flowsActive)}>
             <RefreshCw className={iconClass(flowsActive)} />
-          </button>
-          {marketingItems.length > 0 && (
-            <button type="button" aria-label="Marketing" aria-expanded={mobileOpen && mobileSection === "marketing"} onClick={() => openSheet("marketing")} className={tabClass(marketingActive)}>
-              <TrendingUp className={iconClass(marketingActive)} />
-            </button>
+          </Button>
+          {aiEnabled && (
+            <Button asChild variant="ghost" className={`${tabClass(aiActive && !mobileOpen)} [&_svg]:size-6`}>
+              <Link to="/" aria-label="FlowLeed AI" aria-current={aiActive ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+                <AiBrandIcon className="h-6 w-6 shrink-0" />
+              </Link>
+            </Button>
           )}
-          <button type="button" aria-label="Settings" aria-expanded={mobileOpen && mobileSection === "settings"} onClick={() => openSheet("settings")} className={tabClass(settingsActive)}>
-            <Settings className={iconClass(settingsActive)} />
-          </button>
+          <Button asChild variant="ghost" className={tabClass(tasksActive && !mobileOpen)}>
+            <Link to="/tasks" aria-label="Tasks" aria-current={tasksActive ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+              <CheckSquare className={iconClass(tasksActive)} />
+            </Link>
+          </Button>
+          {marketingItems.length > 0 && (
+            <Button variant="ghost" aria-label="Marketing" aria-expanded={mobileOpen && mobileSection === "marketing"} onClick={() => openSheet("marketing")} className={tabClass(mobileOpen ? mobileSection === "marketing" : marketingActive)}>
+              <TrendingUp className={iconClass(marketingActive)} />
+            </Button>
+          )}
         </nav>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="bottom" className="max-h-[75dvh] rounded-t-2xl p-0 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
