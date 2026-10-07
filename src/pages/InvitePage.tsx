@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { InvitationData } from '@shared/models/InvitationData';
 import { getInvitationDetails } from '@/api/invitations';
 import { ProviderError } from '@/errors/ProviderError';
+import { PasswordInput } from '@/components/ui/password-input';
 
 export default function InvitePage() {
   const { token } = useParams<{ token: string }>();
@@ -431,9 +432,8 @@ export default function InvitePage() {
               <label htmlFor="password" className="block text-sm font-medium mb-1">
                 Password
               </label>
-              <input
+              <PasswordInput
                 id="password"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"

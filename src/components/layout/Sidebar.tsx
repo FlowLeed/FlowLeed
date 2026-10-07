@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMobileSidebar } from "@/contexts/MobileSidebarContext";
-import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Film, HandHeart, TrendingUp } from "lucide-react";
+import { LayoutDashboard, BarChart3, Check, Calendar, Settings, MessageSquare, Phone, Users, UsersRound, Puzzle, Plus, Settings2, X, GripVertical, Flag, FlagTriangleRight, Target, Heart, CheckSquare, RefreshCw, Star, User, Filter as FilterIcon, Check as CheckIcon, Activity, Film, HandHeart, TrendingUp, HeartHandshake } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenuCheckboxItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from "@/components/ui/dropdown-menu";
 import { useIsOrgAdmin } from "@/hooks/useIsOrgAdmin";
@@ -558,7 +558,7 @@ export const Sidebar = () => {
     path: "/tasks"
   }, {
     title: "Prayer",
-    icon: HandHeart,
+    icon: HeartHandshake,
     path: "/prayer"
   }] as (SidebarItem & { featureKey?: "flowleed_ai" | "signals" })[])
     .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
@@ -675,7 +675,7 @@ export const Sidebar = () => {
   }];
 
   const isMobile = useIsMobile();
-  const { open: mobileOpen, setOpen: setMobileOpen } = useMobileSidebar();
+  const { open: mobileOpen, setOpen: setMobileOpen, showAll: mobileShowAll } = useMobileSidebar();
   const [mobileSection, setMobileSection] = useState<"hub" | "flows" | "marketing" | "settings">("hub");
 
   // Auto-close mobile sheet on route change
@@ -744,7 +744,7 @@ export const Sidebar = () => {
     </DropdownMenu>
   );
 
-  const flowsToggleControl = allFlowItems.length > 6 ? (
+  const flowsToggleControl = allFlowItems.length > displayedFlowItems.length ? (
     <Button
       variant="ghost"
       size="sm"
@@ -778,7 +778,25 @@ export const Sidebar = () => {
     />
   );
 
-  const mobileSheetContent = (
+  const mobileSheetContent = mobileShowAll ? (
+    <>
+      <Logo />
+      <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
+        {aiLink && <div className="px-0">{aiLink}</div>}
+        <SidebarSection title="HUB" items={hubItems} />
+        {flowsSection}
+        <SidebarSection
+          title="Quick links"
+          items={[
+            { title: "Tasks", icon: CheckSquare, path: "/tasks" },
+            { title: "Prayer Hub", icon: HeartHandshake, path: "/prayer" },
+          ]}
+        />
+        {marketingItems.length > 0 && <SidebarSection title="Marketing" items={marketingItems} />}
+        <SidebarSection title="Settings" items={settingsItems} />
+      </div>
+    </>
+  ) : (
     <>
       <Logo />
       <div className="flex-1 overflow-auto py-2 px-4 space-y-4 sidebar-scroll">
@@ -793,48 +811,57 @@ export const Sidebar = () => {
   if (isMobile) {
     const pathname = location.pathname;
     const matchesItems = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
-    const hubActive = matchesItems(hubItems);
+    const tasksActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
+    const prayerActive = pathname.startsWith("/prayer");
+    const hubActive = !tasksActive && !prayerActive && matchesItems(hubItems);
     const flowsActive = pathname.startsWith("/flows");
     const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
-    const settingsActive = matchesItems(settingsItems);
     const openSheet = (section: "hub" | "flows" | "marketing" | "settings") => {
       setMobileSection(section);
       setMobileOpen(true);
     };
     const tabClass = (active: boolean) =>
-      `flex h-11 w-full flex-col items-center justify-center transition-colors ${active ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`;
+      `mobile-glass-tab h-11 min-w-0 w-full rounded-full p-0 [&_svg]:size-[22px] ${active ? "is-active text-foreground" : "text-muted-foreground hover:text-foreground"}`;
     const iconClass = (active: boolean) =>
       `h-[22px] w-[22px] ${active ? "stroke-[2]" : "stroke-[1.7]"}`;
     return (
       <>
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(2.75rem+env(safe-area-inset-bottom)*0.6)] items-start border-t border-sidebar-border bg-sidebar/95 backdrop-blur"
+          aria-label="Main navigation"
+          className="mobile-glass-nav fixed inset-x-3 z-40 mx-auto flex h-11 max-w-md items-center rounded-full"
         >
-          {aiEnabled && (
-            <Link to="/" aria-label="FlowLeed AI" className={tabClass(aiActive)}>
-              <AiBrandIcon className="h-[24px] w-[24px] shrink-0" />
-            </Link>
-          )}
-          <button type="button" aria-label="HUB" aria-expanded={mobileOpen && mobileSection === "hub"} onClick={() => openSheet("hub")} className={tabClass(hubActive)}>
+          <Button variant="ghost" aria-label="HUB" aria-expanded={mobileOpen && mobileSection === "hub"} onClick={() => openSheet("hub")} className={tabClass(mobileOpen ? mobileSection === "hub" : hubActive)}>
             <LayoutDashboard className={iconClass(hubActive)} />
-          </button>
-          <button type="button" aria-label="Flows" aria-expanded={mobileOpen && mobileSection === "flows"} onClick={() => openSheet("flows")} className={tabClass(flowsActive)}>
+          </Button>
+          <Button variant="ghost" aria-label="Flows" aria-expanded={mobileOpen && mobileSection === "flows"} onClick={() => openSheet("flows")} className={tabClass(mobileOpen ? mobileSection === "flows" : flowsActive)}>
             <RefreshCw className={iconClass(flowsActive)} />
-          </button>
-          {marketingItems.length > 0 && (
-            <button type="button" aria-label="Marketing" aria-expanded={mobileOpen && mobileSection === "marketing"} onClick={() => openSheet("marketing")} className={tabClass(marketingActive)}>
-              <TrendingUp className={iconClass(marketingActive)} />
-            </button>
+          </Button>
+          {aiEnabled && (
+            <Button asChild variant="ghost" className={`${tabClass(aiActive && !mobileOpen)} [&_svg]:size-6`}>
+              <Link to="/" aria-label="FlowLeed AI" aria-current={aiActive ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+                <AiBrandIcon className="h-6 w-6 shrink-0" />
+              </Link>
+            </Button>
           )}
-          <button type="button" aria-label="Settings" aria-expanded={mobileOpen && mobileSection === "settings"} onClick={() => openSheet("settings")} className={tabClass(settingsActive)}>
-            <Settings className={iconClass(settingsActive)} />
-          </button>
+          <Button asChild variant="ghost" className={tabClass(tasksActive && !mobileOpen)}>
+            <Link to="/tasks" aria-label="Tasks" aria-current={tasksActive ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+              <CheckSquare className={iconClass(tasksActive)} />
+            </Link>
+          </Button>
+          {(
+            <Button asChild variant="ghost" className={tabClass(prayerActive && !mobileOpen)}>
+              <Link to="/prayer" aria-label="Prayer" aria-current={prayerActive ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+                <HeartHandshake className={iconClass(prayerActive)} />
+              </Link>
+            </Button>
+          )}
         </nav>
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent side="bottom" className="max-h-[75dvh] rounded-t-2xl p-0 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
             {mobileSheetContent}
           </SheetContent>
         </Sheet>
+        <FlowsManagementDialog open={showFlowsManagement} onOpenChange={setShowFlowsManagement} />
       </>
     );
   }
@@ -865,6 +892,8 @@ const DesktopRail = ({
   flowsSection: React.ReactNode; pathname: string; flowsManagement: React.ReactNode;
 }) => {
   const matches = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
+  const prayerActive = pathname === "/prayer" || pathname.startsWith("/prayer/");
+  const tasksActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
   const routeSection: RailSection = pathname.startsWith("/flows") ? "flows"
     : matches(marketingItems) ? "marketing"
     : matches(settingsItems) ? "settings" : "hub";
@@ -888,7 +917,7 @@ const DesktopRail = ({
 
   const railButton = (s: RailSection, Icon: LucideIcon, label: string) => {
     const active = section === s && open;
-    const current = routeSection === s && !aiActive;
+    const current = routeSection === s && !aiActive && !prayerActive;
     return (
       <Tooltip key={s} delayDuration={350}>
         <TooltipTrigger asChild>
@@ -937,6 +966,26 @@ const DesktopRail = ({
               <div className="my-1 h-px w-7 bg-sidebar-border" />
               {railButton("hub", LayoutDashboard, "Hub")}
               {railButton("flows", RefreshCw, "Flows")}
+              <Tooltip delayDuration={350}>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon" className={`h-10 w-10 rounded-lg transition-colors ${tasksActive ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
+                    <Link to="/tasks" aria-label="Tasks" aria-current={tasksActive ? "page" : undefined} onClick={() => setOpen(false)}>
+                      <CheckSquare className="h-[21px] w-[21px] stroke-[1.7]" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>Tasks</TooltipContent>
+              </Tooltip>
+              <Tooltip delayDuration={350}>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon" className={`h-10 w-10 rounded-lg transition-colors ${prayerActive ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
+                    <Link to="/prayer" aria-label="Prayer" aria-current={prayerActive ? "page" : undefined} onClick={() => setOpen(false)}>
+                      <HeartHandshake className="h-[21px] w-[21px] stroke-[1.7]" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>Prayer</TooltipContent>
+              </Tooltip>
               {marketingItems.length > 0 && railButton("marketing", TrendingUp, "Marketing")}
             </div>
             <div className="mt-auto flex flex-col items-center border-t border-sidebar-border pt-2">

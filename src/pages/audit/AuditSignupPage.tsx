@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle2, Sparkles, HeartPulse, Users2, Layers, Loader2, AlertTriangle, Check, Lock, Eye, Database, Unplug } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import flowleedLogo from '@/assets/flowleed_logo_new.png';
+import { PasswordInput } from '@/components/ui/password-input';
 
 type SlugStatus = 'idle' | 'checking' | 'available' | 'taken';
 
@@ -242,7 +243,7 @@ const AuditSignupPage = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="au-pass">Password</Label>
-                    <Input id="au-pass" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                    <PasswordInput id="au-pass" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                   </div>
 
                   <Button type="submit" className="w-full" size="lg" disabled={loading || slugStatus === 'taken' || slugStatus === 'checking'}>

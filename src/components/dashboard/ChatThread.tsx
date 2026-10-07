@@ -1,8 +1,9 @@
+import AiBrandIcon from "@/components/content/AiBrandIcon";
 import { Link } from "react-router-dom";
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type ChatMessage, BRIEFING_MARKER } from "@/hooks/useDashboardChat";
-import { User, HeartHandshake, RotateCcw, History, ListPlus } from "lucide-react";
+import { User, RotateCcw, History, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { BulkAddToFlowDialog } from "@/components/contacts/BulkAddToFlowDialog";
@@ -27,6 +28,9 @@ const THINKING_MESSAGES = [
 const TITLE_HINT =
   /\b(?:Overview|Activity|History|Summary|Context|Connection|Engagement|Household|Groups?|Flows?|Journey|Milestones?|Profile|Serving|Family|Care|Spiritual|Recent|Leadership|Next Steps|Prayer|Notes|Demographics|Tags|Interactions)\b/;
 
+/** A markdown list item: "-", "*", "+" or "1." / "1)" followed by a space. */
+const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s/;
+
 const formatAssistantMarkdown = (content: string) => {
   let text = content
     // Preserve markdown structure when a streamed heading arrives immediately
@@ -44,8 +48,12 @@ const formatAssistantMarkdown = (content: string) => {
       return `${sp}${inner.trim()} `;
     })
     // Mid-line bold labels start their own quiet heading between paragraphs.
-    .replace(/([^\n*])\s*\*\*([^*]{1,60}?):\*\*(?=\s*\S)/g, (_m, before: string, label: string) =>
-      `${before}\n\n### ${label.trim()}\n\n`);
+    // List items keep their label ("*   **Availability:** When...") - splitting
+    // one would leave an empty bullet above a heading.
+    .replace(/^.*$/gm, (line) => LIST_ITEM.test(line)
+      ? line
+      : line.replace(/([^\n*])\s*\*\*([^*]{1,60}?):\*\*(?=\s*\S)/g, (_m, before: string, label: string) =>
+        `${before}\n\n### ${label.trim()}\n\n`));
   // Bold stays for titles only - paragraphs render as plain text.
   text = text.replace(/\*\*([^*]+)\*\*/g, "$1");
   return text
@@ -98,7 +106,7 @@ const ThinkingStatus = () => {
 interface ChatThreadProps {
   messages: ChatMessage[];
   isLoading: boolean;
-  onClear: () => void;
+  onClear?: () => void;
   onOpenHistory?: () => void;
   onConfirmAction?: (actionRequestId: string) => Promise<{ ok: boolean; message: string }>;
   renderBriefing?: () => React.ReactNode;
@@ -158,27 +166,25 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
 
   return (
     <div className="w-full max-w-3xl mx-auto space-y-4 mt-6">
-      <div className="flex justify-end gap-1 mb-2">
+      {(onClear || onOpenHistory) && <div className="flex justify-end gap-1 mb-2">
         {onOpenHistory && (
           <Button variant="ghost" size="sm" onClick={onOpenHistory} className="text-xs text-muted-foreground gap-1.5">
             <History className="h-3 w-3" />
             History
           </Button>
         )}
-        <Button variant="ghost" size="sm" onClick={onClear} className="text-xs text-muted-foreground gap-1.5">
+        {onClear && <Button variant="ghost" size="sm" onClick={onClear} className="text-xs text-muted-foreground gap-1.5">
           <RotateCcw className="h-3 w-3" />
           New conversation
-        </Button>
-      </div>
+        </Button>}
+      </div>}
       {messages.map((msg, i) => msg.role === "assistant" && msg.content.startsWith(BRIEFING_MARKER) ? (
         <div key={i}>{renderBriefing?.()}</div>
       ) : (
         <Message key={i} from={msg.role} className={`flex-row gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           {msg.role === "assistant" && (
             <div className="flex-shrink-0 mt-1">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
-                <HeartHandshake className="h-4 w-4 text-primary-foreground" />
-              </div>
+              <AiBrandIcon className="h-7 w-7" aria-label="FlowLeed AI" />
             </div>
           )}
           <MessageContent
@@ -241,11 +247,12 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                 const pendingGroups: { actions: ChatAction[]; groupId: string; type?: string }[] = [];
                 const actionLabel = (type?: string) => {
                   switch (type) {
-                    case "create_contact_note": return "Approve note";
-                    case "create_task": return "Approve task";
+                    case "create_contact_note": return "Approve adding note";
+                    case "create_task": return "Approve adding task";
                     case "create_form": return "Approve form";
-                    case "create_prayer_request": return "Approve prayer request";
+                    case "create_prayer_request": return "Approve adding prayer request";
                     case "add_to_flow": return "Approve flow update";
+                    case "update_task": return "Approve task update";
                     default: return "Approve";
                   }
                 };
@@ -293,6 +300,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                             [&_h2]:mb-2 [&_h2]:mt-6 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-6
                             [&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:leading-6
                             [&_ul]:my-3 [&_ol]:my-3 [&_li]:my-1 [&_li]:leading-6
+                            [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:list-outside [&_ol]:list-outside [&_ul]:pl-5 [&_ol]:pl-5
                             [&_strong]:font-semibold [&_strong]:text-foreground
                             [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-2`}>
                             {section}
@@ -314,10 +322,13 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
                         pendingGroups.push({ actions: remaining, groupId: `${i}-remaining-actions` });
                       }
                       if (pendingGroups.length === 0) return null;
-                      const multi = pendingGroups.length > 1;
+                      // One button per action: approving one must never remove the others.
+                      const individual = pendingGroups.flatMap(({ actions, type }) =>
+                        actions.map((action) => ({ action, type: type ?? action.type }))
+                      );
                       return (
                         <div className="not-prose mt-4 flex flex-col items-start gap-2">
-                          {pendingGroups.map(({ actions, groupId, type }) => approvalButton(actions, groupId, multi ? type : undefined))}
+                          {individual.map(({ action, type }) => approvalButton([action], action.id, type))}
                         </div>
                       );
                     })()}
@@ -362,9 +373,7 @@ export const ChatThread: React.FC<ChatThreadProps> = ({ messages, isLoading, onC
       {isLoading && messages[messages.length - 1]?.role === "user" && (
         <div className="flex gap-3 justify-start">
           <div className="flex-shrink-0 mt-1">
-            <div className="flex h-7 w-7 animate-pulse items-center justify-center rounded-md bg-primary" aria-label="FlowLeed AI">
-              <HeartHandshake className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <AiBrandIcon className="animate-pulse h-7 w-7" aria-label="FlowLeed AI" />
           </div>
           <div className="rounded-2xl rounded-bl-md px-5 py-4">
             <div className="flex items-center gap-3">
