@@ -558,7 +558,7 @@ export const Sidebar = () => {
     path: "/tasks"
   }, {
     title: "Prayer",
-    icon: HandHeart,
+    icon: HeartHandshake,
     path: "/prayer"
   }] as (SidebarItem & { featureKey?: "flowleed_ai" | "signals" })[])
     .filter(item => !item.featureKey || isFeatureEnabled(item.featureKey));
@@ -813,7 +813,7 @@ export const Sidebar = () => {
     const matchesItems = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
     const tasksActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
     const prayerActive = pathname.startsWith("/prayer");
-    const hubActive = !tasksActive && matchesItems(hubItems);
+    const hubActive = !tasksActive && !prayerActive && matchesItems(hubItems);
     const flowsActive = pathname.startsWith("/flows");
     const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
     const openSheet = (section: "hub" | "flows" | "marketing" | "settings") => {
@@ -848,7 +848,7 @@ export const Sidebar = () => {
               <CheckSquare className={iconClass(tasksActive)} />
             </Link>
           </Button>
-          {marketingItems.length > 0 && (
+          {(
             <Button asChild variant="ghost" className={tabClass(prayerActive && !mobileOpen)}>
               <Link to="/prayer" aria-label="Prayer" aria-current={prayerActive ? "page" : undefined} onClick={() => setMobileOpen(false)}>
                 <HeartHandshake className={iconClass(prayerActive)} />
@@ -892,6 +892,7 @@ const DesktopRail = ({
   flowsSection: React.ReactNode; pathname: string; flowsManagement: React.ReactNode;
 }) => {
   const matches = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
+  const prayerActive = pathname === "/prayer" || pathname.startsWith("/prayer/");
   const routeSection: RailSection = pathname.startsWith("/flows") ? "flows"
     : matches(marketingItems) ? "marketing"
     : matches(settingsItems) ? "settings" : "hub";
@@ -915,7 +916,7 @@ const DesktopRail = ({
 
   const railButton = (s: RailSection, Icon: LucideIcon, label: string) => {
     const active = section === s && open;
-    const current = routeSection === s && !aiActive;
+    const current = routeSection === s && !aiActive && !prayerActive;
     return (
       <Tooltip key={s} delayDuration={350}>
         <TooltipTrigger asChild>
@@ -964,6 +965,16 @@ const DesktopRail = ({
               <div className="my-1 h-px w-7 bg-sidebar-border" />
               {railButton("hub", LayoutDashboard, "Hub")}
               {railButton("flows", RefreshCw, "Flows")}
+              <Tooltip delayDuration={350}>
+                <TooltipTrigger asChild>
+                  <Button asChild variant="ghost" size="icon" className={`h-10 w-10 rounded-lg transition-colors ${prayerActive ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"}`}>
+                    <Link to="/prayer" aria-label="Prayer" aria-current={prayerActive ? "page" : undefined} onClick={() => setOpen(false)}>
+                      <HeartHandshake className="h-[21px] w-[21px] stroke-[1.7]" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={10}>Prayer</TooltipContent>
+              </Tooltip>
               {marketingItems.length > 0 && railButton("marketing", TrendingUp, "Marketing")}
             </div>
             <div className="mt-auto flex flex-col items-center border-t border-sidebar-border pt-2">
