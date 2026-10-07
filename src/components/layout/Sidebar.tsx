@@ -794,6 +794,7 @@ export const Sidebar = () => {
     const pathname = location.pathname;
     const matchesItems = (items: SidebarItem[]) => items.some(i => pathname === i.path || pathname.startsWith(`${i.path}/`));
     const tasksActive = pathname === "/tasks" || pathname.startsWith("/tasks/");
+    const prayerActive = pathname.startsWith("/prayer");
     const hubActive = !tasksActive && matchesItems(hubItems);
     const flowsActive = pathname.startsWith("/flows");
     const marketingActive = marketingItems.length > 0 && matchesItems(marketingItems);
