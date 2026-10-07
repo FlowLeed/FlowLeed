@@ -10,6 +10,8 @@ import { lifeSeasonLabel } from '@/lib/lifeSeasons';
 interface EngagementBadgeProps {
   score: (EngagementScore & { score_breakdown?: any; consecutive_streak_weeks?: number }) | null | undefined;
   compact?: boolean;
+  /** Extra-small score-only pill, for tight card layouts. */
+  mini?: boolean;
   /** When provided, a pause mark shows if this person is in a life season. */
   contactId?: string;
 }
@@ -23,7 +25,7 @@ const levelClassName: Record<string, string> = {
   new: 'bg-muted text-muted-foreground border-border',
 };
 
-export function EngagementBadge({ score, compact = false, contactId }: EngagementBadgeProps) {
+export function EngagementBadge({ score, compact = false, mini = false, contactId }: EngagementBadgeProps) {
   const { settings } = useEngagementSettings();
   const { data: seasons } = useActiveLifeSeasons();
   const season = contactId ? (seasons ?? []).find((s) => s.contact_id === contactId) : undefined;
