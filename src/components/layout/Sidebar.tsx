@@ -830,8 +830,10 @@ export const Sidebar = () => {
             </Link>
           </Button>
           {marketingItems.length > 0 && (
-            <Button variant="ghost" aria-label="Marketing" aria-expanded={mobileOpen && mobileSection === "marketing"} onClick={() => openSheet("marketing")} className={tabClass(mobileOpen ? mobileSection === "marketing" : marketingActive)}>
-              <TrendingUp className={iconClass(marketingActive)} />
+            <Button asChild variant="ghost" className={tabClass(prayerActive && !mobileOpen)}>
+              <Link to="/prayer" aria-label="Prayer" aria-current={prayerActive ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+                <HeartHandshake className={iconClass(prayerActive)} />
+              </Link>
             </Button>
           )}
         </nav>
