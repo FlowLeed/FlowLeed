@@ -95,8 +95,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {campusName && !isSelectMode && <EngagementBadge score={engagementScore} compact />}
+        <div className="flex shrink-0 items-center gap-1">
+          {campusName && !isSelectMode && <EngagementBadge score={engagementScore} mini />}
           {!isSelectMode && <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full text-muted-foreground" aria-label={`Actions for ${name}`} onClick={e => e.stopPropagation()}>
