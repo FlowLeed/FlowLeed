@@ -221,9 +221,9 @@ const TOOL_REGISTRY = [
           flow_name: { type: "string", description: "Existing Flow that people who submit should be placed into." },
           step_name: { type: "string", description: "Optional step within that Flow. Defaults to the Flow's first step." },
           no_flow: { type: "boolean", description: "True only when the user explicitly said submissions should NOT go into any Flow." },
-          new_flow_name: { type: "string", description: "Name of a NEW Flow to create together with the form, only after the user agreed to create one." },
-          new_flow_steps: { type: "array", items: { type: "string" }, description: "Ordered step names for the new Flow (3-7), agreed with the user. First step receives submissions." },
-          emails_decided: { type: "boolean", description: "True only after the user answered whether to send a thank-you email and/or a team alert email." },
+          new_flow_name: { type: "string", description: "Name of a NEW Flow to create with the form. Optional: if omitted and no flow_name, a Flow named after the form is created by default." },
+          new_flow_steps: { type: "array", items: { type: "string" }, description: "Optional ordered step names for the new Flow. Defaults to Registered, Confirmed, Attended, Follow-up." },
+          emails_decided: { type: "boolean", description: "True only when the user stated email preferences; otherwise a default thank-you email is on." },
           confirmation_email: { type: "boolean", description: "Send a thank-you email to the person who submits." },
           from_name: { type: "string", description: "Sender name shown on the thank-you email (e.g. church name)." },
           reply_to: { type: "string", description: "Email address replies should go to." },
@@ -349,47 +349,51 @@ async function prepareForm(
     const { data } = await adminClient.from("pipelines").select("name").eq("organization_id", orgId).order("name").limit(40);
     return (data || []).map((f: any) => f.name);
   };
+  const DEFAULT_STEPS = ["Registered", "Confirmed", "Attended", "Follow-up"];
+  const blueprint = await designForm(requestText);
+  const makeNewFlow = async (name: string, rawSteps: unknown) => {
+    const steps = (Array.isArray(rawSteps) ? rawSteps : []).map((s: unknown) => String(s).trim().slice(0, 60)).filter(Boolean).slice(0, 10);
+    let finalName = name.slice(0, 80);
+    const { data: clash } = await adminClient.from("pipelines").select("id").eq("organization_id", orgId).ilike("name", finalName).maybeSingle();
+    if (clash) finalName = `${finalName} ${new Date().getFullYear()}`.slice(0, 80);
+    return { name: finalName, steps: steps.length >= 2 ? steps : DEFAULT_STEPS };
+  };
   if (newFlowName) {
-    const steps = (Array.isArray(args?.new_flow_steps) ? args.new_flow_steps : []).map((s: unknown) => String(s).trim().slice(0, 60)).filter(Boolean).slice(0, 10);
-    if (steps.length < 2) return `Before preparing, agree with the user on the steps for the new Flow "${newFlowName}". Suggest 3-5 simple steps (e.g. New, Contacted, Scheduled, Completed), ask them to confirm or edit, then call create_form again with new_flow_steps.`;
-    const { data: clash } = await adminClient.from("pipelines").select("id").eq("organization_id", orgId).ilike("name", newFlowName).maybeSingle();
-    if (clash) return `A Flow named "${newFlowName}" already exists. Use flow_name="${newFlowName}" instead of creating a new one.`;
-    newFlow = { name: newFlowName, steps };
+    const { data: clash } = await adminClient.from("pipelines").select("id, name").eq("organization_id", orgId).ilike("name", newFlowName).maybeSingle();
+    if (clash) pipeline = clash as any;
+    else newFlow = await makeNewFlow(newFlowName, args?.new_flow_steps);
   } else if (flowName) {
     const { data: flows } = await adminClient.from("pipelines").select("id, name").eq("organization_id", orgId).ilike("name", `%${flowName}%`).limit(5);
     const exact = (flows || []).filter((f: any) => f.name.toLowerCase() === flowName.toLowerCase());
     const pick = exact.length === 1 ? exact : (flows || []);
     if (pick.length > 1) return `Several Flows match "${flowName}": ${pick.map((f: any) => f.name).join(", ")}. Ask the user which one.`;
-    if (!pick.length) {
-      const names = await listFlows();
-      return `There is no Flow called "${flowName}". Existing Flows: ${names.join(", ") || "none"}. Ask the user to pick one of these, or offer to create a new "${flowName}" Flow with them: suggest 3-5 steps, let them confirm, then call create_form with new_flow_name and new_flow_steps.`;
-    }
-    pipeline = pick[0] as any;
+    if (!pick.length) newFlow = await makeNewFlow(flowName, args?.new_flow_steps);
+    else pipeline = pick[0] as any;
+  } else if (args?.no_flow !== true) {
+    // Sensible default: a new Flow named after the form with standard event steps.
+    newFlow = await makeNewFlow(blueprint?.name || "New Form", args?.new_flow_steps);
+  }
+  if (pipeline) {
     const { data: stages } = await adminClient.from("pipeline_stages").select("id, name, stage_order").eq("pipeline_id", pipeline!.id).order("stage_order");
     const stepName = String(args?.step_name || "").trim().toLowerCase();
     stage = ((stepName && (stages || []).find((s: any) => s.name.toLowerCase() === stepName)) || (stages || [])[0] || null) as any;
-  } else if (args?.no_flow !== true) {
-    const names = await listFlows();
-    return `Do not prepare the form yet. First ask the user where submissions should go. Offer these existing Flows as a short list: ${names.join(", ") || "(none yet)"}. Also offer: create a new Flow for it (you'll suggest steps together), or don't add people to any Flow. Then call create_form again with flow_name, new_flow_name + new_flow_steps, or no_flow=true.`;
   }
-  if (args?.emails_decided !== true) {
-    return `Do not prepare the form yet. Ask the user about emails in one short message: (1) Should the person who submits get a thank-you email? If yes, ask the sender name (e.g. the church name), the reply-to email, the subject, and a short message — offer a warm suggested subject and message they can accept. (2) Should someone on the team get an email alert for each submission? If yes, which email address(es)? Then call create_form again with emails_decided=true plus the answers (leave fields empty for "no").`;
-  }
+  const emailsDecided = args?.emails_decided === true;
   const emailRe = /^[^\s@,<>]+@[^\s@,<>]+\.[^\s@,<>]+$/;
   const notifyList = (Array.isArray(args?.notify_emails) ? args.notify_emails : String(args?.notify_emails || "").split(/[,;\s]+/))
     .map((s: unknown) => String(s).trim()).filter((s: string) => emailRe.test(s)).slice(0, 10);
   const replyTo = String(args?.reply_to || "").trim();
   const emailSettings = {
     confirmation: {
-      enabled: args?.confirmation_email === true,
+      // Default: warm thank-you email on, using the church's name (filled in by the form settings defaults).
+      enabled: emailsDecided ? args?.confirmation_email === true : true,
       from_name: String(args?.from_name || "").slice(0, 80),
       reply_to: emailRe.test(replyTo) ? replyTo : "",
-      subject: String(args?.confirmation_subject || "").slice(0, 200),
-      body: String(args?.confirmation_body || "").slice(0, 3000),
+      subject: String(args?.confirmation_subject || (emailsDecided ? "" : `Thanks for registering — ${blueprint?.name || "see you soon"}`)).slice(0, 200),
+      body: String(args?.confirmation_body || (emailsDecided ? "" : "Thank you for signing up! We're so glad you're coming and will be in touch with details soon.")).slice(0, 3000),
     },
     notify: { enabled: notifyList.length > 0, recipients: notifyList.join(", "), subject: "" },
   };
-  const blueprint = await designForm(requestText);
   if (!blueprint) return "The Form Builder couldn't design this form. Ask the user for the form's purpose and questions.";
   const fieldLines = blueprint.fields.map((f) => `- ${f.label} (${f.field_type}${f.required ? ", required" : ""}${f.options?.length ? `: ${f.options.join(", ")}` : ""})`);
   const dest = newFlow ? `Creates new Flow: ${newFlow.name} (${newFlow.steps.join(" → ")}); submissions go to ${newFlow.steps[0]}` : pipeline ? `Adds people to: ${pipeline.name}${stage ? ` → ${stage.name}` : ""}` : "Not linked to a Flow";
@@ -1777,7 +1781,7 @@ ${isEnabled("create_contact_note") ? '- **create_contact_note**: When the user a
 ${isEnabled("create_task") ? '- **create_task**: When the user asks to create a task, to-do, or reminder (optionally about one person, optionally with a due date), prepare it for confirmation. Resolve relative dates like "Friday" against today. If the user wants it assigned to another leader ("assign Pastor Marcus to call John"), pass that leader\'s name as assignee_name. Never say it was saved until execution confirms it.' : '- Creating tasks is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("update_task") ? '- **update_task**: When the user says a task is done ("mark Sandra\'s task done", "I called Rachel") or wants to move/reschedule one ("move Sandra\'s call to Friday"), call this with a keyword or person name to identify the task and either complete=true or a new due_date. If several tasks match, ask which one. Never say it was changed until execution confirms it.' : ''}
 - **list_my_tasks**: When the user asks what their tasks, to-dos or reminders are (e.g. "what are my tasks?", "what's on my plate?"), ALWAYS call this tool and list them (overdue first), keeping the person links exactly as returned. Never say you can't see their tasks. Format the answer as a markdown bullet list: one task per line, each line starting with "- ", person name link first, then the task and due date. Never write the tasks as a run-on paragraph. Put any closing question on its own line after the list.
-${isEnabled("create_form") ? '- **create_form**: When the user asks to make a form (sign-up, registration, RSVP, interest), call it with their full description in request. Every form needs a destination: if the user has not said where submissions go, call create_form without flow fields and follow its instructions to ask them (existing Flow, a new Flow, or no Flow). If they want a new Flow, guide them: suggest 3-5 simple steps, let them confirm or edit, then call create_form with new_flow_name and new_flow_steps — the Flow and form are created together on Approve. Show the returned preview under a "### Form" heading. Never say the form was created until execution confirms it.' : '- Creating forms is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
+${isEnabled("create_form") ? '- **create_form**: When the user asks for a form or plans an event (sign-up, registration, RSVP, interest, e.g. Men\'s Night), call create_form IMMEDIATELY with sensible defaults instead of asking questions first. Defaults: if they named an existing Flow use flow_name; otherwise leave flow fields empty and a new Flow named after the form (Registered → Confirmed → Attended → Follow-up) is prepared automatically; a warm thank-you email is on by default; only pass emails_decided=true when the user actually stated email preferences. Include obvious questions (name, email, phone, plus event-relevant ones like guests or dietary needs) in request. If the user\'s request or "Yes" covers several things (form, Flow, task), prepare ALL of them in the same turn by calling every relevant tool, so each gets its own Approve button. After the preview, offer one short line saying they can tweak anything (Flow, emails, questions) before approving. Show the returned preview under a "### Form" heading. Never say the form was created until execution confirms it.' : '- Creating forms is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 ${isEnabled("create_prayer_request") ? '- **create_prayer_request**: When the user asks to create or save a prayer request for one person, prepare the person, title, and exact request details for confirmation. Never say it was saved until execution confirms it.' : '- Creating prayer requests is disabled. Explain that an organization owner or admin can enable it in FlowLeed AI Tools settings.'}
 
 CRITICAL RULES FOR PEOPLE LISTS (never break these):
