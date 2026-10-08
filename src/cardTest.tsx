@@ -6,7 +6,6 @@ import { ContactCard } from "@/components/crm/ContactCard";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
-
 const contact = {
   id: "11111111-1111-1111-1111-111111111111",
   name: "Kelly Stanley",
@@ -20,18 +19,21 @@ const contact = {
 } as any;
 
 function Test() {
+  const [selectMode, setSelectMode] = React.useState(
+    () => new URLSearchParams(window.location.search).get("select") !== "0"
+  );
   const [selected, setSelected] = React.useState(false);
   return (
     <div style={{ width: 300, padding: 24 }}>
-      <button id="toggle-select" onClick={() => setSelected((s) => !s)}>
+      <button id="toggle-select" onClick={() => setSelectMode((s) => !s)}>
         toggle select
       </button>
       <div id="card-host">
         <ContactCard
           contact={contact}
           pipelineId="pipe-1"
-          isSelectMode
-          isSelected={false}
+          isSelectMode={selectMode}
+          isSelected={selected}
           onToggleSelect={() => setSelected((s) => !s)}
         />
       </div>
@@ -48,4 +50,3 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </React.StrictMode>
 );
-
