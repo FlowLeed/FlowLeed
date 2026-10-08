@@ -63,6 +63,27 @@ export const ContactCard: React.FC<ContactCardProps> = ({
     }
   };
   const cardLink = `/contacts/${contact.id}${pipelineId ? `?pipelineId=${pipelineId}` : ''}`;
+  const assigneeLabel = assignedTo ? (() => {
+    const nameParts = assignedTo.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastNameInitial = nameParts[1]?.charAt(0) || '';
+    return `${firstName}${lastNameInitial ? ` ${lastNameInitial}.` : ''}`;
+  })() : 'Unassigned';
+  const assigneeContent = assignedTo ? <>
+      <Avatar className="h-5 w-5 shrink-0">
+        <AvatarImage src={assignedTo.avatar} alt={assignedTo.name} className="object-cover" />
+        <AvatarFallback className="bg-muted text-muted-foreground text-[10px]">
+          {assignedTo.name.charAt(0)}
+        </AvatarFallback>
+      </Avatar>
+      <span className="truncate text-xs text-muted-foreground" title={assignedTo.name}>{assigneeLabel}</span>
+    </> : <>
+      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted">
+        <UserX className="h-3 w-3 text-muted-foreground" strokeWidth={1.7} />
+      </div>
+      <span className="truncate text-xs text-muted-foreground">Unassigned</span>
+    </>;
+
 
   return <div className={`relative bg-card text-card-foreground p-3 border shadow-sm hover:shadow-md mb-3 transition-all duration-200 rounded-lg overflow-hidden w-full min-w-0 cursor-pointer ${isSelectMode ? isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50' : 'border-border hover:border-primary/50'} ${isCompleted ? 'opacity-50' : ''}`} onClick={handleCardClick}>
       {/* Row 1: identity + status */}
@@ -77,9 +98,10 @@ export const ContactCard: React.FC<ContactCardProps> = ({
               </Avatar>
             </Link>}
           <div className="min-w-0 flex-1">
-            <Link to={cardLink} className="hover:text-primary transition-colors">
-              <h4 title={name} className="text-sm cursor-pointer truncate font-light">{name}</h4>
-            </Link>
+            {isSelectMode ? <h4 title={name} className="text-sm truncate font-light">{name}</h4> : <Link to={cardLink} className="hover:text-primary transition-colors">
+                <h4 title={name} className="text-sm cursor-pointer truncate font-light">{name}</h4>
+              </Link>}
+
             <div className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap text-xs text-muted-foreground">
               {isCompleted ? (
                 <span className="inline-flex shrink-0 items-center gap-1"><CheckCircle2 className="h-3 w-3" strokeWidth={1.7} />Done</span>
@@ -115,28 +137,13 @@ export const ContactCard: React.FC<ContactCardProps> = ({
 
       {/* Row 2: assignee + quick actions */}
       <div className="mt-2 flex items-center justify-between gap-2">
-        {assignedTo ? <Link to={cardLink} className="flex min-w-0 flex-1 items-center gap-1.5" onClick={e => e.stopPropagation()}>
-            <Avatar className="h-5 w-5 shrink-0">
-              <AvatarImage src={assignedTo.avatar} alt={assignedTo.name} className="object-cover" />
-              <AvatarFallback className="bg-muted text-muted-foreground text-[10px]">
-                {assignedTo.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="truncate text-xs text-muted-foreground" title={assignedTo.name}>
-              {(() => {
-            const nameParts = assignedTo.name.split(' ');
-            const firstName = nameParts[0] || '';
-            const lastNameInitial = nameParts[1]?.charAt(0) || '';
-            return `${firstName}${lastNameInitial ? ` ${lastNameInitial}.` : ''}`;
-          })()}
-            </span>
+        {assignedTo && !isSelectMode ? <Link to={cardLink} className="flex min-w-0 flex-1 items-center gap-1.5" onClick={e => e.stopPropagation()}>
+            {assigneeContent}
           </Link> : <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted">
-              <UserX className="h-3 w-3 text-muted-foreground" strokeWidth={1.7} />
-            </div>
-            <span className="truncate text-xs text-muted-foreground">Unassigned</span>
+            {assigneeContent}
           </div>}
-        <div className="flex shrink-0 items-center gap-1 justify-end">
+
+        {!isSelectMode && <div className="flex shrink-0 items-center gap-1 justify-end">
           {formSubmissions.length > 0 && (
             <FlowSubmissionDialog contactName={name} submissions={formSubmissions} />
           )}
@@ -150,7 +157,8 @@ export const ContactCard: React.FC<ContactCardProps> = ({
           {phone && <a href={`tel:${phone}`} className="flex h-7 w-7 items-center justify-center text-muted-foreground hover:bg-muted rounded-full" title="Call">
               <Phone className="h-3.5 w-3.5" strokeWidth={1.7} />
             </a>}
-        </div>
+          </div>}
       </div>
     </div>;
+
 };
