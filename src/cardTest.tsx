@@ -6,6 +6,7 @@ import { ContactCard } from "@/components/crm/ContactCard";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
+const selectParam = new URLSearchParams(window.location.search).get("select");
 const contact = {
   id: "11111111-1111-1111-1111-111111111111",
   name: "Kelly Stanley",
@@ -14,14 +15,14 @@ const contact = {
   email: "kelly@example.com",
   phone: "+15551234567",
   stageEnteredAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-  campusName: "Santa Rosa",
+  campusName: selectParam === "0" ? null : "Santa Rosa",
   assignedTo: { name: "Ruthy Merlos", avatar: null },
 } as any;
 
+
 function Test() {
-  const [selectMode, setSelectMode] = React.useState(
-    () => new URLSearchParams(window.location.search).get("select") !== "0"
-  );
+  const [selectMode, setSelectMode] = React.useState(() => selectParam !== "0");
+
   const [selected, setSelected] = React.useState(false);
   return (
     <div style={{ width: 300, padding: 24 }}>
